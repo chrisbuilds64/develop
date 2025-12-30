@@ -3,12 +3,13 @@ Database configuration and session management.
 
 Simple SQLite setup for Tweight core.
 """
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# SQLite database file
-DATABASE_URL = "sqlite:///./tweight.db"
+# SQLite database file - configurable via environment variable
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tweight.db")
 
 # Create engine
 engine = create_engine(

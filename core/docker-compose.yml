@@ -1,0 +1,24 @@
+services:
+  tweight-api:
+    build: .
+    container_name: tweight-core
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/data/tweight.db
+    volumes:
+      # Persist database outside container
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - tweight-network
+
+networks:
+  tweight-network:
+    driver: bridge
