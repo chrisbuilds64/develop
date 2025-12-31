@@ -1,6 +1,20 @@
 # ChrisBuilds64 - Development
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange)](https://chrisbuilds64.com)
+[![Building in Public](https://img.shields.io/badge/Building-In%20Public-blue)](https://chrisbuilds64.substack.com)
+
 Building in public. Real code. Real learning. Real progress.
+
+> ⚠️ **Hobby Project - Experimental Software**
+>
+> This is a personal learning project built in public. Use at your own risk.
+> - No warranties or guarantees
+> - No SLA or production support
+> - Educational and experimental purposes
+> - See [LICENSE](LICENSE) for full terms
+>
+> If you use this code, a star ⭐ and attribution would be appreciated! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## Project: Tweight
 
@@ -36,32 +50,58 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for complete vision.
 
 ## Status
 
-🚀 **Day 6** - Building in public, shipping weekly.
+🚀 **Day 7** - Building in public, shipping weekly.
 
-Follow the journey on [Substack](https://chrisbuilds64.substack.com)
+Follow the journey:
+- 📝 [Substack](https://chrisbuilds64.substack.com)
+- 🌐 [chrisbuilds64.com](https://chrisbuilds64.com)
+- 💬 [LinkedIn](https://linkedin.com/in/thechristianmoser)
+
+## Contributing
+
+Contributions, feedback, and stars ⭐ are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+**Using this code in your project?** A link back and mention would be appreciated—that's how we grow the community!
 
 ---
 
-## ⚠️ Legal Disclaimer
+## Legal & Compliance
 
-**Hobby Project - NIS2 Compliance Notice**
+### Open Source License
 
-This is a personal hobby project for learning and experimentation purposes.
+This project is licensed under the **MIT License** - see [LICENSE](LICENSE) for details.
 
-- **No Production Service:** Not intended for commercial use or critical infrastructure
-- **No Customer Data:** No regulated customer data or sensitive business information
-- **No SLA or Warranties:** Provided as-is for educational purposes
-- **Hobby Server Infrastructure:** Running on personal VPS for development and testing
-- **Not NIS2 Regulated:** This project does not fall under NIS2 directive scope
+You are free to:
+- ✅ Use commercially
+- ✅ Modify
+- ✅ Distribute
+- ✅ Use privately
 
-**If you're building something similar and planning to serve real customers or handle regulated data, please:**
-- Consult legal counsel regarding NIS2 compliance requirements
-- Implement proper security measures (encryption, access controls, monitoring)
-- Consider professional hosting with SLA guarantees
+**Just include the license and copyright notice.**
+
+### NIS2 Compliance Notice
+
+This is a **hobby project** for learning and experimentation.
+
+- Not intended for critical infrastructure or regulated environments
+- No customer data or sensitive business information
+- Running on personal VPS for development and testing
+- **Not subject to NIS2 directive**
+
+**If you're building production services:**
+- Consult legal counsel regarding NIS2 compliance
+- Implement proper security measures
+- Use professional hosting with SLA
 - Establish incident response procedures
 
-**Use at your own risk.** See [chrisbuilds64.com](https://chrisbuilds64.com) for more information.
+### Disclaimer
+
+**THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.**
+
+See [LICENSE](LICENSE) for full warranty disclaimer and limitation of liability.
 
 ---
 
 **Building in public since '64** 🚀
+
+*40 years of IT experience meets AI-assisted development. Not replacement—amplification.*
