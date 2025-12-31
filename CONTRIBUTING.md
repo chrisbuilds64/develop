@@ -27,9 +27,9 @@ If you use this code:
 
 **Before submitting a PR:**
 1. Read [ARCHITECTURE.md](ARCHITECTURE.md) to understand the vision
-2. Check [CLAUDE.md](https://github.com/chrisbuilds64/control/blob/main/CLAUDE.md) for development principles
-3. Follow the **KISS principle** - simple solutions over "proper" architecture
-4. Focus on **Use Cases** (UC-XXX format)
+2. Follow the **KISS principle** - simple solutions over "proper" architecture
+3. Focus on **Use Cases** (UC-XXX format)
+4. Check existing code style and patterns
 
 **PR Guidelines:**
 - One feature/fix per PR
@@ -55,12 +55,14 @@ Documentation is just as important as code:
 
 ## Development Principles
 
-This project follows specific principles (see [CLAUDE.md](https://github.com/chrisbuilds64/control/blob/main/CLAUDE.md)):
+This project follows specific principles:
 
 - **KISS** - Keep It Simple, Stupid
 - **YAGNI** - You Aren't Gonna Need It
 - **Use Case Driven** - Real problems, real solutions
 - **Ship > Perfect** - Working code beats perfect plans
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the complete vision and philosophy.
 
 ## Bug Reports
 
