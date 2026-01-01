@@ -1,8 +1,19 @@
 # ChrisBuilds64 - Architecture & Vision
 
-**Last Updated:** December 30, 2025
+**Last Updated:** January 1, 2026
 **Status:** Building in Public
 **Philosophy:** KISS, YAGNI, Use Case Driven
+
+---
+
+## 📚 Related Documents
+
+- [/control/CLAUDE.md](/control/CLAUDE.md) - Unchanging principles (Private)
+- [/control/PROJECT-CONTEXT.md](/control/PROJECT-CONTEXT.md) - Current project state (Private)
+- [SECURITY.md](SECURITY.md) - Security guidelines & threat analysis
+- [README.md](README.md) - Public project overview
+
+**Note:** Links to `/control/` are for internal reference only. Control directory is private.
 
 ---
 
@@ -220,21 +231,25 @@ ChrisBuilds64/
 
 ## 📊 Current Status
 
-### Shipped (Day 5):
+### Shipped (Day 1-8):
 - ✅ UC-001: YouTube Link Manager (Tweight)
-- ✅ Core API deployed to production (82.165.165.199)
-- ✅ Docker containerization
-- ✅ nginx reverse proxy configured
-- ✅ Flutter app on iPhone (local network)
+- ✅ Core API deployed to production (api.chrisbuilds64.com)
+- ✅ Docker containerization with nginx reverse proxy
+- ✅ SSL certificate setup (Let's Encrypt, auto-renewal)
+- ✅ Flutter app on iPhone (production API)
+- ✅ Website deployed: chrisbuilds64.com (HTTPS)
+- ✅ Security documentation & hardening script
+- ✅ Content principles formalized
+- ✅ 8 days of content published (DAY-001 to DAY-008)
 
 ### In Progress:
-- ⏳ DNS configuration (waiting on Alex)
-- ⏳ SSL certificate setup (waiting on DNS)
-- ⏳ Flutter production switch (waiting on SSL)
+- ⏳ Social media posting (Day 7 & 8)
+- ⏳ Publishing Day 7 & 8 to Substack
 
 ### Planned:
-- 📋 UC-002: Personal Knowledge RAG (Core)
+- 📋 Security hardening execution (run security-hardening.sh)
 - 📋 TestFlight beta deployment (Tweight)
+- 📋 UC-002: Personal Knowledge RAG (Core)
 - 📋 More Tweight modules (UC-004+)
 
 ---
@@ -298,11 +313,12 @@ The world cannot see:
 
 - **GitHub:** https://github.com/chrisbuilds64
 - **Substack:** https://chrisbuilds64.substack.com
-- **API:** http://82.165.165.199/health (soon: https://api.chrisbuilds64.com)
+- **Website:** https://chrisbuilds64.com
+- **API:** https://api.chrisbuilds64.com/health
 
 ---
 
-**Last Updated:** December 30, 2025
+**Last Updated:** January 1, 2026
 **Next Review:** After UC-002 shipped or 3 new Tweight modules
 
 ---
