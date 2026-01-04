@@ -10,6 +10,7 @@
 
 - [/control/CLAUDE.md](/control/CLAUDE.md) - Unchanging principles (Private)
 - [/control/PROJECT-CONTEXT.md](/control/PROJECT-CONTEXT.md) - Current project state (Private)
+- **[ADAPTER-PRINCIPLE.md](ADAPTER-PRINCIPLE.md)** - 🔴 FUNDAMENTAL: External API abstraction rule
 - [SECURITY.md](SECURITY.md) - Security guidelines & threat analysis
 - [README.md](README.md) - Public project overview
 
@@ -98,7 +99,9 @@ ChrisBuilds64/
 - Abstract, not application-specific
 - Reusable across multiple app groups
 - Well-documented for other developers
-- Adapters for existing tools (don't reinvent the wheel)
+- **🔴 ADAPTER PATTERN:** ALL external services accessed through Core adapters (see [ADAPTER-PRINCIPLE.md](ADAPTER-PRINCIPLE.md))
+- Clients (Flutter/Web) NEVER call external APIs directly (Clerk, OpenAI, etc.)
+- Configuration-driven provider selection (swap services via ENV variables)
 
 **Use Cases:**
 - `/develop/core/usecases/UC-002-personal-knowledge-rag.md`
