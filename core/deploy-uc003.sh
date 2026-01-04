@@ -70,6 +70,7 @@ scp -i "$SSH_KEY" \
     alembic.ini \
     docker-entrypoint.sh \
     .env.docker \
+    .env.example \
     "$SERVER_USER@$SERVER_IP:$SERVER_DIR/"
 
 # Copy directories
