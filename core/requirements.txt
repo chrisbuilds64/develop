@@ -6,13 +6,13 @@ click==8.3.1
 fastapi==0.127.1
 h11==0.16.0
 httpcore==1.0.9
-httpx==0.28.1
+httpx>=0.27.0,<0.28.0  # Downgraded for clerk-backend-api compatibility
 idna==3.11
 iniconfig==2.3.0
 packaging==25.0
 pluggy==1.6.0
-pydantic==2.12.5
-pydantic_core==2.41.5
+pydantic>=2.8.2,<2.9.0  # Compatible with clerk-backend-api
+pydantic_core>=2.20.0  # Updated for pydantic 2.8
 Pygments==2.19.2
 pytest==9.0.2
 SQLAlchemy==2.0.45
@@ -20,3 +20,8 @@ starlette==0.50.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 uvicorn==0.40.0
+
+# UC-003: Authentication
+clerk-backend-api==1.0.0  # Clerk SDK for JWT verification
+alembic==1.13.1            # Database migrations
+python-dotenv==1.2.1       # Load environment variables from .env file

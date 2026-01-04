@@ -38,6 +38,10 @@ dependencies:
   url_launcher: ^6.2.2
   receive_sharing_intent: ^1.8.0
 
+  # UC-003: Authentication
+  shared_preferences: ^2.2.2  # For storing auth token locally
+  flutter_secure_storage: ^9.0.0  # Secure token storage
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
