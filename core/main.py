@@ -27,8 +27,19 @@ from schemas import VideoCreate, VideoResponse, VideosListResponse
 
 # UC-003: Import authentication
 from auth.middleware import get_current_user
+from auth.login_handler import ClerkLoginHandler
+from pydantic import BaseModel
 
 app = FastAPI(title="Tweight Core API", version="0.3.0")  # UC-003: Version bump
+
+# Login request/response schemas
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    token: str
+    user: dict
 
 
 # Initialize database on startup
@@ -43,6 +54,23 @@ def startup_event():
 def health_check():
     """Health check endpoint - always returns OK if service is running."""
     return {"status": "ok", "service": "tweight-core", "version": "0.3.0"}
+
+
+@app.post("/auth/login", response_model=LoginResponse)
+async def login(request: LoginRequest):
+    """
+    Login endpoint - authenticates user and returns JWT token.
+
+    Works in two modes:
+    - Development (ENV=development): Accepts mock credentials
+    - Production (ENV=production): Uses Clerk authentication
+    """
+    login_handler = ClerkLoginHandler()
+    try:
+        result = await login_handler.sign_in(request.email, request.password)
+        return LoginResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
 
 
 @app.get("/timer")
