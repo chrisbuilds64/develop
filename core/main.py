@@ -4,19 +4,31 @@ Tweight Core API - Simple, focused, functional.
 Endpoints:
 - /health: Service health check
 - /timer: Current server timestamp
-- /videos: YouTube link management (UC-001)
+- /videos: YouTube link management (UC-001, now with auth - UC-003)
+
+UC-003: Authentication with Clerk (or Mock for local dev)
+- All /videos endpoints now require authentication
+- User-specific data (videos belong to users)
+- Bearer token required in Authorization header
 """
 from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import database and models
 from database import get_db, init_db
-from models import Video
+from models import Video, User
 from schemas import VideoCreate, VideoResponse, VideosListResponse
 
-app = FastAPI(title="Tweight Core API", version="0.2.0")
+# UC-003: Import authentication
+from auth.middleware import get_current_user
+
+app = FastAPI(title="Tweight Core API", version="0.3.0")  # UC-003: Version bump
 
 
 # Initialize database on startup
@@ -30,7 +42,7 @@ def startup_event():
 @app.get("/health")
 def health_check():
     """Health check endpoint - always returns OK if service is running."""
-    return {"status": "ok", "service": "tweight-core", "version": "0.2.0"}
+    return {"status": "ok", "service": "tweight-core", "version": "0.3.0"}
 
 
 @app.get("/timer")
@@ -45,9 +57,17 @@ def get_timer():
 # ==================== VIDEO ENDPOINTS (UC-001) ====================
 
 @app.post("/videos", response_model=VideoResponse, status_code=201)
-def create_video(video_data: VideoCreate, db: Session = Depends(get_db)):
+def create_video(
+    video_data: VideoCreate,
+    user: User = Depends(get_current_user),  # UC-003: Require authentication
+    db: Session = Depends(get_db)
+):
     """
-    Save a YouTube video with tags.
+    Save a YouTube video with tags (user-specific).
+
+    **UC-003: Authentication Required**
+    - Requires: Authorization: Bearer <token>
+    - Video will be associated with authenticated user
 
     **Request:**
     ```json
@@ -71,8 +91,9 @@ def create_video(video_data: VideoCreate, db: Session = Depends(get_db)):
     # Convert tags list to comma-separated string
     tags_str = ",".join(video_data.tags) if video_data.tags else ""
 
-    # Create video object
+    # Create video object (UC-003: Associate with user)
     video = Video(
+        user_id=user.id,  # UC-003: Added
         url=video_data.url,
         title=None,  # Can fetch from YouTube API later
         thumbnail_url=thumbnail_url,
@@ -88,17 +109,25 @@ def create_video(video_data: VideoCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/videos", response_model=VideosListResponse)
-def list_videos(tags: Optional[str] = None, db: Session = Depends(get_db)):
+def list_videos(
+    tags: Optional[str] = None,
+    user: User = Depends(get_current_user),  # UC-003: Require authentication
+    db: Session = Depends(get_db)
+):
     """
-    Get all videos, optionally filtered by tags.
+    Get user's videos, optionally filtered by tags.
+
+    **UC-003: Authentication Required**
+    - Requires: Authorization: Bearer <token>
+    - Returns only videos belonging to authenticated user
 
     **Query Parameters:**
     - `tags` (optional): Comma-separated tags to filter by (e.g., "workout,triceps")
 
     **Examples:**
-    - GET /videos → All videos
-    - GET /videos?tags=workout → Videos tagged "workout"
-    - GET /videos?tags=workout,triceps → Videos with "workout" OR "triceps"
+    - GET /videos → All user's videos
+    - GET /videos?tags=workout → User's videos tagged "workout"
+    - GET /videos?tags=workout,triceps → User's videos with "workout" OR "triceps"
 
     **Response:**
     ```json
@@ -108,7 +137,8 @@ def list_videos(tags: Optional[str] = None, db: Session = Depends(get_db)):
     }
     ```
     """
-    query = db.query(Video)
+    # UC-003: Filter by user_id (only user's own videos)
+    query = db.query(Video).filter(Video.user_id == user.id)
 
     # Filter by tags if provided
     if tags:
@@ -126,15 +156,33 @@ def list_videos(tags: Optional[str] = None, db: Session = Depends(get_db)):
 
 
 @app.delete("/videos/{video_id}", status_code=204)
-def delete_video(video_id: int, db: Session = Depends(get_db)):
+def delete_video(
+    video_id: int,
+    user: User = Depends(get_current_user),  # UC-003: Require authentication
+    db: Session = Depends(get_db)
+):
     """
-    Delete a video by ID.
+    Delete a video by ID (authorization check).
 
-    **Response:** 204 No Content on success
+    **UC-003: Authentication Required**
+    - Requires: Authorization: Bearer <token>
+    - User can only delete their own videos
+
+    **Response:**
+    - 204 No Content on success
+    - 404 Not Found if video doesn't exist or belongs to another user
     """
-    video = db.query(Video).filter(Video.id == video_id).first()
+    # UC-003: Ensure video exists AND belongs to user
+    video = db.query(Video).filter(
+        Video.id == video_id,
+        Video.user_id == user.id  # Authorization check
+    ).first()
+
     if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Video not found or not authorized to delete"
+        )
 
     db.delete(video)
     db.commit()

@@ -7,6 +7,10 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:////app/data/tweight.db
+      # UC-003: Authentication with Clerk
+      - ENV=production
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
     volumes:
       # Persist database outside container
       - ./data:/app/data

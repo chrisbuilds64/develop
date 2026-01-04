@@ -33,6 +33,20 @@ COPY database.py .
 COPY models.py .
 COPY schemas.py .
 
+# UC-003: Copy auth module
+COPY auth/ ./auth/
+
+# UC-003: Copy alembic migrations
+COPY alembic/ ./alembic/
+COPY alembic.ini .
+
+# UC-003: Copy environment config (will be overridden by docker-compose)
+COPY .env.example .env
+
+# UC-003: Copy entrypoint script for migrations
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
@@ -46,5 +60,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run migrations and start application
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
