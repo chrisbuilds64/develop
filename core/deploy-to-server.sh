@@ -56,10 +56,24 @@ scp -i "$SSH_KEY" \
     models.py \
     schemas.py \
     requirements.txt \
+    alembic.ini \
+    .env \
     deploy.sh \
     "$SERVER_USER@$SERVER_IP:$SERVER_DIR/"
 
 echo "✅ Files copied"
+echo ""
+
+# Copy auth directory
+echo "📦 Copying auth/ directory..."
+scp -i "$SSH_KEY" -r auth "$SERVER_USER@$SERVER_IP:$SERVER_DIR/"
+echo "✅ auth/ directory copied"
+echo ""
+
+# Copy alembic directory
+echo "📦 Copying alembic/ directory..."
+scp -i "$SSH_KEY" -r alembic "$SERVER_USER@$SERVER_IP:$SERVER_DIR/"
+echo "✅ alembic/ directory copied"
 echo ""
 
 # Make deploy script executable
