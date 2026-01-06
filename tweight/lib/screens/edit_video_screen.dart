@@ -164,33 +164,38 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Tag suggestions (autocomplete)
+            // Tag suggestions (autocomplete) - with max height to prevent overflow
             if (_loadingTags)
               const Center(child: CircularProgressIndicator())
             else if (_availableTags.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Your tags (tap to add)',
-                    style: Theme.of(context).textTheme.titleSmall,
+              SizedBox(
+                height: 120, // Max height to prevent overflow when keyboard is open
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your tags (tap to add)',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _availableTags.map((tag) {
+                          final isSelected = widget.video.tagsList.contains(tag);
+                          return ActionChip(
+                            label: Text(tag),
+                            onPressed: () => _addTag(tag),
+                            backgroundColor: isSelected
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : null,
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _availableTags.map((tag) {
-                      final isSelected = widget.video.tagsList.contains(tag);
-                      return ActionChip(
-                        label: Text(tag),
-                        onPressed: () => _addTag(tag),
-                        backgroundColor: isSelected
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : null,
-                      );
-                    }).toList(),
-                  ),
-                ],
+                ),
               ),
 
             const Spacer(),
