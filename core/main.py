@@ -183,6 +183,93 @@ def list_videos(
     return VideosListResponse(videos=videos, count=len(videos))
 
 
+@app.get("/tags")
+def get_all_tags(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all unique tags from user's videos (for autocomplete).
+
+    **UC-003: Authentication Required**
+    - Requires: Authorization: Bearer <token>
+    - Returns only tags from authenticated user's videos
+
+    **Response:**
+    ```json
+    {
+        "tags": ["workout", "triceps", "cable", "chest"],
+        "count": 4
+    }
+    ```
+    """
+    # Get all user's videos
+    videos = db.query(Video).filter(Video.user_id == user.id).all()
+
+    # Extract all tags
+    all_tags = set()
+    for video in videos:
+        if video.tags:
+            tags_list = [tag.strip() for tag in video.tags.split(",")]
+            all_tags.update(tags_list)
+
+    # Return sorted list
+    tags_sorted = sorted(list(all_tags))
+    return {"tags": tags_sorted, "count": len(tags_sorted)}
+
+
+@app.put("/videos/{video_id}", response_model=VideoResponse)
+def update_video(
+    video_id: int,
+    video_data: VideoCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update a video's title and/or tags (authorization check).
+
+    **UC-003: Authentication Required**
+    - Requires: Authorization: Bearer <token>
+    - User can only update their own videos
+
+    **Request:**
+    ```json
+    {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "tags": ["workout", "triceps", "updated"]
+    }
+    ```
+
+    **Response:**
+    Returns updated video with new tags.
+
+    **Note:**
+    - URL is required in request but won't be changed (immutable)
+    - Only tags are updated
+    """
+    # Find video and ensure it belongs to user
+    video = db.query(Video).filter(
+        Video.id == video_id,
+        Video.user_id == user.id
+    ).first()
+
+    if not video:
+        raise HTTPException(
+            status_code=404,
+            detail="Video not found or not authorized to update"
+        )
+
+    # Update tags
+    tags_str = ",".join(video_data.tags) if video_data.tags else ""
+    video.tags = tags_str
+
+    # Commit changes
+    db.commit()
+    db.refresh(video)
+
+    return video
+
+
 @app.delete("/videos/{video_id}", status_code=204)
 def delete_video(
     video_id: int,
