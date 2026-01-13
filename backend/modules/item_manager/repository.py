@@ -1,9 +1,13 @@
 """
 Item Repository
+
+High-level repository using DatabaseAdapter.
+Abstracts database operations for Item domain.
 """
 from typing import Optional, List
 from datetime import datetime
 
+from adapters.database.base import DatabaseAdapter
 from .models import Item
 
 
@@ -11,23 +15,41 @@ class ItemRepository:
     """
     Repository für Item-Persistenz.
 
-    In-Memory für PoC, später austauschbar gegen DB-Adapter.
+    Uses DatabaseAdapter interface - implementation injected.
     """
 
-    def __init__(self):
-        self._storage: dict[str, Item] = {}
+    def __init__(self, db_adapter: DatabaseAdapter[Item]):
+        """
+        Initialize repository with database adapter.
+
+        Args:
+            db_adapter: Implementation of DatabaseAdapter (PostgreSQL, Mock, etc.)
+        """
+        self.db = db_adapter
 
     def save(self, item: Item) -> Item:
-        """Save item"""
-        import uuid
-        if not item.id:
-            item.id = str(uuid.uuid4())
-        self._storage[item.id] = item
-        return item
+        """
+        Save item to database.
+
+        Args:
+            item: Item to save
+
+        Returns:
+            Saved item with ID
+        """
+        return self.db.save(item)
 
     def find_by_id(self, item_id: str) -> Optional[Item]:
-        """Find item by ID (excludes soft-deleted)"""
-        item = self._storage.get(item_id)
+        """
+        Find item by ID (excludes soft-deleted).
+
+        Args:
+            item_id: Item UUID
+
+        Returns:
+            Item if found and not deleted, None otherwise
+        """
+        item = self.db.find_by_id(item_id)
         if item and not item.is_deleted():
             return item
         return None
@@ -51,39 +73,38 @@ class ItemRepository:
             include_deleted: Include soft-deleted items
             limit: Max results
             offset: Skip results
+
+        Returns:
+            List of matching items
         """
-        results = []
+        # Build criteria for database adapter
+        criteria = {}
+        if owner_id:
+            criteria["owner_id"] = owner_id
+        if content_type:
+            criteria["content_type"] = content_type
+        if tags:
+            criteria["tags"] = tags
+        criteria["include_deleted"] = include_deleted
 
-        for item in self._storage.values():
-            # Skip deleted unless requested
-            if not include_deleted and item.is_deleted():
-                continue
+        # Query via adapter
+        items = self.db.find_by(**criteria)
 
-            # Filter by owner
-            if owner_id and item.owner_id != owner_id:
-                continue
-
-            # Filter by content_type
-            if content_type and item.content_type != content_type:
-                continue
-
-            # Filter by tags (any match)
-            if tags:
-                if not any(tag in item.tags for tag in tags):
-                    continue
-
-            results.append(item)
-
-        # Sort by created_at descending
-        results.sort(key=lambda x: x.created_at or datetime.min, reverse=True)
-
-        return results[offset:offset + limit]
+        # Apply pagination (adapter handles sorting)
+        return items[offset:offset + limit]
 
     def update(self, item: Item) -> Item:
-        """Update item"""
+        """
+        Update existing item.
+
+        Args:
+            item: Item with updated values
+
+        Returns:
+            Updated item
+        """
         item.updated_at = datetime.utcnow()
-        self._storage[item.id] = item
-        return item
+        return self.db.update(item)
 
     def delete(self, item_id: str, hard: bool = False) -> bool:
         """
@@ -92,28 +113,34 @@ class ItemRepository:
         Args:
             item_id: Item to delete
             hard: If True, permanently delete. If False, soft-delete.
+
+        Returns:
+            True if deleted
         """
-        item = self._storage.get(item_id)
-        if not item:
-            return False
-
         if hard:
-            del self._storage[item_id]
+            return self.db.delete(item_id)
         else:
+            # Soft delete: update deleted_at timestamp
+            item = self.db.find_by_id(item_id)
+            if not item:
+                return False
             item.soft_delete()
-            self._storage[item_id] = item
-
-        return True
+            self.db.update(item)
+            return True
 
     def restore(self, item_id: str) -> Optional[Item]:
-        """Restore soft-deleted item"""
-        item = self._storage.get(item_id)
+        """
+        Restore soft-deleted item.
+
+        Args:
+            item_id: Item UUID
+
+        Returns:
+            Restored item if found and was deleted, None otherwise
+        """
+        item = self.db.find_by_id(item_id)
         if item and item.is_deleted():
             item.deleted_at = None
             item.updated_at = datetime.utcnow()
-            return item
+            return self.db.update(item)
         return None
-
-    def clear(self):
-        """Clear storage (for tests)"""
-        self._storage.clear()

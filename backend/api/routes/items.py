@@ -1,27 +1,23 @@
 """
 Item API Routes
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
 
 from modules.item_manager.models import Item
 from modules.item_manager.repository import ItemRepository
 from modules.item_manager.exceptions import ItemNotFoundError
 from api.schemas.items import ItemCreate, ItemUpdate, ItemResponse, ItemListResponse
+from api.dependencies import get_item_repository
 
 router = APIRouter(prefix="/items", tags=["items"])
 
-# Singleton repository (PoC - später per Dependency Injection)
-_repository = ItemRepository()
-
-
-def get_repository() -> ItemRepository:
-    """Get repository instance"""
-    return _repository
-
 
 @router.post("", response_model=ItemResponse, status_code=201)
-async def create_item(data: ItemCreate):
+async def create_item(
+    data: ItemCreate,
+    repo: ItemRepository = Depends(get_item_repository)
+):
     """
     Create a new item.
     """
@@ -36,7 +32,6 @@ async def create_item(data: ItemCreate):
         tags=data.tags
     )
 
-    repo = get_repository()
     saved = repo.save(item)
 
     return ItemResponse(
@@ -56,7 +51,8 @@ async def list_items(
     content_type: Optional[str] = Query(None, description="Filter by content type"),
     tags: Optional[str] = Query(None, description="Filter by tags (comma-separated)"),
     limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0)
+    offset: int = Query(0, ge=0),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     List items with optional filters.
@@ -69,7 +65,6 @@ async def list_items(
     if tags:
         tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
-    repo = get_repository()
     items = repo.find_all(
         owner_id=owner_id,
         content_type=content_type,
@@ -99,11 +94,13 @@ async def list_items(
 
 
 @router.get("/{item_id}", response_model=ItemResponse)
-async def get_item(item_id: str):
+async def get_item(
+    item_id: str,
+    repo: ItemRepository = Depends(get_item_repository)
+):
     """
     Get a single item by ID.
     """
-    repo = get_repository()
     item = repo.find_by_id(item_id)
 
     if not item:
@@ -124,11 +121,14 @@ async def get_item(item_id: str):
 
 
 @router.put("/{item_id}", response_model=ItemResponse)
-async def update_item(item_id: str, data: ItemUpdate):
+async def update_item(
+    item_id: str,
+    data: ItemUpdate,
+    repo: ItemRepository = Depends(get_item_repository)
+):
     """
     Update an item.
     """
-    repo = get_repository()
     item = repo.find_by_id(item_id)
 
     if not item:
@@ -161,11 +161,13 @@ async def update_item(item_id: str, data: ItemUpdate):
 
 
 @router.delete("/{item_id}", status_code=204)
-async def delete_item(item_id: str):
+async def delete_item(
+    item_id: str,
+    repo: ItemRepository = Depends(get_item_repository)
+):
     """
     Soft-delete an item.
     """
-    repo = get_repository()
     item = repo.find_by_id(item_id)
 
     if not item:
