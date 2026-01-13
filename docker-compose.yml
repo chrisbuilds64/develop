@@ -1,0 +1,76 @@
+# ChrisBuilds64 - Docker Compose
+# Backend + PostgreSQL
+
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: chrisbuilds-postgres
+    environment:
+      POSTGRES_DB: chrisbuilds64
+      POSTGRES_USER: chrisbuilds
+      POSTGRES_PASSWORD: dev_password_change_in_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chrisbuilds"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chrisbuilds-network
+
+  # ============================================
+  # Backend API
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chrisbuilds-backend
+    environment:
+      ENV: development
+      DEBUG: "true"
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      DATABASE_URL: postgresql://chrisbuilds:dev_password_change_in_production@postgres:5432/chrisbuilds64
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for development (hot reload)
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - chrisbuilds-network
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Running migrations...' &&
+        alembic upgrade head &&
+        echo 'Starting server...' &&
+        uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    name: chrisbuilds-postgres-data
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  chrisbuilds-network:
+    name: chrisbuilds-network
+    driver: bridge
