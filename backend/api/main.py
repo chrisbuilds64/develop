@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from infrastructure.logging import setup_logging, get_logger, get_environment
 from infrastructure.logging.middleware import LoggingMiddleware
+from infrastructure.errors import register_exception_handlers
 from api.routes import items
 
 # Setup logging on startup
@@ -33,6 +34,9 @@ app = FastAPI(
 
 # Add middleware (order matters - last added = first executed)
 app.add_middleware(LoggingMiddleware)
+
+# Register exception handlers (RFC 7807 error responses)
+register_exception_handlers(app)
 
 # Register routes
 app.include_router(items.router, prefix="/api/v1")
