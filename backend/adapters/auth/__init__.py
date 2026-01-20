@@ -1,4 +1,17 @@
-# Auth Adapters
-from .base import AuthAdapter
+"""
+Auth Adapter Module
 
-__all__ = ["AuthAdapter"]
+Pluggable authentication with multiple providers.
+"""
+from .base import AuthProvider, UserInfo
+from .exceptions import AuthenticationError, TokenExpiredError, InsufficientPermissionsError
+from .mock_adapter import MockAuthAdapter
+
+__all__ = [
+    "AuthProvider",
+    "UserInfo",
+    "AuthenticationError",
+    "TokenExpiredError",
+    "InsufficientPermissionsError",
+    "MockAuthAdapter",
+]
