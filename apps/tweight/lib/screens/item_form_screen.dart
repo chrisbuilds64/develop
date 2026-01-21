@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/item.dart';
 import '../services/api_client.dart';
 import '../services/item_service.dart';
+import '../widgets/tag_picker_dialog.dart';
 
 class ItemFormScreen extends StatefulWidget {
   final ApiClient apiClient;
@@ -25,6 +26,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
   late final TextEditingController _tagController;
   String _contentType = 'note';
   List<String> _tags = [];
+  Set<String> _availableTags = {};
   bool _saving = false;
   String? _error;
 
@@ -39,6 +41,18 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     if (widget.item != null) {
       _contentType = widget.item!.contentType;
       _tags = List.from(widget.item!.tags);
+    }
+    _loadAvailableTags();
+  }
+
+  Future<void> _loadAvailableTags() async {
+    try {
+      final items = await _itemService.getItems();
+      setState(() {
+        _availableTags = items.expand((item) => item.tags).toSet();
+      });
+    } catch (e) {
+      // Ignore errors, tags will just be empty
     }
   }
 
@@ -61,6 +75,19 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
 
   void _removeTag(String tag) {
     setState(() => _tags.remove(tag));
+  }
+
+  Future<void> _showTagPicker() async {
+    final result = await showTagPickerDialog(
+      context: context,
+      availableTags: _availableTags,
+      selectedTags: _tags,
+      title: 'Select Tags',
+    );
+
+    if (result != null) {
+      setState(() => _tags = result);
+    }
   }
 
   Future<void> _save() async {
@@ -147,15 +174,48 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                     },
             ),
             const SizedBox(height: 16),
+            // Tags section
+            InkWell(
+              onTap: _saving ? null : _showTagPicker,
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Tags',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.sell),
+                    onPressed: _saving ? null : _showTagPicker,
+                  ),
+                ),
+                child: _tags.isEmpty
+                    ? Text(
+                        'Tap to select tags...',
+                        style: TextStyle(color: Colors.grey[600]),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _tags.map((tag) {
+                          return Chip(
+                            label: Text(tag),
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            onDeleted: _saving ? null : () => _removeTag(tag),
+                            visualDensity: VisualDensity.compact,
+                          );
+                        }).toList(),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Manual tag input
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _tagController,
                     decoration: const InputDecoration(
-                      labelText: 'Add tag',
+                      labelText: 'New tag',
                       border: OutlineInputBorder(),
-                      hintText: 'Enter tag and press +',
+                      hintText: 'Or type new tag...',
                     ),
                     enabled: !_saving,
                     onSubmitted: (_) => _addTag(),
@@ -168,20 +228,6 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                 ),
               ],
             ),
-            if (_tags.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: _tags.map((tag) {
-                  return Chip(
-                    label: Text(tag),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: _saving ? null : () => _removeTag(tag),
-                  );
-                }).toList(),
-              ),
-            ],
             const SizedBox(height: 24),
             if (_error != null)
               Padding(

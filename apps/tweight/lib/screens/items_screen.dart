@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/item.dart';
 import '../services/api_client.dart';
 import '../services/item_service.dart';
+import '../widgets/tag_picker_dialog.dart';
 import 'login_screen.dart';
 import 'item_form_screen.dart';
 
@@ -158,12 +159,77 @@ class _ItemsScreenState extends State<ItemsScreen> {
     }
   }
 
+  Future<void> _showQuickCapture() async {
+    final controller = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Quick Capture'),
+        content: TextField(
+          controller: controller,
+          maxLines: 8,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'One item per line...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != true || controller.text.trim().isEmpty) return;
+
+    final lines = controller.text
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+
+    if (lines.isEmpty) return;
+
+    int saved = 0;
+    for (final line in lines) {
+      try {
+        await _itemService.createItem(
+          label: line,
+          contentType: 'note',
+          tags: ['inbox'],
+        );
+        saved++;
+      } catch (e) {
+        // Continue with next item
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$saved items added to inbox')),
+      );
+      _loadItems();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Items'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.inbox),
+            tooltip: 'Quick Capture',
+            onPressed: _showQuickCapture,
+          ),
           IconButton(
             icon: Icon(_textViewMode ? Icons.view_list : Icons.article),
             tooltip: _textViewMode ? 'Card View' : 'Text View',
@@ -213,23 +279,54 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
   }
 
+  Future<void> _showTagPicker() async {
+    final result = await showTagPickerDialog(
+      context: context,
+      availableTags: _availableTags,
+      selectedTags: _selectedTags,
+      title: 'Filter by Tags',
+    );
+
+    if (result != null) {
+      setState(() => _selectedTags = result);
+      _loadItems(updateAvailableTags: false);
+    }
+  }
+
   Widget _buildTagChips() {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: _availableTags.map((tag) {
-          final isSelected = _selectedTags.contains(tag);
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(tag),
-              selected: isSelected,
-              onSelected: (_) => _toggleTag(tag),
+    return GestureDetector(
+      onLongPress: _showTagPicker,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            // Tag picker button
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ActionChip(
+                avatar: const Icon(Icons.filter_list, size: 18),
+                label: Text(_selectedTags.isEmpty
+                    ? 'Tags'
+                    : '${_selectedTags.length} selected'),
+                onPressed: _showTagPicker,
+              ),
             ),
-          );
-        }).toList(),
+            // Quick filter chips for available tags
+            ..._availableTags.map((tag) {
+              final isSelected = _selectedTags.contains(tag);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(tag),
+                  selected: isSelected,
+                  onSelected: (_) => _toggleTag(tag),
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
