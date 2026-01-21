@@ -59,6 +59,7 @@ class ItemRepository:
         owner_id: Optional[str] = None,
         content_type: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        search: Optional[str] = None,
         include_deleted: bool = False,
         limit: int = 100,
         offset: int = 0
@@ -70,6 +71,7 @@ class ItemRepository:
             owner_id: Filter by owner
             content_type: Filter by type
             tags: Filter by tags (any match)
+            search: Search term for label (case-insensitive)
             include_deleted: Include soft-deleted items
             limit: Max results
             offset: Skip results
@@ -85,6 +87,8 @@ class ItemRepository:
             criteria["content_type"] = content_type
         if tags:
             criteria["tags"] = tags
+        if search:
+            criteria["search"] = search
         criteria["include_deleted"] = include_deleted
 
         # Query via adapter
