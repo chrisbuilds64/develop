@@ -58,6 +58,7 @@ async def create_item(
 async def list_items(
     content_type: Optional[str] = Query(None, description="Filter by content type"),
     tags: Optional[str] = Query(None, description="Filter by tags (comma-separated)"),
+    search: Optional[str] = Query(None, description="Search by label (case-insensitive)"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     current_user: UserInfo = Depends(get_current_user),
@@ -70,7 +71,7 @@ async def list_items(
     Returns only items owned by the authenticated user.
     """
     owner_id = current_user.user_id
-    logger.debug("item_list_start", owner_id=owner_id, content_type=content_type)
+    logger.debug("item_list_start", owner_id=owner_id, content_type=content_type, search=search)
 
     # Parse tags
     tag_list = None
@@ -81,6 +82,7 @@ async def list_items(
         owner_id=owner_id,
         content_type=content_type,
         tags=tag_list,
+        search=search,
         limit=limit,
         offset=offset
     )

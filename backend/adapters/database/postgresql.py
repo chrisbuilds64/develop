@@ -148,6 +148,7 @@ class PostgreSQLAdapter(DatabaseAdapter[Item]):
             - owner_id: str
             - content_type: str
             - tags: List[str] (any match)
+            - search: str (case-insensitive label search)
             - include_deleted: bool
 
         Args:
@@ -180,6 +181,11 @@ class PostgreSQLAdapter(DatabaseAdapter[Item]):
                 query = query.filter(
                     cast(ItemModel.tags, String).like(f'%"{tag}"%')
                 )
+
+        # Search by label (case-insensitive)
+        if "search" in criteria and criteria["search"]:
+            search_term = criteria["search"]
+            query = query.filter(ItemModel.label.ilike(f"%{search_term}%"))
 
         # Sort by created_at descending
         query = query.order_by(ItemModel.created_at.desc())
