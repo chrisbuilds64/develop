@@ -66,11 +66,15 @@ def get_auth_provider() -> AuthProvider:
 
     # Future: Clerk implementation
     # from adapters.auth.clerk_adapter import ClerkAdapter
-    # return ClerkAdapter()
+    # if config.ENV in ("production", "staging"):
+    #     return ClerkAdapter()
 
-    # For now, default to mock in all environments
-    logger.warning("auth_provider_fallback", env=config.ENV, fallback="mock")
-    return MockAuthAdapter()
+    # Fail-safe: Unknown ENV must not silently fall back to mock auth
+    raise RuntimeError(
+        f"No auth provider configured for ENV='{config.ENV}'. "
+        f"Allowed dev environments: test, development, local. "
+        f"Production requires ClerkAdapter implementation."
+    )
 
 
 # Global auth provider instance (lazy loaded)

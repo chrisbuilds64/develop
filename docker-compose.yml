@@ -11,9 +11,9 @@ services:
     image: postgres:16-alpine
     container_name: chrisbuilds-postgres
     environment:
-      POSTGRES_DB: chrisbuilds64
-      POSTGRES_USER: chrisbuilds
-      POSTGRES_PASSWORD: dev_password_change_in_production
+      POSTGRES_DB: ${POSTGRES_DB:-chrisbuilds64}
+      POSTGRES_USER: ${POSTGRES_USER:-chrisbuilds}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.local}
     ports:
       - "5432:5432"
     volumes:
@@ -35,11 +35,11 @@ services:
       dockerfile: Dockerfile
     container_name: chrisbuilds-backend
     environment:
-      ENV: development
-      DEBUG: "true"
-      LOG_LEVEL: INFO
+      ENV: ${ENV:-development}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMAT: json
-      DATABASE_URL: postgresql://chrisbuilds:dev_password_change_in_production@postgres:5432/chrisbuilds64
+      DATABASE_URL: postgresql://${POSTGRES_USER:-chrisbuilds}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.local}@postgres:5432/${POSTGRES_DB:-chrisbuilds64}
     ports:
       - "8000:8000"
     volumes:
