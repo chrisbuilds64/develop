@@ -79,7 +79,7 @@ DELETE /api/v1/items/{id}         # Soft-delete item
 This is part of the [chrisbuilds64](https://github.com/chrisbuilds64) journey.
 
 Follow along:
-- [Substack](https://chriscodes64.substack.com)
+- [Substack](https://chrisbuilds64.substack.com)
 - [LinkedIn](https://linkedin.com/in/chrisbuilds64)
 - [TikTok](https://tiktok.com/@chrisbuilds64)
 
