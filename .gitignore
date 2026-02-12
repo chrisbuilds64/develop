@@ -57,5 +57,10 @@ htmlcov/
 .env.production
 .env.*.local
 
+# Secrets (NEVER commit)
+secrets/
+*.secret
+apikeys/
+
 # Logs
 *.log

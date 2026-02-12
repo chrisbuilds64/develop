@@ -3,7 +3,7 @@ Item API Routes
 
 Compliant with REQ-000 Infrastructure Standards.
 """
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List
 
 from modules.item_manager.models import Item
@@ -13,13 +13,16 @@ from api.schemas.items import ItemCreate, ItemUpdate, ItemResponse, ItemListResp
 from api.dependencies import get_item_repository, get_current_user
 from adapters.auth import UserInfo
 from infrastructure.logging import get_logger
+from api.rate_limit import limiter
 
 router = APIRouter(prefix="/items", tags=["items"])
 logger = get_logger()
 
 
 @router.post("", response_model=ItemResponse, status_code=201)
+@limiter.limit("20/minute")
 async def create_item(
+    request: Request,
     data: ItemCreate,
     current_user: UserInfo = Depends(get_current_user),
     repo: ItemRepository = Depends(get_item_repository)
@@ -142,7 +145,9 @@ async def get_item(
 
 
 @router.put("/{item_id}", response_model=ItemResponse)
+@limiter.limit("20/minute")
 async def update_item(
+    request: Request,
     item_id: str,
     data: ItemUpdate,
     current_user: UserInfo = Depends(get_current_user),
@@ -189,7 +194,9 @@ async def update_item(
 
 
 @router.delete("/{item_id}", status_code=204)
+@limiter.limit("20/minute")
 async def delete_item(
+    request: Request,
     item_id: str,
     current_user: UserInfo = Depends(get_current_user),
     repo: ItemRepository = Depends(get_item_repository)

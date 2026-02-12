@@ -50,12 +50,13 @@ class MockDatabaseAdapter(DatabaseAdapter):
         return False
 
     def find_by(self, **criteria) -> List[Any]:
-        """Find by criteria"""
+        """Find by criteria (ignores keys that don't exist on the entity)"""
         results = []
         for entity in self._storage.values():
             match = all(
                 getattr(entity, key, None) == value
                 for key, value in criteria.items()
+                if hasattr(entity, key)
             )
             if match:
                 results.append(entity)
