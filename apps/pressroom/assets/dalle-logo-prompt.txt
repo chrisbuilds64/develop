@@ -1,0 +1,11 @@
+Abstract minimalist logo for "PressRoom" — a content production command center app.
+
+Design concept: A stylized printing press cylinder merged with a Kanban board grid. The cylinder transforms into 6 vertical columns flowing left to right, suggesting content moving through pipeline stages.
+
+Color palette: Deep indigo (#4338CA) as primary with subtle gradients to electric blue (#448AFF). Accent glow in warm amber. Background: transparent/dark.
+
+Style: Clean geometric, sharp edges softened by subtle rounded corners. No text, no literal objects — pure abstract form. Think: if Dieter Rams designed a newsroom icon.
+
+Suitable as an app icon at 1024x1024. Single focal shape, works at 16px favicon size. No gradients that break at small sizes. High contrast silhouette.
+
+Square format, 1:1 ratio.
