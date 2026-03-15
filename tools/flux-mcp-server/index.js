@@ -3,16 +3,25 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "@modelcontextprotocol/sdk/zod.js";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, readFile } from "fs/promises";
 import { join, dirname } from "path";
+import { homedir } from "os";
 
 const BFL_API_URL = process.env.BFL_API_URL || "https://api.bfl.ai";
-const BFL_API_KEY = process.env.BFL_API_KEY;
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = 120; // 2 minutes max
 
+// Load API key from secrets file (preferred) or env var (fallback)
+const SECRETS_PATH = join(homedir(), ".secrets", "chrisbuilds64", "bfl.api");
+let BFL_API_KEY;
+try {
+  BFL_API_KEY = (await readFile(SECRETS_PATH, "utf-8")).trim();
+} catch {
+  BFL_API_KEY = process.env.BFL_API_KEY;
+}
+
 if (!BFL_API_KEY) {
-  console.error("Error: BFL_API_KEY environment variable is required");
+  console.error(`Error: BFL API key not found at ${SECRETS_PATH} and BFL_API_KEY env var not set`);
   console.error("Get your key at https://dashboard.bfl.ai");
   process.exit(1);
 }
