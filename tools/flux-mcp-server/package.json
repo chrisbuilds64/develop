@@ -1,0 +1,19 @@
+{
+  "name": "flux-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Black Forest Labs FLUX image generation API",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "flux-mcp-server": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["mcp", "flux", "image-generation", "black-forest-labs"],
+  "author": "Christian Moser <chrisbuilds64>",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1"
+  }
+}
