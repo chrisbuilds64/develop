@@ -39,6 +39,9 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+# Create data directory for AccoSite projects
+RUN mkdir -p /app/data/accosite && chown appuser:appuser /app/data/accosite
+
 # Set PATH for user-installed packages
 ENV PATH=/home/appuser/.local/bin:$PATH
 ENV PYTHONPATH=/app

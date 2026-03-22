@@ -1,4 +1,5 @@
 # AI Adapters
-from .base import AIAdapter
+from .base import AIAdapter, Message, AIResponse
+from .mock import MockAIAdapter
 
-__all__ = ["AIAdapter"]
+__all__ = ["AIAdapter", "Message", "AIResponse", "MockAIAdapter"]

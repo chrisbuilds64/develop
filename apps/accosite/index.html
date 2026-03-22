@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AccoSite Builder</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .step-dot.active { background-color: #2E7D5E; color: white; }
+        .step-dot.completed { background-color: #86EFAC; color: #166534; }
+        .step-dot { background-color: #E5E7EB; color: #6B7280; }
+        .fade-in { animation: fadeIn 0.2s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .amenity-chip { transition: all 0.15s; }
+        .amenity-chip.selected { background-color: #2E7D5E; color: white; border-color: #2E7D5E; }
+        .template-card { transition: all 0.2s; cursor: pointer; }
+        .template-card.selected { ring: 2px; border-color: #2E7D5E; box-shadow: 0 0 0 3px rgba(46,125,94,0.3); }
+        .spinner { animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data x-init="$store.app.init()">
+
+    <!-- ─── Loading Overlay ─── -->
+    <div x-show="$store.app.loading" class="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+        <div class="text-center">
+            <svg class="spinner w-10 h-10 text-green-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <p class="text-gray-600">Loading...</p>
+        </div>
+    </div>
+
+    <!-- ─── Error Banner ─── -->
+    <div x-show="$store.app.error" x-transition class="fixed top-4 right-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50 max-w-md">
+        <div class="flex items-center justify-between">
+            <span x-text="$store.app.error" class="text-sm"></span>
+            <button @click="$store.app.error = null" class="ml-3 text-red-500 hover:text-red-700">&times;</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LOGIN VIEW -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div x-show="$store.app.view === 'login'" class="fade-in">
+        <div class="min-h-screen flex items-center justify-center" x-data="{ email: '', password: '' }">
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-10 w-full max-w-md">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">AccoSite Builder</h1>
+                    <p class="text-gray-500 mt-1">Sign in to create your property website</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" x-model="email" placeholder="you@example.com"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                            @keyup.enter="$store.app.login(email, password)">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" x-model="password" placeholder="Enter password"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                            @keyup.enter="$store.app.login(email, password)">
+                    </div>
+                    <button @click="$store.app.login(email, password)"
+                        class="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
+                        Sign In
+                    </button>
+                </div>
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <p class="text-xs text-gray-500 text-center">Demo: use any email with password <strong>demo</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- HOME VIEW -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div x-show="$store.app.view === 'home'" class="fade-in">
+        <div class="max-w-4xl mx-auto px-6 py-16">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <div class="flex justify-end mb-4">
+                    <button @click="$store.app.logout()" class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
+                        <span x-text="localStorage.getItem('accosite_email') || ''"></span> &middot; Sign out
+                    </button>
+                </div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-3">AccoSite Builder</h1>
+                <p class="text-lg text-gray-500">Create a professional website for your accommodation in minutes.</p>
+            </div>
+
+            <!-- New Project -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8" x-data="{ newName: '' }">
+                <h2 class="text-lg font-semibold mb-4">Start a New Project</h2>
+                <div class="flex gap-3">
+                    <input type="text" x-model="newName" placeholder="Property name (e.g. Villa Serenity Ubud)"
+                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                        @keyup.enter="if(newName.trim()) $store.app.createProject(newName.trim())">
+                    <button @click="if(newName.trim()) $store.app.createProject(newName.trim())"
+                        class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
+                        Create
+                    </button>
+                </div>
+            </div>
+
+            <!-- Existing Projects -->
+            <div x-show="$store.app.projects.length > 0">
+                <h2 class="text-lg font-semibold mb-4">Your Projects</h2>
+                <div class="space-y-3">
+                    <template x-for="project in $store.app.projects" :key="project.id">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center justify-between hover:shadow-md transition">
+                            <div @click="$store.app.openProject(project.id)" class="cursor-pointer flex-1">
+                                <h3 class="font-semibold text-gray-900" x-text="project.name"></h3>
+                                <p class="text-sm text-gray-500">
+                                    Step <span x-text="project.current_step"></span>/10
+                                    &middot; <span x-text="project.template"></span>
+                                    &middot; Updated <span x-text="new Date(project.updated_at).toLocaleDateString()"></span>
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button @click="$store.app.openProject(project.id)"
+                                    class="px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100">
+                                    Open
+                                </button>
+                                <button @click="$store.app.deleteProject(project.id)"
+                                    class="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- WIZARD VIEW -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div x-show="$store.app.view === 'wizard'" class="flex min-h-screen">
+
+        <!-- ─── Sidebar ─── -->
+        <aside class="w-64 bg-white border-r border-gray-200 p-6 flex flex-col fixed h-full">
+            <button @click="$store.app.goHome()" class="text-sm text-gray-500 hover:text-gray-700 mb-6 flex items-center gap-1">
+                &larr; Back to Projects
+            </button>
+            <h2 class="font-bold text-gray-900 mb-1 text-sm truncate" x-text="$store.app.project?.property_info?.name || 'Untitled'"></h2>
+            <p class="text-xs text-gray-400 mb-6">AccoSite Builder</p>
+
+            <nav class="flex-1 space-y-1">
+                <template x-for="(label, index) in ['Property Info', 'Room Categories', 'Room Details', 'Pricing', 'Location', 'Reviews', 'FAQ', 'Design', 'Legal', 'Preview & Export']" :key="index">
+                    <button @click="$store.app.goToStep(index + 1)"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition"
+                        :class="$store.app.currentStep === index + 1 ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-600 hover:bg-gray-50'">
+                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold step-dot"
+                            :class="$store.app.currentStep === index + 1 ? 'active' : ($store.app.project?.steps_completed?.[index + 1] || $store.app.project?.steps_completed?.[(index + 1).toString()] ? 'completed' : '')"
+                            x-text="index + 1"></span>
+                        <span x-text="label"></span>
+                    </button>
+                </template>
+            </nav>
+
+            <!-- Save indicator -->
+            <div class="mt-auto pt-4 border-t border-gray-100">
+                <div x-show="$store.app.saving" class="text-xs text-green-600 flex items-center gap-1">
+                    <svg class="spinner w-3 h-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    Saving...
+                </div>
+                <div x-show="$store.app.generating" class="text-xs text-purple-600 flex items-center gap-1">
+                    <svg class="spinner w-3 h-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    AI generating...
+                </div>
+            </div>
+        </aside>
+
+        <!-- ─── Main Content ─── -->
+        <main class="flex-1 ml-64 p-8">
+            <div class="max-w-3xl mx-auto">
+
+                <!-- STEP 1: Property Info -->
+                <div x-show="$store.app.currentStep === 1" x-data="stepPropertyInfo()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Property Information</h2>
+                    <p class="text-gray-500">Tell us about your accommodation.</p>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Property Name *</label>
+                            <input type="text" x-model="form.name" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Property Type *</label>
+                            <select x-model="form.property_type" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                                <option value="villa">Villa</option>
+                                <option value="guesthouse">Guesthouse</option>
+                                <option value="pension">Pension</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="hotel">Hotel</option>
+                                <option value="homestay">Homestay</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Star Rating</label>
+                            <select x-model="form.stars" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                                <option value="">Not rated</option>
+                                <option value="1">1 Star</option>
+                                <option value="2">2 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="5">5 Stars</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
+                            <input type="text" x-model="form.tagline" @change="save()" placeholder="Your private sanctuary in the heart of Bali" maxlength="80" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Owner / Manager Name *</label>
+                            <input type="text" x-model="form.owner_name" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <input type="email" x-model="form.email" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                            <input type="tel" x-model="form.phone" @change="save()" placeholder="+62 812 3456 7890" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                            <input type="tel" x-model="form.whatsapp" @change="save()" placeholder="Same as phone if blank" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+                            <input type="text" x-model="form.instagram" @change="save()" placeholder="villaserenityubud" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Year Founded</label>
+                            <input type="number" x-model="form.year_founded" @change="save()" placeholder="2018" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Check-in Time</label>
+                            <input type="time" x-model="form.check_in" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Check-out Time</label>
+                            <input type="time" x-model="form.check_out" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Website Language</label>
+                            <select x-model="form.website_language" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                                <option value="en">English</option>
+                                <option value="id">Indonesian</option>
+                                <option value="de">German</option>
+                                <option value="fr">French</option>
+                                <option value="es">Spanish</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- AI Text Fields -->
+                    <template x-for="field in [{key: 'about', label: 'About the Property'}, {key: 'history', label: 'Our History'}, {key: 'policies', label: 'House Rules & Policies'}]" :key="field.key">
+                        <div class="bg-white rounded-xl border border-gray-200 p-5">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-medium text-gray-700" x-text="field.label"></label>
+                                <button @click="generateField(field.key)" :disabled="$store.app.generating"
+                                    class="text-sm px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50 flex items-center gap-1">
+                                    <svg x-show="$store.app.generating" class="spinner w-3 h-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                    AI Generate
+                                </button>
+                            </div>
+                            <textarea x-model="form[field.key]" @change="save()" rows="4"
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-y"
+                                :placeholder="'Write or generate with AI...'"></textarea>
+                        </div>
+                    </template>
+
+                    <!-- Facility Images -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-medium text-gray-700">Facility Images</h3>
+                            <label class="text-sm px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 cursor-pointer flex items-center gap-1">
+                                <span x-show="uploading" class="spinner w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full inline-block"></span>
+                                Upload Images
+                                <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" @change="uploadImage($event)">
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3">Upload photos of your property (pool, garden, lobby, restaurant). First image becomes the hero.</p>
+                        <div class="grid grid-cols-4 gap-3" x-show="facilityImages.length > 0">
+                            <template x-for="img in facilityImages" :key="img.filename">
+                                <div class="relative group rounded-lg overflow-hidden aspect-square bg-gray-100">
+                                    <img :src="imageUrl(img.filename)" class="w-full h-full object-cover">
+                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                                        <button @click="setHero(img.filename)" class="px-2 py-1 bg-white text-xs rounded shadow"
+                                            :class="form.hero_image === img.filename ? 'text-green-700 font-bold' : 'text-gray-700'">
+                                            <span x-text="form.hero_image === img.filename ? 'Hero' : 'Set Hero'"></span>
+                                        </button>
+                                        <button @click="removeImage(img.filename)" class="px-2 py-1 bg-white text-xs text-red-600 rounded shadow">Remove</button>
+                                    </div>
+                                    <div x-show="form.hero_image === img.filename" class="absolute top-1 left-1 bg-green-600 text-white text-xs px-1.5 py-0.5 rounded">Hero</div>
+                                </div>
+                            </template>
+                        </div>
+                        <div x-show="facilityImages.length === 0" class="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+                            No images uploaded yet. Click "Upload Images" to add photos.
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4">
+                        <button @click="save(); $store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
+                            Next: Room Categories &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Room Categories -->
+                <div x-show="$store.app.currentStep === 2" x-data="stepRoomCategories()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Room Categories</h2>
+                    <p class="text-gray-500">Define the types of rooms or units you offer.</p>
+
+                    <div class="space-y-3">
+                        <template x-for="(cat, index) in categories" :key="cat.id || index">
+                            <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
+                                <div>
+                                    <h3 class="font-semibold" x-text="cat.name"></h3>
+                                    <p class="text-sm text-gray-500">
+                                        <span x-text="cat.units"></span> unit(s) &middot;
+                                        Up to <span x-text="cat.max_occupancy"></span> guests
+                                        <span x-show="cat.size_sqm"> &middot; <span x-text="cat.size_sqm"></span> m&sup2;</span>
+                                    </p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="editCategory(index)" class="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">Edit</button>
+                                    <button @click="removeCategory(index)" class="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100">Remove</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <button @click="addCategory()" class="px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-500 hover:text-green-600 w-full transition">
+                        + Add Room Category
+                    </button>
+
+                    <!-- Category Form -->
+                    <div x-show="showForm" x-transition class="bg-white rounded-xl border-2 border-green-200 p-6 space-y-4">
+                        <h3 class="font-semibold" x-text="editIndex >= 0 ? 'Edit Category' : 'New Category'"></h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Category Name *</label>
+                                <input type="text" x-model="form.name" placeholder="e.g. Deluxe Villa" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Number of Units</label>
+                                <input type="number" x-model="form.units" min="1" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Max Occupancy</label>
+                                <input type="number" x-model="form.max_occupancy" min="1" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Size (m&sup2;)</label>
+                                <input type="number" x-model="form.size_sqm" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Bed Configuration</label>
+                                <input type="text" x-model="form.bed_type" placeholder="King + 2 Single" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button @click="showForm = false" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button @click="saveCategory()" class="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Save</button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600 hover:text-gray-800">&larr; Back</button>
+                        <button @click="$store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
+                            Next: Room Details &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Room Details -->
+                <div x-show="$store.app.currentStep === 3" x-data="stepRoomDetails()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Room Details</h2>
+                    <p class="text-gray-500">Set amenities and descriptions for each room type.</p>
+
+                    <!-- Tabs -->
+                    <div class="flex gap-2 border-b border-gray-200 pb-2" x-show="details.length > 0">
+                        <template x-for="(cat, index) in ($store.app.project?.room_categories || [])" :key="cat.id">
+                            <button @click="activeTab = index"
+                                class="px-4 py-2 rounded-lg text-sm font-medium transition"
+                                :class="activeTab === index ? 'bg-green-100 text-green-700' : 'text-gray-500 hover:bg-gray-100'"
+                                x-text="cat.name"></button>
+                        </template>
+                    </div>
+
+                    <div x-show="details.length === 0" class="text-center py-12 text-gray-400">
+                        Add room categories in the previous step first.
+                    </div>
+
+                    <!-- Detail Form for active tab -->
+                    <template x-for="(detail, dIdx) in details" :key="detail.category_id">
+                        <div x-show="activeTab === dIdx" class="space-y-6">
+                            <!-- Amenities -->
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="font-semibold mb-4">Amenities</h3>
+                                <template x-for="(amenities, group) in amenityGroups" :key="group">
+                                    <div class="mb-4">
+                                        <h4 class="text-xs font-semibold text-gray-400 uppercase mb-2" x-text="group"></h4>
+                                        <div class="flex flex-wrap gap-2">
+                                            <template x-for="amenity in amenities" :key="amenity.id">
+                                                <button @click="toggleAmenity(dIdx, amenity.id); save()"
+                                                    class="amenity-chip px-3 py-1.5 text-sm border border-gray-200 rounded-full"
+                                                    :class="hasAmenity(dIdx, amenity.id) ? 'selected' : 'hover:border-green-400'"
+                                                    x-text="amenity.label"></button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Room Images -->
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-medium text-gray-700">Room Photos</h4>
+                                    <label class="text-sm px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 cursor-pointer">
+                                        <span x-show="uploading" class="spinner w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full inline-block"></span>
+                                        Upload
+                                        <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" @change="uploadRoomImage($event, dIdx)">
+                                    </label>
+                                </div>
+                                <div class="grid grid-cols-4 gap-2" x-show="details[dIdx].images.length > 0">
+                                    <template x-for="img in details[dIdx].images" :key="img">
+                                        <div class="relative group rounded-lg overflow-hidden aspect-square bg-gray-100">
+                                            <img :src="imageUrl(img)" class="w-full h-full object-cover">
+                                            <button @click="removeRoomImage(dIdx, img)"
+                                                class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center">&times;</button>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div x-show="details[dIdx].images.length === 0" class="text-center py-4 text-gray-400 text-xs border-2 border-dashed border-gray-200 rounded-lg">
+                                    No room photos yet
+                                </div>
+                            </div>
+
+                            <!-- Descriptions -->
+                            <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-sm font-medium text-gray-700">Short Description</label>
+                                        <button @click="generateDescription(dIdx, 'short')" :disabled="$store.app.generating"
+                                            class="text-sm px-3 py-1 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50">AI Generate</button>
+                                    </div>
+                                    <textarea x-model="details[dIdx].short_description" @change="save()" rows="2"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-y"></textarea>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-sm font-medium text-gray-700">Full Description</label>
+                                        <button @click="generateDescription(dIdx, 'long')" :disabled="$store.app.generating"
+                                            class="text-sm px-3 py-1 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50">AI Generate</button>
+                                    </div>
+                                    <textarea x-model="details[dIdx].long_description" @change="save()" rows="5"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-y"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                        <button @click="save(); $store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Next: Pricing &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Pricing -->
+                <div x-show="$store.app.currentStep === 4" x-data="stepPricing()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Pricing</h2>
+                    <p class="text-gray-500">Set your room rates.</p>
+
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                <select x-model="form.currency" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (&euro;)</option>
+                                    <option value="IDR">IDR (Rp)</option>
+                                    <option value="AUD">AUD (A$)</option>
+                                    <option value="GBP">GBP (&pound;)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Currency Symbol</label>
+                                <input type="text" x-model="form.currency_symbol" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div class="flex items-end">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="form.show_prices" @change="save()" class="rounded">
+                                    <span class="text-sm">Show prices on website</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Per-category pricing -->
+                        <div x-show="form.show_prices" class="space-y-3 mt-4">
+                            <template x-for="(cat, index) in form.categories" :key="cat.category_id">
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="font-medium mb-3" x-text="getCategoryName(cat.category_id)"></h4>
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">High Season / night</label>
+                                            <input type="number" x-model="form.categories[index].price_high" @change="save()" class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Low Season / night</label>
+                                            <input type="number" x-model="form.categories[index].price_low" @change="save()" class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Extra Person Fee</label>
+                                            <input type="number" x-model="form.categories[index].extra_person_fee" @change="save()" class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tax Note</label>
+                            <input type="text" x-model="form.tax_note" @change="save()" placeholder="e.g. 10% government tax not included" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                        </div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" x-model="form.taxes_included" @change="save()" class="rounded">
+                            <span class="text-sm">Taxes included in displayed price</span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                        <button @click="save(); $store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Next: Location &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- STEP 5: Location -->
+                <div x-show="$store.app.currentStep === 5" x-data="stepLocation()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Location & Surroundings</h2>
+
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                                <input type="text" x-model="form.address_line1" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">City / Area *</label>
+                                <input type="text" x-model="form.city" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                                <input type="text" x-model="form.region" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                                <input type="text" x-model="form.country" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Google Maps Embed URL</label>
+                                <input type="url" x-model="form.google_maps_embed_url" @change="save()" placeholder="https://maps.google.com/..." class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nearby Highlights -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5">
+                        <h3 class="font-semibold mb-3">Nearby Highlights</h3>
+                        <div class="space-y-2">
+                            <template x-for="(item, index) in form.nearby" :key="index">
+                                <div class="flex gap-2 items-center">
+                                    <input type="text" x-model="form.nearby[index].name" @change="save()" placeholder="Place name" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none">
+                                    <input type="text" x-model="form.nearby[index].distance" @change="save()" placeholder="3 km" class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none">
+                                    <button @click="removeNearby(index); save()" class="text-red-400 hover:text-red-600 px-2">&times;</button>
+                                </div>
+                            </template>
+                        </div>
+                        <button @click="addNearby()" class="mt-3 text-sm text-green-600 hover:text-green-700">+ Add highlight</button>
+                    </div>
+
+                    <!-- AI Text -->
+                    <template x-for="field in [{key: 'location', label: 'About the Location'}, {key: 'getting_here', label: 'Getting Here'}]" :key="field.key">
+                        <div class="bg-white rounded-xl border border-gray-200 p-5">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-medium text-gray-700" x-text="field.label"></label>
+                                <button @click="generateField(field.key)" :disabled="$store.app.generating"
+                                    class="text-sm px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50">AI Generate</button>
+                            </div>
+                            <textarea x-model="field.key === 'location' ? form.about_location : form.getting_here" @change="save()" rows="4"
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-y"></textarea>
+                        </div>
+                    </template>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                        <button @click="save(); $store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Next: Reviews &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- STEP 6: Reviews -->
+                <div x-show="$store.app.currentStep === 6" x-data="stepReviews()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Guest Reviews</h2>
+                    <p class="text-gray-500">Add genuine guest testimonials.</p>
+
+                    <div class="space-y-3">
+                        <template x-for="(review, index) in reviews" :key="index">
+                            <div class="bg-white rounded-xl border border-gray-200 p-5 flex justify-between">
+                                <div>
+                                    <div class="text-yellow-500 mb-1" x-text="'★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)"></div>
+                                    <p class="text-gray-700 italic" x-text="'\"' + review.text + '\"'"></p>
+                                    <p class="text-sm text-gray-500 mt-1" x-text="review.author + (review.country ? ', ' + review.country : '')"></p>
+                                </div>
+                                <div class="flex gap-2 ml-4">
+                                    <button @click="editReview(index)" class="px-3 py-1.5 text-sm bg-gray-100 rounded-lg">Edit</button>
+                                    <button @click="removeReview(index)" class="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-lg">Remove</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <button @click="addReview()" class="px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-500 w-full">+ Add Review</button>
+
+                    <div x-show="showForm" x-transition class="bg-white rounded-xl border-2 border-green-200 p-6 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Guest Name *</label>
+                                <input type="text" x-model="form.author" placeholder="Sophie M." class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                                <input type="text" x-model="form.country" placeholder="Germany" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                                <select x-model="form.rating" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                                    <option value="5">5 Stars</option>
+                                    <option value="4">4 Stars</option>
+                                    <option value="3">3 Stars</option>
+                                    <option value="2">2 Stars</option>
+                                    <option value="1">1 Star</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input type="text" x-model="form.date" placeholder="November 2024" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Review Text *</label>
+                                <textarea x-model="form.text" rows="3" maxlength="300" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none resize-y"></textarea>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button @click="showForm = false" class="px-4 py-2 text-gray-600">Cancel</button>
+                            <button @click="saveReview()" class="px-6 py-2 bg-green-600 text-white rounded-lg font-medium">Save</button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                        <button @click="$store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Next: FAQ &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- STEP 7: FAQ -->
+                <div x-show="$store.app.currentStep === 7" x-data="stepFaq()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Frequently Asked Questions</h2>
+
+                    <button @click="generateAll()" :disabled="$store.app.generating"
+                        class="px-4 py-2.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50 text-sm font-medium">
+                        AI Generate FAQ (6-8 entries)
+                    </button>
+
+                    <div class="space-y-3">
+                        <template x-for="(entry, index) in entries" :key="index">
+                            <div class="bg-white rounded-xl border border-gray-200 p-5 flex justify-between">
+                                <div>
+                                    <h4 class="font-medium" x-text="entry.question"></h4>
+                                    <p class="text-sm text-gray-500 mt-1" x-text="entry.answer"></p>
+                                </div>
+                                <div class="flex gap-2 ml-4">
+                                    <button @click="editEntry(index)" class="px-3 py-1.5 text-sm bg-gray-100 rounded-lg">Edit</button>
+                                    <button @click="removeEntry(index)" class="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-lg">Remove</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <button @click="addEntry()" class="px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-500 w-full">+ Add FAQ Entry</button>
+
+                    <div x-show="showForm" x-transition class="bg-white rounded-xl border-2 border-green-200 p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Question *</label>
+                            <input type="text" x-model="form.question" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                            <textarea x-model="form.answer" rows="3" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none resize-y"></textarea>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button @click="showForm = false" class="px-4 py-2 text-gray-600">Cancel</button>
+                            <button @click="saveEntry()" class="px-6 py-2 bg-green-600 text-white rounded-lg font-medium">Save</button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                        <button @click="$store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Next: Design &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- STEP 8: Design -->
+                <div x-show="$store.app.currentStep === 8" x-data="stepDesign()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Design & Template</h2>
+
+                    <!-- Template Selection -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <template x-for="t in templates" :key="t.id">
+                            <div @click="selectTemplate(t.id); save()"
+                                class="template-card bg-white rounded-xl border-2 p-5 cursor-pointer"
+                                :class="form.template === t.id ? 'border-green-500 shadow-lg' : 'border-gray-200 hover:border-gray-300'">
+                                <h3 class="font-semibold" x-text="t.name"></h3>
+                                <p class="text-sm text-gray-500" x-text="t.description"></p>
+                                <div x-show="form.template === t.id" class="mt-2 text-green-600 text-sm font-medium">Selected</div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Colors -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5">
+                        <h3 class="font-semibold mb-4">Colors</h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Primary</label>
+                                <input type="color" x-model="form.color_primary" @change="save()" class="w-full h-10 rounded cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Accent</label>
+                                <input type="color" x-model="form.color_accent" @change="save()" class="w-full h-10 rounded cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Background</label>
+                                <input type="color" x-model="form.color_background" @change="save()" class="w-full h-10 rounded cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fonts -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5">
+                        <h3 class="font-semibold mb-4">Typography</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Heading Font</label>
+                                <select x-model="form.font_heading" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                                    <option>Playfair Display</option>
+                                    <option>Montserrat</option>
+                                    <option>Lora</option>
+                                    <option>Raleway</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Body Font</label>
+                                <select x-model="form.font_body" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                                    <option>Inter</option>
+                                    <option>Open Sans</option>
+                                    <option>Lato</option>
+                                    <option>Nunito</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Toggles -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+                        <h3 class="font-semibold mb-2">Sections</h3>
+                        <template x-for="toggle in [{key: 'show_map', label: 'Show Map'}, {key: 'show_prices', label: 'Show Prices'}, {key: 'show_reviews', label: 'Show Reviews'}, {key: 'show_faq', label: 'Show FAQ'}]" :key="toggle.key">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" x-model="form[toggle.key]" @change="save()" class="rounded">
+                                <span class="text-sm" x-text="toggle.label"></span>
+                            </label>
+                        </template>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                        <button @click="save(); $store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Next: Legal &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- STEP 9: Legal -->
+                <div x-show="$store.app.currentStep === 9" x-data="stepLegal()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Legal & Compliance</h2>
+
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Legal Business Name *</label>
+                                <input type="text" x-model="form.owner_legal_name" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Registered Address *</label>
+                                <textarea x-model="form.owner_address" @change="save()" rows="2" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none resize-y"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
+                                <input type="text" x-model="form.registration_number" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Responsible Person</label>
+                                <input type="text" x-model="form.responsible_person" @change="save()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-gray-200 p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">Privacy Policy</label>
+                            <button @click="generatePrivacy()" :disabled="$store.app.generating"
+                                class="text-sm px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50">AI Generate</button>
+                        </div>
+                        <textarea x-model="form.privacy_policy" @change="save()" rows="6"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none resize-y"></textarea>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" x-model="form.acknowledged" @change="save()" class="rounded mt-1">
+                            <span class="text-sm text-yellow-800">
+                                I confirm that this property exists, all information is accurate,
+                                no prohibited content will be associated with this website,
+                                and all reviews entered are genuine guest reviews.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                        <button @click="save(); $store.app.nextStep()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Next: Preview &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- STEP 10: Preview & Export -->
+                <div x-show="$store.app.currentStep === 10" x-data="stepPreview()" class="fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Preview & Export</h2>
+
+                    <div class="flex gap-3 mb-4">
+                        <button @click="refreshPreview()" class="px-4 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">
+                            Refresh Preview
+                        </button>
+                        <button @click="downloadZip()" class="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
+                            Download ZIP
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-lg" style="height: 70vh">
+                        <iframe :src="previewUrl" class="w-full h-full border-none"
+                            sandbox="allow-scripts allow-same-origin"></iframe>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button @click="$store.app.prevStep()" class="px-6 py-3 text-gray-600">&larr; Back</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
