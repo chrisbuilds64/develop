@@ -38,11 +38,14 @@ def get_project_repo() -> ProjectRepository:
 
 
 def get_accosite_service() -> AccoSiteService:
-    if config.ENV in ("test",):
-        from adapters.ai.mock import MockAIAdapter
-        return AccoSiteService(MockAIAdapter())
-    from adapters.ai.anthropic_adapter import AnthropicAdapter
-    return AccoSiteService(AnthropicAdapter())
+    if config.ANTHROPIC_API_KEY:
+        from adapters.ai.anthropic_adapter import AnthropicAdapter
+        return AccoSiteService(AnthropicAdapter(api_key=config.ANTHROPIC_API_KEY))
+    # Fallback: mock AI for dev/demo
+    from adapters.ai.mock import MockAIAdapter
+    return AccoSiteService(MockAIAdapter(
+        default_response="This is a demo text. Connect an Anthropic API key for real AI-generated content."
+    ))
 
 
 # ─── Schemas ─────────────────────────────────────────────────────────────────
@@ -235,10 +238,26 @@ async def upload_image(
 async def get_image(
     project_id: str,
     filename: str,
-    current_user: UserInfo = Depends(get_current_user),
+    token: Optional[str] = Query(None),
     repo: ProjectRepository = Depends(get_project_repo),
 ):
-    images_dir = repo.get_images_dir(current_user.user_id, project_id)
+    # Resolve user from token query param or fall back to dev default
+    user_id = None
+    if token:
+        from api.dependencies import _get_auth_provider
+        try:
+            user_info = _get_auth_provider().verify_token(token)
+            user_id = user_info.user_id
+        except Exception:
+            raise HTTPException(401, "Invalid token")
+    else:
+        from infrastructure.config import config
+        if config.ENV in ("test", "development", "local"):
+            user_id = "mock-user-chris-123"
+        else:
+            raise HTTPException(401, "Token required")
+
+    images_dir = repo.get_images_dir(user_id, project_id)
     filepath = os.path.join(images_dir, filename)
     if not os.path.exists(filepath):
         raise HTTPException(404, "Image not found")

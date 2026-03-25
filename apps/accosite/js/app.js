@@ -126,10 +126,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         async goToStep(step) {
-            // Save current step completion
+            // Save current step completion and reload project data
             await api.updateStep(this.projectId, this.currentStep, true);
-            this.currentStep = step;
+            // Load fresh data, then switch step (triggers new component init)
+            this.currentStep = 0; // briefly hide all steps
+            await this.loadProject(this.projectId);
             await api.updateStep(this.projectId, step, false);
+            // Small delay so Alpine picks up the new project data before init
+            await new Promise(r => setTimeout(r, 50));
+            this.currentStep = step;
         },
 
         async nextStep() {
@@ -170,17 +175,19 @@ function stepPropertyInfo() {
         uploading: false,
 
         async init() {
+            const defaults = {
+                name: '', property_type: 'villa', stars: '', tagline: '',
+                owner_name: '', email: '', phone: '', whatsapp: '',
+                instagram: '', facebook: '', tripadvisor_url: '', google_reviews_url: '',
+                check_in: '14:00', check_out: '11:00', year_founded: '',
+                languages: ['en'], website_language: 'en',
+                about: '', history: '', policies: '',
+                images: [], hero_image: '',
+            };
             const p = Alpine.store('app').project?.property_info || {};
-            this.form = { ...p };
-            if (!this.form.images) this.form.images = [];
-            await this.loadImages();
-        },
-
-        async loadImages() {
-            const store = Alpine.store('app');
-            try {
-                this.facilityImages = await api.listImages(store.projectId);
-            } catch (e) { /* ignore */ }
+            this.form = { ...defaults, ...p };
+            // Build image list from saved filenames
+            this.facilityImages = (this.form.images || []).map(f => ({ filename: f }));
         },
 
         async uploadImage(event) {
@@ -198,7 +205,7 @@ function stepPropertyInfo() {
                 }
             }
             await this.save();
-            await this.loadImages();
+            this.facilityImages = (this.form.images || []).map(f => ({ filename: f }));
             this.uploading = false;
             event.target.value = '';
         },
@@ -213,11 +220,12 @@ function stepPropertyInfo() {
             if (this.form.hero_image === filename) {
                 this.form.hero_image = this.form.images[0] || '';
             }
+            this.facilityImages = this.form.images.map(f => ({ filename: f }));
             this.save();
         },
 
         imageUrl(filename) {
-            return `/api/v1/accosite/projects/${Alpine.store('app').projectId}/images/${filename}`;
+            return `/api/v1/accosite/projects/${Alpine.store('app').projectId}/images/${filename}?token=${getToken()}`;
         },
 
         async save() {
@@ -343,7 +351,7 @@ function stepRoomDetails() {
         },
 
         imageUrl(filename) {
-            return `/api/v1/accosite/projects/${Alpine.store('app').projectId}/images/${filename}`;
+            return `/api/v1/accosite/projects/${Alpine.store('app').projectId}/images/${filename}?token=${getToken()}`;
         },
 
         async save() {

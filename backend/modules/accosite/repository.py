@@ -126,7 +126,12 @@ class ProjectRepository:
             return False
 
         field_name = SECTION_MAP.get(section, section)
-        project_data[field_name] = data
+        # For dict sections: merge with existing data (don't lose fields)
+        # For list sections (rooms, room_details, reviews, faq): replace entirely
+        if isinstance(data, dict) and isinstance(project_data.get(field_name), dict):
+            project_data[field_name].update(data)
+        else:
+            project_data[field_name] = data
         project_data["updated_at"] = datetime.now(timezone.utc).isoformat()
 
         self._save_json(owner_id, project_id, project_data)
