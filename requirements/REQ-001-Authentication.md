@@ -265,8 +265,8 @@ archive/2026-01-08-pre-restructure/develop/core/auth/
 ### Clerk Credentials (Test Environment)
 
 ```
-CLERK_SECRET_KEY=***REMOVED***
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=***REMOVED***
+CLERK_SECRET_KEY=<stored in ~/.secrets/chrisbuilds64/>
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<stored in ~/.secrets/chrisbuilds64/>
 ```
 
 ---
