@@ -64,3 +64,6 @@ apikeys/
 
 # Logs
 *.log
+
+# Ansible Reports (lokal, nicht ins Repo)
+ansible/reports/

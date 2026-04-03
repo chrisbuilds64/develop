@@ -164,8 +164,12 @@
           X11Forwarding no
         dest: /etc/ssh/sshd_config.d/99-hardening.conf
         mode: "0644"
-        validate: "sshd -t -f /etc/ssh/sshd_config"
       notify: Reload SSH
+
+    - name: "Geheimgang: SSH-Config validieren"
+      tags: [ssh]
+      ansible.builtin.command: sshd -t
+      changed_when: false
 
     # =================================================================
     # PHASE 4: Wachturm (Fail2Ban)

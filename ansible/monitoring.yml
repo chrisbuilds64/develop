@@ -1,0 +1,161 @@
+# =============================================================================
+# WACHTURM DER BURG: Module 03 Monitoring (Uptime Kuma)
+# =============================================================================
+#
+# Installiert Uptime Kuma als Monitoring-Dashboard und bindet es an Caddy an.
+#
+# Voraussetzungen:
+#   - Module 01 (foundation.yml) muss gelaufen sein
+#   - Module 02 (docker-caddy.yml) muss gelaufen sein
+#   - DNS muss auf Server-IP zeigen (Wildcard oder spezifischer A-Record)
+#
+# Ausfuehrung:
+#   ansible-playbook -i inventory.yml monitoring.yml --limit rheinstein
+#
+# =============================================================================
+
+---
+- name: "Wachturm: Module 03 Monitoring"
+  hosts: kingdoms
+  become: true
+  gather_facts: true
+
+  vars:
+    server_user: "{{ deploy_user | default('deploy') }}"
+    monitoring_domain: "{{ status_domain | default('status.chrisbuilds64.dev') }}"
+    api_domain: "{{ server_domain | default('api.chrisbuilds64.dev') }}"
+
+  tasks:
+
+    # =================================================================
+    # PHASE 1: Verzeichnis (Wachturm-Platz)
+    # =================================================================
+
+    - name: "Wachturm: Verzeichnis anlegen"
+      ansible.builtin.file:
+        path: /opt/monitoring
+        state: directory
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0750"
+
+    # =================================================================
+    # PHASE 2: Docker Compose (Wachturm aufstellen)
+    # =================================================================
+
+    - name: "Wachturm: docker-compose.yml erstellen"
+      ansible.builtin.copy:
+        content: |
+          services:
+            uptime-kuma:
+              image: louislam/uptime-kuma:1
+              container_name: uptime-kuma
+              restart: unless-stopped
+              volumes:
+                - uptime_data:/app/data
+              networks:
+                - caddy-net
+
+          volumes:
+            uptime_data:
+              name: uptime-kuma-data
+
+          networks:
+            caddy-net:
+              external: true
+        dest: /opt/monitoring/docker-compose.yml
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0644"
+
+    # =================================================================
+    # PHASE 3: Caddy aktualisieren (Wachturm ans Burgtor melden)
+    # =================================================================
+
+    - name: "Burgtor: Caddyfile mit Monitoring aktualisieren"
+      ansible.builtin.copy:
+        content: |
+          # Burgtor: Routing-Regeln
+          # Caddy holt sich automatisch TLS-Zertifikate von Let's Encrypt.
+
+          {{ api_domain }} {
+              log {
+                  output stdout
+                  format json
+              }
+              reverse_proxy prod-backend:8000
+          }
+
+          {{ monitoring_domain }} {
+              log {
+                  output stdout
+                  format json
+              }
+              reverse_proxy uptime-kuma:3001
+          }
+        dest: /opt/caddy/Caddyfile
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0644"
+
+    # =================================================================
+    # PHASE 4: Starten
+    # =================================================================
+
+    - name: "Wachturm: Uptime Kuma starten"
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /opt/monitoring
+      register: monitoring_start
+      changed_when: "'Started' in monitoring_start.stderr or 'Created' in monitoring_start.stderr"
+
+    - name: "Wachturm: Warten auf Uptime Kuma"
+      ansible.builtin.command: docker inspect uptime-kuma --format "{{ '{{' }}.State.Running{{ '}}' }}"
+      register: kuma_running
+      until: kuma_running.stdout | trim == "true"
+      retries: 6
+      delay: 5
+      changed_when: false
+
+    - name: "Burgtor: Caddy neu laden"
+      ansible.builtin.command:
+        cmd: docker compose restart caddy
+        chdir: /opt/caddy
+      changed_when: true
+
+    - name: "Burgtor: Warten auf Caddy (TLS-Zertifikat)"
+      ansible.builtin.pause:
+        seconds: 10
+
+    # =================================================================
+    # PHASE 5: Verifikation
+    # =================================================================
+
+    - name: "Wachturm: Health-Check intern"
+      ansible.builtin.command: docker exec caddy wget -qO- http://uptime-kuma:3001
+      register: kuma_health
+      changed_when: false
+      retries: 3
+      delay: 5
+      until: kuma_health.rc == 0
+
+    - name: "Wachturm: Container-Status"
+      ansible.builtin.command: docker ps --filter name=uptime-kuma --format "{{ '{{' }}.Names{{ '}}' }}\t{{ '{{' }}.Status{{ '}}' }}"
+      register: kuma_status
+      changed_when: false
+
+    - name: "Wachturm: Ergebnis"
+      ansible.builtin.debug:
+        msg: |
+          === MODUL 03 ABGESCHLOSSEN ===
+
+          Container: {{ kuma_status.stdout }}
+          Dashboard: https://{{ monitoring_domain }}
+
+          Naechste Schritte:
+          1. Dashboard im Browser oeffnen
+          2. Admin-Account anlegen
+          3. Monitors konfigurieren (API Health, PostgreSQL, etc.)
+          4. Alerting einrichten (Telegram, E-Mail)
+
+          >>> WACHTURM STEHT <<<

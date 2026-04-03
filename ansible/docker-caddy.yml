@@ -1,0 +1,439 @@
+# =============================================================================
+# EINRICHTUNG DER BURG: Module 02 Docker + Caddy
+# =============================================================================
+#
+# Installiert Docker, richtet Caddy als Reverse Proxy ein und deployed
+# den Prod-Stack (FastAPI + PostgreSQL).
+#
+# Voraussetzungen:
+#   - Module 01 (foundation.yml) muss gelaufen sein
+#   - DNS A-Record fuer Domain muss auf Server-IP zeigen (MANUELL!)
+#     Strato Kundenportal: api.chrisbuilds64.com → A → Server-IP
+#     Pruefen: dig api.chrisbuilds64.com +short
+#   - Backend-Code im Git-Repo (wird geclont)
+#
+# Ausfuehrung:
+#   ansible-playbook -i inventory.yml docker-caddy.yml --limit rheinstein
+#
+# Nur Docker installieren:
+#   ansible-playbook -i inventory.yml docker-caddy.yml --limit rheinstein --tags docker
+#
+# Nur Caddy + Prod-Stack deployen:
+#   ansible-playbook -i inventory.yml docker-caddy.yml --limit rheinstein --tags deploy
+#
+# =============================================================================
+
+---
+- name: "Burgeinrichtung: Module 02 Docker + Caddy"
+  hosts: kingdoms
+  become: true
+  gather_facts: true
+
+  vars:
+    server_user: "{{ deploy_user | default('deploy') }}"
+    domain: "{{ server_domain | default('api.chrisbuilds64.com') }}"
+    backend_repo: "{{ git_repo | default('https://github.com/chrisbuilds64/develop.git') }}"
+    postgres_db: "{{ db_name | default('chrisbuilds64') }}"
+    postgres_user: "{{ db_user | default('chrisbuilds') }}"
+
+  tasks:
+
+    # =================================================================
+    # PHASE 1: Docker installieren (Stallungen bauen)
+    # =================================================================
+
+    - name: "Stallungen: Alte Docker-Pakete entfernen"
+      tags: [docker]
+      ansible.builtin.apt:
+        name:
+          - docker
+          - docker-engine
+          - docker.io
+          - containerd
+          - runc
+        state: absent
+      failed_when: false
+
+    - name: "Stallungen: Docker-Abhaengigkeiten installieren"
+      tags: [docker]
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: "Stallungen: Docker GPG Keyring-Verzeichnis"
+      tags: [docker]
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: "Stallungen: Docker GPG Key holen"
+      tags: [docker]
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: "Stallungen: Docker Repository hinzufuegen"
+      tags: [docker]
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        filename: docker
+        state: present
+
+    - name: "Stallungen: Docker installieren"
+      tags: [docker]
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: "Stallungen: Docker Service starten + aktivieren"
+      tags: [docker]
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: "Stallungen: Deploy User in Docker-Gruppe"
+      tags: [docker]
+      ansible.builtin.user:
+        name: "{{ server_user }}"
+        groups: docker
+        append: true
+
+    - name: "Stallungen: Log Rotation konfigurieren"
+      tags: [docker]
+      ansible.builtin.copy:
+        content: |
+          {
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "3"
+            }
+          }
+        dest: /etc/docker/daemon.json
+        mode: "0644"
+      notify: Restart Docker
+
+    - name: "Stallungen: Docker funktioniert"
+      tags: [docker]
+      ansible.builtin.command: docker info
+      register: docker_info
+      changed_when: false
+
+    - name: "Stallungen: Docker bereit"
+      tags: [docker]
+      ansible.builtin.debug:
+        msg: "Docker installiert und laeuft."
+
+    # =================================================================
+    # PHASE 2: Verzeichnisstruktur (Burgplaetze zuweisen)
+    # =================================================================
+
+    - name: "Burgplaetze: Verzeichnisse anlegen"
+      tags: [deploy]
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0750"
+      loop:
+        - /opt/prod
+        - /opt/caddy
+
+    # =================================================================
+    # PHASE 3: Docker Networks (Innere Burgmauern)
+    # =================================================================
+
+    - name: "Burgmauern: caddy-net anlegen"
+      tags: [deploy]
+      community.docker.docker_network:
+        name: caddy-net
+        state: present
+
+    - name: "Burgmauern: prod-net anlegen"
+      tags: [deploy]
+      community.docker.docker_network:
+        name: prod-net
+        state: present
+
+    # =================================================================
+    # PHASE 4: Backend-Code holen (Thronsaal einrichten)
+    # =================================================================
+
+    - name: "Thronsaal: Repo pruefen"
+      tags: [deploy]
+      ansible.builtin.stat:
+        path: /opt/prod/repo/.git
+      register: repo_git
+
+    - name: "Thronsaal: Repo clonen"
+      tags: [deploy]
+      when: not repo_git.stat.exists
+      ansible.builtin.git:
+        repo: "{{ backend_repo }}"
+        dest: /opt/prod/repo
+        version: main
+      become_user: "{{ server_user }}"
+
+    - name: "Thronsaal: Repo aktualisieren"
+      tags: [deploy]
+      when: repo_git.stat.exists
+      ansible.builtin.git:
+        repo: "{{ backend_repo }}"
+        dest: /opt/prod/repo
+        version: main
+        update: true
+      become_user: "{{ server_user }}"
+
+    # =================================================================
+    # PHASE 5: Secrets (.env generieren)
+    # =================================================================
+
+    - name: "Schatzkammer: .env pruefen"
+      tags: [deploy]
+      ansible.builtin.stat:
+        path: /opt/prod/.env
+      register: env_file
+
+    - name: "Schatzkammer: Passwort generieren"
+      tags: [deploy]
+      when: not env_file.stat.exists
+      ansible.builtin.command: openssl rand -base64 32
+      register: generated_password
+      changed_when: false
+
+    - name: "Schatzkammer: .env erstellen"
+      tags: [deploy]
+      when: not env_file.stat.exists
+      ansible.builtin.copy:
+        content: |
+          # Production Environment (generiert von Ansible)
+          ENV=production
+          DEBUG=false
+          LOG_LEVEL=INFO
+
+          # Database
+          POSTGRES_DB={{ postgres_db }}
+          POSTGRES_USER={{ postgres_user }}
+          POSTGRES_PASSWORD={{ generated_password.stdout }}
+
+          # Constructed
+          DATABASE_URL=postgresql://{{ postgres_user }}:{{ generated_password.stdout }}@postgres:5432/{{ postgres_db }}
+        dest: /opt/prod/.env
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0400"
+
+    - name: "Schatzkammer: .env bereits vorhanden"
+      tags: [deploy]
+      when: env_file.stat.exists
+      ansible.builtin.debug:
+        msg: ".env existiert bereits. Wird nicht ueberschrieben."
+
+    # =================================================================
+    # PHASE 6: Prod docker-compose.yml (Thronsaal-Bauplan)
+    # =================================================================
+
+    - name: "Thronsaal: docker-compose.yml erstellen"
+      tags: [deploy]
+      ansible.builtin.copy:
+        content: |
+          services:
+            # PostgreSQL (Schatzkammer)
+            postgres:
+              image: postgres:16-alpine
+              container_name: prod-postgres
+              restart: unless-stopped
+              environment:
+                POSTGRES_DB: ${POSTGRES_DB}
+                POSTGRES_USER: ${POSTGRES_USER}
+                POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+              volumes:
+                - postgres_data:/var/lib/postgresql/data
+              healthcheck:
+                test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+              networks:
+                - prod-net
+
+            # FastAPI Backend (Thronsaal)
+            backend:
+              build:
+                context: ./repo/backend
+                dockerfile: Dockerfile
+              container_name: prod-backend
+              restart: unless-stopped
+              environment:
+                ENV: ${ENV}
+                DEBUG: ${DEBUG}
+                LOG_LEVEL: ${LOG_LEVEL}
+                DATABASE_URL: ${DATABASE_URL}
+              depends_on:
+                postgres:
+                  condition: service_healthy
+              networks:
+                - prod-net
+                - caddy-net
+
+          volumes:
+            postgres_data:
+              name: prod-postgres-data
+
+          networks:
+            prod-net:
+              external: true
+            caddy-net:
+              external: true
+        dest: /opt/prod/docker-compose.yml
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0644"
+
+    # =================================================================
+    # PHASE 7: Caddy einrichten (Burgtor)
+    # =================================================================
+
+    - name: "Burgtor: Caddyfile erstellen"
+      tags: [deploy]
+      ansible.builtin.copy:
+        content: |
+          # Burgtor: Routing-Regeln
+          # Caddy holt sich automatisch TLS-Zertifikate von Let's Encrypt.
+
+          {{ domain }} {
+              log {
+                  output stdout
+                  format json
+              }
+              reverse_proxy prod-backend:8000
+          }
+        dest: /opt/caddy/Caddyfile
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0644"
+
+    - name: "Burgtor: Caddy docker-compose.yml erstellen"
+      tags: [deploy]
+      ansible.builtin.copy:
+        content: |
+          services:
+            caddy:
+              image: caddy:2-alpine
+              container_name: caddy
+              restart: unless-stopped
+              ports:
+                - "80:80"
+                - "443:443"
+                - "443:443/udp"
+              volumes:
+                - ./Caddyfile:/etc/caddy/Caddyfile:ro
+                - caddy_data:/data
+                - caddy_config:/config
+              networks:
+                - caddy-net
+
+          volumes:
+            caddy_data:
+              name: caddy-data
+            caddy_config:
+              name: caddy-config
+
+          networks:
+            caddy-net:
+              external: true
+        dest: /opt/caddy/docker-compose.yml
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0644"
+
+    # =================================================================
+    # PHASE 8: Starten (Burg oeffnen)
+    # =================================================================
+
+    - name: "Burg oeffnen: Prod-Stack starten"
+      tags: [deploy]
+      ansible.builtin.command:
+        cmd: docker compose up -d --build
+        chdir: /opt/prod
+      register: prod_start
+      changed_when: "'Started' in prod_start.stderr or 'Created' in prod_start.stderr"
+
+    - name: "Burg oeffnen: Warten auf PostgreSQL Healthcheck"
+      tags: [deploy]
+      ansible.builtin.command: docker inspect prod-postgres --format "{{ '{{' }}.State.Health.Status{{ '}}' }}"
+      register: pg_health
+      until: pg_health.stdout | trim == "healthy"
+      retries: 12
+      delay: 5
+      changed_when: false
+
+    - name: "Burg oeffnen: Caddy starten"
+      tags: [deploy]
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /opt/caddy
+      register: caddy_start
+      changed_when: "'Started' in caddy_start.stderr or 'Created' in caddy_start.stderr"
+
+    - name: "Burg oeffnen: Warten auf Caddy (TLS-Zertifikat)"
+      tags: [deploy]
+      ansible.builtin.pause:
+        seconds: 10
+
+    # =================================================================
+    # PHASE 9: Verifikation
+    # =================================================================
+
+    - name: "Burginspektor: Health-Endpoint pruefen"
+      tags: [deploy]
+      ansible.builtin.command: docker exec caddy wget -qO- http://prod-backend:8000/health
+      register: health_check
+      changed_when: false
+      retries: 3
+      delay: 5
+      until: health_check.rc == 0
+
+    - name: "Burginspektor: Container-Status"
+      tags: [deploy]
+      ansible.builtin.command: docker ps --format "{{ '{{' }}.Names{{ '}}' }}\t{{ '{{' }}.Status{{ '}}' }}"
+      register: container_status
+      changed_when: false
+
+    - name: "Burginspektor: Ergebnis"
+      tags: [deploy]
+      ansible.builtin.debug:
+        msg: |
+          === MODUL 02 ABGESCHLOSSEN ===
+
+          Container:
+          {{ container_status.stdout }}
+
+          Health: {{ health_check.stdout }}
+          Domain: https://{{ domain }}
+
+          >>> BURG IST EINGERICHTET <<<
+
+  # ===================================================================
+  # Handlers
+  # ===================================================================
+
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted

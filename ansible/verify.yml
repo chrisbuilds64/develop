@@ -1,15 +1,24 @@
 # =============================================================================
-# BURGINSPEKTOR: Testprotokoll fuer Module 01 Foundation
+# BURGINSPEKTOR: Testprotokoll Module 01 + 02 + 03
 # =============================================================================
 #
 # Prueft ob alle Verteidigungsschichten korrekt stehen.
 # Aendert NICHTS am Server. Nur lesen und pruefen.
 #
-# Ausfuehrung:
+# Ausfuehrung (alles):
 #   ansible-playbook -i inventory.yml verify.yml --limit rheinstein
 #
+# Nur Module 01 (Foundation):
+#   ansible-playbook -i inventory.yml verify.yml --limit rheinstein --tags module01
+#
+# Nur Module 02 (Docker + Caddy):
+#   ansible-playbook -i inventory.yml verify.yml --limit rheinstein --tags module02
+#
+# Nur Module 03 (Monitoring):
+#   ansible-playbook -i inventory.yml verify.yml --limit rheinstein --tags module03
+#
 # Wann ausfuehren:
-#   - Nach jedem foundation.yml Lauf
+#   - Nach jedem foundation.yml / docker-caddy.yml Lauf
 #   - Nach manuellem Eingriff auf dem Server
 #   - Nach Server-Neuinstallation
 #   - Regelmaessig als Health-Check (z.B. woechentlich)
@@ -17,7 +26,7 @@
 # =============================================================================
 
 ---
-- name: "Burginspektor: Testprotokoll Module 01"
+- name: "Burginspektor: Testprotokoll Module 01 + 02 + 03"
   hosts: kingdoms
   become: true
   gather_facts: true
@@ -25,9 +34,7 @@
   vars:
     server_user: "{{ deploy_user | default('deploy') }}"
     expected_open_ports: ["22", "80", "443"]
-    tests_passed: 0
-    tests_failed: 0
-    test_results: []
+    domain: "{{ server_domain | default('api.chrisbuilds64.com') }}"
 
   tasks:
 
@@ -36,6 +43,7 @@
     # =================================================================
 
     - name: "OS: Ubuntu 24.04 pruefen"
+      tags: [module01, module02]
       ansible.builtin.assert:
         that:
           - ansible_distribution == "Ubuntu"
@@ -48,29 +56,34 @@
     # =================================================================
 
     - name: "Burggraben: UFW Status lesen"
+      tags: [module01]
       ansible.builtin.command: ufw status verbose
       register: ufw_output
       changed_when: false
 
     - name: "Burggraben: UFW ist aktiv"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'Status: active' in ufw_output.stdout"
         fail_msg: "FEHLER: UFW ist nicht aktiv!"
         success_msg: "OK: UFW aktiv"
 
     - name: "Burggraben: Default deny incoming"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'deny (incoming)' in ufw_output.stdout"
         fail_msg: "FEHLER: UFW Default incoming ist nicht deny!"
         success_msg: "OK: Default deny incoming"
 
     - name: "Burggraben: Loopback erlaubt"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'Anywhere on lo' in ufw_output.stdout"
         fail_msg: "FEHLER: Loopback-Regel fehlt!"
         success_msg: "OK: Loopback erlaubt"
 
     - name: "Burggraben: Nur erlaubte Ports offen"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'{{ item }}/tcp' in ufw_output.stdout"
         fail_msg: "FEHLER: Port {{ item }} nicht in UFW!"
@@ -82,69 +95,81 @@
     # =================================================================
 
     - name: "Geheimgang: Drop-in existiert"
+      tags: [module01]
       ansible.builtin.stat:
         path: /etc/ssh/sshd_config.d/99-hardening.conf
       register: ssh_dropin
 
     - name: "Geheimgang: Drop-in vorhanden"
+      tags: [module01]
       ansible.builtin.assert:
         that: ssh_dropin.stat.exists
         fail_msg: "FEHLER: SSH Drop-in /etc/ssh/sshd_config.d/99-hardening.conf fehlt!"
         success_msg: "OK: SSH Drop-in vorhanden"
 
     - name: "Geheimgang: Drop-in lesen"
+      tags: [module01]
       ansible.builtin.slurp:
         src: /etc/ssh/sshd_config.d/99-hardening.conf
       register: ssh_dropin_content
 
     - name: "Geheimgang: PermitRootLogin no"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'PermitRootLogin no' in (ssh_dropin_content.content | b64decode)"
         fail_msg: "FEHLER: Root-Login ist nicht deaktiviert!"
         success_msg: "OK: Root-Login deaktiviert"
 
     - name: "Geheimgang: PasswordAuthentication no"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'PasswordAuthentication no' in (ssh_dropin_content.content | b64decode)"
         fail_msg: "FEHLER: Passwort-Auth ist nicht deaktiviert!"
         success_msg: "OK: Passwort-Auth deaktiviert"
 
     - name: "Geheimgang: AllowUsers konfiguriert"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'AllowUsers {{ server_user }}' in (ssh_dropin_content.content | b64decode)"
         fail_msg: "FEHLER: AllowUsers nicht auf {{ server_user }} gesetzt!"
         success_msg: "OK: AllowUsers = {{ server_user }}"
 
     - name: "Geheimgang: X11Forwarding no"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'X11Forwarding no' in (ssh_dropin_content.content | b64decode)"
         fail_msg: "FEHLER: X11Forwarding ist nicht deaktiviert!"
         success_msg: "OK: X11Forwarding deaktiviert"
 
     - name: "Geheimgang: MaxAuthTries"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'MaxAuthTries 3' in (ssh_dropin_content.content | b64decode)"
         fail_msg: "FEHLER: MaxAuthTries nicht auf 3!"
         success_msg: "OK: MaxAuthTries = 3"
 
     - name: "Geheimgang: MaxStartups"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'MaxStartups 10:30:60' in (ssh_dropin_content.content | b64decode)"
         fail_msg: "FEHLER: MaxStartups nicht konfiguriert!"
         success_msg: "OK: MaxStartups konfiguriert"
 
     - name: "Geheimgang: ClientAliveInterval"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'ClientAliveInterval' in (ssh_dropin_content.content | b64decode)"
         fail_msg: "FEHLER: ClientAliveInterval nicht konfiguriert!"
         success_msg: "OK: ClientAliveInterval konfiguriert"
 
     - name: "Geheimgang: Root-Login per SSH tatsaechlich blockiert"
+      tags: [module01]
       ansible.builtin.command: sshd -T
       register: sshd_effective
       changed_when: false
 
     - name: "Geheimgang: Effektive SSH-Config verifizieren"
+      tags: [module01]
       ansible.builtin.assert:
         that:
           - "'permitrootlogin no' in sshd_effective.stdout"
@@ -158,34 +183,40 @@
     # =================================================================
 
     - name: "Wachturm: Fail2Ban Service laeuft"
+      tags: [module01]
       ansible.builtin.systemd:
         name: fail2ban
       register: f2b_service
       changed_when: false
 
     - name: "Wachturm: Fail2Ban aktiv"
+      tags: [module01]
       ansible.builtin.assert:
         that: f2b_service.status.ActiveState == "active"
         fail_msg: "FEHLER: Fail2Ban laeuft nicht!"
         success_msg: "OK: Fail2Ban aktiv"
 
     - name: "Wachturm: SSH Jail Status"
+      tags: [module01]
       ansible.builtin.command: fail2ban-client status sshd
       register: f2b_status
       changed_when: false
 
     - name: "Wachturm: SSH Jail aktiv"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'Status for the jail: sshd' in f2b_status.stdout"
         fail_msg: "FEHLER: Fail2Ban SSH Jail ist nicht aktiv!"
         success_msg: "OK: SSH Jail aktiv"
 
     - name: "Wachturm: jail.local lesen"
+      tags: [module01]
       ansible.builtin.slurp:
         src: /etc/fail2ban/jail.local
       register: f2b_config
 
     - name: "Wachturm: banaction = ufw"
+      tags: [module01]
       ansible.builtin.assert:
         that: "'banaction = ufw' in (f2b_config.content | b64decode)"
         fail_msg: "FEHLER: Fail2Ban banaction ist nicht ufw!"
@@ -196,17 +227,20 @@
     # =================================================================
 
     - name: "Burgmauern: Sysctl-Datei existiert"
+      tags: [module01]
       ansible.builtin.stat:
         path: /etc/sysctl.d/99-hardening.conf
       register: sysctl_file
 
     - name: "Burgmauern: Sysctl-Datei vorhanden"
+      tags: [module01]
       ansible.builtin.assert:
         that: sysctl_file.stat.exists
         fail_msg: "FEHLER: /etc/sysctl.d/99-hardening.conf fehlt!"
         success_msg: "OK: Sysctl Hardening-Datei vorhanden"
 
     - name: "Burgmauern: Kritische Kernel-Parameter pruefen"
+      tags: [module01]
       ansible.builtin.command: "sysctl {{ item.key }}"
       register: sysctl_values
       changed_when: false
@@ -230,6 +264,7 @@
         - { key: "fs.protected_symlinks", expect: "1" }
 
     - name: "Burgmauern: Kernel-Parameter Werte verifizieren"
+      tags: [module01]
       ansible.builtin.assert:
         that: "item.stdout.split('=')[1] | trim == item.item.expect"
         fail_msg: "FEHLER: {{ item.item.key }} = {{ item.stdout.split('=')[1] | trim }} (erwartet: {{ item.item.expect }})"
@@ -243,34 +278,40 @@
     # =================================================================
 
     - name: "Vorratskeller: Swap-Datei existiert"
+      tags: [module01]
       ansible.builtin.stat:
         path: /swapfile
       register: swap_file
 
     - name: "Vorratskeller: Swap vorhanden"
+      tags: [module01]
       ansible.builtin.assert:
         that: swap_file.stat.exists
         fail_msg: "FEHLER: /swapfile existiert nicht!"
         success_msg: "OK: Swap-Datei vorhanden"
 
     - name: "Vorratskeller: Swap aktiv"
+      tags: [module01]
       ansible.builtin.command: swapon --show
       register: swap_active
       changed_when: false
 
     - name: "Vorratskeller: Swap eingehaengt"
+      tags: [module01]
       ansible.builtin.assert:
         that: swap_active.stdout | length > 0
         fail_msg: "FEHLER: Swap ist nicht aktiv!"
         success_msg: "OK: Swap aktiv"
 
     - name: "Vorratskeller: Swap in fstab"
+      tags: [module01]
       ansible.builtin.command: grep swapfile /etc/fstab
       register: swap_fstab
       changed_when: false
       failed_when: false
 
     - name: "Vorratskeller: Swap persistent"
+      tags: [module01]
       ansible.builtin.assert:
         that: swap_fstab.rc == 0
         fail_msg: "FEHLER: Swap nicht in /etc/fstab (ueberlebt keinen Reboot)!"
@@ -281,11 +322,13 @@
     # =================================================================
 
     - name: "Uhr: Timezone pruefen"
+      tags: [module01]
       ansible.builtin.command: timedatectl show --property=Timezone --value
       register: tz_current
       changed_when: false
 
     - name: "Uhr: Timezone korrekt"
+      tags: [module01]
       ansible.builtin.assert:
         that: "tz_current.stdout | trim == server_timezone"
         fail_msg: "FEHLER: Timezone ist {{ tz_current.stdout | trim }} (erwartet: {{ server_timezone }})"
@@ -298,6 +341,7 @@
     # =================================================================
 
     - name: "Wartungstruppe: unattended-upgrades installiert"
+      tags: [module01]
       ansible.builtin.dpkg_selections:
         name: unattended-upgrades
         selection: install
@@ -307,12 +351,14 @@
       failed_when: false
 
     - name: "Wartungstruppe: Timer aktiv"
+      tags: [module01]
       ansible.builtin.command: systemctl is-active apt-daily-upgrade.timer
       register: ua_timer
       changed_when: false
       failed_when: false
 
     - name: "Wartungstruppe: Auto-Updates aktiv"
+      tags: [module01]
       ansible.builtin.assert:
         that: "ua_timer.stdout | trim == 'active'"
         fail_msg: "FEHLER: apt-daily-upgrade.timer laeuft nicht!"
@@ -323,6 +369,7 @@
     # =================================================================
 
     - name: "Burgherr: User existiert"
+      tags: [module01]
       ansible.builtin.getent:
         database: passwd
         key: "{{ server_user }}"
@@ -330,17 +377,20 @@
       failed_when: false
 
     - name: "Burgherr: User vorhanden"
+      tags: [module01]
       ansible.builtin.assert:
         that: user_exists is not failed
         fail_msg: "FEHLER: User {{ server_user }} existiert nicht!"
         success_msg: "OK: User {{ server_user }} vorhanden"
 
     - name: "Burgherr: Sudo-Rechte"
+      tags: [module01]
       ansible.builtin.stat:
         path: "/etc/sudoers.d/{{ server_user }}"
       register: sudoers_file
 
     - name: "Burgherr: Sudo konfiguriert"
+      tags: [module01]
       ansible.builtin.assert:
         that: sudoers_file.stat.exists
         fail_msg: "FEHLER: Sudoers-Datei fuer {{ server_user }} fehlt!"
@@ -351,19 +401,485 @@
     # =================================================================
 
     - name: "Burgtor: Lauschende Dienste pruefen"
+      tags: [module01]
       ansible.builtin.command: ss -tlnp
       register: listening_ports
       changed_when: false
 
     - name: "Burgtor: Lauschende Dienste anzeigen"
+      tags: [module01]
       ansible.builtin.debug:
         msg: "{{ listening_ports.stdout_lines }}"
+
+    # =================================================================
+    # PRUEFUNG 11: Docker Engine (Stallungen)
+    # =================================================================
+
+    - name: "Stallungen: Docker installiert"
+      tags: [module02]
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+      failed_when: false
+
+    - name: "Stallungen: Docker vorhanden"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: docker_version.rc == 0
+        fail_msg: "FEHLER: Docker ist nicht installiert!"
+        success_msg: "OK: Docker installiert ({{ docker_version.stdout }})"
+
+    - name: "Stallungen: Docker Compose installiert"
+      tags: [module02]
+      ansible.builtin.command: docker compose version
+      register: compose_version
+      changed_when: false
+      failed_when: false
+
+    - name: "Stallungen: Docker Compose vorhanden"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: compose_version.rc == 0
+        fail_msg: "FEHLER: Docker Compose ist nicht installiert!"
+        success_msg: "OK: Docker Compose installiert ({{ compose_version.stdout }})"
+
+    - name: "Stallungen: Docker Service laeuft"
+      tags: [module02]
+      ansible.builtin.systemd:
+        name: docker
+      register: docker_service
+      changed_when: false
+
+    - name: "Stallungen: Docker aktiv"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: docker_service.status.ActiveState == "active"
+        fail_msg: "FEHLER: Docker Service laeuft nicht!"
+        success_msg: "OK: Docker Service aktiv"
+
+    - name: "Stallungen: Log Rotation konfiguriert"
+      tags: [module02]
+      ansible.builtin.stat:
+        path: /etc/docker/daemon.json
+      register: daemon_json
+
+    - name: "Stallungen: daemon.json vorhanden"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: daemon_json.stat.exists
+        fail_msg: "FEHLER: /etc/docker/daemon.json fehlt! Keine Log Rotation."
+        success_msg: "OK: daemon.json vorhanden"
+
+    - name: "Stallungen: daemon.json lesen"
+      tags: [module02]
+      ansible.builtin.slurp:
+        src: /etc/docker/daemon.json
+      register: daemon_json_content
+
+    - name: "Stallungen: Log Rotation aktiv"
+      tags: [module02]
+      ansible.builtin.assert:
+        that:
+          - "'max-size' in (daemon_json_content.content | b64decode)"
+          - "'max-file' in (daemon_json_content.content | b64decode)"
+        fail_msg: "FEHLER: Log Rotation nicht in daemon.json konfiguriert!"
+        success_msg: "OK: Log Rotation konfiguriert (max-size + max-file)"
+
+    - name: "Stallungen: Deploy User in Docker-Gruppe"
+      tags: [module02]
+      ansible.builtin.command: "id -nG {{ server_user }}"
+      register: user_groups
+      changed_when: false
+
+    - name: "Stallungen: Docker-Gruppe zugewiesen"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "'docker' in user_groups.stdout.split()"
+        fail_msg: "FEHLER: {{ server_user }} ist nicht in der Docker-Gruppe!"
+        success_msg: "OK: {{ server_user }} in Docker-Gruppe"
+
+    # =================================================================
+    # PRUEFUNG 12: Docker Networks (Innere Burgmauern)
+    # =================================================================
+
+    - name: "Burgmauern: Docker Networks auflisten"
+      tags: [module02]
+      ansible.builtin.command: docker network ls --format "{{ '{{' }}.Name{{ '}}' }}"
+      register: docker_networks
+      changed_when: false
+
+    - name: "Burgmauern: caddy-net existiert"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "'caddy-net' in docker_networks.stdout_lines"
+        fail_msg: "FEHLER: Docker Network caddy-net fehlt!"
+        success_msg: "OK: caddy-net vorhanden"
+
+    - name: "Burgmauern: prod-net existiert"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "'prod-net' in docker_networks.stdout_lines"
+        fail_msg: "FEHLER: Docker Network prod-net fehlt!"
+        success_msg: "OK: prod-net vorhanden"
+
+    # =================================================================
+    # PRUEFUNG 13: Verzeichnisstruktur (Burgplaetze)
+    # =================================================================
+
+    - name: "Burgplaetze: /opt/prod pruefen"
+      tags: [module02]
+      ansible.builtin.stat:
+        path: /opt/prod
+      register: opt_prod
+
+    - name: "Burgplaetze: /opt/prod existiert"
+      tags: [module02]
+      ansible.builtin.assert:
+        that:
+          - opt_prod.stat.exists
+          - opt_prod.stat.isdir
+        fail_msg: "FEHLER: /opt/prod existiert nicht!"
+        success_msg: "OK: /opt/prod vorhanden"
+
+    - name: "Burgplaetze: /opt/caddy pruefen"
+      tags: [module02]
+      ansible.builtin.stat:
+        path: /opt/caddy
+      register: opt_caddy
+
+    - name: "Burgplaetze: /opt/caddy existiert"
+      tags: [module02]
+      ansible.builtin.assert:
+        that:
+          - opt_caddy.stat.exists
+          - opt_caddy.stat.isdir
+        fail_msg: "FEHLER: /opt/caddy existiert nicht!"
+        success_msg: "OK: /opt/caddy vorhanden"
+
+    - name: "Burgplaetze: .env Permissions pruefen"
+      tags: [module02]
+      ansible.builtin.stat:
+        path: /opt/prod/.env
+      register: prod_env
+
+    - name: "Burgplaetze: .env existiert und geschuetzt"
+      tags: [module02]
+      ansible.builtin.assert:
+        that:
+          - prod_env.stat.exists
+          - prod_env.stat.mode == "0400"
+        fail_msg: "FEHLER: /opt/prod/.env fehlt oder falsche Permissions (ist: {{ prod_env.stat.mode | default('nicht vorhanden') }}, soll: 0400)!"
+        success_msg: "OK: .env vorhanden mit chmod 400"
+
+    # =================================================================
+    # PRUEFUNG 14: Caddy (Burgtor)
+    # =================================================================
+
+    - name: "Burgtor: Caddyfile existiert"
+      tags: [module02]
+      ansible.builtin.stat:
+        path: /opt/caddy/Caddyfile
+      register: caddyfile
+
+    - name: "Burgtor: Caddyfile vorhanden"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: caddyfile.stat.exists
+        fail_msg: "FEHLER: /opt/caddy/Caddyfile fehlt!"
+        success_msg: "OK: Caddyfile vorhanden"
+
+    - name: "Burgtor: Caddyfile lesen"
+      tags: [module02]
+      ansible.builtin.slurp:
+        src: /opt/caddy/Caddyfile
+      register: caddyfile_content
+
+    - name: "Burgtor: Domain konfiguriert"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "domain in (caddyfile_content.content | b64decode)"
+        fail_msg: "FEHLER: {{ domain }} nicht im Caddyfile!"
+        success_msg: "OK: {{ domain }} im Caddyfile konfiguriert"
+
+    - name: "Burgtor: Access Logs aktiviert"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "'log {' in (caddyfile_content.content | b64decode)"
+        fail_msg: "FEHLER: Caddy Access Logs sind nicht aktiviert!"
+        success_msg: "OK: Caddy Access Logs aktiviert"
+
+    - name: "Burgtor: Caddy Container laeuft"
+      tags: [module02]
+      ansible.builtin.command: docker inspect caddy --format "{{ '{{' }}.State.Running{{ '}}' }}"
+      register: caddy_running
+      changed_when: false
+      failed_when: false
+
+    - name: "Burgtor: Caddy aktiv"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "caddy_running.stdout | trim == 'true'"
+        fail_msg: "FEHLER: Caddy Container laeuft nicht!"
+        success_msg: "OK: Caddy Container laeuft"
+
+    # =================================================================
+    # PRUEFUNG 15: Prod-Stack (Thronsaal)
+    # =================================================================
+
+    - name: "Thronsaal: Backend Container laeuft"
+      tags: [module02]
+      ansible.builtin.command: docker inspect prod-backend --format "{{ '{{' }}.State.Running{{ '}}' }}"
+      register: backend_running
+      changed_when: false
+      failed_when: false
+
+    - name: "Thronsaal: Backend aktiv"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "backend_running.stdout | trim == 'true'"
+        fail_msg: "FEHLER: prod-backend Container laeuft nicht!"
+        success_msg: "OK: Backend Container laeuft"
+
+    - name: "Thronsaal: PostgreSQL Container laeuft"
+      tags: [module02]
+      ansible.builtin.command: docker inspect prod-postgres --format "{{ '{{' }}.State.Running{{ '}}' }}"
+      register: postgres_running
+      changed_when: false
+      failed_when: false
+
+    - name: "Thronsaal: PostgreSQL aktiv"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "postgres_running.stdout | trim == 'true'"
+        fail_msg: "FEHLER: prod-postgres Container laeuft nicht!"
+        success_msg: "OK: PostgreSQL Container laeuft"
+
+    - name: "Thronsaal: PostgreSQL healthy"
+      tags: [module02]
+      ansible.builtin.command: docker inspect prod-postgres --format "{{ '{{' }}.State.Health.Status{{ '}}' }}"
+      register: postgres_health
+      changed_when: false
+      failed_when: false
+
+    - name: "Thronsaal: PostgreSQL Healthcheck"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "postgres_health.stdout | trim == 'healthy'"
+        fail_msg: "FEHLER: PostgreSQL Healthcheck failed (Status: {{ postgres_health.stdout | trim }})!"
+        success_msg: "OK: PostgreSQL healthy"
+
+    # =================================================================
+    # PRUEFUNG 16: Netzwerk-Isolation (Innere Burgmauern)
+    # =================================================================
+
+    - name: "Burgmauern: Backend Netzwerke pruefen"
+      tags: [module02]
+      ansible.builtin.command: docker inspect prod-backend --format "{{ '{{' }}json .NetworkSettings.Networks{{ '}}' }}"
+      register: backend_networks
+      changed_when: false
+
+    - name: "Burgmauern: Backend in caddy-net + prod-net"
+      tags: [module02]
+      ansible.builtin.assert:
+        that:
+          - "'caddy-net' in backend_networks.stdout"
+          - "'prod-net' in backend_networks.stdout"
+        fail_msg: "FEHLER: Backend ist nicht in caddy-net + prod-net!"
+        success_msg: "OK: Backend in caddy-net + prod-net"
+
+    - name: "Burgmauern: PostgreSQL Netzwerke pruefen"
+      tags: [module02]
+      ansible.builtin.command: docker inspect prod-postgres --format "{{ '{{' }}json .NetworkSettings.Networks{{ '}}' }}"
+      register: postgres_networks
+      changed_when: false
+
+    - name: "Burgmauern: PostgreSQL nur in prod-net"
+      tags: [module02]
+      ansible.builtin.assert:
+        that:
+          - "'prod-net' in postgres_networks.stdout"
+          - "'caddy-net' not in postgres_networks.stdout"
+        fail_msg: "FEHLER: PostgreSQL darf NUR in prod-net sein (nicht in caddy-net)!"
+        success_msg: "OK: PostgreSQL isoliert in prod-net"
+
+    # =================================================================
+    # PRUEFUNG 17: Keine direkten Ports (Burgtor-Pflicht)
+    # =================================================================
+
+    - name: "Burgtor-Pflicht: Backend Ports pruefen"
+      tags: [module02]
+      ansible.builtin.command: docker inspect prod-backend --format "{{ '{{' }}json .NetworkSettings.Ports{{ '}}' }}"
+      register: backend_ports
+      changed_when: false
+
+    - name: "Burgtor-Pflicht: Backend keine Host-Ports"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "backend_ports.stdout == '{}' or 'HostPort' not in backend_ports.stdout"
+        fail_msg: "FEHLER: Backend hat direkte Host-Ports! Alles muss ueber Caddy laufen."
+        success_msg: "OK: Backend keine direkten Ports (nur ueber Caddy)"
+
+    - name: "Burgtor-Pflicht: PostgreSQL Ports pruefen"
+      tags: [module02]
+      ansible.builtin.command: docker inspect prod-postgres --format "{{ '{{' }}json .NetworkSettings.Ports{{ '}}' }}"
+      register: postgres_ports
+      changed_when: false
+
+    - name: "Burgtor-Pflicht: PostgreSQL keine Host-Ports"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "postgres_ports.stdout == '{}' or 'HostPort' not in postgres_ports.stdout"
+        fail_msg: "FEHLER: PostgreSQL hat direkte Host-Ports! Datenbank darf nicht von aussen erreichbar sein."
+        success_msg: "OK: PostgreSQL keine direkten Ports (isoliert)"
+
+    # =================================================================
+    # PRUEFUNG 18: Health Endpoint (Lebenszeichen)
+    # =================================================================
+
+    - name: "Lebenszeichen: Health-Endpoint ueber Caddy"
+      tags: [module02]
+      ansible.builtin.command: docker exec caddy wget -qO- http://prod-backend:8000/health
+      register: health_response
+      changed_when: false
+      failed_when: false
+
+    - name: "Lebenszeichen: Backend antwortet"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "'ok' in health_response.stdout"
+        fail_msg: "FEHLER: Backend Health-Endpoint antwortet nicht! ({{ health_response.stdout | default('keine Antwort') }})"
+        success_msg: "OK: Backend antwortet auf /health"
+
+    # =================================================================
+    # PRUEFUNG 19: Container Restart-Policy
+    # =================================================================
+
+    - name: "Widerstandskraft: Container Restart-Policies pruefen"
+      tags: [module02]
+      ansible.builtin.command: "docker inspect {{ item }} --format {{ '{{' }}.HostConfig.RestartPolicy.Name{{ '}}' }}"
+      register: restart_policies
+      changed_when: false
+      loop:
+        - caddy
+        - prod-backend
+        - prod-postgres
+
+    - name: "Widerstandskraft: Alle Container starten automatisch neu"
+      tags: [module02]
+      ansible.builtin.assert:
+        that: "item.stdout | trim in ['unless-stopped', 'always']"
+        fail_msg: "FEHLER: {{ item.item }} hat keine Restart-Policy ({{ item.stdout | trim }})!"
+        success_msg: "OK: {{ item.item }} restart={{ item.stdout | trim }}"
+      loop: "{{ restart_policies.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    # =================================================================
+    # PRUEFUNG 20: Monitoring (Wachturm)
+    # =================================================================
+
+    - name: "Wachturm: /opt/monitoring pruefen"
+      tags: [module03]
+      ansible.builtin.stat:
+        path: /opt/monitoring
+      register: opt_monitoring
+
+    - name: "Wachturm: /opt/monitoring existiert"
+      tags: [module03]
+      ansible.builtin.assert:
+        that:
+          - opt_monitoring.stat.exists
+          - opt_monitoring.stat.isdir
+        fail_msg: "FEHLER: /opt/monitoring existiert nicht!"
+        success_msg: "OK: /opt/monitoring vorhanden"
+
+    - name: "Wachturm: Uptime Kuma Container laeuft"
+      tags: [module03]
+      ansible.builtin.command: docker inspect uptime-kuma --format "{{ '{{' }}.State.Running{{ '}}' }}"
+      register: kuma_running
+      changed_when: false
+      failed_when: false
+
+    - name: "Wachturm: Uptime Kuma aktiv"
+      tags: [module03]
+      ansible.builtin.assert:
+        that: "kuma_running.stdout | trim == 'true'"
+        fail_msg: "FEHLER: Uptime Kuma Container laeuft nicht!"
+        success_msg: "OK: Uptime Kuma Container laeuft"
+
+    - name: "Wachturm: Uptime Kuma in caddy-net"
+      tags: [module03]
+      ansible.builtin.command: docker inspect uptime-kuma --format "{{ '{{' }}json .NetworkSettings.Networks{{ '}}' }}"
+      register: kuma_networks
+      changed_when: false
+
+    - name: "Wachturm: Netzwerk korrekt"
+      tags: [module03]
+      ansible.builtin.assert:
+        that: "'caddy-net' in kuma_networks.stdout"
+        fail_msg: "FEHLER: Uptime Kuma ist nicht in caddy-net!"
+        success_msg: "OK: Uptime Kuma in caddy-net"
+
+    - name: "Wachturm: Uptime Kuma keine Host-Ports"
+      tags: [module03]
+      ansible.builtin.command: docker inspect uptime-kuma --format "{{ '{{' }}json .NetworkSettings.Ports{{ '}}' }}"
+      register: kuma_ports
+      changed_when: false
+
+    - name: "Wachturm: Nur ueber Caddy erreichbar"
+      tags: [module03]
+      ansible.builtin.assert:
+        that: "'HostPort' not in kuma_ports.stdout"
+        fail_msg: "FEHLER: Uptime Kuma hat direkte Host-Ports! Muss ueber Caddy laufen."
+        success_msg: "OK: Uptime Kuma keine direkten Ports (nur ueber Caddy)"
+
+    - name: "Wachturm: Restart-Policy"
+      tags: [module03]
+      ansible.builtin.command: docker inspect uptime-kuma --format "{{ '{{' }}.HostConfig.RestartPolicy.Name{{ '}}' }}"
+      register: kuma_restart
+      changed_when: false
+
+    - name: "Wachturm: Startet automatisch neu"
+      tags: [module03]
+      ansible.builtin.assert:
+        that: "kuma_restart.stdout | trim in ['unless-stopped', 'always']"
+        fail_msg: "FEHLER: Uptime Kuma hat keine Restart-Policy!"
+        success_msg: "OK: Uptime Kuma restart={{ kuma_restart.stdout | trim }}"
+
+    - name: "Wachturm: Health-Check intern"
+      tags: [module03]
+      ansible.builtin.command: docker exec caddy wget -qO- http://uptime-kuma:3001
+      register: kuma_health
+      changed_when: false
+      failed_when: false
+
+    - name: "Wachturm: Uptime Kuma antwortet"
+      tags: [module03]
+      ansible.builtin.assert:
+        that: "'<!DOCTYPE html>' in kuma_health.stdout"
+        fail_msg: "FEHLER: Uptime Kuma antwortet nicht intern!"
+        success_msg: "OK: Uptime Kuma antwortet"
+
+    - name: "Wachturm: Monitoring-Domain im Caddyfile"
+      tags: [module03]
+      ansible.builtin.command: grep -c "uptime-kuma" /opt/caddy/Caddyfile
+      register: caddyfile_kuma
+      changed_when: false
+      failed_when: false
+
+    - name: "Wachturm: Caddy routet zu Uptime Kuma"
+      tags: [module03]
+      ansible.builtin.assert:
+        that: "caddyfile_kuma.stdout | int > 0"
+        fail_msg: "FEHLER: Uptime Kuma ist nicht im Caddyfile konfiguriert!"
+        success_msg: "OK: Caddy routet zu Uptime Kuma"
 
     # =================================================================
     # ERGEBNIS
     # =================================================================
 
     - name: "=== INSPEKTIONSBERICHT ==="
+      tags: [module01, module02, module03]
       ansible.builtin.debug:
         msg: |
           ============================================

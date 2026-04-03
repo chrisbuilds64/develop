@@ -33,13 +33,31 @@ ansible --version
 
 ---
 
-## Schritt 2: Verzeichnisstruktur
+## Schritt 2: Ansible Collections installieren
+
+Modul 02 (Docker + Caddy) nutzt `community.docker` fuer idempotentes Docker-Management. Einmalige Installation auf dem Control Node (deinem Mac):
+
+```bash
+ansible-galaxy collection install community.docker
+```
+
+Verifizieren:
+```bash
+ansible-galaxy collection list | grep community.docker
+```
+
+**Warum?** `community.docker` liefert native Ansible-Module fuer Docker Networks, Volumes, Container. Idempotent, deklarativ, kein Shell-Gefrickel.
+
+---
+
+## Schritt 3: Verzeichnisstruktur
 
 ```
 develop/ansible/
 ├── inventory.yml        # Alle Burgen (Hosts + Variablen)
 ├── foundation.yml       # Modul 01: Burgfundament
-├── verify.yml           # Burginspektor: Testprotokoll
+├── docker-caddy.yml     # Modul 02: Docker + Caddy + Prod-Stack
+├── verify.yml           # Burginspektor: Testprotokoll (Module 01 + 02)
 └── README.md            # Kurzanleitung
 ```
 
@@ -85,23 +103,68 @@ ansible-playbook -i inventory.yml foundation.yml --limit rheinstein \
 ansible-playbook -i inventory.yml foundation.yml --limit rheinstein --check
 ```
 
+### Modul 02: Docker + Caddy + Prod-Stack
+
+```bash
+ansible-playbook -i inventory.yml docker-caddy.yml --limit rheinstein
+```
+
 ### Burginspektion (Testprotokoll)
 
 ```bash
+# Alles pruefen (Module 01 + 02)
 ansible-playbook -i inventory.yml verify.yml --limit rheinstein
+
+# Nur Module 01 pruefen
+ansible-playbook -i inventory.yml verify.yml --limit rheinstein --tags module01
+
+# Nur Module 02 pruefen
+ansible-playbook -i inventory.yml verify.yml --limit rheinstein --tags module02
 ```
 
 ### Nur eine Phase ausfuehren
 
 ```bash
-# Nur Kernel-Haertung
+# Nur Kernel-Haertung (Module 01)
 ansible-playbook -i inventory.yml foundation.yml --limit rheinstein \
   --tags kernel
 
-# Nur SSH
+# Nur SSH (Module 01)
 ansible-playbook -i inventory.yml foundation.yml --limit rheinstein \
   --tags ssh
+
+# Nur Docker installieren (Module 02)
+ansible-playbook -i inventory.yml docker-caddy.yml --limit rheinstein \
+  --tags docker
+
+# Nur Stacks deployen (Module 02)
+ansible-playbook -i inventory.yml docker-caddy.yml --limit rheinstein \
+  --tags deploy
 ```
+
+---
+
+## Manuelle Schritte (nicht automatisierbar)
+
+Nicht alles laesst sich per Ansible erledigen. Diese Schritte muessen manuell gemacht werden:
+
+| Schritt | Wann | Wo |
+|---|---|---|
+| DNS A-Record setzen | Vor Modul 02 (Caddy braucht die Domain) | Strato Kundenportal |
+| SSH Public Key hinterlegen | Bei Server-Neuinstallation | Strato Kundenportal (oder Cloud-Init) |
+
+**DNS-Eintrag fuer Caddy:**
+```
+api.chrisbuilds64.com  →  A  →  82.165.165.199
+```
+
+Pruefen ob propagiert:
+```bash
+dig api.chrisbuilds64.com +short
+# Muss Server-IP zurueckgeben
+```
+
+DNS ueberlebt Server-Reinstalls. Muss nur einmal gesetzt werden (oder bei IP-Wechsel).
 
 ---
 
@@ -200,4 +263,5 @@ ansible rheinstein -i inventory.yml -m ping -vvv
 ---
 
 *Erstellt: 3. April 2026*
+*Aktualisiert: 3. April 2026 (Module 02 + community.docker)*
 *Getestet mit: Ansible 12.3.0, ansible-core 2.19.8*
