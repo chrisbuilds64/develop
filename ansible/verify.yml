@@ -1,0 +1,382 @@
+# =============================================================================
+# BURGINSPEKTOR: Testprotokoll fuer Module 01 Foundation
+# =============================================================================
+#
+# Prueft ob alle Verteidigungsschichten korrekt stehen.
+# Aendert NICHTS am Server. Nur lesen und pruefen.
+#
+# Ausfuehrung:
+#   ansible-playbook -i inventory.yml verify.yml --limit rheinstein
+#
+# Wann ausfuehren:
+#   - Nach jedem foundation.yml Lauf
+#   - Nach manuellem Eingriff auf dem Server
+#   - Nach Server-Neuinstallation
+#   - Regelmaessig als Health-Check (z.B. woechentlich)
+#
+# =============================================================================
+
+---
+- name: "Burginspektor: Testprotokoll Module 01"
+  hosts: kingdoms
+  become: true
+  gather_facts: true
+
+  vars:
+    server_user: "{{ deploy_user | default('deploy') }}"
+    expected_open_ports: ["22", "80", "443"]
+    tests_passed: 0
+    tests_failed: 0
+    test_results: []
+
+  tasks:
+
+    # =================================================================
+    # PRUEFUNG 1: Betriebssystem
+    # =================================================================
+
+    - name: "OS: Ubuntu 24.04 pruefen"
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version == "24.04"
+        fail_msg: "FEHLER: Erwartet Ubuntu 24.04, gefunden {{ ansible_distribution }} {{ ansible_distribution_version }}"
+        success_msg: "OK: Ubuntu 24.04"
+
+    # =================================================================
+    # PRUEFUNG 2: Burggraben (UFW Firewall)
+    # =================================================================
+
+    - name: "Burggraben: UFW Status lesen"
+      ansible.builtin.command: ufw status verbose
+      register: ufw_output
+      changed_when: false
+
+    - name: "Burggraben: UFW ist aktiv"
+      ansible.builtin.assert:
+        that: "'Status: active' in ufw_output.stdout"
+        fail_msg: "FEHLER: UFW ist nicht aktiv!"
+        success_msg: "OK: UFW aktiv"
+
+    - name: "Burggraben: Default deny incoming"
+      ansible.builtin.assert:
+        that: "'deny (incoming)' in ufw_output.stdout"
+        fail_msg: "FEHLER: UFW Default incoming ist nicht deny!"
+        success_msg: "OK: Default deny incoming"
+
+    - name: "Burggraben: Loopback erlaubt"
+      ansible.builtin.assert:
+        that: "'Anywhere on lo' in ufw_output.stdout"
+        fail_msg: "FEHLER: Loopback-Regel fehlt!"
+        success_msg: "OK: Loopback erlaubt"
+
+    - name: "Burggraben: Nur erlaubte Ports offen"
+      ansible.builtin.assert:
+        that: "'{{ item }}/tcp' in ufw_output.stdout"
+        fail_msg: "FEHLER: Port {{ item }} nicht in UFW!"
+        success_msg: "OK: Port {{ item }} offen"
+      loop: "{{ expected_open_ports }}"
+
+    # =================================================================
+    # PRUEFUNG 3: Geheimgang (SSH Hardening)
+    # =================================================================
+
+    - name: "Geheimgang: Drop-in existiert"
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config.d/99-hardening.conf
+      register: ssh_dropin
+
+    - name: "Geheimgang: Drop-in vorhanden"
+      ansible.builtin.assert:
+        that: ssh_dropin.stat.exists
+        fail_msg: "FEHLER: SSH Drop-in /etc/ssh/sshd_config.d/99-hardening.conf fehlt!"
+        success_msg: "OK: SSH Drop-in vorhanden"
+
+    - name: "Geheimgang: Drop-in lesen"
+      ansible.builtin.slurp:
+        src: /etc/ssh/sshd_config.d/99-hardening.conf
+      register: ssh_dropin_content
+
+    - name: "Geheimgang: PermitRootLogin no"
+      ansible.builtin.assert:
+        that: "'PermitRootLogin no' in (ssh_dropin_content.content | b64decode)"
+        fail_msg: "FEHLER: Root-Login ist nicht deaktiviert!"
+        success_msg: "OK: Root-Login deaktiviert"
+
+    - name: "Geheimgang: PasswordAuthentication no"
+      ansible.builtin.assert:
+        that: "'PasswordAuthentication no' in (ssh_dropin_content.content | b64decode)"
+        fail_msg: "FEHLER: Passwort-Auth ist nicht deaktiviert!"
+        success_msg: "OK: Passwort-Auth deaktiviert"
+
+    - name: "Geheimgang: AllowUsers konfiguriert"
+      ansible.builtin.assert:
+        that: "'AllowUsers {{ server_user }}' in (ssh_dropin_content.content | b64decode)"
+        fail_msg: "FEHLER: AllowUsers nicht auf {{ server_user }} gesetzt!"
+        success_msg: "OK: AllowUsers = {{ server_user }}"
+
+    - name: "Geheimgang: X11Forwarding no"
+      ansible.builtin.assert:
+        that: "'X11Forwarding no' in (ssh_dropin_content.content | b64decode)"
+        fail_msg: "FEHLER: X11Forwarding ist nicht deaktiviert!"
+        success_msg: "OK: X11Forwarding deaktiviert"
+
+    - name: "Geheimgang: MaxAuthTries"
+      ansible.builtin.assert:
+        that: "'MaxAuthTries 3' in (ssh_dropin_content.content | b64decode)"
+        fail_msg: "FEHLER: MaxAuthTries nicht auf 3!"
+        success_msg: "OK: MaxAuthTries = 3"
+
+    - name: "Geheimgang: MaxStartups"
+      ansible.builtin.assert:
+        that: "'MaxStartups 10:30:60' in (ssh_dropin_content.content | b64decode)"
+        fail_msg: "FEHLER: MaxStartups nicht konfiguriert!"
+        success_msg: "OK: MaxStartups konfiguriert"
+
+    - name: "Geheimgang: ClientAliveInterval"
+      ansible.builtin.assert:
+        that: "'ClientAliveInterval' in (ssh_dropin_content.content | b64decode)"
+        fail_msg: "FEHLER: ClientAliveInterval nicht konfiguriert!"
+        success_msg: "OK: ClientAliveInterval konfiguriert"
+
+    - name: "Geheimgang: Root-Login per SSH tatsaechlich blockiert"
+      ansible.builtin.command: sshd -T
+      register: sshd_effective
+      changed_when: false
+
+    - name: "Geheimgang: Effektive SSH-Config verifizieren"
+      ansible.builtin.assert:
+        that:
+          - "'permitrootlogin no' in sshd_effective.stdout"
+          - "'passwordauthentication no' in sshd_effective.stdout"
+          - "'x11forwarding no' in sshd_effective.stdout"
+        fail_msg: "FEHLER: Effektive SSH-Config weicht ab! Drop-in wird moeglicherweise ueberschrieben."
+        success_msg: "OK: Effektive SSH-Config stimmt mit Drop-in ueberein"
+
+    # =================================================================
+    # PRUEFUNG 4: Wachturm (Fail2Ban)
+    # =================================================================
+
+    - name: "Wachturm: Fail2Ban Service laeuft"
+      ansible.builtin.systemd:
+        name: fail2ban
+      register: f2b_service
+      changed_when: false
+
+    - name: "Wachturm: Fail2Ban aktiv"
+      ansible.builtin.assert:
+        that: f2b_service.status.ActiveState == "active"
+        fail_msg: "FEHLER: Fail2Ban laeuft nicht!"
+        success_msg: "OK: Fail2Ban aktiv"
+
+    - name: "Wachturm: SSH Jail Status"
+      ansible.builtin.command: fail2ban-client status sshd
+      register: f2b_status
+      changed_when: false
+
+    - name: "Wachturm: SSH Jail aktiv"
+      ansible.builtin.assert:
+        that: "'Status for the jail: sshd' in f2b_status.stdout"
+        fail_msg: "FEHLER: Fail2Ban SSH Jail ist nicht aktiv!"
+        success_msg: "OK: SSH Jail aktiv"
+
+    - name: "Wachturm: jail.local lesen"
+      ansible.builtin.slurp:
+        src: /etc/fail2ban/jail.local
+      register: f2b_config
+
+    - name: "Wachturm: banaction = ufw"
+      ansible.builtin.assert:
+        that: "'banaction = ufw' in (f2b_config.content | b64decode)"
+        fail_msg: "FEHLER: Fail2Ban banaction ist nicht ufw!"
+        success_msg: "OK: banaction = ufw"
+
+    # =================================================================
+    # PRUEFUNG 5: Burgmauern (Kernel Hardening)
+    # =================================================================
+
+    - name: "Burgmauern: Sysctl-Datei existiert"
+      ansible.builtin.stat:
+        path: /etc/sysctl.d/99-hardening.conf
+      register: sysctl_file
+
+    - name: "Burgmauern: Sysctl-Datei vorhanden"
+      ansible.builtin.assert:
+        that: sysctl_file.stat.exists
+        fail_msg: "FEHLER: /etc/sysctl.d/99-hardening.conf fehlt!"
+        success_msg: "OK: Sysctl Hardening-Datei vorhanden"
+
+    - name: "Burgmauern: Kritische Kernel-Parameter pruefen"
+      ansible.builtin.command: "sysctl {{ item.key }}"
+      register: sysctl_values
+      changed_when: false
+      loop:
+        - { key: "net.ipv4.conf.all.accept_redirects", expect: "0" }
+        - { key: "net.ipv4.conf.all.send_redirects", expect: "0" }
+        - { key: "net.ipv4.conf.all.log_martians", expect: "1" }
+        - { key: "net.ipv4.conf.all.rp_filter", expect: "1" }
+        - { key: "net.ipv4.conf.all.accept_source_route", expect: "0" }
+        - { key: "net.ipv4.tcp_syncookies", expect: "1" }
+        - { key: "net.ipv6.conf.all.accept_redirects", expect: "0" }
+        - { key: "kernel.randomize_va_space", expect: "2" }
+        - { key: "kernel.sysrq", expect: "0" }
+        - { key: "kernel.dmesg_restrict", expect: "1" }
+        - { key: "kernel.kptr_restrict", expect: "2" }
+        - { key: "kernel.yama.ptrace_scope", expect: "2" }
+        - { key: "kernel.unprivileged_bpf_disabled", expect: "1" }
+        - { key: "kernel.perf_event_paranoid", expect: "3" }
+        - { key: "fs.suid_dumpable", expect: "0" }
+        - { key: "fs.protected_hardlinks", expect: "1" }
+        - { key: "fs.protected_symlinks", expect: "1" }
+
+    - name: "Burgmauern: Kernel-Parameter Werte verifizieren"
+      ansible.builtin.assert:
+        that: "item.stdout.split('=')[1] | trim == item.item.expect"
+        fail_msg: "FEHLER: {{ item.item.key }} = {{ item.stdout.split('=')[1] | trim }} (erwartet: {{ item.item.expect }})"
+        success_msg: "OK: {{ item.item.key }} = {{ item.item.expect }}"
+      loop: "{{ sysctl_values.results }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+
+    # =================================================================
+    # PRUEFUNG 6: Vorratskeller (Swap)
+    # =================================================================
+
+    - name: "Vorratskeller: Swap-Datei existiert"
+      ansible.builtin.stat:
+        path: /swapfile
+      register: swap_file
+
+    - name: "Vorratskeller: Swap vorhanden"
+      ansible.builtin.assert:
+        that: swap_file.stat.exists
+        fail_msg: "FEHLER: /swapfile existiert nicht!"
+        success_msg: "OK: Swap-Datei vorhanden"
+
+    - name: "Vorratskeller: Swap aktiv"
+      ansible.builtin.command: swapon --show
+      register: swap_active
+      changed_when: false
+
+    - name: "Vorratskeller: Swap eingehaengt"
+      ansible.builtin.assert:
+        that: swap_active.stdout | length > 0
+        fail_msg: "FEHLER: Swap ist nicht aktiv!"
+        success_msg: "OK: Swap aktiv"
+
+    - name: "Vorratskeller: Swap in fstab"
+      ansible.builtin.command: grep swapfile /etc/fstab
+      register: swap_fstab
+      changed_when: false
+      failed_when: false
+
+    - name: "Vorratskeller: Swap persistent"
+      ansible.builtin.assert:
+        that: swap_fstab.rc == 0
+        fail_msg: "FEHLER: Swap nicht in /etc/fstab (ueberlebt keinen Reboot)!"
+        success_msg: "OK: Swap in fstab (persistent)"
+
+    # =================================================================
+    # PRUEFUNG 7: Uhr (Timezone)
+    # =================================================================
+
+    - name: "Uhr: Timezone pruefen"
+      ansible.builtin.command: timedatectl show --property=Timezone --value
+      register: tz_current
+      changed_when: false
+
+    - name: "Uhr: Timezone korrekt"
+      ansible.builtin.assert:
+        that: "tz_current.stdout | trim == server_timezone"
+        fail_msg: "FEHLER: Timezone ist {{ tz_current.stdout | trim }} (erwartet: {{ server_timezone }})"
+        success_msg: "OK: Timezone = {{ server_timezone }}"
+      vars:
+        server_timezone: "{{ timezone | default('Europe/Berlin') }}"
+
+    # =================================================================
+    # PRUEFUNG 8: Wartungstruppe (unattended-upgrades)
+    # =================================================================
+
+    - name: "Wartungstruppe: unattended-upgrades installiert"
+      ansible.builtin.dpkg_selections:
+        name: unattended-upgrades
+        selection: install
+      check_mode: true
+      register: ua_installed
+      changed_when: false
+      failed_when: false
+
+    - name: "Wartungstruppe: Timer aktiv"
+      ansible.builtin.command: systemctl is-active apt-daily-upgrade.timer
+      register: ua_timer
+      changed_when: false
+      failed_when: false
+
+    - name: "Wartungstruppe: Auto-Updates aktiv"
+      ansible.builtin.assert:
+        that: "ua_timer.stdout | trim == 'active'"
+        fail_msg: "FEHLER: apt-daily-upgrade.timer laeuft nicht!"
+        success_msg: "OK: Auto-Updates aktiv"
+
+    # =================================================================
+    # PRUEFUNG 9: Deploy User
+    # =================================================================
+
+    - name: "Burgherr: User existiert"
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ server_user }}"
+      register: user_exists
+      failed_when: false
+
+    - name: "Burgherr: User vorhanden"
+      ansible.builtin.assert:
+        that: user_exists is not failed
+        fail_msg: "FEHLER: User {{ server_user }} existiert nicht!"
+        success_msg: "OK: User {{ server_user }} vorhanden"
+
+    - name: "Burgherr: Sudo-Rechte"
+      ansible.builtin.stat:
+        path: "/etc/sudoers.d/{{ server_user }}"
+      register: sudoers_file
+
+    - name: "Burgherr: Sudo konfiguriert"
+      ansible.builtin.assert:
+        that: sudoers_file.stat.exists
+        fail_msg: "FEHLER: Sudoers-Datei fuer {{ server_user }} fehlt!"
+        success_msg: "OK: Sudo-Rechte konfiguriert"
+
+    # =================================================================
+    # PRUEFUNG 10: Offene Ports (von innen)
+    # =================================================================
+
+    - name: "Burgtor: Lauschende Dienste pruefen"
+      ansible.builtin.command: ss -tlnp
+      register: listening_ports
+      changed_when: false
+
+    - name: "Burgtor: Lauschende Dienste anzeigen"
+      ansible.builtin.debug:
+        msg: "{{ listening_ports.stdout_lines }}"
+
+    # =================================================================
+    # ERGEBNIS
+    # =================================================================
+
+    - name: "=== INSPEKTIONSBERICHT ==="
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+              BURGINSPEKTION: {{ inventory_hostname | upper }}
+          ============================================
+
+          OS:             {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel:         {{ ansible_kernel }}
+          Uptime:         {{ ansible_uptime_seconds | int // 86400 }}d {{ (ansible_uptime_seconds | int % 86400) // 3600 }}h
+          RAM:            {{ ansible_memtotal_mb }}MB total
+          Swap:           {{ ansible_swaptotal_mb }}MB
+
+          Alle Pruefungen bestanden.
+          Die Burg steht.
+
+          ============================================

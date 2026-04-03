@@ -1,0 +1,387 @@
+# =============================================================================
+# BAUPLAN DER BURG: Module 01 Foundation
+# =============================================================================
+#
+# Baut eine Burg von Grund auf: Burggraben (UFW), Wachturm (Fail2Ban),
+# Geheimgang (SSH Hardening), Burgmauern (Kernel), Vorratskeller (Swap),
+# Uhr (Timezone), Wartungstruppe (unattended-upgrades).
+#
+# Voraussetzungen:
+#   - Frischer Ubuntu 24.04 Server
+#   - SSH-Zugang mit Key (als deploy/admin User ODER root beim ersten Lauf)
+#   - Python 3 auf dem Server (Ubuntu 24.04 hat das)
+#
+# Ausfuehrung:
+#   ansible-playbook -i inventory.yml foundation.yml
+#
+# Erster Lauf (nur root vorhanden):
+#   ansible-playbook -i inventory.yml foundation.yml -e "ansible_user=root" -e "first_run=true"
+#
+# =============================================================================
+
+---
+- name: "Burgfundament: Module 01 Foundation"
+  hosts: kingdoms
+  become: true
+  gather_facts: true
+
+  vars:
+    server_user: "{{ deploy_user | default('deploy') }}"
+    server_swap: "{{ swap_size | default('4G') }}"
+    server_timezone: "{{ timezone | default('Europe/Berlin') }}"
+    first_run: false
+
+    # SSH Hardening
+    ssh_max_auth_tries: 3
+    ssh_login_grace_time: 30
+    ssh_client_alive_interval: 300
+    ssh_client_alive_count_max: 2
+
+    # Fail2Ban
+    f2b_bantime: 3600
+    f2b_findtime: 600
+    f2b_maxretry: 3
+
+  tasks:
+
+    # =================================================================
+    # PHASE 1: Deploy User (Burgherr einsetzen)
+    # =================================================================
+
+    - name: "Burgherr: Deploy User anlegen"
+      when: first_run | bool
+      tags: [user]
+      block:
+        - name: User erstellen (kein Passwort-Login)
+          ansible.builtin.user:
+            name: "{{ server_user }}"
+            shell: /bin/bash
+            create_home: true
+            password: "!"
+            comment: "Deploy User"
+
+        - name: Sudo-Rechte ohne Passwort
+          ansible.builtin.copy:
+            content: "{{ server_user }} ALL=(ALL) NOPASSWD:ALL\n"
+            dest: "/etc/sudoers.d/{{ server_user }}"
+            mode: "0440"
+            validate: "visudo -cf %s"
+
+        - name: SSH-Verzeichnis anlegen
+          ansible.builtin.file:
+            path: "/home/{{ server_user }}/.ssh"
+            state: directory
+            owner: "{{ server_user }}"
+            group: "{{ server_user }}"
+            mode: "0700"
+
+        - name: SSH Key vom root kopieren
+          ansible.builtin.copy:
+            src: /root/.ssh/authorized_keys
+            dest: "/home/{{ server_user }}/.ssh/authorized_keys"
+            remote_src: true
+            owner: "{{ server_user }}"
+            group: "{{ server_user }}"
+            mode: "0600"
+
+    # =================================================================
+    # PHASE 2: Burggraben (UFW Firewall)
+    # =================================================================
+
+    - name: "Burggraben: UFW installieren"
+      tags: [firewall]
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+
+    - name: "Burggraben: Default deny incoming"
+      tags: [firewall]
+      community.general.ufw:
+        direction: incoming
+        default: deny
+
+    - name: "Burggraben: Default deny forward (Docker-Schutz)"
+      tags: [firewall]
+      community.general.ufw:
+        direction: routed
+        default: deny
+
+    - name: "Burggraben: Default allow outgoing"
+      tags: [firewall]
+      community.general.ufw:
+        direction: outgoing
+        default: allow
+
+    - name: "Burggraben: Loopback erlauben"
+      tags: [firewall]
+      community.general.ufw:
+        rule: allow
+        interface: lo
+        direction: in
+
+    - name: "Burggraben: Zugbruecken oeffnen (SSH, HTTP, HTTPS)"
+      tags: [firewall]
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: tcp
+        comment: "{{ item.comment }}"
+      loop:
+        - { port: "22", comment: "SSH" }
+        - { port: "80", comment: "HTTP" }
+        - { port: "443", comment: "HTTPS" }
+
+    - name: "Burggraben: Firewall aktivieren"
+      tags: [firewall]
+      community.general.ufw:
+        state: enabled
+
+    # =================================================================
+    # PHASE 3: Geheimgang (SSH Hardening)
+    # =================================================================
+
+    - name: "Geheimgang: SSH Drop-in Config"
+      tags: [ssh]
+      ansible.builtin.copy:
+        content: |
+          # === Access Control ===
+          PermitRootLogin no
+          AllowUsers {{ server_user }}
+          PasswordAuthentication no
+          PermitEmptyPasswords no
+          HostbasedAuthentication no
+          KbdInteractiveAuthentication no
+          IgnoreRhosts yes
+
+          # === Brute-Force Limits ===
+          MaxAuthTries {{ ssh_max_auth_tries }}
+          LoginGraceTime {{ ssh_login_grace_time }}
+          MaxStartups 10:30:60
+
+          # === Session ===
+          ClientAliveInterval {{ ssh_client_alive_interval }}
+          ClientAliveCountMax {{ ssh_client_alive_count_max }}
+          X11Forwarding no
+        dest: /etc/ssh/sshd_config.d/99-hardening.conf
+        mode: "0644"
+        validate: "sshd -t -f /etc/ssh/sshd_config"
+      notify: Reload SSH
+
+    # =================================================================
+    # PHASE 4: Wachturm (Fail2Ban)
+    # =================================================================
+
+    - name: "Wachturm: Fail2Ban installieren"
+      tags: [fail2ban]
+      ansible.builtin.apt:
+        name: fail2ban
+        state: present
+
+    - name: "Wachturm: jail.local konfigurieren"
+      tags: [fail2ban]
+      ansible.builtin.copy:
+        content: |
+          [DEFAULT]
+          bantime = {{ f2b_bantime }}
+          findtime = {{ f2b_findtime }}
+          maxretry = {{ f2b_maxretry }}
+          banaction = ufw
+
+          [sshd]
+          enabled = true
+          port = ssh
+          filter = sshd
+          logpath = /var/log/auth.log
+          maxretry = {{ f2b_maxretry }}
+          bantime = {{ f2b_bantime }}
+        dest: /etc/fail2ban/jail.local
+        mode: "0644"
+      notify: Restart Fail2Ban
+
+    # =================================================================
+    # PHASE 5: Burgmauern (Kernel Hardening)
+    # =================================================================
+
+    - name: "Burgmauern: Sysctl Hardening"
+      tags: [kernel]
+      ansible.builtin.copy:
+        content: |
+          # === Netzwerk (IPv4) ===
+          net.ipv4.conf.all.accept_redirects = 0
+          net.ipv4.conf.default.accept_redirects = 0
+          net.ipv4.conf.all.send_redirects = 0
+          net.ipv4.conf.default.send_redirects = 0
+          net.ipv4.conf.all.accept_source_route = 0
+          net.ipv4.conf.default.accept_source_route = 0
+          net.ipv4.conf.all.log_martians = 1
+          net.ipv4.conf.default.log_martians = 1
+          net.ipv4.conf.all.rp_filter = 1
+          net.ipv4.conf.default.rp_filter = 1
+          net.ipv4.tcp_syncookies = 1
+          net.ipv4.icmp_echo_ignore_broadcasts = 1
+          net.ipv4.icmp_ignore_bogus_error_responses = 1
+
+          # === Netzwerk (IPv6) ===
+          net.ipv6.conf.all.accept_redirects = 0
+          net.ipv6.conf.default.accept_redirects = 0
+          net.ipv6.conf.all.accept_source_route = 0
+          net.ipv6.conf.default.accept_source_route = 0
+
+          # === Kernel ===
+          kernel.randomize_va_space = 2
+          kernel.sysrq = 0
+          kernel.dmesg_restrict = 1
+          kernel.kptr_restrict = 2
+          kernel.yama.ptrace_scope = 2
+          kernel.unprivileged_bpf_disabled = 1
+          kernel.perf_event_paranoid = 3
+
+          # === Dateisystem ===
+          fs.suid_dumpable = 0
+          fs.protected_hardlinks = 1
+          fs.protected_symlinks = 1
+        dest: /etc/sysctl.d/99-hardening.conf
+        mode: "0644"
+      notify: Apply Sysctl
+
+    # =================================================================
+    # PHASE 6: Vorratskeller (Swap)
+    # =================================================================
+
+    - name: "Vorratskeller: Swap-Datei pruefen"
+      tags: [swap]
+      ansible.builtin.stat:
+        path: /swapfile
+      register: swap_file
+
+    - name: "Vorratskeller: Swap einrichten"
+      tags: [swap]
+      when: not swap_file.stat.exists
+      block:
+        - name: Swap-Datei erstellen
+          ansible.builtin.command:
+            cmd: "fallocate -l {{ server_swap }} /swapfile"
+          changed_when: true
+
+        - name: Swap-Datei Permissions
+          ansible.builtin.file:
+            path: /swapfile
+            mode: "0600"
+
+        - name: Swap formatieren
+          ansible.builtin.command:
+            cmd: mkswap /swapfile
+          changed_when: true
+
+        - name: Swap aktivieren
+          ansible.builtin.command:
+            cmd: swapon /swapfile
+          changed_when: true
+
+        - name: Swap in fstab (persistent)
+          ansible.builtin.lineinfile:
+            path: /etc/fstab
+            line: "/swapfile none swap sw 0 0"
+            state: present
+
+    # =================================================================
+    # PHASE 7: Uhr (Timezone)
+    # =================================================================
+
+    - name: "Uhr: Timezone setzen"
+      community.general.timezone:
+        name: "{{ server_timezone }}"
+
+    # =================================================================
+    # PHASE 8: Wartungstruppe (Updates)
+    # =================================================================
+
+    - name: "Wartungstruppe: System-Updates installieren"
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: safe
+      register: apt_upgrade
+
+    - name: "Wartungstruppe: unattended-upgrades installieren"
+      ansible.builtin.apt:
+        name: unattended-upgrades
+        state: present
+
+    - name: "Wartungstruppe: unattended-upgrades aktivieren"
+      ansible.builtin.systemd:
+        name: apt-daily-upgrade.timer
+        enabled: true
+        state: started
+
+    # =================================================================
+    # PHASE 9: Verifikation
+    # =================================================================
+
+    - name: "Burginspektor: UFW Status"
+      ansible.builtin.command: ufw status verbose
+      register: ufw_status
+      changed_when: false
+      check_mode: false
+
+    - name: "Burginspektor: Fail2Ban Status"
+      ansible.builtin.command: fail2ban-client status sshd
+      register: f2b_status
+      changed_when: false
+      check_mode: false
+
+    - name: "Burginspektor: Kernel-Parameter pruefen"
+      ansible.builtin.command: sysctl net.ipv4.conf.all.send_redirects net.ipv4.conf.all.rp_filter kernel.yama.ptrace_scope
+      register: sysctl_check
+      changed_when: false
+      check_mode: false
+
+    - name: "Burginspektor: Swap pruefen"
+      ansible.builtin.command: swapon --show
+      register: swap_check
+      changed_when: false
+      check_mode: false
+
+    - name: "Burginspektor: Ergebnis"
+      ansible.builtin.debug:
+        msg: |
+          === BURGINSPEKTION ABGESCHLOSSEN ===
+
+          UFW:      {{ 'AKTIV' if 'Status: active' in ufw_status.stdout else 'INAKTIV!' }}
+          Fail2Ban: {{ 'AKTIV' if 'Currently banned' in f2b_status.stdout else 'INAKTIV!' }}
+          Kernel:   send_redirects={{ sysctl_check.stdout_lines[0].split('=')[1] | trim }}, rp_filter={{ sysctl_check.stdout_lines[1].split('=')[1] | trim }}, ptrace={{ sysctl_check.stdout_lines[2].split('=')[1] | trim }}
+          Swap:     {{ 'AKTIV' if swap_check.stdout | length > 0 else 'NICHT VORHANDEN!' }}
+
+          {{ '>>> BURG IST GESICHERT <<<' if ('Status: active' in ufw_status.stdout and swap_check.stdout | length > 0) else '>>> ACHTUNG: NICHT ALLE SYSTEME AKTIV <<<' }}
+
+    # =================================================================
+    # Reboot-Check
+    # =================================================================
+
+    - name: "Reboot noetig?"
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    - name: "Hinweis: Reboot empfohlen"
+      when: reboot_required.stat.exists
+      ansible.builtin.debug:
+        msg: "ACHTUNG: Server-Reboot empfohlen (Kernel-Updates). Manuell ausfuehren: ssh {{ inventory_hostname }} 'sudo reboot'"
+
+  # ===================================================================
+  # Handlers
+  # ===================================================================
+
+  handlers:
+    - name: Reload SSH
+      ansible.builtin.systemd:
+        name: ssh
+        state: reloaded
+
+    - name: Restart Fail2Ban
+      ansible.builtin.systemd:
+        name: fail2ban
+        state: restarted
+
+    - name: Apply Sysctl
+      ansible.builtin.command: sysctl -p /etc/sysctl.d/99-hardening.conf
+      changed_when: true

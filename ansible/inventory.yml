@@ -1,0 +1,22 @@
+# Twin Kingdoms Inventory
+# Beide Burgen, ein Bauplan.
+
+all:
+  children:
+    kingdoms:
+      hosts:
+        rheinstein:
+          ansible_host: 82.165.165.199
+          ansible_user: deploy
+          ansible_ssh_private_key_file: ~/.ssh/strato_vps
+          deploy_user: deploy
+          swap_size: "4G"
+          timezone: "Europe/Berlin"
+
+        # nordwall:
+        #   ansible_host: 204.168.203.39
+        #   ansible_user: admin
+        #   ansible_ssh_private_key_file: ~/.ssh/hetzner_key
+        #   deploy_user: admin
+        #   swap_size: "4G"
+        #   timezone: "Europe/Berlin"
