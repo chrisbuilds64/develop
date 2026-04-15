@@ -4,6 +4,8 @@ Complete Docker setup with Backend API + PostgreSQL database.
 
 ## Quick Start
 
+**First-time setup:** See [Credential Management](#credential-management) below. `docker-compose up` will fail fast if `.env.local` is missing or `POSTGRES_PASSWORD` is not set.
+
 ```bash
 # Start everything
 docker-compose up -d
@@ -30,9 +32,9 @@ docker-compose down -v
 ### PostgreSQL Database
 - **Container:** `chrisbuilds-postgres`
 - **Port:** 5432
-- **Database:** chrisbuilds64
-- **User:** chrisbuilds
-- **Password:** dev_password_change_in_production
+- **Database:** chrisbuilds64 (default, override via `POSTGRES_DB`)
+- **User:** chrisbuilds (default, override via `POSTGRES_USER`)
+- **Password:** loaded from `.env.local` (required, see Credential Management)
 
 ## Features
 
@@ -215,6 +217,59 @@ docker rmi develop-backend
 # Start fresh
 docker-compose up -d --build
 ```
+
+## Credential Management
+
+This is a public repository. **Never commit credentials.** Secrets live outside the repo and are injected at runtime via `.env.local`.
+
+### Required Variables
+
+`docker-compose.yml` reads the following from `.env.local` (auto-loaded by Docker Compose in the project root):
+
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `POSTGRES_PASSWORD` | yes | — | Startup fails if unset |
+| `POSTGRES_USER` | no | `chrisbuilds` | |
+| `POSTGRES_DB` | no | `chrisbuilds64` | |
+| `ENV` | no | `development` | `development` / `production` |
+| `DEBUG` | no | `false` | Keep `false` in committed configs |
+| `LOG_LEVEL` | no | `INFO` | |
+
+### First-Time Setup
+
+1. Create `.env.local` in the repo root (gitignored, verify with `git check-ignore .env.local`):
+   ```bash
+   POSTGRES_PASSWORD=<generate a strong password>
+   ```
+2. Generate a password locally, e.g. `openssl rand -base64 32`.
+3. Never echo the password into chat, commit messages, or logs.
+
+### .gitignore Verification
+
+Before the first commit, confirm `.env.local` is ignored:
+```bash
+git check-ignore -v .env.local
+# expected: .gitignore:<line>:.env.local   .env.local
+```
+
+### Rotation
+
+- **Dev:** Rotate `POSTGRES_PASSWORD` on suspicion or when sharing the machine.
+- **Prod:** Rotate every 6 months (policy: `control/principles/SECURITY-POLICY.md`).
+- **Procedure:** Stop stack (`docker-compose down`), update `.env.local`, wipe data volume if needed (`docker-compose down -v`), restart. Existing databases retain the old password unless you also run `ALTER USER chrisbuilds WITH PASSWORD '<new>'`.
+
+### Production Secrets
+
+Do not use `.env.local` in production. Inject secrets via the host's secret manager (systemd `EnvironmentFile` with mode 600, Docker Swarm secrets, or the platform's native secret store). See `control/principles/SECURITY-POLICY.md` for the canonical secret locations (`~/.secrets/chrisbuilds64/`, mode 400).
+
+### Incident Response
+
+If a credential leaks:
+1. Rotate immediately — do not investigate first.
+2. If pushed to a public branch: treat as compromised even after a force-push. Use BFG Repo-Cleaner to strip history, force-push, and notify.
+3. Log the incident in the next `control/audits/YYYY-MM-DD_security-audit.md`.
+
+---
 
 ## Production Notes
 
