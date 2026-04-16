@@ -14,9 +14,9 @@ all:
           timezone: "Europe/Berlin"
 
         # nordwall:
-        #   ansible_host: 204.168.203.39
+        #   ansible_host: 203.0.113.42            # Platzhalter, echte IP vor Deployment eintragen
         #   ansible_user: admin
-        #   ansible_ssh_private_key_file: ~/.ssh/hetzner_key
+        #   ansible_ssh_private_key_file: ~/.ssh/nordwall_key
         #   deploy_user: admin
         #   swap_size: "4G"
         #   timezone: "Europe/Berlin"

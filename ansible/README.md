@@ -40,7 +40,7 @@ ansible-playbook -i inventory.yml foundation.yml --limit rheinstein --start-at-t
 
 ## Inventory
 
-Beide Koenigreiche sind in `inventory.yml` definiert. Nordwall (Lars/Hetzner) ist auskommentiert bis er bereit ist.
+Beide Koenigreiche sind in `inventory.yml` definiert. Nordwall ist dort vorangelegt, aber auskommentiert bis Deployment ansteht.
 
 ## Idempotenz
 

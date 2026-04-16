@@ -2,7 +2,7 @@
 
 **Datum:** 3. April 2026
 **Status:** Vergleichs-Audit beider Burgen mit Handlungsanweisungen
-**Zweck:** Zwei Burgherren bauen gleichzeitig ihre Festungen. Was kann der eine vom anderen lernen?
+**Zweck:** Zwei Baumeister bauen gleichzeitig ihre Festungen. Was kann der eine vom anderen lernen?
 
 ---
 
@@ -12,9 +12,9 @@
                 KÖNIGREICH RHEINLAND                    KÖNIGREICH NORDWALL
                 ~~~~~~~~~~~~~~~~~~~                     ~~~~~~~~~~~~~~~~~~
 
-        Burgherr: Christian                     Burgherr: Lars
+        Burgherr: Christian                     Burgherr: (anonymisiert)
         Burg:     RHEINSTEIN                    Burg:     NORDWALL
-        Lage:     Strato (Deutschland)          Lage:     Hetzner (Helsinki)
+        Lage:     Strato (Deutschland)          Lage:     Northern Hoster (Northhaven)
         Terrain:  Ubuntu 24.04                  Terrain:  Ubuntu 24.04
         Zweck:    AI Backend + Content          Zweck:    (in Aufbau)
 
@@ -44,19 +44,19 @@
 | unattended-upgrades | Ja | Ja | Patches automatisch |
 | ASLR (Speicher-Schutz) | Ja (Default) | Ja (Default) | Kernel-Standard |
 | tcp_syncookies | Ja | Ja | SYN-Flood-Schutz |
-| AppArmor | Ja (Default) | Ja (24 Profile) | Nordwall explizit geprueft |
+| AppArmor | Ja (Default) | Ja (24 Profile) | Nordwall explizit geprüft |
 
 ---
 
 ### Was RHEINSTEIN hat, was NORDWALL fehlt
 
-Diese Elemente sollte Lars in Nordwall nachrüsten:
+Diese Elemente sollten in Nordwall nachgerüstet werden:
 
 #### 1. Vorratskeller (Swap)
 
 **Problem:** Nordwall hat keinen Notfall-Vorrat. Wenn der Thronsaal (Applikation) zu viel RAM frisst, stuerzt alles ab. Kein Puffer, kein Fallback.
 
-**Handlung Lars:**
+**Handlung Nordwall:**
 ```bash
 sudo fallocate -l 4G /swapfile
 sudo chmod 600 /swapfile
@@ -72,9 +72,9 @@ free -h | grep Swap
 
 #### 2. Burguhr (Timezone)
 
-**Problem:** Nordwall steht in Helsinki, die Uhr zeigt vermutlich UTC oder finnische Zeit. Wenn Lars nachts in den Logs nach einem Vorfall sucht, muss er im Kopf Zeitzonen umrechnen.
+**Problem:** Nordwall steht in Northhaven, die Uhr zeigt vermutlich UTC oder lokale Nordzeit. Wenn der Baumeister nachts in den Logs nach einem Vorfall sucht, muss er im Kopf Zeitzonen umrechnen.
 
-**Handlung Lars:**
+**Handlung Nordwall:**
 ```bash
 sudo timedatectl set-timezone Europe/Berlin
 timedatectl
@@ -86,7 +86,7 @@ timedatectl
 
 **Problem:** Nordwall hat ein exzellentes Audit. Aber wer patrouilliert nach dem Audit? Es fehlen die täglichen Kontroll-Befehle.
 
-**Handlung Lars:** Diese Befehle irgendwo griffbereit ablegen:
+**Handlung Nordwall (Cheatsheet):** Diese Befehle irgendwo griffbereit ablegen:
 
 ```bash
 # Wer hämmert an die Tür?
@@ -114,27 +114,27 @@ cat /var/run/reboot-required 2>/dev/null || echo "Nein"
 
 #### 4. Lokale Burgtor-Konfiguration (SSH Config + known_hosts)
 
-**Problem:** Lars muss jedes Mal IP, User und Key eintippen. Und wenn der Server neu installiert wird, scheitert SSH wegen geändertem Fingerprint.
+**Problem:** Jedes Mal IP, User und Key eintippen ist Reibung. Und wenn der Server neu installiert wird, scheitert SSH wegen geändertem Fingerprint.
 
-**Handlung Lars:** Auf seinem lokalen Rechner:
+**Handlung Nordwall:** Auf dem lokalen Rechner:
 
 ```bash
 # ~/.ssh/config
 Host nordwall
-    HostName 204.168.203.39
+    HostName 203.0.113.42        # Platzhalter, echte IP einsetzen
     User admin
-    IdentityFile ~/.ssh/hetzner_key
+    IdentityFile ~/.ssh/nordwall_key
 ```
 
 Danach reicht: `ssh nordwall`
 
-Bei Server-Neuinstallation: `ssh-keygen -R 204.168.203.39`
+Bei Server-Neuinstallation: `ssh-keygen -R 203.0.113.42`
 
 ---
 
 ### Was NORDWALL hat, was RHEINSTEIN fehlte (jetzt nachgerüstet)
 
-Diese Punkte aus Lars' Audit haben wir in Rheinsteins Modul 01 übernommen:
+Diese Punkte aus dem Nordwall-Audit haben wir in Rheinsteins Modul 01 übernommen:
 
 | Element | Vorher (Rheinstein) | Nachher (aus Nordwall gelernt) |
 |---------|-------------------|-------------------------------|
@@ -146,7 +146,7 @@ Diese Punkte aus Lars' Audit haben wir in Rheinsteins Modul 01 übernommen:
 | Kernel Hardening | Fehlte komplett | Neuer Schritt 10 (sysctl: ICMP, Spoofing, ptrace, BPF) |
 | Verifikation | Nur Checkliste | Jetzt mit konkreten Tests (nmap, SSH-Probes) |
 
-**Fazit:** Lars' Audit war der Burginspektor, den Rheinstein gebraucht hat.
+**Fazit:** Das Nordwall-Audit war der Burginspektor, den Rheinstein gebraucht hat.
 
 ---
 
@@ -154,7 +154,7 @@ Diese Punkte aus Lars' Audit haben wir in Rheinsteins Modul 01 übernommen:
 
 #### VPN-Tunnel (WireGuard)
 
-Lars baut einen geheimen Tunnel zur Burg: SSH wird komplett von der öffentlichen Straße genommen, nur noch über WireGuard erreichbar. Wer die Burg betreten will, muss erst durch den Tunnel.
+Nordwall baut einen geheimen Tunnel zur Burg: SSH wird komplett von der öffentlichen Straße genommen, nur noch über WireGuard erreichbar. Wer die Burg betreten will, muss erst durch den Tunnel.
 
 **Nordwall-Ansatz:** Internet -> WireGuard (51820) -> SSH (nur über VPN)
 **Rheinstein-Ansatz:** Internet -> SSH (22) + Fail2Ban + Key-Only
@@ -180,26 +180,26 @@ Nordwall plant einen Chronisten, der jede Änderung an kritischen Dokumenten pro
 **Handlung (beide, optional):**
 ```bash
 sudo apt install -y auditd audispd-plugins
-# Audit-Regeln: siehe Lars' Dokument Phase 5
+# Audit-Regeln: siehe Nordwall-Doku Phase 5
 ```
 
 ---
 
 ## Handlungsplan: Wer macht was?
 
-### Lars (Burg Nordwall)
+### Nordwall (Burg)
 
-Sein Audit ist hervorragend. Die Massnahmen sind klar priorisiert. Zusätzlich empfohlen:
+Das Audit ist hervorragend. Die Massnahmen sind klar priorisiert. Zusätzlich empfohlen:
 
 | Nr | Was | Prio | Aufwand |
 |----|-----|------|---------|
-| L1 | Swap einrichten (4 GB) | HOCH | 2 Min |
-| L2 | Timezone setzen (Europe/Berlin) | MITTEL | 30 Sek |
-| L3 | Monitoring-Cheatsheet ablegen | MITTEL | 5 Min |
-| L4 | Lokale SSH Config einrichten | NIEDRIG | 2 Min |
-| L5 | Phase 1-3 seines Plans abarbeiten | KRITISCH | 30 Min |
+| N1 | Swap einrichten (4 GB) | HOCH | 2 Min |
+| N2 | Timezone setzen (Europe/Berlin) | MITTEL | 30 Sek |
+| N3 | Monitoring-Cheatsheet ablegen | MITTEL | 5 Min |
+| N4 | Lokale SSH Config einrichten | NIEDRIG | 2 Min |
+| N5 | Phase 1-3 des Plans abarbeiten | KRITISCH | 30 Min |
 
-**Reihenfolge:** L5 zuerst (sein Plan ist gut priorisiert), dann L1-L4 einstreuen.
+**Reihenfolge:** N5 zuerst (der Plan ist gut priorisiert), dann N1-N4 einstreuen.
 
 ### Christian (Burg Rheinstein)
 
