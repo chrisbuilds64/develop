@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feldorakel – Bäuerliche Wetterweisheit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --erde:    #4a2e0e;
+      --gold:    #c8891a;
+      --stroh:   #f0d080;
+      --himmel:  #6ba3be;
+      --wiese:   #5a7a3a;
+      --creme:   #fdf6e3;
+      --papier:  #fffbf0;
+      --grau:    #7a6a5a;
+    }
+
+    body {
+      font-family: 'Lato', sans-serif;
+      background-color: var(--creme);
+      background-image:
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8891a' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      min-height: 100vh;
+      color: var(--erde);
+    }
+
+    /* ── HEADER ── */
+    .hero {
+      position: relative;
+      background: linear-gradient(160deg, #2d5a1b 0%, #4a7a28 35%, #7aaa3a 65%, #c8891a 100%);
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .hero-img {
+      width: 100%;
+      display: block;
+      max-height: 420px;
+      object-fit: cover;
+      object-position: center 40%;
+      opacity: 0.88;
+    }
+
+    /* Fallback wenn kein Bild */
+    .hero-placeholder {
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6rem;
+      background: linear-gradient(160deg, #2d5a1b 0%, #4a7a28 40%, #8ab840 70%, #c8a030 100%);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(30,15,0,0.55) 100%);
+    }
+
+    .hero-text {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      color: white;
+      width: 100%;
+      padding: 0 20px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    }
+
+    .hero-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .hero-text .tagline {
+      font-size: clamp(0.85rem, 2vw, 1.05rem);
+      font-style: italic;
+      opacity: 0.92;
+      font-family: 'Playfair Display', serif;
+    }
+
+    /* ── NAVIGATION STRIP ── */
+    .region-strip {
+      background: var(--erde);
+      color: var(--stroh);
+      text-align: center;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 8px 20px;
+    }
+
+    /* ── MAIN ── */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--papier);
+      border: 1px solid #d9c89a;
+      border-radius: 2px;
+      padding: 36px 32px;
+      box-shadow:
+        0 2px 8px rgba(74, 46, 14, 0.08),
+        0 0 0 4px rgba(200, 137, 26, 0.06);
+      margin-bottom: 32px;
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      color: var(--gold);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, #d9c89a, transparent);
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--grau);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid #d0bc8a;
+      border-radius: 2px;
+      font-size: 1rem;
+      font-family: 'Lato', sans-serif;
+      background: #fffef8;
+      color: var(--erde);
+      margin-bottom: 20px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(200, 137, 26, 0.12);
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--grau);
+      margin-top: -16px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px 20px;
+      background: var(--wiese);
+      color: white;
+      border: none;
+      border-radius: 2px;
+      font-size: 1rem;
+      font-family: 'Lato', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover  { background: #4a6a2a; }
+    button:active { transform: scale(0.99); }
+    button:disabled {
+      background: #9aaa8a;
+      cursor: wait;
+    }
+
+    /* ── SPINNER ── */
+    .spinner {
+      display: none;
+      text-align: center;
+      margin-top: 28px;
+      color: var(--grau);
+      font-style: italic;
+      line-height: 2;
+    }
+
+    .spinner .dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+
+    /* ── RESULT ── */
+    #result { display: none; }
+
+    .wetter-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      background: linear-gradient(135deg, #edf5e8, #f5edcc);
+      border: 1px solid #c8d8a8;
+      border-radius: 2px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 0.88rem;
+      color: #3a5a1a;
+    }
+
+    .wetter-strip span { white-space: nowrap; }
+
+    .orakel-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .orakel-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--erde);
+    }
+
+    .orakel-meta {
+      font-size: 0.82rem;
+      color: var(--grau);
+      font-style: italic;
+    }
+
+    .scroll-box {
+      background: var(--papier);
+      border: 1px solid #d0bc8a;
+      border-left: 4px solid var(--gold);
+      border-radius: 2px;
+      padding: 26px 28px;
+      line-height: 1.85;
+      font-size: 1.02rem;
+      color: #2a1a0a;
+      white-space: pre-wrap;
+    }
+
+    .scroll-box strong {
+      font-family: 'Playfair Display', serif;
+      color: var(--erde);
+      font-style: italic;
+    }
+
+    /* ── ERROR ── */
+    .error-box {
+      display: none;
+      margin-top: 20px;
+      padding: 14px 18px;
+      background: #fdf0f0;
+      border: 1px solid #e0a0a0;
+      border-radius: 2px;
+      color: #8a2020;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    /* ── TRENNLINIE ── */
+    .ornament {
+      text-align: center;
+      color: var(--gold);
+      font-size: 1.2rem;
+      letter-spacing: 8px;
+      margin: 32px 0;
+      opacity: 0.6;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--grau);
+      font-style: italic;
+      line-height: 1.8;
+    }
+
+    footer a { color: var(--gold); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <header class="hero">
+    <img src="/static/hero.jpg" alt="Feldorakel" class="hero-img" />
+    <div class="hero-overlay"></div>
+    <div class="hero-text">
+      <h1>Feldorakel</h1>
+      <p class="tagline">Wenn die Tabelle lügt, fragt der Bauer den Himmel.</p>
+    </div>
+  </header>
+
+  <div class="region-strip">
+    ⛰ Österreich &nbsp;·&nbsp; Schweiz &nbsp;·&nbsp; Bayern &nbsp;·&nbsp; Baden-Württemberg
+  </div>
+
+  <main>
+
+    <div class="card">
+      <div class="card-title">🌤 Standort & Datum</div>
+
+      <form id="form">
+        <label for="location">Dein Ort</label>
+        <input
+          id="location"
+          name="location"
+          type="text"
+          placeholder="Wien, Zürich, München, Graz …"
+          required
+          autocomplete="off"
+        />
+        <p class="hint">Funktioniert am besten für Orte in Österreich, der Schweiz und Süddeutschland.</p>
+
+        <label for="query_date">Datum</label>
+        <input
+          id="query_date"
+          name="query_date"
+          type="date"
+        />
+
+        <button type="submit" id="btn">🌱 Das Orakel befragen</button>
+      </form>
+
+      <div class="spinner" id="spinner">
+        Der alte Bauer schaut in den Himmel<span class="dots"></span><br>
+        <small>(Das dauert kurz. Formulare ausfüllen würde länger dauern.)</small>
+      </div>
+
+      <div class="error-box" id="error-box"></div>
+    </div>
+
+    <div id="result">
+      <div class="wetter-strip" id="wetter-strip"></div>
+
+      <div class="card">
+        <div class="orakel-header">
+          <div class="orakel-title">📜 Bäuerlicher Tagesbefehl</div>
+          <div class="orakel-meta" id="orakel-meta"></div>
+        </div>
+        <div class="ornament">✦ · · ✦ · · ✦</div>
+        <div class="scroll-box" id="orakel-text"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    Das Feldorakel basiert auf traditionellen deutschen Bauernregeln.<br>
+    Für Beihilfeanträge, Cross-Compliance-Prüfungen und Flächenprämien wenden Sie sich bitte<br>
+    an Ihre zuständige Landwirtschaftskammer. Die ist nicht amüsant, aber zuständig.<br><br>
+    Kein EU-Förderformular wurde bei der Erstellung dieser Vorhersage beschädigt.
+  </footer>
+
+  <script>
+    const form    = document.getElementById('form');
+    const btn     = document.getElementById('btn');
+    const spinner = document.getElementById('spinner');
+    const result  = document.getElementById('result');
+    const errorBox = document.getElementById('error-box');
+
+    // Heutiges Datum als Default
+    document.getElementById('query_date').value =
+      new Date().toISOString().split('T')[0];
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled      = true;
+      spinner.style.display  = 'block';
+      result.style.display   = 'none';
+      errorBox.style.display = 'none';
+
+      try {
+        const resp = await fetch('/forecast', {
+          method: 'POST',
+          body: new FormData(form),
+        });
+        const json = await resp.json();
+
+        if (json.error) {
+          errorBox.textContent = '⚠ Fehler: ' + json.error;
+          errorBox.style.display = 'block';
+        } else {
+          document.getElementById('wetter-strip').innerHTML =
+            `<span>📍 <strong>${json.location}</strong></span>` +
+            `<span>🌡 ${json.weather.temp_c}°C (gefühlt ${json.weather.feels_like}°C)</span>` +
+            `<span>☁ ${json.weather.description}</span>` +
+            `<span>💨 ${json.weather.wind_kmph} km/h</span>` +
+            `<span>💧 ${json.weather.humidity}% Luftfeuchtigkeit</span>`;
+
+          document.getElementById('orakel-meta').textContent =
+            'für morgen · ' + json.date;
+
+          const html = json.advice
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+          document.getElementById('orakel-text').innerHTML = html;
+
+          result.style.display = 'block';
+          result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch {
+        errorBox.textContent = '⚠ Das Orakel ist gerade auf dem Feld. Bitte gleich nochmal versuchen.';
+        errorBox.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
