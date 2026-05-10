@@ -95,11 +95,43 @@
     .region-strip {
       background: var(--erde);
       color: var(--stroh);
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       font-size: 0.8rem;
       letter-spacing: 2px;
       text-transform: uppercase;
       padding: 8px 20px;
+    }
+
+    /* ── LANGUAGE TOGGLE ── */
+    .lang-toggle {
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: 1px solid rgba(240, 208, 128, 0.4);
+      color: var(--stroh);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      cursor: pointer;
+      width: auto;
+      border-radius: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .lang-btn:hover { background: rgba(240, 208, 128, 0.15); }
+    .lang-btn:active { transform: none; }
+
+    .lang-btn.active {
+      background: var(--stroh);
+      color: var(--erde);
+      border-color: var(--stroh);
     }
 
     /* ── MAIN ── */
@@ -299,6 +331,51 @@
       opacity: 0.6;
     }
 
+    /* ── BUILDER BANNER ── */
+    .builder-banner {
+      max-width: 680px;
+      margin: 0 auto 32px;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    .builder-banner-inner {
+      border-top: 1px solid #d9c89a;
+      padding-top: 28px;
+    }
+
+    .builder-banner p {
+      font-size: 0.88rem;
+      color: var(--grau);
+      line-height: 1.7;
+      margin-bottom: 6px;
+    }
+
+    .builder-banner .tagline-builder {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: var(--erde);
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+
+    .builder-banner a {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 8px 20px;
+      background: var(--erde);
+      color: var(--stroh);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border-radius: 2px;
+      transition: background 0.2s;
+    }
+
+    .builder-banner a:hover { background: var(--gold); color: white; }
+
     /* ── FOOTER ── */
     footer {
       max-width: 680px;
@@ -323,21 +400,27 @@
     <div class="hero-overlay"></div>
     <div class="hero-text">
       <h1>Feldorakel</h1>
-      <p class="tagline">Wenn die Tabelle lügt, fragt der Bauer den Himmel.</p>
+      <p class="tagline" id="hero-tagline">Wenn die Tabelle lügt, fragt der Bauer den Himmel.</p>
     </div>
   </header>
 
   <div class="region-strip">
-    ⛰ Österreich &nbsp;·&nbsp; Schweiz &nbsp;·&nbsp; Bayern &nbsp;·&nbsp; Baden-Württemberg
+    <span id="region-text">⛰ Österreich &nbsp;·&nbsp; Schweiz &nbsp;·&nbsp; Bayern &nbsp;·&nbsp; Baden-Württemberg</span>
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="de" type="button">DE</button>
+      <button class="lang-btn" data-lang="en" type="button">EN</button>
+    </div>
   </div>
 
   <main>
 
     <div class="card">
-      <div class="card-title">🌤 Standort & Datum</div>
+      <div class="card-title" id="card-title-form">🌤 Standort & Datum</div>
 
       <form id="form">
-        <label for="location">Dein Ort</label>
+        <input type="hidden" name="lang" id="lang-input" value="de" />
+
+        <label for="location" id="label-location">Dein Ort</label>
         <input
           id="location"
           name="location"
@@ -346,9 +429,9 @@
           required
           autocomplete="off"
         />
-        <p class="hint">Funktioniert am besten für Orte in Österreich, der Schweiz und Süddeutschland.</p>
+        <p class="hint" id="hint-location">Funktioniert am besten für Orte in Österreich, der Schweiz und Süddeutschland.</p>
 
-        <label for="query_date">Datum</label>
+        <label for="query_date" id="label-date">Datum</label>
         <input
           id="query_date"
           name="query_date"
@@ -359,8 +442,8 @@
       </form>
 
       <div class="spinner" id="spinner">
-        Der alte Bauer schaut in den Himmel<span class="dots"></span><br>
-        <small>(Das dauert kurz. Formulare ausfüllen würde länger dauern.)</small>
+        <span id="spinner-text">Der alte Bauer schaut in den Himmel</span><span class="dots"></span><br>
+        <small id="spinner-subtext">(Das dauert kurz. Formulare ausfüllen würde länger dauern.)</small>
       </div>
 
       <div class="error-box" id="error-box"></div>
@@ -371,7 +454,7 @@
 
       <div class="card">
         <div class="orakel-header">
-          <div class="orakel-title">📜 Bäuerlicher Tagesbefehl</div>
+          <div class="orakel-title" id="orakel-title">📜 Bäuerlicher Tagesbefehl</div>
           <div class="orakel-meta" id="orakel-meta"></div>
         </div>
         <div class="ornament">✦ · · ✦ · · ✦</div>
@@ -381,7 +464,21 @@
 
   </main>
 
-  <footer>
+  <div class="builder-banner">
+    <div class="builder-banner-inner">
+      <p class="tagline-builder" id="banner-tagline">Ja, KI-Nerds machen auch manchmal einfach Spaß.</p>
+      <p id="banner-desc">
+        Das Feldorakel entstand an einem verregneten Abend in Wien — eine App-Idee,
+        ein paar Stunden, und ein alter Bauer der mehr weiß als jeder Wettercomputer.
+        Gebaut von <strong>ChrisBuilds64</strong>.
+      </p>
+      <a href="https://www.chrisbuilds64.com" target="_blank" rel="noopener">
+        www.chrisbuilds64.com
+      </a>
+    </div>
+  </div>
+
+  <footer id="footer-text">
     Das Feldorakel basiert auf traditionellen deutschen Bauernregeln.<br>
     Für Beihilfeanträge, Cross-Compliance-Prüfungen und Flächenprämien wenden Sie sich bitte<br>
     an Ihre zuständige Landwirtschaftskammer. Die ist nicht amüsant, aber zuständig.<br><br>
@@ -389,11 +486,86 @@
   </footer>
 
   <script>
-    const form    = document.getElementById('form');
-    const btn     = document.getElementById('btn');
-    const spinner = document.getElementById('spinner');
-    const result  = document.getElementById('result');
+    const form     = document.getElementById('form');
+    const btn      = document.getElementById('btn');
+    const spinner  = document.getElementById('spinner');
+    const result   = document.getElementById('result');
     const errorBox = document.getElementById('error-box');
+    const langInput = document.getElementById('lang-input');
+
+    const I18N = {
+      de: {
+        heroTagline:   'Wenn die Tabelle lügt, fragt der Bauer den Himmel.',
+        regionText:    '⛰ Österreich &nbsp;·&nbsp; Schweiz &nbsp;·&nbsp; Bayern &nbsp;·&nbsp; Baden-Württemberg',
+        cardTitleForm: '🌤 Standort & Datum',
+        locationLabel: 'Dein Ort',
+        locationPlaceholder: 'Wien, Zürich, München, Graz …',
+        locationHint:  'Funktioniert am besten für Orte in Österreich, der Schweiz und Süddeutschland.',
+        dateLabel:     'Datum',
+        btnText:       '🌱 Das Orakel befragen',
+        spinnerText:   'Der alte Bauer schaut in den Himmel',
+        spinnerSub:    '(Das dauert kurz. Formulare ausfüllen würde länger dauern.)',
+        orakelTitle:   '📜 Bäuerlicher Tagesbefehl',
+        forTomorrow:   'für morgen · ',
+        feelsLike:     'gefühlt',
+        humidity:      'Luftfeuchtigkeit',
+        errorGeneral:  '⚠ Das Orakel ist gerade auf dem Feld. Bitte gleich nochmal versuchen.',
+        errorPrefix:   '⚠ Fehler: ',
+        bannerTagline: 'Ja, KI-Nerds machen auch manchmal einfach Spaß.',
+        bannerDesc:    'Das Feldorakel entstand an einem verregneten Abend in Wien — eine App-Idee, ein paar Stunden, und ein alter Bauer der mehr weiß als jeder Wettercomputer. Gebaut von <strong>ChrisBuilds64</strong>.',
+        footerText:    'Das Feldorakel basiert auf traditionellen deutschen Bauernregeln.<br>Für Beihilfeanträge, Cross-Compliance-Prüfungen und Flächenprämien wenden Sie sich bitte<br>an Ihre zuständige Landwirtschaftskammer. Die ist nicht amüsant, aber zuständig.<br><br>Kein EU-Förderformular wurde bei der Erstellung dieser Vorhersage beschädigt.',
+      },
+      en: {
+        heroTagline:   'When the spreadsheet lies, the farmer asks the sky.',
+        regionText:    '⛰ Austria &nbsp;·&nbsp; Switzerland &nbsp;·&nbsp; Bavaria &nbsp;·&nbsp; Baden-Württemberg',
+        cardTitleForm: '🌤 Location & Date',
+        locationLabel: 'Your location',
+        locationPlaceholder: 'Vienna, Zurich, Munich, Graz …',
+        locationHint:  'Works best for cities in Austria, Switzerland, and southern Germany.',
+        dateLabel:     'Date',
+        btnText:       '🌱 Consult the Oracle',
+        spinnerText:   'The old farmer is reading the sky',
+        spinnerSub:    "(Won't take long. Filling in subsidy forms takes longer.)",
+        orakelTitle:   "📜 Farmer's Daily Dispatch",
+        forTomorrow:   'for tomorrow · ',
+        feelsLike:     'feels like',
+        humidity:      'humidity',
+        errorGeneral:  '⚠ The oracle is out in the field. Try again in a moment.',
+        errorPrefix:   '⚠ Error: ',
+        bannerTagline: 'Yes, AI nerds like to have fun too.',
+        bannerDesc:    'Feldorakel was built on a rainy evening in Vienna — one idea, a few hours, and an old farmer who knows more than any weather computer. Built by <strong>ChrisBuilds64</strong>.',
+        footerText:    'Feldorakel is based on traditional European farming proverbs.<br>For subsidy applications, Cross-Compliance checks, and area payments, please contact<br>your local agricultural authority. They are not amusing, but they are responsible.<br><br>No EU subsidy form was harmed in the making of this forecast.',
+      },
+    };
+
+    let currentLang = 'de';
+
+    function applyLang(lang) {
+      currentLang = lang;
+      langInput.value = lang;
+      const t = I18N[lang];
+      document.getElementById('hero-tagline').textContent       = t.heroTagline;
+      document.getElementById('region-text').innerHTML          = t.regionText;
+      document.getElementById('card-title-form').textContent    = t.cardTitleForm;
+      document.getElementById('label-location').textContent     = t.locationLabel;
+      document.getElementById('location').placeholder           = t.locationPlaceholder;
+      document.getElementById('hint-location').textContent      = t.locationHint;
+      document.getElementById('label-date').textContent         = t.dateLabel;
+      btn.textContent = t.btnText;
+      document.getElementById('spinner-text').textContent       = t.spinnerText;
+      document.getElementById('spinner-subtext').textContent    = t.spinnerSub;
+      document.getElementById('orakel-title').textContent       = t.orakelTitle;
+      document.getElementById('banner-tagline').textContent     = t.bannerTagline;
+      document.getElementById('banner-desc').innerHTML          = t.bannerDesc;
+      document.getElementById('footer-text').innerHTML          = t.footerText;
+      document.querySelectorAll('.lang-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.lang === lang);
+      });
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(b => {
+      b.addEventListener('click', () => applyLang(b.dataset.lang));
+    });
 
     // Heutiges Datum als Default
     document.getElementById('query_date').value =
@@ -401,7 +573,8 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      btn.disabled      = true;
+      const t = I18N[currentLang];
+      btn.disabled           = true;
       spinner.style.display  = 'block';
       result.style.display   = 'none';
       errorBox.style.display = 'none';
@@ -414,18 +587,20 @@
         const json = await resp.json();
 
         if (json.error) {
-          errorBox.textContent = '⚠ Fehler: ' + json.error;
+          errorBox.textContent = t.errorPrefix + json.error;
           errorBox.style.display = 'block';
         } else {
+          const feelsLabel = currentLang === 'de' ? 'gefühlt' : 'feels like';
+          const humLabel   = currentLang === 'de' ? 'Luftfeuchtigkeit' : 'humidity';
           document.getElementById('wetter-strip').innerHTML =
             `<span>📍 <strong>${json.location}</strong></span>` +
-            `<span>🌡 ${json.weather.temp_c}°C (gefühlt ${json.weather.feels_like}°C)</span>` +
+            `<span>🌡 ${json.weather.temp_c}°C (${feelsLabel} ${json.weather.feels_like}°C)</span>` +
             `<span>☁ ${json.weather.description}</span>` +
             `<span>💨 ${json.weather.wind_kmph} km/h</span>` +
-            `<span>💧 ${json.weather.humidity}% Luftfeuchtigkeit</span>`;
+            `<span>💧 ${json.weather.humidity}% ${humLabel}</span>`;
 
           document.getElementById('orakel-meta').textContent =
-            'für morgen · ' + json.date;
+            t.forTomorrow + json.date;
 
           const html = json.advice
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -435,7 +610,7 @@
           result.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       } catch {
-        errorBox.textContent = '⚠ Das Orakel ist gerade auf dem Feld. Bitte gleich nochmal versuchen.';
+        errorBox.textContent = t.errorGeneral;
         errorBox.style.display = 'block';
       } finally {
         btn.disabled = false;

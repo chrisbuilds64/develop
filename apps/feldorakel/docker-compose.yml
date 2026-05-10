@@ -6,6 +6,9 @@ services:
     env_file: .env.local
     expose:
       - "8000"
-    labels:
-      - "caddy=plowcast.chrisbuilds64.com"
-      - "caddy.reverse_proxy={{upstreams 8000}}"
+    networks:
+      - caddy-net
+
+networks:
+  caddy-net:
+    external: true

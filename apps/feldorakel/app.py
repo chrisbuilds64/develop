@@ -16,24 +16,55 @@ app.mount("/static", StaticFiles(directory="templates"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 with open("rules.json") as f:
-    ALL_RULES = json.load(f)["rules"]
+    ALL_RULES_DE = json.load(f)["rules"]
 
-MONTH_NAMES = [
+with open("rules_en.json") as f:
+    ALL_RULES_EN = json.load(f)["rules"]
+
+MONTH_NAMES_DE = [
     "Jänner", "Februar", "März", "April", "Mai", "Juni",
     "Juli", "August", "September", "Oktober", "November", "Dezember",
 ]
 
+MONTH_NAMES_EN = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
+
 DACH_REGIONS = {
+    "wien": "Austria", "vienna": "Austria",
+    "graz": "Austria", "salzburg": "Austria", "innsbruck": "Austria",
+    "linz": "Austria", "klagenfurt": "Austria", "bregenz": "Austria",
+    "zürich": "Switzerland", "zurich": "Switzerland",
+    "bern": "Switzerland", "berne": "Switzerland",
+    "basel": "Switzerland", "basle": "Switzerland",
+    "genf": "Switzerland", "geneva": "Switzerland", "genève": "Switzerland",
+    "luzern": "Switzerland", "lucerne": "Switzerland",
+    "münchen": "Bavaria", "munich": "Bavaria",
+    "nürnberg": "Bavaria", "nuremberg": "Bavaria",
+    "augsburg": "Bavaria", "regensburg": "Bavaria",
+    "würzburg": "Bavaria", "wurzburg": "Bavaria",
+    "stuttgart": "Baden-Württemberg", "freiburg": "Baden-Württemberg",
+    "heidelberg": "Baden-Württemberg", "karlsruhe": "Baden-Württemberg",
+    "ulm": "Baden-Württemberg", "konstanz": "Baden-Württemberg", "constance": "Baden-Württemberg",
+}
+
+DACH_REGIONS_DE = {
     "wien": "Österreich", "vienna": "Österreich",
     "graz": "Österreich", "salzburg": "Österreich", "innsbruck": "Österreich",
     "linz": "Österreich", "klagenfurt": "Österreich", "bregenz": "Österreich",
-    "zürich": "Schweiz", "zurich": "Schweiz", "bern": "Schweiz",
-    "basel": "Schweiz", "genf": "Schweiz", "luzern": "Schweiz",
-    "münchen": "Bayern", "munich": "Bayern", "nürnberg": "Bayern",
-    "augsburg": "Bayern", "regensburg": "Bayern", "würzburg": "Bayern",
+    "zürich": "Schweiz", "zurich": "Schweiz",
+    "bern": "Schweiz", "berne": "Schweiz",
+    "basel": "Schweiz", "basle": "Schweiz",
+    "genf": "Schweiz", "geneva": "Schweiz", "genève": "Schweiz",
+    "luzern": "Schweiz", "lucerne": "Schweiz",
+    "münchen": "Bayern", "munich": "Bayern",
+    "nürnberg": "Bayern", "nuremberg": "Bayern",
+    "augsburg": "Bayern", "regensburg": "Bayern",
+    "würzburg": "Bayern", "wurzburg": "Bayern",
     "stuttgart": "Baden-Württemberg", "freiburg": "Baden-Württemberg",
     "heidelberg": "Baden-Württemberg", "karlsruhe": "Baden-Württemberg",
-    "ulm": "Baden-Württemberg", "konstanz": "Baden-Württemberg",
+    "ulm": "Baden-Württemberg", "konstanz": "Baden-Württemberg", "constance": "Baden-Württemberg",
 }
 
 WEATHER_TAG_MAP = {
@@ -51,7 +82,7 @@ def get_weather(location: str) -> dict:
         resp = httpx.get(
             f"https://wttr.in/{location}?format=j1",
             timeout=10,
-            headers={"User-Agent": "Plowcast/1.0"},
+            headers={"User-Agent": "Feldorakel/1.0"},
         )
         data = resp.json()
         current = data["current_condition"][0]
@@ -84,12 +115,12 @@ def weather_tags(weather: dict) -> list[str]:
     return tags
 
 
-def select_rules(month: int, weather: dict, n: int = 8) -> list[str]:
+def select_rules(month: int, weather: dict, lang: str = "de", n: int = 8) -> list[str]:
+    rules = ALL_RULES_DE if lang == "de" else ALL_RULES_EN
     wtags = set(weather_tags(weather))
-    month_rules = [r for r in ALL_RULES if month in r.get("months", [])]
-    general_rules = [r for r in ALL_RULES if not r.get("months")]
+    month_rules = [r for r in rules if month in r.get("months", [])]
+    general_rules = [r for r in rules if not r.get("months")]
 
-    # Score by tag match
     def score(r):
         return len(set(r.get("tags", [])) & wtags)
 
@@ -98,19 +129,46 @@ def select_rules(month: int, weather: dict, n: int = 8) -> list[str]:
     return [r["text"] for r in random.sample(pool, min(n, len(pool)))]
 
 
-def get_farmer_advice(location: str, weather: dict, rules: list[str], d: date) -> str:
+def get_farmer_advice(location: str, weather: dict, rules: list[str], d: date, lang: str = "de") -> str:
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     rules_text = "\n".join(f"• {r}" for r in rules)
-    region = DACH_REGIONS.get(location.lower(), "dem Alpenraum")
 
-    prompt = f"""Du bist ein uralter, weiser Bauer aus {region}, der 80 Ernten gesehen hat.
+    if lang == "en":
+        region = DACH_REGIONS.get(location.lower(), "the Alpine region")
+        month_name = MONTH_NAMES_EN[d.month - 1]
+        prompt = f"""You are an ancient, wise farmer from {region} who has seen 80 harvests.
+You speak with warmth, dry wit, and deep respect for traditional farming wisdom.
+You have a healthy scepticism of modern bureaucracy, subsidy forms, and computer programmes.
+Your language is direct, plain-spoken, occasionally gruff — but always warm.
+You may throw in the odd word of local dialect.
+
+Current conditions:
+- Location: {location} ({region})
+- Date: {month_name} {d.day}
+- Weather: {weather['description']}, {weather['temp_c']}°C (feels like {weather['feels_like']}°C)
+- Wind: {weather['wind_kmph']} km/h, Humidity: {weather['humidity']}%
+
+Traditional farming proverbs for this season:
+{rules_text}
+
+Write a "Farmer's Daily Dispatch" for tomorrow (150–200 words):
+- Quote 2–3 proverbs directly and explain them briefly
+- Give practical (but slightly absurd) advice for tomorrow's weather
+- Include one dry remark about bureaucracy, EU subsidy forms, or computer programmes
+- Tone: warm, wise, slightly grumpy, with a twinkle
+- Write in English
+- Close with a memorable piece of wisdom in **bold**"""
+    else:
+        region = DACH_REGIONS_DE.get(location.lower(), "dem Alpenraum")
+        month_name = MONTH_NAMES_DE[d.month - 1]
+        prompt = f"""Du bist ein uralter, weiser Bauer aus {region}, der 80 Ernten gesehen hat.
 Du sprichst mit Wärme, trockenem Humor und tiefem Respekt vor der bäuerlichen Weisheit.
 Du hast eine gesunde Skepsis gegenüber modernem Bürokratismus, Formularen und Computerprogrammen.
 Deine Sprache ist volkstümlich, direkt, manchmal leicht schnoddrig — aber immer herzlich.
 
 Aktuelle Lage:
 - Ort: {location} ({region})
-- Datum: {d.strftime('%d.')} {MONTH_NAMES[d.month - 1]}
+- Datum: {d.day}. {month_name}
 - Wetter gerade: {weather['description']}, {weather['temp_c']}°C (gefühlt {weather['feels_like']}°C)
 - Wind: {weather['wind_kmph']} km/h, Luftfeuchtigkeit: {weather['humidity']}%
 
@@ -142,17 +200,19 @@ async def index(request: Request):
 async def forecast(
     location: str = Form(...),
     query_date: Optional[str] = Form(None),
+    lang: str = Form("de"),
 ):
     try:
         d = datetime.strptime(query_date, "%Y-%m-%d").date() if query_date else date.today()
         weather = get_weather(location)
-        rules = select_rules(d.month, weather)
-        advice = get_farmer_advice(location, weather, rules, d)
+        rules = select_rules(d.month, weather, lang)
+        advice = get_farmer_advice(location, weather, rules, d, lang)
         return JSONResponse({
             "advice": advice,
             "weather": weather,
             "location": location,
             "date": d.strftime("%B %d, %Y"),
+            "lang": lang,
         })
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)

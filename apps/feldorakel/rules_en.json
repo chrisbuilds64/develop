@@ -1,0 +1,55 @@
+{
+  "rules": [
+    {"text": "As the day lengthens, so the cold strengthens.", "months": [1, 2], "tags": ["kälte"]},
+    {"text": "A January fog will freeze a dog.", "months": [1], "tags": ["nebel", "kälte"]},
+    {"text": "If the grass grows in January, it grows the worse for it all year.", "months": [1], "tags": ["wärme"]},
+    {"text": "A green January fills the churchyard.", "months": [1], "tags": ["wärme"]},
+    {"text": "February fill the dyke, be it black or be it white.", "months": [2], "tags": ["regen", "schnee"]},
+    {"text": "When gnats swarm in February, the farmer takes his coat off.", "months": [2], "tags": ["wärme"]},
+    {"text": "If February gives much snow, a fine summer it doth foreshow.", "months": [2], "tags": ["schnee"]},
+
+    {"text": "If March comes in like a lion, it goes out like a lamb.", "months": [3], "tags": ["sturm", "wind"]},
+    {"text": "March winds and April showers bring forth May flowers.", "months": [3, 4], "tags": ["wind", "regen"]},
+    {"text": "A dry March, wet April and cool May fill barn and cellar and bring much hay.", "months": [3], "tags": ["trocken"]},
+    {"text": "So many mists in March, so many frosts in May.", "months": [3], "tags": ["nebel"]},
+
+    {"text": "April showers bring May flowers.", "months": [4], "tags": ["regen"]},
+    {"text": "A cold April the barn will fill.", "months": [4], "tags": ["kälte"]},
+    {"text": "If it thunders on All Fools' Day, it brings good crops of corn and hay.", "months": [4], "tags": ["gewitter"]},
+
+    {"text": "A dry May and a dripping June puts harvest in good tune.", "months": [5], "tags": ["trocken"]},
+    {"text": "Calm weather in June sets corn in tune.", "months": [6], "tags": ["sonne"]},
+    {"text": "Sow in the mud and your crop will be good.", "months": [4, 5], "tags": ["regen"]},
+    {"text": "Cut thistles in May, they grow in a day; cut them in June, that is too soon; cut them in July, then they will die.", "months": [5, 6, 7], "tags": []},
+
+    {"text": "A hot July brings cooling August showers.", "months": [7], "tags": ["hitze"]},
+    {"text": "If the first week of August be warm, the winter will be white and long.", "months": [8], "tags": ["wärme"]},
+    {"text": "After Lammas Day, corn ripens as much by night as by day.", "months": [8], "tags": ["sonne", "ernte"]},
+
+    {"text": "September dries up wells or breaks down bridges.", "months": [9], "tags": ["trocken", "regen"]},
+    {"text": "A warm September, a cold January.", "months": [9], "tags": ["wärme"]},
+    {"text": "If the October moon comes without frost, expect no frost till the moon of November.", "months": [10], "tags": ["kälte"]},
+    {"text": "A good October and a good blast, to blow the hog acorns and mast.", "months": [10], "tags": ["wind"]},
+
+    {"text": "If November ice will bear a duck, the rest of winter will be slush and muck.", "months": [11], "tags": ["eis", "kälte"]},
+    {"text": "A green Christmas makes a fat churchyard.", "months": [12], "tags": ["wärme"]},
+    {"text": "If Christmas Day on Thursday be, a windy winter we shall see.", "months": [12], "tags": ["wind"]},
+    {"text": "Year of snow, fruit will grow.", "months": [12, 1, 2], "tags": ["schnee", "ernte"]},
+
+    {"text": "Red sky at night, shepherd's delight; red sky in the morning, shepherd's warning.", "months": [], "tags": ["sonne", "regen"]},
+    {"text": "Rain before seven, fine before eleven.", "months": [], "tags": ["regen"]},
+    {"text": "When the wind is in the east, 'tis neither good for man nor beast.", "months": [], "tags": ["wind"]},
+    {"text": "Mackerel sky, not twenty-four hours dry.", "months": [], "tags": ["regen"]},
+    {"text": "When clouds appear like rocks and towers, the earth's refreshed by frequent showers.", "months": [], "tags": ["regen"]},
+    {"text": "Swallows fly high: clear blue sky; swallows fly low: rain we shall know.", "months": [4, 5, 6, 7, 8, 9], "tags": ["sonne", "regen"]},
+    {"text": "When dew is on the grass, rain will never come to pass.", "months": [5, 6, 7, 8, 9], "tags": ["sonne"]},
+    {"text": "If the oak flowers before the ash, 'twill be a summer of wet and splash.", "months": [4, 5], "tags": ["regen"]},
+    {"text": "Onion skin very thin: mild winter coming in. Onion skin thick and tough: coming winter cold and rough.", "months": [9, 10], "tags": ["kälte", "wärme"]},
+    {"text": "When spiders weave their webs by noon, fine weather is coming soon.", "months": [], "tags": ["sonne"]},
+    {"text": "A ring around the moon means rain will come soon.", "months": [], "tags": ["regen"]},
+    {"text": "Cows lying down: rain coming round.", "months": [], "tags": ["regen"]},
+    {"text": "He who sows in rain shall weep at harvest.", "months": [3, 4, 5], "tags": ["regen"]},
+    {"text": "The best time to plant a tree was twenty years ago. The second best time is now.", "months": [], "tags": []},
+    {"text": "No bees, no honey; no work, no money.", "months": [4, 5, 6, 7, 8], "tags": ["sonne"]}
+  ]
+}
