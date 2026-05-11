@@ -26,9 +26,17 @@ MONTH_NAMES_DE = [
     "Juli", "August", "September", "Oktober", "November", "Dezember",
 ]
 
+WEEKDAY_NAMES_DE = [
+    "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag",
+]
+
 MONTH_NAMES_EN = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
+]
+
+WEEKDAY_NAMES_EN = [
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
 ]
 
 DACH_REGIONS = {
@@ -136,6 +144,7 @@ def get_farmer_advice(location: str, weather: dict, rules: list[str], d: date, l
     if lang == "en":
         region = DACH_REGIONS.get(location.lower(), "the Alpine region")
         month_name = MONTH_NAMES_EN[d.month - 1]
+        weekday_name = WEEKDAY_NAMES_EN[d.weekday()]
         prompt = f"""You are an ancient, wise farmer from {region} who has seen 80 harvests.
 You speak with warmth, dry wit, and deep respect for traditional farming wisdom.
 You have a healthy scepticism of modern bureaucracy, subsidy forms, and computer programmes.
@@ -144,7 +153,7 @@ You may throw in the odd word of local dialect.
 
 Current conditions:
 - Location: {location} ({region})
-- Date: {month_name} {d.day}
+- Date: {weekday_name}, {d.day}. {month_name} {d.year}
 - Weather: {weather['description']}, {weather['temp_c']}°C (feels like {weather['feels_like']}°C)
 - Wind: {weather['wind_kmph']} km/h, Humidity: {weather['humidity']}%
 
@@ -161,6 +170,7 @@ Write a "Farmer's Daily Dispatch" for tomorrow (150–200 words):
     else:
         region = DACH_REGIONS_DE.get(location.lower(), "dem Alpenraum")
         month_name = MONTH_NAMES_DE[d.month - 1]
+        weekday_name = WEEKDAY_NAMES_DE[d.weekday()]
         prompt = f"""Du bist ein uralter, weiser Bauer aus {region}, der 80 Ernten gesehen hat.
 Du sprichst mit Wärme, trockenem Humor und tiefem Respekt vor der bäuerlichen Weisheit.
 Du hast eine gesunde Skepsis gegenüber modernem Bürokratismus, Formularen und Computerprogrammen.
@@ -168,7 +178,7 @@ Deine Sprache ist volkstümlich, direkt, manchmal leicht schnoddrig — aber imm
 
 Aktuelle Lage:
 - Ort: {location} ({region})
-- Datum: {d.day}. {month_name}
+- Datum: {weekday_name}, {d.day}. {month_name} {d.year}
 - Wetter gerade: {weather['description']}, {weather['temp_c']}°C (gefühlt {weather['feels_like']}°C)
 - Wind: {weather['wind_kmph']} km/h, Luftfeuchtigkeit: {weather['humidity']}%
 
