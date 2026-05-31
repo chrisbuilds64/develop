@@ -9,15 +9,18 @@ What this solves:
 
 Graph architecture (ADR-001):
   START → [axel] (parallel)
-        → [atlas] (parallel)
+        → [aris] (parallel)
   Both  → [chris_gate] → END
 
-Independence guarantee: Atlas sees NO Axel output before writing its review.
+Independence guarantee: Aris sees NO Axel output before writing his review.
 Both agents work only from the original proposal.
 
 Axel  = Claude Sonnet-4-6  (executor: bottom-up, concrete requirements)
-Atlas = GPT-4o             (strategist: top-down, structural coherence)
+Aris  = GPT-4o             (local tactical reviewer: top-down, strategic perspective)
 Chris = interrupt gate     (reads both reviews, enters decision)
+
+Note: Aris is NOT Atlas. Aris is stateless (no history, API-only).
+      Atlas is the strategic advisor who communicates via CMD documents.
 
 Run: .venv/bin/python 02_skill_review_graph.py "your proposal here"
 """
@@ -45,7 +48,7 @@ gpt    = openai.OpenAI(api_key=OPENAI_KEY)
 class ReviewState(TypedDict):
     proposal:       str   # input: the thing being reviewed
     axel_review:    str   # Axel's independent assessment
-    atlas_review:   str   # Atlas's independent assessment
+    aris_review:   str   # Atlas's independent assessment
     human_decision: str   # Chris's decision or redirect
     final_output:   str   # assembled review document
 
@@ -79,11 +82,11 @@ State your conclusion first. Be specific. No abstractions without operational gr
     return {"axel_review": response.content[0].text}
 
 
-def atlas_node(state: ReviewState) -> dict:
-    """GPT-4o: strategist perspective. Top-down. Structural coherence, systemic fit."""
+def aris_node(state: ReviewState) -> dict:
+    """GPT-4o: Aris — local tactical reviewer. Top-down. Strategic perspective, structural coherence."""
 
-    prompt = f"""You are Atlas — strategist and architect in the ChrisBuilds64 production system.
-You think top-down: structural coherence, strategic implications, systemic fit.
+    prompt = f"""You are Aris — local tactical reviewer in the ChrisBuilds64 production system.
+You think top-down: structural coherence, strategic fit, hidden assumptions.
 
 Review this proposal:
 
@@ -95,7 +98,8 @@ Your review (150-200 words):
 - What is the strategic risk or opportunity here?
 - Is the framing correct, or does this proposal solve the wrong problem?
 
-State your conclusion first. Challenge assumptions where necessary. Be direct."""
+State your conclusion first. Challenge assumptions where necessary. Be direct.
+Take a position — do not offer "both options could work."."""
 
     response = gpt.chat.completions.create(
         model="gpt-4o",
@@ -103,7 +107,7 @@ State your conclusion first. Challenge assumptions where necessary. Be direct.""
         messages=[{"role": "user", "content": prompt}]
     )
 
-    return {"atlas_review": response.choices[0].message.content}
+    return {"aris_review": response.choices[0].message.content}
 
 
 def chris_gate(state: ReviewState) -> Command:
@@ -126,9 +130,9 @@ AXEL  —  Claude Sonnet  —  Executor Perspective
 {state['axel_review']}
 
 {sep}
-ATLAS  —  GPT-4o  —  Strategist Perspective
+ARIS   —  GPT-4o  —  Strategic Perspective (local, stateless)
 {dash}
-{state['atlas_review']}
+{state['aris_review']}
 
 {sep}
 Both agents reviewed independently.
@@ -150,8 +154,8 @@ Enter "approved" to accept, or type your decision / redirect:
         "AXEL (Executor Perspective):",
         state['axel_review'],
         "",
-        "ATLAS (Strategist Perspective):",
-        state['atlas_review'],
+        "ARIS (Strategic Perspective — local, stateless):",
+        state['aris_review'],
         "",
         "DECISION:",
         decision,
@@ -173,16 +177,16 @@ def build_graph():
     builder = StateGraph(ReviewState)
 
     builder.add_node("axel",       axel_node)
-    builder.add_node("atlas",      atlas_node)
+    builder.add_node("aris",       aris_node)
     builder.add_node("chris_gate", chris_gate)
 
     # Parallel fan-out from START — both agents run simultaneously
     builder.add_edge(START,  "axel")
-    builder.add_edge(START,  "atlas")
+    builder.add_edge(START,  "aris")
 
     # LangGraph waits for both before chris_gate runs (barrier semantics)
     builder.add_edge("axel",  "chris_gate")
-    builder.add_edge("atlas", "chris_gate")
+    builder.add_edge("aris", "chris_gate")
 
     return builder.compile(checkpointer=MemorySaver())
 
@@ -202,7 +206,7 @@ if __name__ == "__main__":
     initial_state: ReviewState = {
         "proposal":       proposal,
         "axel_review":    "",
-        "atlas_review":   "",
+        "aris_review":   "",
         "human_decision": "",
         "final_output":   "",
     }
