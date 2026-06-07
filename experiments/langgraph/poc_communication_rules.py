@@ -26,8 +26,19 @@ claude = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
 gpt = openai.OpenAI(api_key=OPENAI_KEY)
 
 
-TOPIC = """Should LinkedIn engagement and reply rules be consolidated into the canonical hierarchy,
-and if so — how? Currently these rules are scattered across multiple locations with no single authority."""
+TOPIC = """Option A is decided: PUBLIC-PRESENCE.md becomes the single authoritative source for all
+LinkedIn engagement and reply rules. The question now is: how exactly should it be extended?
+
+Specifically:
+- The 3-Layer Rule (currently in ESSAY-POSITIONING.md) must explicitly cover replies, not just authored posts.
+- A Comment Analysis Protocol must be added: before every reply, assess (1) what the commenter says,
+  (2) their stance, (3) constructive vs destructive. Then draft the reply.
+- The 1250-character hard limit belongs in the canon.
+- Tone specifics for replies (add value, reference specific words, no em dashes, English only).
+- linkedin-engagement.md must be demoted: operational checklist only, references PUBLIC-PRESENCE.md as authority.
+
+What is the right structure and content for the extended PUBLIC-PRESENCE.md?
+What should NOT be in there? What is the risk of getting this wrong?"""
 
 CONTEXT = load_atlas_context()  # loaded from control/shared-context/
 
