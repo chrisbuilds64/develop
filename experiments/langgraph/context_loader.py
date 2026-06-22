@@ -18,14 +18,13 @@ from pathlib import Path
 SHARED_CONTEXT_PATH = Path.home() / "ChrisBuilds64/control/shared-context"
 AGENTS_PATH = SHARED_CONTEXT_PATH / "agents"
 
-# Priority order: most operationally relevant first
+# Priority order: most operationally relevant first.
+# Operational state (WHAT is happening now) + decisions now live in the maintained
+# source: control/context/PROJECT-STATE.md + session-logs/ — see shared-context/START-HERE.md.
+# TODO: inject PROJECT-STATE.md here so Atlas gets current operational reality.
 FILE_ORDER = [
     "current-intent.md",          # WHY we're doing this — prevents strategic drift
-    "current-state.md",           # WHAT is happening right now
-    "active-projects.md",         # active context anchors
-    "recent-decisions.md",        # what changed recently
-    "open-loops.md",              # unresolved questions — prevents fake certainty
-    "canonical-summary.md",       # brand/canon essentials (longest, load last)
+    "canonical-summary.md",       # brand/canon essentials
     "reference-frames-index.md",  # pattern library
 ]
 
