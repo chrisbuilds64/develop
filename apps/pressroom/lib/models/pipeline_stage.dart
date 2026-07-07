@@ -10,7 +10,9 @@ enum PipelineStage {
   assetGeneration(40, 'Asset Generation', '40-asset-generation', StageColors.assetGeneration),
   readyToPublish(50, 'Ready to Publish', '50-ready-to-publish', StageColors.readyToPublish),
   published(60, 'Published', '60-published', StageColors.published),
+  fieldObservation(61, 'Field Observation', '61-field-observation', StageColors.fieldObservation),
   canonicalReview(65, 'Canonical Review', '65-canonical-review', StageColors.canonicalReview),
+  reviewed(66, 'Reviewed', '66-reviewed', StageColors.reviewed),
   referenceFrames(70, 'Reference Frames', '70-reference-frames', StageColors.referenceFrames);
 
   final int order;

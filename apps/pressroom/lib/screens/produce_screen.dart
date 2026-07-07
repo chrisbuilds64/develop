@@ -257,9 +257,8 @@ class _ProduceScreenState extends State<ProduceScreen> {
                       // Deliverables
                       _sectionHeader('DELIVERABLES', stageColor),
                       const SizedBox(height: 4),
-                      ..._deliverables.map((d) {
-                        final exists = article.files
-                            .any((f) => d.any((alt) => f == alt));
+                      ...article.expectedDeliverables.map((d) {
+                        final exists = article.files.contains(d);
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Row(
@@ -275,7 +274,7 @@ class _ProduceScreenState extends State<ProduceScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                d.first,
+                                d,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'monospace',
@@ -472,18 +471,4 @@ class _ProduceScreenState extends State<ProduceScreen> {
       a: const TextStyle(color: Color(0xFF448AFF)),
     );
   }
-
-  static const _deliverables = [
-    ['substack.md', 'source.md'],
-    ['substack.html', 'source.html'],
-    ['linkedin-post.txt'],
-    ['first-comment.txt'],
-    ['linkedin-article.txt'],
-    ['linkedin-article.html'],
-    ['tiktok-script.txt'],
-    ['dalle-prompt.txt'],
-    ['title-dark.svg'],
-    ['title-light.svg'],
-    ['meta.json'],
-  ];
 }

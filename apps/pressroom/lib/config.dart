@@ -15,6 +15,20 @@ class Config {
     'FN-055-blind-spot-amplifier',
     'FN-056-before-the-first-prompt',
   ];
+
+  /// Canon Reference — editorial governing documents surfaced read-only in
+  /// PressRoom (production reference). Curated across brand/ and canon/.
+  /// Order = display order. Several of these are immutable per the canonical
+  /// hierarchy, which is why the panel is view-only.
+  static const List<({String label, String path})> canonReference = [
+    (label: 'Content Boundaries', path: '$projectRoot/canon/marke/core/CONTENT-BOUNDARIES.md'),
+    (label: 'Essay Positioning', path: '$projectRoot/canon/marke/core/ESSAY-POSITIONING.md'),
+    (label: 'Public Presence', path: '$projectRoot/canon/marke/core/PUBLIC-PRESENCE.md'),
+    (label: 'Writing Style', path: '$projectRoot/canon/editorial/writing-style.md'),
+    (label: 'Post Structure', path: '$projectRoot/canon/editorial/post-structure.md'),
+    (label: 'Editorial Glossary', path: '$projectRoot/canon/editorial/glossary.md'),
+    (label: 'Canonical Hierarchy', path: '$projectRoot/brand/core/canonical-hierarchy.md'),
+  ];
 }
 
 class StageColors {
@@ -26,6 +40,8 @@ class StageColors {
   static const assetGeneration = Color(0xFFFF5722);
   static const readyToPublish = Color(0xFF4CAF50);
   static const published = Color(0xFF78909C);
+  static const fieldObservation = Color(0xFF26A69A);
   static const canonicalReview = Color(0xFFFFB300);
+  static const reviewed = Color(0xFFFFA000);
   static const referenceFrames = Color(0xFFFF8F00);
 }

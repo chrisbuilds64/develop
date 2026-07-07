@@ -164,7 +164,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 8),
                 _IconAction(
                   icon: Icons.menu_book_rounded,
-                  tooltip: 'Rules',
+                  tooltip: 'Canon Reference',
                   onPressed: _openRules,
                 ),
                 const SizedBox(width: 4),
@@ -199,23 +199,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-          // Kanban board
+          // Kanban board — fixed-width columns, horizontally scrollable
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-              child: Row(
-                children: PipelineStage.values.map((stage) {
-                  return Expanded(
-                    child: StageColumn(
-                      stage: stage,
-                      articles: _notifier.articlesForStage(stage),
-                      onArticleTap: _openArticle,
-                      onArticleDrop: (article) =>
-                          _notifier.moveArticle(article, stage),
-                      onArticleAction: _handleArticleAction,
-                    ),
-                  );
-                }).toList(),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: PipelineStage.values.map((stage) {
+                    return SizedBox(
+                      width: 260,
+                      child: StageColumn(
+                        stage: stage,
+                        articles: _notifier.articlesForStage(stage),
+                        onArticleTap: _openArticle,
+                        onArticleDrop: (article) =>
+                            _notifier.moveArticle(article, stage),
+                        onArticleAction: _handleArticleAction,
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
           ),

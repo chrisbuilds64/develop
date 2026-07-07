@@ -134,21 +134,16 @@ class FilesystemService {
     await file.writeAsString(content);
   }
 
+  /// Canon Reference documents (curated in Config.canonReference), in display
+  /// order. Only existing files are returned — a missing doc is skipped, never
+  /// an error. Replaces the retired `content/rules/` directory scan.
   Future<List<RuleFile>> listRules() async {
-    final dir = Directory(contentRulesPath);
-    if (!await dir.exists()) return [];
-
     final rules = <RuleFile>[];
-    await for (final entity in dir.list()) {
-      if (entity is File) {
-        final name =
-            entity.uri.pathSegments.where((s) => s.isNotEmpty).last;
-        if (!name.startsWith('.')) {
-          rules.add(RuleFile(name: name, path: entity.path));
-        }
+    for (final ref in Config.canonReference) {
+      if (await File(ref.path).exists()) {
+        rules.add(RuleFile(name: ref.label, path: ref.path));
       }
     }
-    rules.sort((a, b) => a.name.compareTo(b.name));
     return rules;
   }
 

@@ -57,24 +57,48 @@ class Article {
   double _calculateCompleteness() {
     if (isStandaloneFile) return 0.0;
 
-    const expected = [
-      ['substack.md', 'source.md'],
-      ['substack.html', 'source.html'],
-      ['linkedin-post.txt'],
-      ['first-comment.txt'],
-      ['linkedin-article.txt'],
-      ['linkedin-article.html'],
-      ['tiktok-script.txt'],
-      ['dalle-prompt.txt'],
-      ['title-dark.svg'],
-      ['title-light.svg'],
-      ['meta.json'],
-    ];
+    final expected = expectedDeliverables;
+    if (expected.isEmpty) return 0.0;
 
     int found = 0;
-    for (final group in expected) {
-      if (group.any((f) => files.contains(f))) found++;
+    for (final file in expected) {
+      if (files.contains(file)) found++;
     }
     return found / expected.length;
+  }
+
+  /// Label-aware canonical deliverable set. POD (podcast) has a different set
+  /// than the essay pipeline (FN / WN / default). Kept in sync with the
+  /// canonical hierarchy (Tier 5) and the /interpret POD branch.
+  List<String> get expectedDeliverables {
+    const podcast = [
+      'script.md',
+      'teleprompter.txt',
+      'show-notes.txt',
+      'edit-instructions.txt',
+      'linkedin-post.txt',
+      'first-comment.txt',
+      'visual-brief.md',
+      'meta.json',
+      'validation.md',
+    ];
+    const essay = [
+      'source.md',
+      'interpretation.md',
+      'substack.md',
+      'substack.html',
+      'linkedin-post.txt',
+      'first-comment.txt',
+      'visual-brief.md',
+      'meta.json',
+      'validation.md',
+    ];
+    return _labelType() == 'POD' ? podcast : essay;
+  }
+
+  /// The alphabetic label prefix (FN, POD, WN, …), or null if none.
+  String? _labelType() {
+    final match = RegExp(r'^([A-Z]+)-').firstMatch(folderName);
+    return match?.group(1);
   }
 }
