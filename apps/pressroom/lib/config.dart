@@ -27,7 +27,7 @@ class Config {
     (label: 'Writing Style', path: '$projectRoot/canon/editorial/writing-style.md'),
     (label: 'Post Structure', path: '$projectRoot/canon/editorial/post-structure.md'),
     (label: 'Editorial Glossary', path: '$projectRoot/canon/editorial/glossary.md'),
-    (label: 'Canonical Hierarchy', path: '$projectRoot/brand/core/canonical-hierarchy.md'),
+    (label: 'Canonical Hierarchy', path: '$projectRoot/canon/foundation/canonical-hierarchy.md'),
   ];
 }
 
