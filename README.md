@@ -59,6 +59,8 @@ develop/
 
 **Authentication:** All endpoints require `Authorization: Bearer <token>` header.
 
+> **⚠️ Auth is a mock.** MockAuth is a development adapter: static tokens, no real identity verification, no security. It exists so the ownership model is Clerk-ready (v2). Any deployment running MockAuth must be treated as unprotected — do not put sensitive data behind it.
+
 **Test tokens (MockAuth):**
 - `test-chris` → user chris
 - `test-lars` → user lars
