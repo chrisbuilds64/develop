@@ -49,9 +49,10 @@ app.include_router(items.router, prefix="/api/v1")
 
 
 # Serve frontend apps (static files)
-# Docker: /apps (mounted volume), Local: ../apps (relative to backend/)
+# Docker: /apps (mounted volume), Local: ../../apps (relative to services/backend/)
 _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-apps_dir = "/apps" if os.path.exists("/apps") else os.path.join(os.path.dirname(_backend_dir), "apps")
+_repo_root = os.path.dirname(os.path.dirname(_backend_dir))
+apps_dir = "/apps" if os.path.exists("/apps") else os.path.join(_repo_root, "apps")
 if os.path.exists(apps_dir):
     for app_name in os.listdir(apps_dir):
         app_path = os.path.join(apps_dir, app_name)

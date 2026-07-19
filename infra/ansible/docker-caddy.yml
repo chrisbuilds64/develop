@@ -274,7 +274,7 @@
             # FastAPI Backend (Thronsaal)
             backend:
               build:
-                context: ./repo/backend
+                context: ./repo/services/backend
                 dockerfile: Dockerfile
               container_name: prod-backend
               restart: unless-stopped

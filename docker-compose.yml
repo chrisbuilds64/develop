@@ -31,7 +31,7 @@ services:
   # ============================================
   backend:
     build:
-      context: ./backend
+      context: ./services/backend
       dockerfile: Dockerfile
     container_name: chrisbuilds-backend
     environment:
@@ -44,7 +44,7 @@ services:
       - "8000:8000"
     volumes:
       # Mount source code for development (hot reload)
-      - ./backend:/app
+      - ./services/backend:/app
       # Mount frontend apps
       - ./apps:/apps
     depends_on:
