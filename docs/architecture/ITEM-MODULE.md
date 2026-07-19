@@ -1,16 +1,16 @@
 # Item Module Architecture
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Approved
-**Date:** January 12, 2026
+**Date:** January 12, 2026 (translated to English 2026-07-19, content unchanged)
 
 ---
 
 ## 1. Vision
 
-Abstrakte Basis für alle datenhaltenden Anwendungen. Ein "Item" repräsentiert jede Form von strukturierter Information.
+Abstract base for all data-holding applications. An "Item" represents any form of structured information.
 
-**Ziel:** Generisches System, das mit minimalen Erweiterungen spezialisierte Manager abbildet (YouTube-Links, Adressbuch, Aufgabenlisten).
+**Goal:** A generic system that maps specialized managers (YouTube links, address book, task lists) with minimal extensions.
 
 ---
 
@@ -21,19 +21,21 @@ Abstrakte Basis für alle datenhaltenden Anwendungen. Ein "Item" repräsentiert 
 ```
 Item
 ├── id: UUID
-├── owner_id: string              # Besitzer (User-ID)
-├── label: string                 # Anzeigename für Listen
+├── owner_id: string              # Owner (user ID)
+├── label: string                 # Display name for lists
 ├── content_type: string          # "text/plain", "media/youtube", "app/address"
-├── payload: JSONB                # Typ-spezifische Daten
-├── tags: string[]                # Einfache Tag-Liste
+├── payload: JSONB                # Type-specific data
+├── tags: string[]                # Simple tag list
 ├── created_at: timestamp
 ├── updated_at: timestamp
-└── deleted_at: timestamp         # Soft-Delete
+└── deleted_at: timestamp         # Soft delete
 ```
 
-### Payload-Beispiele
+Note: the design targeted JSONB; the current migration implements generic `sa.JSON()` columns. See `docs/adr/ADR-009-postgresql-generic-item-model.md`.
 
-**YouTube-Link:**
+### Payload Examples
+
+**YouTube link:**
 ```json
 {
   "url": "https://youtube.com/watch?v=xxx",
@@ -43,7 +45,7 @@ Item
 }
 ```
 
-**Adresse:**
+**Address:**
 ```json
 {
   "first_name": "Max",
@@ -55,14 +57,14 @@ Item
 
 ---
 
-## 3. Design-Entscheidungen
+## 3. Design Decisions
 
-| Thema | Entscheidung | Begründung |
-|-------|--------------|------------|
-| Payload | Hybrid: Core-Felder normalisiert, Rest in JSONB | Query-Performance auf Core, Flexibilität für Typ-Daten |
-| Tags | Einfaches String-Array | KISS - Hierarchie später wenn nötig |
-| Soft-Delete | Ja, mit deleted_at | Recovery-Option, Audit-Trail |
-| Multi-Tenancy | owner_id pro Item | User-Isolation, Sharing später |
+| Topic | Decision | Rationale |
+|-------|----------|-----------|
+| Payload | Hybrid: core fields normalized, rest in JSON | Query performance on core, flexibility for type data |
+| Tags | Simple string array | KISS, hierarchy later if needed |
+| Soft delete | Yes, via deleted_at | Recovery option, audit trail |
+| Multi-tenancy | owner_id per item | User isolation, sharing later |
 
 ---
 
@@ -73,32 +75,32 @@ POST   /items                    # Create
 GET    /items                    # List (filter: tags, content_type)
 GET    /items/{id}               # Get
 PUT    /items/{id}               # Update
-DELETE /items/{id}               # Soft-Delete
+DELETE /items/{id}               # Soft delete
 ```
 
 ---
 
 ## 5. Roadmap (Design for Extension)
 
-### Vorbereitet aber NICHT gebaut:
+### Prepared but NOT built:
 
-| Feature | Erweiterungspunkt | Wann |
-|---------|-------------------|------|
-| **Relations** | `item_relations` Tabelle, relation_type enum | Wenn hierarchische Strukturen gebraucht |
-| **Assignments** | `item_assignments` Tabelle | Wenn Task-Management gebraucht |
-| **Config-Modul** | Layout-Hints, Type-Registry | Wenn Frontend dynamische Layouts braucht |
-| **Hierarchische Tags** | Tag-Tabelle mit parent_id | Wenn einfache Tags nicht reichen |
-| **Team-Sharing** | Workspace/Team-Konzept | Wenn Multi-User Collaboration gebraucht |
+| Feature | Extension Point | When |
+|---------|-----------------|------|
+| **Relations** | `item_relations` table, relation_type enum | When hierarchical structures are needed |
+| **Assignments** | `item_assignments` table | When task management is needed |
+| **Config module** | Layout hints, type registry | When the frontend needs dynamic layouts |
+| **Hierarchical tags** | Tag table with parent_id | When simple tags no longer suffice |
+| **Team sharing** | Workspace/team concept | When multi-user collaboration is needed |
 
-### Relations (geplant)
+### Relations (planned)
 ```
 ItemRelation
 ├── source_id → target_id
 ├── relation_type: "parent" | "link" | "reference"
-└── position: integer (Sortierung)
+└── position: integer (ordering)
 ```
 
-### Assignments (geplant)
+### Assignments (planned)
 ```
 ItemAssignment
 ├── item_id, assignee_id
@@ -106,12 +108,12 @@ ItemAssignment
 └── status: "pending" | "completed"
 ```
 
-### Config-Modul (geplant)
-- Type-Registry: Schema pro content_type
-- Layout-Hints: Frontend-Darstellung pro Type
-- Validierung: Payload-Validierung pro Type
+### Config module (planned)
+- Type registry: schema per content_type
+- Layout hints: frontend rendering per type
+- Validation: payload validation per type
 
-### Offline-Sync (geplant - Mobile)
+### Offline sync (planned, mobile)
 ```
 Mobile App Architecture:
 ├── UI Layer
@@ -122,32 +124,32 @@ Mobile App Architecture:
 │   └── Background Sync
 └── API Client → Backend
 
-Sync-Strategie:
-- Items lokal speichern (Device SQLite)
-- Änderungen in Queue bei Offline
-- Auto-Sync bei Verbindung
-- Konfliktauflösung via updated_at (Last-Write-Wins)
-- Optional: Merge für komplexe Fälle
+Sync strategy:
+- Store items locally (device SQLite)
+- Queue changes while offline
+- Auto-sync on connection
+- Conflict resolution via updated_at (last write wins)
+- Optional: merge for complex cases
 ```
 
-**Wichtig:** Mobile Apps müssen offline funktionieren. Sync ist kein Nice-to-Have.
+**Important:** Mobile apps must work offline. Sync is not a nice-to-have.
 
 ---
 
-## 6. Implementierung Phase 1
+## 6. Implementation Phase 1
 
 **Scope:**
-- Item CRUD mit Payload
-- Einfache Tags (String-Array)
-- Filter nach tags, content_type
-- Soft-Delete
+- Item CRUD with payload
+- Simple tags (string array)
+- Filter by tags, content_type
+- Soft delete
 
-**Nicht in Phase 1:**
+**Not in Phase 1:**
 - Relations
 - Assignments
-- Config-Modul
-- Hierarchische Tags
+- Config module
+- Hierarchical tags
 
 ---
 
-**Status:** Phase 1 implementiert (2026-01-12)
+**Status:** Phase 1 implemented (2026-01-12)
