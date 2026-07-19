@@ -1,27 +1,28 @@
 # =============================================================================
-# BAUPLAN DER BURG: Module 01 Foundation
+# MODULE 01: Foundation
 # =============================================================================
 #
-# Baut eine Burg von Grund auf: Burggraben (UFW), Wachturm (Fail2Ban),
-# Geheimgang (SSH Hardening), Burgmauern (Kernel), Vorratskeller (Swap),
-# Uhr (Timezone), Wartungstruppe (unattended-upgrades).
+# Hardens a fresh Ubuntu 24.04 server: firewall (UFW), brute-force protection
+# (Fail2Ban), SSH hardening, kernel parameters, swap, timezone,
+# and automatic security updates.
 #
-# Voraussetzungen:
-#   - Frischer Ubuntu 24.04 Server
-#   - SSH-Zugang mit Key (als deploy/admin User ODER root beim ersten Lauf)
-#   - Python 3 auf dem Server (Ubuntu 24.04 hat das)
+# Prerequisites:
+#   - Fresh Ubuntu 24.04 server
+#   - SSH access with key (as deploy/admin user OR root on first run)
+#   - Python 3 on the server (Ubuntu 24.04 ships it)
 #
-# Ausfuehrung:
-#   ansible-playbook -i inventory.yml foundation.yml
+# Usage:
+#   ansible-playbook -i inventory.local.yml foundation.yml
 #
-# Erster Lauf (nur root vorhanden):
-#   ansible-playbook -i inventory.yml foundation.yml -e "ansible_user=root" -e "first_run=true"
+# First run (root only):
+#   ansible-playbook -i inventory.local.yml foundation.yml \
+#     -e "ansible_user=root" -e "first_run=true"
 #
 # =============================================================================
 
 ---
-- name: "Burgfundament: Module 01 Foundation"
-  hosts: kingdoms
+- name: "Module 01: Foundation"
+  hosts: servers
   become: true
   gather_facts: true
 
@@ -31,7 +32,7 @@
     server_timezone: "{{ timezone | default('Europe/Berlin') }}"
     first_run: false
 
-    # SSH Hardening
+    # SSH hardening
     ssh_max_auth_tries: 3
     ssh_login_grace_time: 30
     ssh_client_alive_interval: 300
@@ -45,14 +46,14 @@
   tasks:
 
     # =================================================================
-    # PHASE 1: Deploy User (Burgherr einsetzen)
+    # PHASE 1: Deploy user
     # =================================================================
 
-    - name: "Burgherr: Deploy User anlegen"
+    - name: "Deploy user: create"
       when: first_run | bool
       tags: [user]
       block:
-        - name: User erstellen (kein Passwort-Login)
+        - name: Create user (no password login)
           ansible.builtin.user:
             name: "{{ server_user }}"
             shell: /bin/bash
@@ -60,14 +61,14 @@
             password: "!"
             comment: "Deploy User"
 
-        - name: Sudo-Rechte ohne Passwort
+        - name: Grant passwordless sudo
           ansible.builtin.copy:
             content: "{{ server_user }} ALL=(ALL) NOPASSWD:ALL\n"
             dest: "/etc/sudoers.d/{{ server_user }}"
             mode: "0440"
             validate: "visudo -cf %s"
 
-        - name: SSH-Verzeichnis anlegen
+        - name: Create .ssh directory
           ansible.builtin.file:
             path: "/home/{{ server_user }}/.ssh"
             state: directory
@@ -75,7 +76,7 @@
             group: "{{ server_user }}"
             mode: "0700"
 
-        - name: SSH Key vom root kopieren
+        - name: Copy SSH key from root
           ansible.builtin.copy:
             src: /root/.ssh/authorized_keys
             dest: "/home/{{ server_user }}/.ssh/authorized_keys"
@@ -85,41 +86,41 @@
             mode: "0600"
 
     # =================================================================
-    # PHASE 2: Burggraben (UFW Firewall)
+    # PHASE 2: Firewall (UFW)
     # =================================================================
 
-    - name: "Burggraben: UFW installieren"
+    - name: "Firewall: install UFW"
       tags: [firewall]
       ansible.builtin.apt:
         name: ufw
         state: present
 
-    - name: "Burggraben: Default deny incoming"
+    - name: "Firewall: default deny incoming"
       tags: [firewall]
       community.general.ufw:
         direction: incoming
         default: deny
 
-    - name: "Burggraben: Default deny forward (Docker-Schutz)"
+    - name: "Firewall: default deny forward (Docker protection)"
       tags: [firewall]
       community.general.ufw:
         direction: routed
         default: deny
 
-    - name: "Burggraben: Default allow outgoing"
+    - name: "Firewall: default allow outgoing"
       tags: [firewall]
       community.general.ufw:
         direction: outgoing
         default: allow
 
-    - name: "Burggraben: Loopback erlauben"
+    - name: "Firewall: allow loopback"
       tags: [firewall]
       community.general.ufw:
         rule: allow
         interface: lo
         direction: in
 
-    - name: "Burggraben: Zugbruecken oeffnen (SSH, HTTP, HTTPS)"
+    - name: "Firewall: open required ports (SSH, HTTP, HTTPS)"
       tags: [firewall]
       community.general.ufw:
         rule: allow
@@ -131,16 +132,16 @@
         - { port: "80", comment: "HTTP" }
         - { port: "443", comment: "HTTPS" }
 
-    - name: "Burggraben: Firewall aktivieren"
+    - name: "Firewall: enable UFW"
       tags: [firewall]
       community.general.ufw:
         state: enabled
 
     # =================================================================
-    # PHASE 3: Geheimgang (SSH Hardening)
+    # PHASE 3: SSH hardening
     # =================================================================
 
-    - name: "Geheimgang: SSH Drop-in Config"
+    - name: "SSH: drop-in hardening config"
       tags: [ssh]
       ansible.builtin.copy:
         content: |
@@ -153,7 +154,7 @@
           KbdInteractiveAuthentication no
           IgnoreRhosts yes
 
-          # === Brute-Force Limits ===
+          # === Brute-force limits ===
           MaxAuthTries {{ ssh_max_auth_tries }}
           LoginGraceTime {{ ssh_login_grace_time }}
           MaxStartups 10:30:60
@@ -166,22 +167,22 @@
         mode: "0644"
       notify: Reload SSH
 
-    - name: "Geheimgang: SSH-Config validieren"
+    - name: "SSH: validate config"
       tags: [ssh]
       ansible.builtin.command: sshd -t
       changed_when: false
 
     # =================================================================
-    # PHASE 4: Wachturm (Fail2Ban)
+    # PHASE 4: Brute-force protection (Fail2Ban)
     # =================================================================
 
-    - name: "Wachturm: Fail2Ban installieren"
+    - name: "Fail2Ban: install"
       tags: [fail2ban]
       ansible.builtin.apt:
         name: fail2ban
         state: present
 
-    - name: "Wachturm: jail.local konfigurieren"
+    - name: "Fail2Ban: configure jail.local"
       tags: [fail2ban]
       ansible.builtin.copy:
         content: |
@@ -203,14 +204,14 @@
       notify: Restart Fail2Ban
 
     # =================================================================
-    # PHASE 5: Burgmauern (Kernel Hardening)
+    # PHASE 5: Kernel hardening
     # =================================================================
 
-    - name: "Burgmauern: Sysctl Hardening"
+    - name: "Kernel: sysctl hardening parameters"
       tags: [kernel]
       ansible.builtin.copy:
         content: |
-          # === Netzwerk (IPv4) ===
+          # === Network (IPv4) ===
           net.ipv4.conf.all.accept_redirects = 0
           net.ipv4.conf.default.accept_redirects = 0
           net.ipv4.conf.all.send_redirects = 0
@@ -225,7 +226,7 @@
           net.ipv4.icmp_echo_ignore_broadcasts = 1
           net.ipv4.icmp_ignore_bogus_error_responses = 1
 
-          # === Netzwerk (IPv6) ===
+          # === Network (IPv6) ===
           net.ipv6.conf.all.accept_redirects = 0
           net.ipv6.conf.default.accept_redirects = 0
           net.ipv6.conf.all.accept_source_route = 0
@@ -240,7 +241,7 @@
           kernel.unprivileged_bpf_disabled = 1
           kernel.perf_event_paranoid = 3
 
-          # === Dateisystem ===
+          # === Filesystem ===
           fs.suid_dumpable = 0
           fs.protected_hardlinks = 1
           fs.protected_symlinks = 1
@@ -249,131 +250,122 @@
       notify: Apply Sysctl
 
     # =================================================================
-    # PHASE 6: Vorratskeller (Swap)
+    # PHASE 6: Swap
     # =================================================================
 
-    - name: "Vorratskeller: Swap-Datei pruefen"
+    - name: "Swap: check if swapfile exists"
       tags: [swap]
       ansible.builtin.stat:
         path: /swapfile
       register: swap_file
 
-    - name: "Vorratskeller: Swap einrichten"
+    - name: "Swap: create and enable"
       tags: [swap]
       when: not swap_file.stat.exists
       block:
-        - name: Swap-Datei erstellen
+        - name: Allocate swapfile
           ansible.builtin.command:
             cmd: "fallocate -l {{ server_swap }} /swapfile"
           changed_when: true
 
-        - name: Swap-Datei Permissions
+        - name: Set swapfile permissions
           ansible.builtin.file:
             path: /swapfile
             mode: "0600"
 
-        - name: Swap formatieren
+        - name: Format swap
           ansible.builtin.command:
             cmd: mkswap /swapfile
           changed_when: true
 
-        - name: Swap aktivieren
+        - name: Activate swap
           ansible.builtin.command:
             cmd: swapon /swapfile
           changed_when: true
 
-        - name: Swap in fstab (persistent)
+        - name: Persist swap in fstab
           ansible.builtin.lineinfile:
             path: /etc/fstab
             line: "/swapfile none swap sw 0 0"
             state: present
 
     # =================================================================
-    # PHASE 7: Uhr (Timezone)
+    # PHASE 7: Timezone
     # =================================================================
 
-    - name: "Uhr: Timezone setzen"
+    - name: "Timezone: set"
       community.general.timezone:
         name: "{{ server_timezone }}"
 
     # =================================================================
-    # PHASE 8: Wartungstruppe (Updates)
+    # PHASE 8: Automatic security updates
     # =================================================================
 
-    - name: "Wartungstruppe: System-Updates installieren"
+    - name: "Updates: install system updates"
       ansible.builtin.apt:
         update_cache: true
         upgrade: safe
-      register: apt_upgrade
 
-    - name: "Wartungstruppe: unattended-upgrades installieren"
+    - name: "Updates: install unattended-upgrades"
       ansible.builtin.apt:
         name: unattended-upgrades
         state: present
 
-    - name: "Wartungstruppe: unattended-upgrades aktivieren"
+    - name: "Updates: enable unattended-upgrades timer"
       ansible.builtin.systemd:
         name: apt-daily-upgrade.timer
         enabled: true
         state: started
 
     # =================================================================
-    # PHASE 9: Verifikation
+    # PHASE 9: Verification
     # =================================================================
 
-    - name: "Burginspektor: UFW Status"
+    - name: "Verify: UFW status"
       ansible.builtin.command: ufw status verbose
       register: ufw_status
       changed_when: false
       check_mode: false
 
-    - name: "Burginspektor: Fail2Ban Status"
+    - name: "Verify: Fail2Ban status"
       ansible.builtin.command: fail2ban-client status sshd
       register: f2b_status
       changed_when: false
       check_mode: false
 
-    - name: "Burginspektor: Kernel-Parameter pruefen"
+    - name: "Verify: kernel parameters"
       ansible.builtin.command: sysctl net.ipv4.conf.all.send_redirects net.ipv4.conf.all.rp_filter kernel.yama.ptrace_scope
       register: sysctl_check
       changed_when: false
       check_mode: false
 
-    - name: "Burginspektor: Swap pruefen"
+    - name: "Verify: swap"
       ansible.builtin.command: swapon --show
       register: swap_check
       changed_when: false
       check_mode: false
 
-    - name: "Burginspektor: Ergebnis"
+    - name: "Verify: summary"
       ansible.builtin.debug:
         msg: |
-          === BURGINSPEKTION ABGESCHLOSSEN ===
+          === MODULE 01 COMPLETE ===
 
-          UFW:      {{ 'AKTIV' if 'Status: active' in ufw_status.stdout else 'INAKTIV!' }}
-          Fail2Ban: {{ 'AKTIV' if 'Currently banned' in f2b_status.stdout else 'INAKTIV!' }}
-          Kernel:   send_redirects={{ sysctl_check.stdout_lines[0].split('=')[1] | trim }}, rp_filter={{ sysctl_check.stdout_lines[1].split('=')[1] | trim }}, ptrace={{ sysctl_check.stdout_lines[2].split('=')[1] | trim }}
-          Swap:     {{ 'AKTIV' if swap_check.stdout | length > 0 else 'NICHT VORHANDEN!' }}
+          Firewall:  {{ 'ACTIVE' if 'Status: active' in ufw_status.stdout else 'INACTIVE!' }}
+          Fail2Ban:  {{ 'ACTIVE' if 'Currently banned' in f2b_status.stdout else 'INACTIVE!' }}
+          Kernel:    send_redirects={{ sysctl_check.stdout_lines[0].split('=')[1] | trim }}, rp_filter={{ sysctl_check.stdout_lines[1].split('=')[1] | trim }}, ptrace={{ sysctl_check.stdout_lines[2].split('=')[1] | trim }}
+          Swap:      {{ 'ACTIVE' if swap_check.stdout | length > 0 else 'NOT PRESENT!' }}
 
-          {{ '>>> BURG IST GESICHERT <<<' if ('Status: active' in ufw_status.stdout and swap_check.stdout | length > 0) else '>>> ACHTUNG: NICHT ALLE SYSTEME AKTIV <<<' }}
+          {{ '>>> FOUNDATION COMPLETE <<<' if ('Status: active' in ufw_status.stdout and swap_check.stdout | length > 0) else '>>> WARNING: NOT ALL SYSTEMS ACTIVE <<<' }}
 
-    # =================================================================
-    # Reboot-Check
-    # =================================================================
-
-    - name: "Reboot noetig?"
+    - name: "Verify: reboot required?"
       ansible.builtin.stat:
         path: /var/run/reboot-required
       register: reboot_required
 
-    - name: "Hinweis: Reboot empfohlen"
+    - name: "Verify: reboot notice"
       when: reboot_required.stat.exists
       ansible.builtin.debug:
-        msg: "ACHTUNG: Server-Reboot empfohlen (Kernel-Updates). Manuell ausfuehren: ssh {{ inventory_hostname }} 'sudo reboot'"
-
-  # ===================================================================
-  # Handlers
-  # ===================================================================
+        msg: "NOTE: Server reboot recommended (kernel updates). Run manually: ssh {{ inventory_hostname }} 'sudo reboot'"
 
   handlers:
     - name: Reload SSH

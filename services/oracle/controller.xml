@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Master changelog — includes all release changesets in order.
+
+        Rules:
+        - Stateful (run once): releases/YYYY.MM/*.sql
+        - Stateless (repeatable): packages/, views/, triggers/ — runOnChange=true
+        - Never modify an existing changeset — add a new one instead
+        - Every changeset needs author + id + comment explaining WHY
+    -->
+
+    <!-- Phase 1: Initial schema -->
+    <include file="releases/2026.04/001-initial-schema.sql" relativeToChangelogFile="true"/>
+    <include file="releases/2026.04/002-app-user.sql" relativeToChangelogFile="true"/>
+
+    <!-- Phase 2: RAG vector search -->
+    <include file="releases/2026.05/001-rag-schema.sql" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

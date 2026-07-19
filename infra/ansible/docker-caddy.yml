@@ -25,7 +25,7 @@
 
 ---
 - name: "Burgeinrichtung: Module 02 Docker + Caddy"
-  hosts: kingdoms
+  hosts: servers
   become: true
   gather_facts: true
 

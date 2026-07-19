@@ -1,0 +1,334 @@
+# =============================================================================
+# MODULE 04: Oracle Free (latest) — Deploy + PDB Setup
+# =============================================================================
+#
+# Deploys Oracle Database Free as a Docker container and sets up 3 PDBs:
+#   ENTW (Entwicklung), TEST, PROD
+#
+# Fixes vs. previous version:
+#   - Password escaping: OS auth (sqlplus / as sysdba) — no password in CLI
+#   - Liquibase: runs via local Java + ojdbc11 on server (not Docker image)
+#   - Oracle image: unpinned SHA, always pulls latest-lite
+#
+# What this playbook does:
+#   Phase 0: Install Java 17 + Liquibase + ojdbc11 on server
+#   Phase 1: Directories + files
+#   Phase 2: Start Oracle container
+#   Phase 3: Wait for healthy, drop FREEPDB1, create ENTW/TEST/PROD
+#   Phase 4: Open PDBs + save state (survive restart)
+#   Phase 5: Create sdlc_app user in each PDB
+#   Phase 6: Liquibase migrations per PDB
+#   Phase 7: Verify + summary
+#
+# Prerequisites:
+#   - Module 01 (foundation.yml) must have run
+#   - Module 02 (docker.yml) must have run
+#
+# Usage:
+#   # Full setup (first time or re-deploy):
+#   ansible-playbook -i inventory.local.yml oracle.yml \
+#     -e oracle_password=YourSysPassword \
+#     -e oracle_app_password=YourAppPassword
+#
+#   # Oracle container only (skip Liquibase):
+#   ansible-playbook -i inventory.local.yml oracle.yml --tags oracle
+#
+#   # PDB setup only (container already running):
+#   ansible-playbook -i inventory.local.yml oracle.yml --tags pdbs
+#
+#   # Liquibase only (re-run migrations):
+#   ansible-playbook -i inventory.local.yml oracle.yml --tags liquibase
+#
+# Oracle Free Edition Limits:
+#   2 CPUs, 2 GB RAM, 12 GB data, max 3 user PDBs.
+#   FREEPDB1 (default) is dropped to free the slot for ENTW, TEST, PROD.
+#
+# =============================================================================
+
+---
+- name: "Module 04: Oracle Free — ENTW / TEST / PROD"
+  hosts: servers
+  become: true
+  gather_facts: true
+
+  vars:
+    server_user: "{{ deploy_user | default('deploy') }}"
+    oracle_dir: /opt/oracle
+    liquibase_dir: /opt/oracle/liquibase
+    liquibase_version: "4.31.0"
+    ojdbc_jar: /opt/liquibase/lib/ojdbc11.jar
+    ojdbc_url: "https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.7.0.25.01/ojdbc11-23.7.0.25.01.jar"
+    oracle_password: "{{ lookup('env', 'ORACLE_PASSWORD') | default('OracleServer26ai', true) }}"
+    oracle_app_password: "{{ lookup('env', 'ORACLE_APP_PASSWORD') | default('SdlcApp2026', true) }}"
+    pdb_names:
+      - ENTW
+      - TEST
+      - PROD
+
+  tasks:
+
+    # =================================================================
+    # PHASE 0: Java + Liquibase + ojdbc11 on server
+    # =================================================================
+
+    - name: "Prerequisites: install OpenJDK 17"
+      tags: [liquibase, prereqs]
+      ansible.builtin.package:
+        name: openjdk-17-jdk-headless
+        state: present
+
+    - name: "Prerequisites: create Liquibase directory"
+      tags: [liquibase, prereqs]
+      ansible.builtin.file:
+        path: /opt/liquibase/lib
+        state: directory
+        mode: "0755"
+
+    - name: "Prerequisites: check if Liquibase already installed"
+      tags: [liquibase, prereqs]
+      ansible.builtin.stat:
+        path: /opt/liquibase/liquibase
+      register: liquibase_bin
+
+    - name: "Prerequisites: download and install Liquibase {{ liquibase_version }}"
+      tags: [liquibase, prereqs]
+      when: not liquibase_bin.stat.exists
+      ansible.builtin.shell: |
+        set -e
+        curl -fsSL \
+          "https://github.com/liquibase/liquibase/releases/download/v{{ liquibase_version }}/liquibase-{{ liquibase_version }}.tar.gz" \
+          -o /tmp/liquibase.tar.gz
+        tar -xzf /tmp/liquibase.tar.gz -C /opt/liquibase
+        rm /tmp/liquibase.tar.gz
+        chmod +x /opt/liquibase/liquibase
+      changed_when: true
+
+    - name: "Prerequisites: symlink liquibase to /usr/local/bin"
+      tags: [liquibase, prereqs]
+      ansible.builtin.file:
+        src: /opt/liquibase/liquibase
+        dest: /usr/local/bin/liquibase
+        state: link
+
+    - name: "Prerequisites: check if ojdbc11 already present"
+      tags: [liquibase, prereqs]
+      ansible.builtin.stat:
+        path: "{{ ojdbc_jar }}"
+      register: ojdbc_file
+
+    - name: "Prerequisites: download ojdbc11 (Maven Central)"
+      tags: [liquibase, prereqs]
+      when: not ojdbc_file.stat.exists
+      ansible.builtin.get_url:
+        url: "{{ ojdbc_url }}"
+        dest: "{{ ojdbc_jar }}"
+        mode: "0644"
+
+    # =================================================================
+    # PHASE 1: Directories + files
+    # =================================================================
+
+    - name: "Directories: create oracle stack directories"
+      tags: [oracle, pdbs, liquibase]
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0750"
+      loop:
+        - "{{ oracle_dir }}"
+        - "{{ liquibase_dir }}"
+        - "{{ liquibase_dir }}/releases/2026.04"
+        - "{{ liquibase_dir }}/releases/2026.05"
+
+    - name: "Files: copy docker-compose.server.yml"
+      tags: [oracle]
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../services/oracle/docker-compose.server.yml"
+        dest: "{{ oracle_dir }}/docker-compose.yml"
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0640"
+
+    - name: "Files: write .env for Oracle container"
+      tags: [oracle]
+      ansible.builtin.copy:
+        content: "ORACLE_PASSWORD={{ oracle_password }}\n"
+        dest: "{{ oracle_dir }}/.env"
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0600"
+
+    - name: "Files: copy Liquibase changelog"
+      tags: [liquibase]
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../services/oracle/liquibase/{{ item }}"
+        dest: "{{ liquibase_dir }}/{{ item }}"
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0640"
+      loop:
+        - controller.xml
+        - releases/2026.04/001-initial-schema.sql
+        - releases/2026.05/001-rag-schema.sql
+
+    # =================================================================
+    # PHASE 2: Start Oracle container
+    # =================================================================
+
+    - name: "Oracle: pull latest image"
+      tags: [oracle]
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ oracle_dir }}"
+      changed_when: true
+
+    - name: "Oracle: start container"
+      tags: [oracle]
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ oracle_dir }}"
+      register: oracle_start
+      changed_when: "'Started' in oracle_start.stderr or 'Created' in oracle_start.stderr"
+
+    # =================================================================
+    # PHASE 3: Wait + PDB setup (OS auth — no password in CLI)
+    # =================================================================
+
+    - name: "Oracle: wait for healthy (up to 10 minutes)"
+      tags: [oracle, pdbs]
+      ansible.builtin.command:
+        cmd: docker inspect oracle-free --format "{{ '{{' }}.State.Health.Status{{ '}}' }}"
+      register: oracle_health
+      until: oracle_health.stdout.strip() == "healthy"
+      retries: 60
+      delay: 10
+      changed_when: false
+
+    - name: "PDBs: drop FREEPDB1"
+      tags: [pdbs]
+      ansible.builtin.shell: |
+        printf 'WHENEVER SQLERROR CONTINUE\nALTER PLUGGABLE DATABASE FREEPDB1 CLOSE IMMEDIATE;\nDROP PLUGGABLE DATABASE FREEPDB1 INCLUDING DATAFILES;\nEXIT;\n' | \
+        docker exec -i oracle-free sqlplus -s / as sysdba
+      changed_when: true
+
+    - name: "PDBs: create {{ item }}"
+      tags: [pdbs]
+      ansible.builtin.shell: |
+        printf "WHENEVER SQLERROR CONTINUE\nCREATE PLUGGABLE DATABASE {{ item }} ADMIN USER pdb_admin IDENTIFIED BY OraclePdb2026 FILE_NAME_CONVERT = ('/opt/oracle/oradata/FREE/pdbseed/', '/opt/oracle/oradata/FREE/{{ item }}/');\nEXIT;\n" | \
+        docker exec -i oracle-free sqlplus -s / as sysdba
+      loop: "{{ pdb_names }}"
+      changed_when: true
+
+    # =================================================================
+    # PHASE 4: Open PDBs + save state
+    # =================================================================
+
+    - name: "PDBs: open all + save state (survives restart)"
+      tags: [pdbs]
+      ansible.builtin.shell: |
+        printf 'WHENEVER SQLERROR EXIT SQL.SQLCODE\nALTER PLUGGABLE DATABASE ALL OPEN;\nALTER PLUGGABLE DATABASE ALL SAVE STATE;\nEXIT;\n' | \
+        docker exec -i oracle-free sqlplus -s / as sysdba
+      changed_when: true
+
+    - name: "PDBs: reload listener so PDB service names register immediately"
+      tags: [pdbs]
+      ansible.builtin.shell: |
+        docker exec oracle-free lsnrctl reload
+      changed_when: true
+
+    - name: "PDBs: wait 60s for listener registration to complete"
+      tags: [pdbs]
+      ansible.builtin.wait_for:
+        timeout: 60
+
+    # =================================================================
+    # PHASE 5: App user in each PDB
+    # =================================================================
+
+    - name: "Tablespace: create sdlc_data in {{ item }} (ASSM — required for VECTOR type)"
+      tags: [pdbs]
+      ansible.builtin.shell: |
+        printf 'ALTER SESSION SET CONTAINER = {{ item }};\nWHENEVER SQLERROR CONTINUE\nCREATE TABLESPACE sdlc_data DATAFILE '"'"'/opt/oracle/oradata/FREE/{{ item }}/sdlc_data01.dbf'"'"' SIZE 100M AUTOEXTEND ON NEXT 50M MAXSIZE UNLIMITED SEGMENT SPACE MANAGEMENT AUTO;\nEXIT;\n' | \
+        docker exec -i -u oracle oracle-free sqlplus -s / as sysdba
+      loop: "{{ pdb_names }}"
+      changed_when: true
+
+    - name: "App user: create sdlc_app in {{ item }}"
+      tags: [pdbs]
+      ansible.builtin.shell: |
+        printf 'ALTER SESSION SET CONTAINER = {{ item }};\nWHENEVER SQLERROR CONTINUE\nCREATE USER sdlc_app IDENTIFIED BY {{ oracle_app_password }};\nGRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE, CREATE PROCEDURE, CREATE TRIGGER, CREATE VIEW, UNLIMITED TABLESPACE TO sdlc_app;\nEXIT;\n' | \
+        docker exec -i -u oracle oracle-free sqlplus -s / as sysdba
+      loop: "{{ pdb_names }}"
+      changed_when: true
+
+    - name: "App user: grant DBA to pdb_admin in {{ item }} (needed for Liquibase)"
+      tags: [pdbs]
+      ansible.builtin.shell: |
+        printf 'ALTER SESSION SET CONTAINER = {{ item }};\nGRANT DBA TO pdb_admin;\nEXIT;\n' | \
+        docker exec -i -u oracle oracle-free sqlplus -s / as sysdba
+      loop: "{{ pdb_names }}"
+      changed_when: true
+
+    # =================================================================
+    # PHASE 6: Liquibase migrations (local Java + ojdbc11 — no Docker)
+    # =================================================================
+
+    - name: "Liquibase: run migrations"
+      tags: [liquibase]
+      ansible.builtin.command:
+        cmd: >
+          liquibase
+          --url=jdbc:oracle:thin:@//localhost:1521/{{ item }}
+          --username=pdb_admin
+          --password=OraclePdb2026
+          --search-path={{ liquibase_dir }}
+          --changelog-file=controller.xml
+          update
+      loop: "{{ pdb_names }}"
+      register: liquibase_result
+      changed_when: >-
+        "Liquibase command 'update' was executed successfully" in liquibase_result.stdout
+
+    # =================================================================
+    # PHASE 7: Verify
+    # =================================================================
+
+    - name: "Verify: list all PDBs and status"
+      tags: [oracle, pdbs, liquibase]
+      ansible.builtin.shell: |
+        docker exec -u oracle oracle-free sqlplus -s / as sysdba <<'SQLEOF'
+        SET PAGESIZE 20
+        COL name FORMAT A12
+        COL open_mode FORMAT A12
+        SELECT name, open_mode FROM v$pdbs ORDER BY name;
+        EXIT;
+        SQLEOF
+      register: pdb_status
+      changed_when: false
+
+    - name: "Verify: summary"
+      tags: [oracle, pdbs, liquibase]
+      ansible.builtin.debug:
+        msg: |
+          ==============================
+          MODULE 04 COMPLETE
+          ==============================
+
+          Oracle Free (latest-lite): RUNNING
+          Port: 127.0.0.1:1521 (SSH tunnel required)
+
+          PDBs:
+          {{ pdb_status.stdout }}
+
+          Connect via SSH tunnel:
+            ssh -L 1521:localhost:1521 deploy@SERVER_IP
+
+          JDBC:
+            ENTW: jdbc:oracle:thin:@//localhost:1521/ENTW
+            TEST: jdbc:oracle:thin:@//localhost:1521/TEST
+            PROD: jdbc:oracle:thin:@//localhost:1521/PROD
+
+          App user: sdlc_app (per PDB)
+          ==============================

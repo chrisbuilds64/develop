@@ -1,0 +1,257 @@
+# =============================================================================
+# MODULE 05: APEX + ORDS
+# =============================================================================
+#
+# Deploys Oracle REST Data Services (ORDS) and activates APEX in each PDB.
+#
+# Prerequisites:
+#   - Module 01 (foundation.yml)
+#   - Module 02 (docker.yml)
+#   - Module 03 (traefik.yml)          — traefik-net must exist
+#   - Module 04 (oracle.yml)           — oracle-free must be healthy
+#   - Oracle image must be free:latest (full, NOT lite) — APEX required
+#   - DNS A-record: apex.chrisbuilds64.com → server IP
+#
+# What this playbook does:
+#   Phase 0: Verify Oracle is healthy + APEX is installed
+#   Phase 1: Copy APEX static files from Oracle container to host
+#   Phase 2: Create ORDS directory + deploy docker-compose
+#   Phase 3: Pull ORDS image + create config volume
+#   Phase 4: Start ORDS container (init mode if first run)
+#   Phase 5: Run ords install per PDB (seeds ORDS + APEX schemas)
+#   Phase 6: Restart ORDS to serve configured pools
+#   Phase 7: Verify + summary
+#
+# Usage:
+#   # Full setup (first time):
+#   ansible-playbook -i inventory.local.yml apex.yml \
+#     -e oracle_password=YourSysPassword
+#
+#   # ORDS only (Oracle already configured):
+#   ansible-playbook -i inventory.local.yml apex.yml --tags ords-start
+#
+#   # Re-run ORDS install (e.g. after PDB changes):
+#   ansible-playbook -i inventory.local.yml apex.yml --tags ords-install
+#
+# APEX URLs after deployment:
+#   ENTW: https://apex.chrisbuilds64.com/ords/ENTW/apex
+#   TEST: https://apex.chrisbuilds64.com/ords/TEST/apex
+#   PROD: https://apex.chrisbuilds64.com/ords/PROD/apex
+#
+#   SQL Developer Web:
+#   ENTW: https://apex.chrisbuilds64.com/ords/ENTW/
+#
+# =============================================================================
+
+---
+- name: "Module 05: APEX + ORDS"
+  hosts: servers
+  become: true
+  gather_facts: false
+
+  vars:
+    server_user: "{{ deploy_user | default('deploy') }}"
+    oracle_password: "{{ lookup('env', 'ORACLE_PASSWORD') | default('OracleServer26ai', true) }}"
+    ords_dir: /opt/ords
+    apex_static_dir: /opt/ords/apex-static
+    ords_image: container-registry.oracle.com/database/ords:latest
+    apex_domain: "{{ apex_domain_name | default('apex.chrisbuilds64.com') }}"
+    pdb_names:
+      - ENTW
+      - TEST
+      - PROD
+
+  tasks:
+
+    # =================================================================
+    # PHASE 0: Verify prerequisites
+    # =================================================================
+
+    - name: "Prereqs: verify Oracle container is healthy"
+      tags: [prereqs, ords-install, verify]
+      ansible.builtin.command:
+        cmd: docker inspect oracle-free --format "{{ '{{' }}.State.Health.Status{{ '}}' }}"
+      register: oracle_health
+      failed_when: oracle_health.stdout.strip() != "healthy"
+      changed_when: false
+
+    - name: "Prereqs: verify APEX is installed in Oracle (full image required)"
+      tags: [prereqs]
+      ansible.builtin.shell: |
+        printf "SELECT 'APEX_FOUND' FROM dba_registry WHERE comp_name = 'Oracle Application Express';\nEXIT;\n" | \
+        docker exec -i oracle-free sqlplus -s / as sysdba
+      register: apex_check
+      changed_when: false
+      failed_when: "'APEX_FOUND' not in apex_check.stdout"
+
+    # =================================================================
+    # PHASE 1: APEX static files — copy from Oracle container to host
+    # =================================================================
+
+    - name: "APEX static: create directory on host"
+      tags: [apex-static]
+      ansible.builtin.file:
+        path: "{{ apex_static_dir }}"
+        state: directory
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0755"
+
+    - name: "APEX static: check if already copied"
+      tags: [apex-static]
+      ansible.builtin.stat:
+        path: "{{ apex_static_dir }}/images"
+      register: apex_images_dir
+
+    - name: "APEX static: copy from Oracle container (one-time)"
+      tags: [apex-static]
+      when: not apex_images_dir.stat.exists
+      ansible.builtin.shell: |
+        docker cp oracle-free:/opt/oracle/apex/. {{ apex_static_dir }}/
+        chown -R {{ server_user }}:{{ server_user }} {{ apex_static_dir }}
+      changed_when: true
+
+    # =================================================================
+    # PHASE 2: ORDS directory + compose file
+    # =================================================================
+
+    - name: "ORDS dir: create"
+      tags: [ords-start]
+      ansible.builtin.file:
+        path: "{{ ords_dir }}"
+        state: directory
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0750"
+
+    - name: "ORDS: copy docker-compose"
+      tags: [ords-start]
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../services/ords/docker-compose.server.yml"
+        dest: "{{ ords_dir }}/docker-compose.yml"
+        owner: "{{ server_user }}"
+        group: "{{ server_user }}"
+        mode: "0640"
+
+    # =================================================================
+    # PHASE 3: Pull image + config volume
+    # =================================================================
+
+    - name: "ORDS: pull image"
+      tags: [ords-install, ords-start]
+      ansible.builtin.command:
+        cmd: docker pull {{ ords_image }}
+      changed_when: true
+
+    - name: "ORDS: create named config volume"
+      tags: [ords-install, ords-start]
+      community.docker.docker_volume:
+        name: ords-config
+        state: present
+
+    # =================================================================
+    # PHASE 4: Start ORDS container
+    # On first run, ORDS starts in init mode (waits for ords install).
+    # On subsequent runs with populated config volume, it starts normally.
+    # =================================================================
+
+    - name: "ORDS: start container"
+      tags: [ords-start]
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ ords_dir }}"
+      register: ords_start
+      changed_when: "'Started' in ords_start.stderr or 'Created' in ords_start.stderr"
+
+    - name: "ORDS: wait for container to be running"
+      tags: [ords-start, ords-install]
+      ansible.builtin.command:
+        cmd: docker inspect ords --format "{{ '{{' }}.State.Status{{ '}}' }}"
+      register: ords_state
+      until: ords_state.stdout.strip() == "running"
+      retries: 12
+      delay: 5
+      changed_when: false
+
+    # =================================================================
+    # PHASE 5: ORDS install per PDB
+    # Seeds ORDS runtime schemas + APEX gateway config in each PDB.
+    # SYS password is passed via --password-stdin.
+    # Idempotent: re-running upgrades existing installation.
+    # =================================================================
+
+    - name: "ORDS install: configure pool for {{ item }}"
+      tags: [ords-install]
+      ansible.builtin.shell: |
+        echo "{{ oracle_password }}" | docker exec -i ords \
+          ords --config /etc/ords/config install \
+          --admin-user SYS \
+          --db-hostname oracle-free \
+          --db-port 1521 \
+          --db-servicename {{ item }} \
+          --feature-sdw true \
+          --feature-db-api true \
+          --feature-rest-enabled-sql true \
+          --log-folder /etc/ords/config/log \
+          --password-stdin
+      loop: "{{ pdb_names }}"
+      register: ords_install_result
+      changed_when: true
+
+    # =================================================================
+    # PHASE 6: Restart ORDS to activate all configured pools
+    # =================================================================
+
+    - name: "ORDS: restart to activate pools"
+      tags: [ords-install, ords-start]
+      ansible.builtin.command:
+        cmd: docker compose restart ords
+        chdir: "{{ ords_dir }}"
+      changed_when: true
+
+    - name: "ORDS: wait for HTTP endpoint (up to 3 minutes)"
+      tags: [ords-install, ords-start, verify]
+      ansible.builtin.uri:
+        url: "http://localhost:8080/ords/"
+        status_code: [200, 302, 404]
+        validate_certs: false
+      register: ords_http
+      until: ords_http.status in [200, 302, 404]
+      retries: 36
+      delay: 5
+
+    # =================================================================
+    # PHASE 7: Verify + summary
+    # =================================================================
+
+    - name: "Verify: ORDS container status"
+      tags: [verify]
+      ansible.builtin.command:
+        cmd: docker inspect ords --format "{{ '{{' }}.State.Status{{ '}}' }}"
+      register: ords_final_status
+      changed_when: false
+
+    - name: "Verify: summary"
+      tags: [verify]
+      ansible.builtin.debug:
+        msg: |
+          ==============================
+          MODULE 05 COMPLETE
+          ==============================
+
+          ORDS container:  {{ ords_final_status.stdout | trim | upper }}
+          ORDS endpoint:   http://localhost:8080/ords/ (HTTP {{ ords_http.status }})
+
+          APEX (after DNS: {{ apex_domain }} → server IP):
+            ENTW: https://{{ apex_domain }}/ords/ENTW/apex
+            TEST: https://{{ apex_domain }}/ords/TEST/apex
+            PROD: https://{{ apex_domain }}/ords/PROD/apex
+
+          SQL Developer Web:
+            ENTW: https://{{ apex_domain }}/ords/ENTW/
+            TEST: https://{{ apex_domain }}/ords/TEST/
+            PROD: https://{{ apex_domain }}/ords/PROD/
+
+          DNS A-record required:
+            apex.chrisbuilds64.com → 82.165.165.199
+          ==============================

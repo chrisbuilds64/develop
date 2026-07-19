@@ -71,3 +71,5 @@ services/backend/data/
 
 # Node
 node_modules/
+
+infra/ansible/inventory.local.yml

@@ -1,47 +1,19 @@
-# Ansible: Bauplan der Burg
+# infra/ansible/
 
-Reproduzierbare Server-Konfiguration. Ein Befehl, eine Burg.
+Ansible playbooks for server provisioning.
 
-## Voraussetzungen
+## Planned Playbooks
 
-```bash
-pip install ansible
-```
+- `foundation.yml` — Base OS hardening, SSH configuration, firewall (UFW), fail2ban
+- `docker.yml` — Docker Engine + Docker Compose installation
+- `stack.yml` — Deploy all services (Oracle, ORDS, Python API, Traefik)
 
-## Playbooks
+## Requirements
 
-| Playbook | Was es tut |
-|----------|-----------|
-| `foundation.yml` | Module 01: Komplettes Burgfundament (UFW, SSH, Fail2Ban, Kernel, Swap, Timezone) |
+- Ansible 2.15+
+- Target: Debian/Ubuntu LTS
+- Secrets: Ansible Vault (`.env` files per environment, never committed)
 
-## Ausfuehrung
+## Phase
 
-**Burg Rheinstein (Strato) haerten:**
-```bash
-cd develop/ansible
-ansible-playbook -i inventory.yml foundation.yml --limit rheinstein
-```
-
-**Erster Lauf auf frischem Server (nur root vorhanden):**
-```bash
-ansible-playbook -i inventory.yml foundation.yml --limit rheinstein \
-  -e "ansible_user=root" -e "first_run=true"
-```
-
-**Dry-Run (nur pruefen, nichts aendern):**
-```bash
-ansible-playbook -i inventory.yml foundation.yml --limit rheinstein --check
-```
-
-**Nur bestimmte Phase ausfuehren (z.B. nur Kernel):**
-```bash
-ansible-playbook -i inventory.yml foundation.yml --limit rheinstein --start-at-task="Burgmauern"
-```
-
-## Inventory
-
-Beide Koenigreiche sind in `inventory.yml` definiert. Nordwall ist dort vorangelegt, aber auskommentiert bis Deployment ansteht.
-
-## Idempotenz
-
-Jeder Lauf ist sicher wiederholbar. Was bereits konfiguriert ist, wird nicht nochmal angefasst. Swap wird nur angelegt wenn `/swapfile` nicht existiert. Configs werden nur geschrieben wenn sie sich geaendert haben.
+Phase 2. See [ADR-003](../../docs/adr/003-environment-strategy.md) for environment strategy.

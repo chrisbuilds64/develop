@@ -1,0 +1,203 @@
+# =============================================================================
+# TEST-SCHEMA: Auftragsverwaltung — Deploy to ENTW PDB
+# =============================================================================
+#
+# Deploys the test Auftragsverwaltung schema (tables, data, packages)
+# to the ENTW PDB. Uses sdlc_app user (DML) and pdb_admin (DDL/packages).
+#
+# Execution order (dependency-aware):
+#   01 — DDL: all tables
+#   02 — DML: test data
+#   05 — PKG_LAGER  (no dependencies)
+#   04 — PKG_RECHNUNG (no dependencies)
+#   03 — PKG_AUFTRAG  (depends on pkg_lager + pkg_rechnung)
+#
+# Usage:
+#   ansible-playbook -i inventory.local.yml test-schema.yml
+#   ansible-playbook -i inventory.local.yml test-schema.yml --tags schema
+#   ansible-playbook -i inventory.local.yml test-schema.yml --tags packages
+#   ansible-playbook -i inventory.local.yml test-schema.yml --tags verify
+#
+# Prerequisites:
+#   - Oracle container running (oracle.yml executed)
+#   - ENTW PDB open READ WRITE
+#   - pdb_admin has DBA role in ENTW
+#
+# =============================================================================
+
+---
+- name: "Test-Schema: Auftragsverwaltung → ENTW"
+  hosts: servers
+  become: true
+  gather_facts: false
+
+  vars:
+    pdb: ENTW
+    pdb_user: pdb_admin
+    pdb_pass: OraclePdb2026
+    container: oracle-free
+    remote_tmp: /tmp/test-schema
+    local_schema_dir: "{{ playbook_dir }}/../../services/oracle/test-schema"
+
+    # SQL files in execution order
+    schema_scripts:
+      - { file: "01_ddl_tables.sql",    tags: ["schema"] }
+      - { file: "02_dml_testdaten.sql", tags: ["schema"] }
+      - { file: "05_pkg_lager.sql",     tags: ["packages"] }
+      - { file: "04_pkg_rechnung.sql",  tags: ["packages"] }
+      - { file: "03_pkg_auftrag.sql",   tags: ["packages"] }
+
+  tasks:
+
+    # =================================================================
+    # PHASE 1: Copy SQL files to server + container
+    # =================================================================
+
+    - name: "Setup: create temp dir on server"
+      tags: [always]
+      ansible.builtin.file:
+        path: "{{ remote_tmp }}"
+        state: directory
+        mode: "0755"
+
+    - name: "Setup: copy SQL scripts to server"
+      tags: [always]
+      ansible.builtin.copy:
+        src: "{{ local_schema_dir }}/{{ item.file }}"
+        dest: "{{ remote_tmp }}/{{ item.file }}"
+        mode: "0644"
+      loop: "{{ schema_scripts }}"
+      loop_control:
+        label: "{{ item.file }}"
+
+    - name: "Setup: copy scripts into Oracle container"
+      tags: [always]
+      ansible.builtin.command:
+        cmd: "docker cp {{ remote_tmp }}/{{ item.file }} {{ container }}:/tmp/{{ item.file }}"
+      loop: "{{ schema_scripts }}"
+      loop_control:
+        label: "{{ item.file }}"
+      changed_when: true
+
+    # =================================================================
+    # PHASE 2: Execute DDL + DML
+    # =================================================================
+
+    - name: "Schema: execute DDL (01_ddl_tables.sql)"
+      tags: [schema]
+      ansible.builtin.command:
+        cmd: >
+          docker exec -u oracle {{ container }}
+          sqlplus -s {{ pdb_user }}/{{ pdb_pass }}@//localhost:1521/{{ pdb }}
+          @/tmp/01_ddl_tables.sql
+      register: ddl_result
+      changed_when: true
+      failed_when: >
+        'ORA-' in ddl_result.stdout or
+        'SP2-' in ddl_result.stdout
+
+    - name: "Schema: show DDL output"
+      tags: [schema]
+      ansible.builtin.debug:
+        msg: "{{ ddl_result.stdout_lines }}"
+
+    - name: "Schema: execute DML test data (02_dml_testdaten.sql)"
+      tags: [schema]
+      ansible.builtin.command:
+        cmd: >
+          docker exec -u oracle {{ container }}
+          sqlplus -s {{ pdb_user }}/{{ pdb_pass }}@//localhost:1521/{{ pdb }}
+          @/tmp/02_dml_testdaten.sql
+      register: dml_result
+      changed_when: true
+      failed_when: >
+        'ORA-' in dml_result.stdout or
+        'SP2-' in dml_result.stdout
+
+    - name: "Schema: show DML output"
+      tags: [schema]
+      ansible.builtin.debug:
+        msg: "{{ dml_result.stdout_lines }}"
+
+    # =================================================================
+    # PHASE 3: Packages (dependency order)
+    # =================================================================
+
+    - name: "Packages: compile pkg_lager (05)"
+      tags: [packages]
+      ansible.builtin.command:
+        cmd: >
+          docker exec -u oracle {{ container }}
+          sqlplus -s {{ pdb_user }}/{{ pdb_pass }}@//localhost:1521/{{ pdb }}
+          @/tmp/05_pkg_lager.sql
+      register: lager_result
+      changed_when: true
+      failed_when: >
+        'ORA-' in lager_result.stdout or
+        'SP2-' in lager_result.stdout
+
+    - name: "Packages: compile pkg_rechnung (04)"
+      tags: [packages]
+      ansible.builtin.command:
+        cmd: >
+          docker exec -u oracle {{ container }}
+          sqlplus -s {{ pdb_user }}/{{ pdb_pass }}@//localhost:1521/{{ pdb }}
+          @/tmp/04_pkg_rechnung.sql
+      register: rechnung_result
+      changed_when: true
+      failed_when: >
+        'ORA-' in rechnung_result.stdout or
+        'SP2-' in rechnung_result.stdout
+
+    - name: "Packages: compile pkg_auftrag (03)"
+      tags: [packages]
+      ansible.builtin.command:
+        cmd: >
+          docker exec -u oracle {{ container }}
+          sqlplus -s {{ pdb_user }}/{{ pdb_pass }}@//localhost:1521/{{ pdb }}
+          @/tmp/03_pkg_auftrag.sql
+      register: auftrag_result
+      changed_when: true
+      failed_when: >
+        'ORA-' in auftrag_result.stdout or
+        'SP2-' in auftrag_result.stdout
+
+    - name: "Packages: show compilation output"
+      tags: [packages]
+      ansible.builtin.debug:
+        msg:
+          - "=== PKG_LAGER ==="
+          - "{{ lager_result.stdout_lines }}"
+          - "=== PKG_RECHNUNG ==="
+          - "{{ rechnung_result.stdout_lines }}"
+          - "=== PKG_AUFTRAG ==="
+          - "{{ auftrag_result.stdout_lines }}"
+
+    # =================================================================
+    # PHASE 4: Verify
+    # =================================================================
+
+    - name: "Verify: check tables + package status"
+      tags: [verify]
+      ansible.builtin.shell:
+        cmd: |
+          printf "SET PAGESIZE 50\nSET LINESIZE 120\n\nPROMPT === TABLES ===\nSELECT table_name, num_rows FROM user_tables ORDER BY table_name;\n\nPROMPT === PACKAGES ===\nSELECT object_name, object_type, status FROM user_objects\nWHERE  object_type IN ('PACKAGE','PACKAGE BODY')\nORDER  BY object_name, object_type;\n\nPROMPT === ROW COUNTS ===\nSELECT 'ov_kunden'    AS tbl, COUNT(*) AS cnt FROM ov_kunden UNION ALL\nSELECT 'ov_artikel',         COUNT(*) FROM ov_artikel UNION ALL\nSELECT 'ov_auftraege',       COUNT(*) FROM ov_auftraege UNION ALL\nSELECT 'ov_positionen',      COUNT(*) FROM ov_positionen UNION ALL\nSELECT 'ov_rechnungen',      COUNT(*) FROM ov_rechnungen UNION ALL\nSELECT 'ov_protokoll',       COUNT(*) FROM ov_protokoll;\n\nEXIT\n" | \
+          docker exec -i -u oracle {{ container }} \
+          sqlplus -s {{ pdb_user }}/{{ pdb_pass }}@//localhost:1521/{{ pdb }}
+      register: verify_result
+      changed_when: false
+
+    - name: "Verify: output"
+      tags: [verify]
+      ansible.builtin.debug:
+        msg: "{{ verify_result.stdout_lines }}"
+
+    # =================================================================
+    # PHASE 5: Cleanup
+    # =================================================================
+
+    - name: "Cleanup: remove temp dir from server"
+      tags: [always]
+      ansible.builtin.file:
+        path: "{{ remote_tmp }}"
+        state: absent
