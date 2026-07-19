@@ -1,61 +1,58 @@
 # chrisbuilds64/develop
 
-Backend for the chrisbuilds64 project. Building in public.
+The development system of ChrisBuilds64 — built and run like the IT department of a company, in public.
 
-## Status
+This repository is not a single application. It is one real development system: services, infrastructure, apps, and the process documents that govern how they are built. The governing principles come from a canon-based operating model (governance before capability, explicit architecture decisions, human gates); this repo is where that model meets running code.
 
-**Version:** 1.1 (Auth + Search/Tags)
+## Structure
+
+```
+develop/
+├── docs/
+│   ├── adr/              # Architecture Decision Records (one home for all)
+│   ├── requirements/     # REQ-000.. with lifecycle Draft → Approved
+│   ├── runbooks/         # Server setup + troubleshooting
+│   └── architecture/     # Design docs
+├── infra/
+│   └── ansible/          # Server provisioning, hardening, deploy (Caddy)
+├── services/
+│   ├── backend/          # FastAPI service monolith (PostgreSQL, Alembic)
+│   └── oracle/           # Oracle 26ai Free: Dev/Test/Prod PDBs, Liquibase
+├── apps/                 # Example applications (Flutter, web)
+│   ├── pressroom/        # Editorial pipeline desktop app
+│   ├── feldorakel/       # Small FastAPI + LLM web example
+│   └── tweight/          # Mobile example (real device deploy)
+├── experiments/          # LangGraph multi-agent, agent specs
+└── shared/               # Shared components (as needed)
+```
+
+**Environment rule:** every area runs the same three-instance structure — Development, Test, Production — via configuration (backend ENV, Oracle PDBs, Ansible inventories). See `docs/adr/`.
+
+## Backend (services/backend)
+
 **Stack:** Python 3.11 + FastAPI + PostgreSQL + Docker
-
-## What's Implemented
 
 - **Item Manager Module** - Generic CRUD with JSONB payload, tags, soft-delete
 - **Search & Filter** - Full-text search (`?search=`) + tag filtering (`?tags=`)
 - **Authentication** - Bearer token auth with MockAuth adapter (Clerk-ready)
 - **Ownership** - Items scoped to authenticated user
 - **Clean Architecture** - API → Modules → Adapters → Infrastructure
-- **PostgreSQL Adapter** - With Alembic migrations
 - **Logging** - structlog with JSON output
 - **Error Handling** - RFC 7807 Problem Details standard
-- **Docker Setup** - Multi-stage build, docker-compose
 
-## Flutter App
-
-A companion Flutter app (`tweight`) is available for iOS/Android:
-- Login with test tokens
-- Full Item CRUD
-- Pull-to-refresh
-- Deployed on iPhone (dev build)
-
-## Quick Start
+### Quick Start
 
 ```bash
-# Clone
 git clone https://github.com/chrisbuilds64/develop.git
 cd develop
 
-# Start with Docker
 docker-compose up -d
 
 # API runs at http://localhost:8000
 # Docs at http://localhost:8000/docs
 ```
 
-## Project Structure
-
-```
-develop/
-├── backend/
-│   ├── api/              # FastAPI routes + schemas
-│   ├── modules/          # Business logic (item_manager)
-│   ├── adapters/         # Database, Auth, AI interfaces
-│   ├── infrastructure/   # Logging, Errors, Config
-│   └── migrations/       # Alembic
-├── architecture/         # Design docs
-└── docker-compose.yml
-```
-
-## API Endpoints
+### API Endpoints
 
 **Authentication:** All endpoints require `Authorization: Bearer <token>` header.
 
@@ -87,4 +84,4 @@ Follow along:
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).

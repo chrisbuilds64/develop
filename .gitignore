@@ -68,3 +68,6 @@ apikeys/
 # Ansible Reports (lokal, nicht ins Repo)
 infra/ansible/reports/
 services/backend/data/
+
+# Node
+node_modules/
