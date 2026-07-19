@@ -258,7 +258,9 @@ UC-BE-002: RAG Knowledge API
 
 ## 8. Relationship to Other Artifact Types
 
-A use case is the container for a feature or system. Related artifact types in `docs/`:
+A use case is the container for a feature or system. This CRISP-DM process is the battle-tested instance of the canonical "Use Case" artifact type (ChrisBuilds64 software canon v0.2); the canon carries the abstract phase structure, this document the method-specific expression.
+
+Related artifact types in `docs/`:
 
 ```
 Use Case (why + what, CRISP-DM container)
