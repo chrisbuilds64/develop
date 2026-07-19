@@ -13,7 +13,7 @@ from infrastructure.logging import setup_logging, get_logger, get_environment
 from infrastructure.logging.middleware import LoggingMiddleware
 from infrastructure.errors import register_exception_handlers
 from api.rate_limit import limiter
-from api.routes import items, accosite
+from api.routes import items
 
 # Setup logging on startup
 environment = get_environment()
@@ -46,7 +46,6 @@ register_exception_handlers(app)
 
 # Register routes
 app.include_router(items.router, prefix="/api/v1")
-app.include_router(accosite.router, prefix="/api/v1")
 
 
 # Serve frontend apps (static files)

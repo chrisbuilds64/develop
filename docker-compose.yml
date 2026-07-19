@@ -47,8 +47,6 @@ services:
       - ./backend:/app
       # Mount frontend apps
       - ./apps:/apps
-      # Persist AccoSite project data
-      - accosite_data:/app/data/accosite
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,8 +68,6 @@ services:
 volumes:
   postgres_data:
     name: chrisbuilds-postgres-data
-  accosite_data:
-    name: chrisbuilds-accosite-data
 
 # ============================================
 # Networks
