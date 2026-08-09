@@ -1,12 +1,34 @@
 # UC-FE-002: PressRoom (Editorial Dashboard)
 
 **Created:** 2026-02-13
-**Last Updated:** 2026-04-15
+**Last Updated:** 2026-08-09
 **Type:** Frontend
-**Status:** v2 DONE (Phase 6, deployed). Open source playground strategy in planning.
+**Status:** v2 DONE (Phase 6, deployed) — **documentation describes the app as built in Feb 2026; the content pipeline has since evolved, see Implementation Status below.** Open source playground strategy in planning.
 **Owner:** Christian Moser
 **Phase:** 6 (Deployment), v2 complete
 **Provenance:** Migrated from the private control repo and translated to English, 2026-07-19. Prior revision history remains in the control repo.
+
+---
+
+## Implementation Status & Known Drift (2026-08-09)
+
+PressRoom was built in February 2026 against the pipeline of that time. The editorial system has since moved on; the app still works but lags behind the current data reality. Sections 2–9 below document the app **as built** — they are accurate for the code, not for the current pipeline.
+
+**Current pipeline reality (source of truth: the content repo):**
+
+- **14 stages:** `00-archive → 05-operational-observations → 10-ideas → 15-interpretation → 20-produce → 30-review-human → 40-asset-generation → 50-ready-to-publish → 55-scheduled → 60-published → 61-field-observation → 65-canonical-review → 66-reviewed → 70-reference-frames`
+- **Active labels:** FN (Field Notes), POD (Podcast), WN (Weekend Notes), SP (Signal Posts). The legacy labels this document references (DAY, VID, TOP, WEEK) are retired.
+- **Current deliverables (FN):** substack.md, substack.html, linkedin-post.txt, first-comment.txt, visual-brief.md, meta.json, validation.md, review.md, plus generated assets (header/overlay images). linkedin-article, tiktok-script, and dalle-prompt are retired. POD has its own deliverable set.
+- **Production rules** live in the canon repo (private), not in `content/rules/` — that directory no longer exists.
+
+**Known code drift (tracked as technical debt, fix planned as a dedicated session):**
+
+1. Stage list is hardcoded to 6 of the 14 stages — stages 05, 15, 40, 55, 61, 65, 66, 70 and the SP label are unknown to the app.
+2. `createIdea()` writes `notes.md`; the canonical container entry file is `source.md`.
+3. `_calculateCompleteness()` checks the retired 11-deliverable set, so completeness percentages are wrong for current containers.
+4. RulesScreen points at the removed `content/rules/` directory.
+
+**Documentation policy:** this section is updated when the drift changes; the as-built sections below are only rewritten when the code is.
 
 ---
 
