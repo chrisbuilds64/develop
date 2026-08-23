@@ -1,0 +1,40 @@
+# Example domain layer — format demonstration only.
+#
+# A layer adds domain knowledge on top of a core pack. It may append
+# questions and exit criteria to a core block, and it may append new
+# blocks. It may not remove a block, reorder them, replace a core
+# question, or rename a core block. The loader enforces this.
+#
+# This is NOT a ChrisBuilds64 layer. The real ones are not public.
+
+[pack]
+name = "example-layer"
+version = "0.1"
+language = "en"
+extends = "example"
+
+[directions]
+rules = [
+  "Do not ask which method they use. Ask about the last release.",
+]
+
+[[trigger]]
+cue = "they name a method"
+ask = "When did you last not follow it? What was the occasion?"
+seeks = "the gap between the method introduced and the practice lived"
+
+[[block_extension]]
+id = "outcomes"
+exit_criteria = ["'Done' stated in checkable words"]
+
+  [[block_extension.question]]
+  text = "When is something done here? Not 'when it runs' — how do you see it?"
+  yields = "definition of done"
+
+[[block]]
+id = "domain-only"
+title = "A block that exists only in this domain"
+
+  [[block.question]]
+  text = "A question the core pack has no reason to ask."
+  yields = "domain-specific material"

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ block.title }}</h1>
+<p class="dim">
+  {{ run.client }} — block {{ pack.blocks.index(block) + 1 }} of {{ pack.blocks|length }}
+  {% if block.id in run.closed_blocks %} · closed{% endif %}
+</p>
+{% if block.note %}<p class="dim">{{ block.note }}</p>{% endif %}
+
+{% if incomplete %}
+<div class="destination" style="border-left-color: var(--warn)">
+  <strong>Not finished.</strong>
+  {{ incomplete|length }} question{{ "s" if incomplete|length > 1 else "" }}
+  still open: {{ incomplete|join(", ") }}.
+  Answer them, or record why they stay open and mark them <code>OPEN</code>.
+</div>
+{% endif %}
+
+{% for question in block.questions %}
+  {% set answer = run.answers.get(question.id) %}
+  <div class="q {% if answer and answer.text %}answered{% elif question.id in incomplete %}missing{% endif %}" id="{{ question.id }}">
+    <p class="text">{{ question.id }} — {{ question.text }}</p>
+    {% if question.yields %}<p class="yields">yields: {{ question.yields }}</p>{% endif %}
+    <form method="post" action="/block/{{ block.id }}/answer">
+      <input type="hidden" name="question_id" value="{{ question.id }}">
+      <textarea name="text" placeholder="Their words, not yours.">{{ answer.text if answer else "" }}</textarea>
+      <div class="row">
+        <select name="marker">
+          {% for m in ["AS-IS", "PROPOSED", "OPEN"] %}
+          <option value="{{ m }}" {% if answer and answer.marker == m %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Save</button>
+      </div>
+    </form>
+    {% if answer and answer.follow_ups %}
+    <div class="followups">
+      <p class="label">Follow up on</p>
+      {% for f in answer.follow_ups %}<p>{{ f }}</p>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+{% endfor %}
+
+{% if block.exit_criteria %}
+<div class="criteria">
+  <strong>This block is finished when</strong>
+  <ul>{% for c in block.exit_criteria %}<li>{{ c }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<form method="post" action="/block/{{ block.id }}/close" class="row">
+  <button type="submit">Close block and continue</button>
+</form>
+{% endblock %}

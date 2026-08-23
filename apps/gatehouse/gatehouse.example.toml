@@ -1,0 +1,61 @@
+# Gatehouse configuration.
+# Copy to gatehouse.toml and adjust. Never commit a filled-in copy.
+
+[pack]
+# The canon pack drives the entire run. It is not shipped with this code.
+path = "./packs/example"
+
+[instance]
+# Where this client's answers and artifacts are written.
+# Put this directory under version control at the client.
+path = "./instances/example"
+
+# ---------------------------------------------------------------------
+# Models
+#
+# Profiles describe endpoints. Tasks are mapped onto profiles. Not every
+# task needs the largest model: follow-up questions during an interview
+# are many small calls, while a synthesis at the end is one call that
+# deserves the strongest reasoning available. Splitting them is a cost
+# decision the client makes, not one the code makes for them.
+#
+# Credentials are never named here unless a client needs to keep several
+# accounts apart. By default the machine's own sign-in is used, whatever
+# form it takes.
+# ---------------------------------------------------------------------
+
+[model]
+default = "keins"
+
+# Tasks Gatehouse can route. Unlisted tasks use the default profile.
+[model.tasks]
+# followup = "schnell"
+
+[model.profiles.keins]
+# Sends nothing anywhere. Walks the whole pack without a model, which is
+# what to use before a client has settled their data protection question.
+adapter = "echo"
+destination = "kein Modell angebunden"
+local = true
+
+# [model.profiles.stark]
+# adapter = "anthropic"
+# model = "claude-opus-5"
+# destination = "Anthropic API"
+# api_key_env = "ANTHROPIC_API_KEY"   # weglassen = Anmeldung des Rechners nutzen
+
+# [model.profiles.schnell]
+# adapter = "anthropic"
+# model = "claude-haiku-4-5"
+# destination = "Anthropic API"
+
+# [model.profiles.imhaus]
+# adapter = "openai_compat"
+# base_url = "http://localhost:11434/v1"
+# model = "..."
+# destination = "eigener Server im Haus"
+# local = true
+
+[server]
+host = "127.0.0.1"
+port = 8100

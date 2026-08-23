@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Start an elicitation run</h1>
+<p class="dim">
+  Pack: {{ pack.layers | join(' + ') }} —
+  {{ pack.blocks|length }} blocks,
+  {{ pack.blocks | map(attribute='questions') | map('length') | sum }} questions,
+  {{ pack.triggers|length }} follow-up triggers.
+</p>
+
+<div class="destination">
+  <strong>Where answers go:</strong> {{ destinations | join("; ") }}.
+  Every call is recorded under <a href="/audit">Audit</a>.
+</div>
+
+{% if pack.directions %}
+<h2>How this interview is run</h2>
+<ul class="dim">{% for rule in pack.directions %}<li>{{ rule }}</li>{% endfor %}</ul>
+{% endif %}
+
+<form method="post" action="/start" class="row">
+  <input type="text" name="client" placeholder="Client or subject" required>
+  <button type="submit">Begin</button>
+</form>
+{% endblock %}

@@ -1,0 +1,108 @@
+# Example pack — format demonstration only.
+#
+# This is NOT the ChrisBuilds64 canon pack. It exists so that this
+# repository can be run, read and tested without the licensed pack,
+# which is supplied separately and is not public.
+#
+# A pack is the product. This file shows its shape and nothing more.
+
+[pack]
+name = "example"
+version = "0.1"
+language = "en"
+
+# Stage directions govern the whole interview. They are handed to the
+# model with every follow-up request and they are what makes two
+# interviewers produce comparable results.
+[directions]
+rules = [
+  "Never ask about the process. Ask about the last concrete case.",
+  "Follow one real piece of work from start to finish.",
+  "Failures are worth more than successes. Structure sits where things broke.",
+  "Do not ask what someone wants. Ask what they did last week.",
+  "Write down their words, not your understanding of them.",
+]
+
+# Triggers are the craft. Whoever holds this table can run the
+# interview at the same level, human or machine.
+[[trigger]]
+cue = "they name a quality criterion"
+ask = "Who checks that, and when? How do you notice when it is not met?"
+seeks = "the missing mechanism behind the claim"
+
+[[trigger]]
+cue = "they say 'usually', 'normally', or 'as a rule'"
+ask = "And when not?"
+seeks = "the exception is the reality"
+
+[[trigger]]
+cue = "they answer with intent instead of a case ('we want to', 'it should')"
+ask = "Take the last real delivery."
+seeks = "facts instead of self-image"
+
+[[trigger]]
+cue = "two answers contradict each other"
+ask = "Earlier you said X, now Y."
+seeks = "where reality diverges from the claim; name it, do not resolve it"
+
+[[trigger]]
+cue = "they say 'a colleague handles that'"
+ask = "And when they are away?"
+seeks = "single points of dependency"
+
+[[block]]
+id = "outcomes"
+title = "What is produced here"
+note = "If nothing comes back here, stop. Without a definition of correct there is nothing to govern."
+exit_criteria = [
+  "Output types named",
+  "'Correct' stated in measurable words",
+  "One good and one bad case on the table",
+  "Checked whether the criteria cover the whole path or only its end",
+]
+
+  [[block.question]]
+  text = "What leaves this company at the end? The thing where someone says: that is finished."
+  yields = "output types"
+
+  [[block.question]]
+  text = "How many different kinds of it are there? Are those really different things or variants?"
+  yields = "label system"
+
+  [[block.question]]
+  text = "How do you know one of them is good? Not 'it works' — what do you measure?"
+  yields = "definition of correct"
+
+  [[block.question]]
+  text = "Name one that went well and one that went badly. What was the difference?"
+  yields = "the criteria in practice rather than in intent"
+
+[[block]]
+id = "path"
+title = "The path"
+exit_criteria = [
+  "Stages named",
+  "Gates located",
+  "Artifacts between stages named",
+  "Failure behaviour per stage",
+]
+
+  [[block.question]]
+  text = "Take the last finished piece. Walk me through every step from first idea to leaving the building."
+  yields = "the stages"
+
+  [[block.question]]
+  text = "Where in that have you thrown something away and started again?"
+  yields = "where the real gates sit"
+
+  [[block.question]]
+  text = "At which point may it not continue without you looking at it yourself?"
+  yields = "human gates"
+
+  [[block.question]]
+  text = "What lies around between two steps, and in what form?"
+  yields = "artifact types"
+
+  [[block.question]]
+  text = "What happens when a step goes wrong? Back, forward, or left lying?"
+  yields = "failure behaviour"

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Artifacts</h1>
+<p class="dim">
+  {{ run.client }} — {{ run.answers|length }} answers,
+  {{ run.closed_blocks|length }} of {{ pack.blocks|length }} blocks closed.
+</p>
+<p class="dim">Written to <code>{{ interview_path }}</code>. Commit it.</p>
+<pre>{{ interview }}</pre>
+{% endblock %}

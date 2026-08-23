@@ -1,0 +1,15 @@
+# A filled-in config points at the private canon pack and may name a key
+# variable. The example is the only one that belongs in the repository.
+gatehouse.toml
+
+# Client answers. Never in this repository — they belong in the client's
+# own version control, at the client.
+instances/
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local launcher: encodes one client's secret paths.
+start.sh

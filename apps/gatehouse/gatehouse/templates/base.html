@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Gatehouse{% endblock %}</title>
+<style>
+  :root {
+    --ink: #16181d; --dim: #6b7280; --line: #d9dce1;
+    --bg: #f7f7f5; --panel: #ffffff; --accent: #1f3a5f; --warn: #8a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8e8e6; --dim: #9aa0a8; --line: #2e3238;
+      --bg: #14161a; --panel: #1c1f24; --accent: #8fb3d9; --warn: #d9a441;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    border-bottom: 1px solid var(--line); background: var(--panel);
+    padding: .9rem 1.5rem; display: flex; gap: 1.5rem; align-items: baseline;
+    flex-wrap: wrap;
+  }
+  header .name { font-weight: 600; letter-spacing: .02em; }
+  header nav { margin-left: auto; display: flex; gap: 1rem; }
+  a { color: var(--accent); }
+  main { max-width: 54rem; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.15rem; margin: 2.5rem 0 .5rem; }
+  .dim { color: var(--dim); font-size: .875rem; }
+  .destination {
+    border: 1px solid var(--line); border-left: 3px solid var(--warn);
+    background: var(--panel); padding: .6rem .9rem; margin: 1.5rem 0;
+    font-size: .875rem;
+  }
+  .q {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 3px; padding: 1.1rem 1.2rem; margin: 1rem 0;
+  }
+  .q.answered { border-left: 3px solid var(--accent); }
+  .q.missing { border-left: 3px solid var(--warn); }
+  .q p.text { margin: 0 0 .3rem; font-weight: 500; }
+  .q .yields { font-size: .8rem; color: var(--dim); margin: 0 0 .8rem; }
+  textarea {
+    width: 100%; min-height: 5rem; padding: .6rem; font: inherit; font-size: .95rem;
+    background: var(--bg); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 3px; resize: vertical;
+  }
+  select, input[type=text] {
+    padding: .45rem .6rem; font: inherit; font-size: .9rem;
+    background: var(--bg); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 3px;
+  }
+  button {
+    padding: .45rem 1rem; font: inherit; font-size: .9rem; cursor: pointer;
+    background: var(--accent); color: var(--panel);
+    border: 1px solid var(--accent); border-radius: 3px;
+  }
+  button.ghost { background: transparent; color: var(--accent); }
+  .row { display: flex; gap: .6rem; align-items: center; margin-top: .7rem; }
+  .followups { margin: .9rem 0 0; padding: .7rem .9rem; border-left: 2px solid var(--warn); }
+  .followups p { margin: 0 0 .3rem; font-size: .9rem; }
+  .followups .label { font-size: .75rem; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--dim); }
+  .criteria { border: 1px dashed var(--line); padding: .9rem 1.2rem; margin: 2rem 0; }
+  .criteria ul { margin: .4rem 0 0; padding-left: 1.2rem; font-size: .9rem; }
+  pre {
+    background: var(--panel); border: 1px solid var(--line); padding: 1rem;
+    overflow-x: auto; font-size: .85rem; line-height: 1.5;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--dim); font-weight: 500; }
+</style>
+</head>
+<body>
+<header>
+  <span class="name">Gatehouse</span>
+  <span class="dim" title="{{ pack.layers | join(' + ') }}">
+    {{ pack.layers | join(' + ') if pack.layers else pack.name ~ ' ' ~ pack.version }}
+  </span>
+  <nav class="dim">
+    <a href="/">Interview</a>
+    <a href="/artifacts">Artifacts</a>
+    <a href="/audit">Audit</a>
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

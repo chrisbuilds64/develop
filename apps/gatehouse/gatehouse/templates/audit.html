@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Audit</h1>
+<p class="dim">
+  Every model call, newest first. Destinations: {{ destinations | join('; ') }}.
+  {% set out = entries | selectattr("egress") | list | length %}
+  <strong>{{ out }}</strong> of {{ entries|length }} entries left this machine.
+</p>
+{% if not entries %}
+<p class="dim">Nothing sent yet.</p>
+{% else %}
+<table>
+  <tr><th>When</th><th>Event</th><th>Task</th><th>Left machine</th><th>Profile</th><th>Model</th><th>Tokens</th></tr>
+  {% for e in entries %}
+  <tr>
+    <td>{{ e.at }}</td>
+    <td>{{ e.event }}</td>
+    <td>{{ e.get("task", "") }}</td>
+    <td>{% if e.get("egress") %}yes{% elif e.get("egress") is not none %}no{% else %}—{% endif %}</td>
+    <td>{{ e.get("profile", "") }}</td>
+    <td>{{ e.get("model") or e.get("adapter", "") }}</td>
+    <td>{{ (e.get("input_tokens") or 0) + (e.get("output_tokens") or 0) or "" }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}
