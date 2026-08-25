@@ -62,9 +62,25 @@ class Article {
 
     int found = 0;
     for (final file in expected) {
-      if (files.contains(file)) found++;
+      if (_hasDeliverable(file)) found++;
     }
     return found / expected.length;
+  }
+
+  /// A deliverable counts as present if the plain name exists OR any versioned
+  /// sibling does. Since 2026-08-25 the highest version number is the current
+  /// state, and a revised deliverable no longer keeps an unversioned file:
+  /// `linkedin-post.txt` becomes `linkedin-post.v2.txt` once it is revised.
+  /// Matching only the plain name would report revised containers as
+  /// incomplete. `meta.json` is exempt from versioning and matches plainly.
+  bool _hasDeliverable(String file) {
+    if (files.contains(file)) return true;
+    final dot = file.lastIndexOf('.');
+    if (dot <= 0) return false;
+    final stem = file.substring(0, dot);
+    final ext = file.substring(dot + 1);
+    final versioned = RegExp('^${RegExp.escape(stem)}\\.v\\d+\\.${RegExp.escape(ext)}\$');
+    return files.any(versioned.hasMatch);
   }
 
   /// Label-aware canonical deliverable set. POD (podcast) has a different set
