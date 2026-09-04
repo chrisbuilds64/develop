@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import __version__, elicit
+from . import __version__, elicit, synthesize
 from .adapters import Registry
 from .audit import AuditLog
 from .config import Config
@@ -117,7 +117,8 @@ def create_app(config: Config) -> FastAPI:
         instance.save(run)
 
         if following is None:
-            return RedirectResponse("/artifacts", status_code=303)
+            target = "/analysis" if pack.synthesis else "/artifacts"
+            return RedirectResponse(target, status_code=303)
         return RedirectResponse(f"/block/{following}", status_code=303)
 
     @app.get("/artifacts", response_class=HTMLResponse)
@@ -133,6 +134,47 @@ def create_app(config: Config) -> FastAPI:
             interview=instance.interview_file.read_text(encoding="utf-8"),
             interview_path=instance.interview_file,
         )
+
+    @app.get("/analysis", response_class=HTMLResponse)
+    def analysis(request: Request):
+        run = instance.load()
+        if run is None:
+            return page(request, "empty.html", heading="Nothing to read yet",
+                        detail="Answer some questions first.")
+        if pack.synthesis is None:
+            return page(request, "empty.html", heading="This pack offers no reading",
+                        detail=f"Pack '{pack.name}' defines no synthesis.")
+
+        existing = (
+            instance.analysis_file.read_text(encoding="utf-8")
+            if instance.analysis_file.exists()
+            else ""
+        )
+        return page(
+            request, "analysis.html", run=run, body=existing,
+            answered=len([a for a in run.answers.values() if a.text.strip()]),
+            total=sum(len(b.questions) for b in pack.blocks),
+            path=instance.analysis_file,
+        )
+
+    @app.post("/analysis/run")
+    def analysis_run(request: Request):
+        run = _require_run(instance)
+        try:
+            body = synthesize.read_back(models, pack, run)
+        except synthesize.SynthesisUnavailable as exc:
+            # Stay on the page. The operator may be standing in front of
+            # someone; a stack trace or a redirect loses the room.
+            return page(
+                request, "analysis.html", run=run, body="", error=str(exc),
+                answered=len([a for a in run.answers.values() if a.text.strip()]),
+                total=sum(len(b.questions) for b in pack.blocks),
+                path=instance.analysis_file,
+            )
+
+        instance.save_analysis(run, pack.synthesis.title, pack.synthesis.lead, body)
+        audit.record(event="analysis_written", answers=len(run.answers))
+        return RedirectResponse("/analysis", status_code=303)
 
     @app.get("/audit", response_class=HTMLResponse)
     def audit_view(request: Request):

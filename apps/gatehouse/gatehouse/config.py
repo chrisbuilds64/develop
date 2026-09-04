@@ -18,7 +18,7 @@ from pathlib import Path
 
 # Every task Gatehouse can route to a model. Named here so a typo in the
 # configuration is caught at startup rather than in front of a client.
-TASKS = ("followup",)
+TASKS = ("followup", "synthesis")
 
 
 class ConfigError(Exception):

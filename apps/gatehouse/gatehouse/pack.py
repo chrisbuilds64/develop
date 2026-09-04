@@ -41,6 +41,20 @@ class Trigger:
 
 
 @dataclass(frozen=True)
+class Synthesis:
+    """What a pack allows a run to say about its own answers.
+
+    The instruction lives in the pack and not in this module for the
+    same reason the questions do: the code is public and the canon is
+    the product. What a reading may claim is a canon decision.
+    """
+
+    title: str
+    lead: str
+    prompt: str
+
+
+@dataclass(frozen=True)
 class Pack:
     name: str
     version: str
@@ -49,6 +63,7 @@ class Pack:
     blocks: list[Block]
     triggers: list[Trigger]
     layers: list[str] = field(default_factory=list)
+    synthesis: Synthesis | None = None
 
     def block(self, block_id: str) -> Block:
         for candidate in self.blocks:
@@ -83,6 +98,7 @@ def load(directory: Path, _seen: set[Path] | None = None) -> Pack:
         for t in raw.get("trigger", [])
     ]
     directions = list(raw.get("directions", {}).get("rules", []))
+    synthesis = _synthesis(raw.get("synthesis"), manifest)
 
     base_name = meta.get("extends")
     if base_name:
@@ -90,6 +106,10 @@ def load(directory: Path, _seen: set[Path] | None = None) -> Pack:
         blocks = _extend(base, blocks, raw.get("block_extension", []), manifest)
         triggers = base.triggers + triggers
         directions = base.directions + directions
+        # The one place a layer may replace rather than append. A domain
+        # layer that must not change how its own answers are read would
+        # be unable to say anything domain-specific about them.
+        synthesis = synthesis or base.synthesis
         layers = base.layers + [f"{meta['name']} {meta['version']}"]
     else:
         if raw.get("block_extension"):
@@ -114,6 +134,7 @@ def load(directory: Path, _seen: set[Path] | None = None) -> Pack:
         blocks=blocks,
         triggers=triggers,
         layers=layers,
+        synthesis=synthesis,
     )
 
 
@@ -211,4 +232,28 @@ def _block(entry: dict, manifest: Path) -> Block:
         questions=questions,
         exit_criteria=list(entry.get("exit_criteria", [])),
         note=entry.get("note", ""),
+    )
+
+
+def _synthesis(raw: dict | None, manifest: Path) -> Synthesis | None:
+    """A pack without [synthesis] simply offers no reading.
+
+    Absence is a valid state, not an error: a pack meant for a guided
+    two-hour session may deliberately leave the reading to the person
+    who sat through it.
+    """
+    if raw is None:
+        return None
+
+    prompt = (raw.get("prompt") or "").strip()
+    if not prompt:
+        raise PackError(
+            f"[synthesis] in {manifest} defines no prompt. A reading with no "
+            "instruction would be the model's own agenda, not the pack's."
+        )
+
+    return Synthesis(
+        title=(raw.get("title") or "What your answers say").strip(),
+        lead=(raw.get("lead") or "").strip(),
+        prompt=prompt,
     )

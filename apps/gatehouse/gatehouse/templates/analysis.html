@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ pack.synthesis.title }}</h1>
+<p class="dim">
+  {{ run.client }} — {{ answered }} of {{ total }} questions answered.
+</p>
+
+{% if pack.synthesis.lead %}
+<div class="destination">{{ pack.synthesis.lead }}</div>
+{% endif %}
+
+{% if error %}
+<div class="destination"><strong>No reading was produced.</strong> {{ error }}</div>
+{% endif %}
+
+<form method="post" action="/analysis/run" class="row">
+  <button type="submit">{{ "Read the answers again" if body else "Read the answers" }}</button>
+  {% if body %}
+  <span class="dim">Written to <code>{{ path }}</code></span>
+  {% endif %}
+</form>
+
+{% if body %}
+<pre>{{ body }}</pre>
+{% else %}
+<p class="dim">
+  One model call over every answer given so far. Nothing else is sent,
+  because Gatehouse holds nothing else. The call is recorded under
+  <a href="/audit">Audit</a> before it leaves.
+</p>
+{% endif %}
+{% endblock %}

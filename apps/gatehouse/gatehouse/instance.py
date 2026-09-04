@@ -57,6 +57,25 @@ class Instance:
     def interview_file(self) -> Path:
         return self._path / "interview.md"
 
+    @property
+    def analysis_file(self) -> Path:
+        return self._path / "analysis.md"
+
+    def save_analysis(self, run: Run, title: str, lead: str, body: str) -> str:
+        """Write the reading as its own artifact.
+
+        Kept out of run.json on purpose. `run.json` is the record of what
+        was said; the reading is derived from it and can be regenerated,
+        or found to be wrong, without touching the record it came from.
+        """
+        parts = [f"# {title}", "", f"**{run.client}** — {run.pack_name} {run.pack_version}", ""]
+        if lead:
+            parts += [lead, ""]
+        parts += ["---", "", body, ""]
+        text = "\n".join(parts)
+        self.analysis_file.write_text(text, encoding="utf-8")
+        return text
+
     def start(self, client: str) -> Run:
         run = Run(
             pack_name=self._pack.name,

@@ -13,6 +13,10 @@ import httpx
 
 from . import Model, ModelError, Reply
 
+# Mirrors the Anthropic adapter. See the note there on why this is a
+# bound and not a budget.
+MAX_TOKENS = 4096
+
 
 class OpenAICompatModel(Model):
     @property
@@ -46,7 +50,11 @@ class OpenAICompatModel(Model):
             response = httpx.post(
                 f"{base_url.rstrip('/')}/chat/completions",
                 headers=headers,
-                json={"model": self._profile.model or "local", "messages": messages},
+                json={
+                    "model": self._profile.model or "local",
+                    "messages": messages,
+                    "max_tokens": MAX_TOKENS,
+                },
                 timeout=120.0,
             )
             response.raise_for_status()
@@ -56,6 +64,12 @@ class OpenAICompatModel(Model):
         body = response.json()
         choices = body.get("choices", [])
         usage = body.get("usage", {})
+
+        if choices and choices[0].get("finish_reason") == "length":
+            raise ModelError(
+                "Die Antwort des Modells wurde am Token-Limit abgeschnitten "
+                "und ist unvollständig."
+            )
         return Reply(
             text=choices[0].get("message", {}).get("content", "") if choices else "",
             input_tokens=usage.get("prompt_tokens"),

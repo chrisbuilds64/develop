@@ -20,6 +20,17 @@ from . import Model, ModelError, Reply
 
 DEFAULT_MODEL = "claude-opus-5"
 
+# A follow-up is two lines. A reading over a whole run is a page or two.
+# The cap is an upper bound and not a spend: a short reply is billed
+# short. It exists so a runaway reply cannot run away far.
+MAX_TOKENS = 4096
+
+_TRUNCATED = (
+    "Die Antwort des Modells wurde am Token-Limit abgeschnitten und ist "
+    "unvollständig. Ein abgeschnittener Text sieht fertig aus, ist es aber "
+    "nicht, und darf niemandem als Ergebnis gezeigt werden."
+)
+
 _NO_CREDENTIALS = (
     "Keine Anmeldung gefunden. Gatehouse setzt selbst keine Zugangsdaten; "
     "es benutzt, was auf dem Rechner eingerichtet ist. Entweder eine "
@@ -74,13 +85,19 @@ class AnthropicModel(Model):
         try:
             response = self._client.messages.create(
                 model=self._profile.model or DEFAULT_MODEL,
-                max_tokens=1024,
+                max_tokens=MAX_TOKENS,
                 messages=messages,
             )
         except self._errors as exc:
             raise ModelError(f"Anfrage an Anthropic fehlgeschlagen: {exc}") from exc
         except TypeError as exc:
             raise ModelError(_NO_CREDENTIALS) from exc
+
+        # Truncation is the one failure that arrives looking like a
+        # success. Without this check a reading stops mid-sentence and the
+        # page presents it as finished.
+        if response.stop_reason == "max_tokens":
+            raise ModelError(_TRUNCATED)
 
         text = "".join(b.text for b in response.content if b.type == "text")
         return Reply(

@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from gatehouse.api import create_app
 from gatehouse.config import Config, ConfigError, ModelProfile, load
 from gatehouse.pack import PackError
+from gatehouse.instance import Instance
 from gatehouse.pack import load as load_pack
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -309,6 +310,35 @@ def test_destinations_lists_every_endpoint_reachable(tmp_path: Path):
     """What the client is told must cover every profile a task can hit."""
     config = load(_config_file(tmp_path, '''
 [model]
+default = "onprem"
+[model.tasks]
+followup = "onprem"
+synthesis = "onprem"
+[model.profiles.hosted]
+adapter = "anthropic"
+destination = "Anthropic API"
+[model.profiles.onprem]
+adapter = "openai_compat"
+base_url = "http://localhost:11434/v1"
+destination = "eigener Server"
+local = true
+'''))
+    # `hosted` is defined but no task points at it, so it is not reachable
+    # and must not appear. A destination list padded with endpoints that
+    # never get called teaches the client to stop reading it.
+    assert config.destinations == ["eigener Server (im Haus)"]
+
+
+def test_unmapped_task_puts_the_default_destination_on_the_list(tmp_path: Path):
+    """An unmapped task is not an unused task. It hits the default.
+
+    This is the failure mode the property exists to prevent: someone maps
+    the chatty task to a machine in the house, tells the client their
+    answers stay there, and a second task nobody remapped ships the whole
+    transcript to a hosted API. Adding `synthesis` did exactly that.
+    """
+    config = load(_config_file(tmp_path, '''
+[model]
 default = "hosted"
 [model.tasks]
 followup = "onprem"
@@ -321,7 +351,7 @@ base_url = "http://localhost:11434/v1"
 destination = "eigener Server"
 local = true
 '''))
-    assert config.destinations == ["eigener Server (im Haus)"]
+    assert config.destinations == ["Anthropic API", "eigener Server (im Haus)"]
 
 
 def test_unknown_task_name_is_rejected_at_startup(tmp_path: Path):
@@ -394,3 +424,169 @@ def test_named_key_variable_that_is_unset_is_reported(tmp_path: Path, monkeypatc
     )
     with pytest.raises(ModelError, match="CLIENT_KEY"):
         build(profile, AuditLog(tmp_path))
+
+
+# ---------------------------------------------------------------------
+# Reading the answers back
+# ---------------------------------------------------------------------
+
+
+def _pack_with_synthesis(tmp_path: Path, synthesis: str = "") -> Path:
+    directory = tmp_path / "pack"
+    directory.mkdir()
+    (directory / "pack.toml").write_text('''
+[pack]
+name = "Short"
+version = "0.1"
+[[block]]
+id = "a"
+title = "A"
+[[block.question]]
+id = "a.1"
+text = "What do you build?"
+''' + synthesis, encoding="utf-8")
+    return directory
+
+
+def test_pack_without_synthesis_offers_no_reading(tmp_path: Path):
+    """Absence is a valid state, not a broken pack."""
+    pack = load_pack(_pack_with_synthesis(tmp_path))
+    assert pack.synthesis is None
+
+
+def test_synthesis_without_a_prompt_is_rejected(tmp_path: Path):
+    """A reading with no instruction is the model's agenda, not the pack's."""
+    with pytest.raises(PackError, match="defines no prompt"):
+        load_pack(_pack_with_synthesis(tmp_path, '''
+[synthesis]
+title = "What your answers say"
+'''))
+
+
+def test_synthesis_is_read_from_the_pack(tmp_path: Path):
+    pack = load_pack(_pack_with_synthesis(tmp_path, '''
+[synthesis]
+title = "What your answers say"
+lead = "This is a reading of your answers."
+prompt = "Report contradictions only."
+'''))
+    assert pack.synthesis.title == "What your answers say"
+    assert pack.synthesis.prompt == "Report contradictions only."
+
+
+def test_reading_sends_only_answered_questions(tmp_path: Path):
+    """Blanks invite the model to treat silence as a finding."""
+    from gatehouse import synthesize
+
+    pack = load_pack(_pack_with_synthesis(tmp_path, '''
+[[block]]
+id = "b"
+title = "B"
+[[block.question]]
+id = "b.1"
+text = "Who signs it off?"
+
+[synthesis]
+prompt = "Report contradictions only."
+'''))
+    instance = Instance(tmp_path / "instance", pack)
+    run = instance.start("Acme")
+    instance.record(run, "a.1", "We build gearboxes.", "AS-IS")
+
+    sent: list[str] = []
+    models = _recording_registry(sent, reply="### A finding\n> \"x\" (a.1)\nSomething.")
+    synthesize.read_back(models, pack, run)
+
+    assert "We build gearboxes." in sent[0]
+    assert "Who signs it off?" not in sent[0]
+
+
+def test_reading_refuses_an_empty_run(tmp_path: Path):
+    from gatehouse import synthesize
+
+    pack = load_pack(_pack_with_synthesis(tmp_path, '''
+[synthesis]
+prompt = "Report contradictions only."
+'''))
+    instance = Instance(tmp_path / "instance", pack)
+    run = instance.start("Acme")
+
+    with pytest.raises(synthesize.SynthesisUnavailable, match="nothing to read back"):
+        synthesize.read_back(_recording_registry([], reply=""), pack, run)
+
+
+def test_a_failed_reading_does_not_cost_the_interview(tmp_path: Path):
+    """The answers are on disk. A model outage costs the reading only."""
+    from gatehouse import synthesize
+    from gatehouse.adapters import ModelError
+
+    pack = load_pack(_pack_with_synthesis(tmp_path, '''
+[synthesis]
+prompt = "Report contradictions only."
+'''))
+    instance = Instance(tmp_path / "instance", pack)
+    run = instance.start("Acme")
+    instance.record(run, "a.1", "We build gearboxes.", "AS-IS")
+
+    class Failing:
+        def for_task(self, task):
+            raise ModelError("no credentials")
+
+    with pytest.raises(synthesize.SynthesisUnavailable, match="no credentials"):
+        synthesize.read_back(Failing(), pack, run)
+
+    assert "We build gearboxes." in instance.interview_file.read_text(encoding="utf-8")
+
+
+def test_the_reading_is_its_own_artifact(tmp_path: Path):
+    """Derived from run.json, never written into it."""
+    pack = load_pack(_pack_with_synthesis(tmp_path, '''
+[synthesis]
+title = "What your answers say"
+lead = "A reading of your answers."
+prompt = "Report contradictions only."
+'''))
+    instance = Instance(tmp_path / "instance", pack)
+    run = instance.start("Acme")
+    instance.record(run, "a.1", "We build gearboxes.", "AS-IS")
+
+    text = instance.save_analysis(run, "What your answers say", "A reading.", "### Finding")
+
+    assert instance.analysis_file.exists()
+    assert "What your answers say" in text
+    assert "Finding" in instance.analysis_file.read_text(encoding="utf-8")
+    assert "Finding" not in instance.state_file.read_text(encoding="utf-8")
+
+
+def _recording_registry(sent: list[str], reply: str):
+    class Recorder:
+        def ask(self, task, prompt, context=None):
+            sent.append(prompt)
+            return reply
+
+    class Registry:
+        def for_task(self, task):
+            return Recorder()
+
+    return Registry()
+
+
+def test_an_empty_reply_is_not_an_empty_finding_list(tmp_path: Path):
+    """The echo adapter returns nothing. That must read as no reading.
+
+    An empty string reaching the page looks identical to a reading that
+    found nothing worth reporting, which is the strongest possible claim
+    this form can make and the one it least deserves to make by accident.
+    """
+    from gatehouse import synthesize
+
+    pack = load_pack(_pack_with_synthesis(tmp_path, '''
+[synthesis]
+prompt = "Report contradictions only."
+'''))
+    instance = Instance(tmp_path / "instance", pack)
+    run = instance.start("Acme")
+    instance.record(run, "a.1", "We build gearboxes.", "AS-IS")
+
+    with pytest.raises(synthesize.SynthesisUnavailable, match="nichts zurückgegeben"):
+        synthesize.read_back(_recording_registry([], reply="   "), pack, run)
