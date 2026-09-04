@@ -246,7 +246,7 @@ banaction = ufw
 enabled = true
 port = ssh
 filter = sshd
-logpath = /var/log/auth.log
+backend = systemd
 maxretry = 3
 bantime = 3600
 EOF
@@ -254,15 +254,30 @@ EOF
 # Starten
 sudo systemctl restart fail2ban
 sudo systemctl enable fail2ban
+```
 
-# Status prüfen
+**Verifizieren — Pflichtschritt, nicht optional:**
+
+```bash
 sudo fail2ban-client status sshd
 ```
+
+Die Ausgabe muss zwei Dinge zeigen:
+
+```
+|  `- Journal matches:  _SYSTEMD_UNIT=sshd.service + _COMM=sshd
+   `- Total banned:     <Zahl>
+```
+
+**`Journal matches`** belegt, dass der Jail die richtige Quelle liest. **`Total banned`** steigt auf einem Server, der im Netz steht, innerhalb weniger Stunden von allein — das Internet liefert die Testfälle. Steht dort nach einem Tag noch 0, liest der Jail ins Leere.
 
 **Regeln:**
 - 3 Fehlversuche innerhalb von 10 Minuten = IP gesperrt für 1 Stunde
 - `jail.local` überlebt Updates, `jail.conf` nicht
 - `banaction = ufw`: Fail2Ban sperrt IPs über UFW-Regeln statt iptables direkt. Ohne das können sich UFW und iptables gegenseitig überschreiben.
+- **`backend = systemd` statt `logpath`:** Ubuntu 24.04 protokolliert SSH über journald, nicht mehr nach `/var/log/auth.log`. Ein Jail mit `logpath` liest dort eine Datei, in der die Auth-Ereignisse nicht stehen.
+
+> **Warum das hier ausdrücklich steht (Security-Audit 2026-09-04, SEC-034):** Diese Anleitung hatte `logpath = /var/log/auth.log`. Beide danach gebauten Server bannen trotzdem korrekt — weil das Debian-Paket in `/etc/fail2ban/jail.d/defaults-debian.conf` global `backend = systemd` setzt und die Zeile hier überschreibt. Das Ergebnis war also richtig, der Beitrag dieser Anleitung dazu war null. Auf einem Base-Image ohne diese Paketvorgabe entsteht still ein Jail, der konfiguriert aussieht und nichts tut. **Ein Runbook, das man abfährt, ohne das Ergebnis zu prüfen, ist eine Anleitung und kein Beleg** — deshalb ist der Verifikationsschritt oben Pflicht.
 
 **Monitoring-Befehle:**
 ```bash

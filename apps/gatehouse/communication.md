@@ -3,6 +3,7 @@ path:        develop/apps/gatehouse/communication.md
 type:        communication · discussion before decision (append-only, newest at end)
 purpose:     Design questions and open findings for the Gatehouse elicitation harness.
 maintained:  Axel proposes; Chris decides. DISC numbers issued by Axel only.
+updated:     2026-08-27
 ```
 
 # Gatehouse — Communication
