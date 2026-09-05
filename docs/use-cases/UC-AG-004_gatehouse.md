@@ -2,9 +2,9 @@
 
 **Created:** 2026-08-22
 **Type:** Agent
-**Status:** DRAFT
+**Status:** IN PROGRESS (corrected 2026-09-05 from DRAFT — running code, ADR-011 and ADR-012, one real run and one demo run behind it)
 **Owner:** Christian Moser
-**Phase:** 1 (Business Understanding)
+**Phase:** 4 (Modeling) — corrected 2026-09-05, to be confirmed by Chris
 
 ---
 

@@ -39,6 +39,12 @@ mkdir -p <instance-path>
 cd <instance-path> && git init      # only if the client has nothing
 ```
 
+**The instance path must lie outside this checkout.** Not under
+`apps/gatehouse/`, not anywhere in this repository. `.gitignore` guards
+exactly one exit — git — while the answers sit in a directory that
+backups, archives, syncs and tree-walking tools all copy without asking.
+The guard is the path, not the ignore rule.
+
 ---
 
 ## 2. Install

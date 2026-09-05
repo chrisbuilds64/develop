@@ -2,7 +2,7 @@
 
 **Created:** 2026-01-22
 **Last Updated:** 2026-04-15
-**Status:** IN PROGRESS (Phase 4, prototype to product transition)
+**Status:** ARCHIVED (2026-09-05 — focus moved to the canon and base-build line. Last commit 2026-01-21, 226 days before this correction; the marker had said "in progress" throughout. The release build on the device stays in use.)
 **Owner:** Christian
 **Provenance:** Migrated from the private control repo and translated to English, 2026-07-19. Prior revision history remains in the control repo.
 

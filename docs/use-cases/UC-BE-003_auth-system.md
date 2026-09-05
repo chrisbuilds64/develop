@@ -2,7 +2,9 @@
 
 **Created:** 2026-01-22
 **Last Updated:** 2026-04-15
-**Status:** DEPLOYED v1 (MockAuth); v2 (JWT/Clerk) planned
+**Status:** BLOCKED
+**Blocked by:** Clerk v2 (ClerkAdapter unimplemented)
+**Corrected 2026-09-05:** the marker read "DEPLOYED v1 (MockAuth)". It is not. `get_auth_provider()` refuses to serve MockAuth outside test/development/local and raises instead — deliberately, so production cannot silently fall back to mock auth. Verified against production the same day: `GET /api/v1/items` returns 401 without a token and **500 (E5001) with one**. No authenticated request can succeed until ClerkAdapter exists.
 **Owner:** Christian
 **Provenance:** Migrated from the private control repo and translated to English, 2026-07-19. Prior revision history remains in the control repo.
 

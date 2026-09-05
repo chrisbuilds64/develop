@@ -102,9 +102,16 @@ UC-BE-002: RAG Knowledge API
 | DRAFT | Initial draft, not started |
 | IN PROGRESS | Actively being worked on |
 | BLOCKED | Waiting on a dependency |
+| PARKED | Deliberately paused. Not abandoned, not blocked by anything — the work simply is not the priority right now. Set a reason and a date. |
 | REVIEW | Done, waiting for acceptance |
 | DEPLOYED | In production |
 | ARCHIVED | Completed or abandoned |
+
+**PARKED vs BLOCKED vs ARCHIVED.** BLOCKED names a dependency that, once resolved,
+resumes the work by itself. ARCHIVED is final — done, or given up. PARKED is
+neither: a conscious decision to stop for now, revisited when priorities move.
+Added 2026-09-05 because three use cases were in exactly this state and the model
+had no honest word for it, so they claimed something else.
 
 ### Blocking Rules
 

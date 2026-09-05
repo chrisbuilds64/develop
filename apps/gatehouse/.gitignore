@@ -4,6 +4,10 @@ gatehouse.toml
 
 # Client answers. Never in this repository — they belong in the client's
 # own version control, at the client.
+#
+# This line is a net, not the guard. It stops git and nothing else: a
+# backup, an archive or a sync over this tree takes the data anyway. The
+# guard is [instance] path in gatehouse.toml pointing outside the checkout.
 instances/
 
 .venv/

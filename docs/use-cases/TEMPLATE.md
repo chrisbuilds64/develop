@@ -2,7 +2,7 @@
 
 **Created:** [Date]
 **Type:** Backend | Frontend
-**Status:** DRAFT | IN PROGRESS | BLOCKED | REVIEW | DEPLOYED | ARCHIVED
+**Status:** DRAFT | IN PROGRESS | BLOCKED | PARKED | REVIEW | DEPLOYED | ARCHIVED
 **Owner:** [Name]
 **Phase:** 1-6 (Business Understanding → Deployment)
 

@@ -7,8 +7,15 @@ path = "./packs/example"
 
 [instance]
 # Where this client's answers and artifacts are written.
-# Put this directory under version control at the client.
-path = "./instances/example"
+#
+# This path MUST point outside this checkout. The answers are the client's
+# confidential material. A path inside the repository puts them into every
+# backup, archive, sync and tree-walking tool that touches this directory,
+# and .gitignore says nothing to any of those — it guards one exit, git,
+# and the data has many.
+#
+# Put the directory under version control at the client, not here.
+path = "~/gatehouse-instances/example"
 
 # ---------------------------------------------------------------------
 # Models

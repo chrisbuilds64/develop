@@ -4,7 +4,7 @@
 **Revised:** 2026-01-25 (CRISP review with external AI trainer)
 **Last Updated:** 2026-04-15 (status check doc audit, no content change)
 **Type:** Backend
-**Status:** IN PROGRESS (resource allocation waiting on GDPR + briefing agent)
+**Status:** ARCHIVED (2026-09-05 — focus moved to the canon and base-build line. The stated blocker had also lapsed: the briefing agent it was waiting for has been pushing daily to `knowledge/briefings/` for months.)
 **Phase:** 1 → 2 (Business Understanding complete)
 **Owner:** Christian
 **Provenance:** Migrated from the private control repo and translated to English, 2026-07-19. Prior revision history remains in the control repo. References to private repositories are generalized as "(internal)".

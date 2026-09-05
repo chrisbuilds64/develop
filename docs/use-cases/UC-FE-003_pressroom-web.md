@@ -3,7 +3,7 @@
 **Created:** 2026-03-15
 **Last Updated:** 2026-03-15
 **Type:** Frontend + Infrastructure
-**Status:** ON-HOLD (was PLANNING; focus shifted to canon work)
+**Status:** PARKED (focus shifted to canon work). Normalised 2026-09-05: the marker read `ON-HOLD`, which was never a value in the status model.
 **Owner:** Christian Moser
 **Phase:** 1 (Architecture), plan approved
 **Predecessor:** UC-FE-002 (PressRoom Desktop, macOS, DONE)

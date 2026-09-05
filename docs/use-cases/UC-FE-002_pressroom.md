@@ -3,7 +3,7 @@
 **Created:** 2026-02-13
 **Last Updated:** 2026-08-09
 **Type:** Frontend
-**Status:** v2 DONE (Phase 6, deployed) — **documentation describes the app as built in Feb 2026; the content pipeline has since evolved, see Implementation Status below.** Open source playground strategy in planning.
+**Status:** DEPLOYED (v2, Phase 6) — normalisiert 2026-09-05: der Marker las `v2 DONE`, ebenfalls kein Wert im Statusmodell. Aussage unverändert. — **documentation describes the app as built in Feb 2026; the content pipeline has since evolved, see Implementation Status below.** Open source playground strategy in planning.
 **Owner:** Christian Moser
 **Phase:** 6 (Deployment), v2 complete
 **Provenance:** Migrated from the private control repo and translated to English, 2026-07-19. Prior revision history remains in the control repo.
