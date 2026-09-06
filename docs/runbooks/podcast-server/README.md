@@ -1,6 +1,6 @@
 # Podcast Server — Runbook
 
-**Status:** Foundation komplett (Module 01), `vendor`-Zugang vorbereitet, wartet auf den Public Key des Dienstleisters
+**Status:** Foundation komplett (Module 01), `vendor`-Zugang offen seit 2026-09-06 — Installation durch den Dienstleister läuft
 **Erstellt:** 2026-09-04
 **Zweck:** Server für das Podcast-Verteilsystem. Installation der Anwendung durch externen Dienstleister.
 
@@ -53,7 +53,9 @@ Offene Ports nach außen: nur 22. DNS-Resolver lauscht nur auf loopback.
 
 Der Dienstleister bekommt einen eigenen User, nicht den `deploy`-Zugang.
 
-**Am 2026-09-05 bereits erledigt** (SEC-036): `vendor` angelegt (UID 1001, Gruppe `sudo`), `/home/vendor/.ssh` mit 700 und eine leere `authorized_keys` mit 600, `AllowUsers deploy vendor` aktiv und per `sshd -t` geprüft. Verifiziert: `deploy` kommt weiterhin rein, `vendor` bekommt `Permission denied (publickey)`, weil die `authorized_keys` leer ist und Passwort-Auth global aus ist. **Der User existiert, das Tor bleibt zu, bis der Key eingetragen wird.**
+**Zugang offen seit 2026-09-06.** Der Public Key des Dienstleisters ist eingetragen, Datei 600 und `vendor:vendor`, `sshd -T -C user=vendor` gegengeprüft. Key-Fingerprint und Zuordnung stehen in `control/planning/2026-09-04_podcast-server-vendor.md` (PRIVATE, Personenbezug).
+
+**Am 2026-09-05 vorbereitet** (SEC-036): `vendor` angelegt (UID 1001, Gruppe `sudo`), `/home/vendor/.ssh` mit 700 und eine leere `authorized_keys` mit 600, `AllowUsers deploy vendor` aktiv und per `sshd -t` geprüft. Verifiziert: `deploy` kommt weiterhin rein, `vendor` bekommt `Permission denied (publickey)`, weil die `authorized_keys` leer ist und Passwort-Auth global aus ist. **Der User existiert, das Tor bleibt zu, bis der Key eingetragen wird.**
 
 Es fehlt nur noch der Key selbst.
 
@@ -80,6 +82,8 @@ sudo chmod 600 /home/vendor/.ssh/authorized_keys
 **Stolperfalle:** `AllowUsers deploy` in `99-hardening.conf` sperrt jeden anderen User aus. Zeile auf `AllowUsers deploy vendor` ändern, dann `sudo sshd -t && sudo systemctl reload ssh`. Ohne diesen Schritt kommt der Vendor trotz gültigem Key nicht rein.
 
 **Ein Key pro Person**, kein geteilter Account — sonst ist im `auth.log` nicht unterscheidbar, wer was getan hat.
+
+**Entscheid 2026-09-06: genau ein Zugang.** Der Server-Zugang liegt ausschließlich beim technischen Ansprechpartner des Dienstleisters. Weitere Personen bekommen keinen Shell-Zugang; die Abstimmung läuft über Mail. Bei der Abnahme wird die User-Liste gegen diese Vorgabe geprüft.
 
 **Nach Abnahme:** `sudo deluser --remove-home vendor` und `AllowUsers` zurücksetzen.
 
@@ -116,7 +120,7 @@ Die 16 Millisekunden gegen 6 Sekunden sind der Beleg: Bei 80/443 antwortet der K
 - [x] ~~Hostname setzen~~ → `scriptorium`, 2026-09-05
 - [x] ~~`vendor`-User anlegen~~ → angelegt 2026-09-05, wartet nur noch auf den Key
 - [x] ~~Snapshot-Möglichkeit bei STRATO prüfen~~ → existiert nicht, Rückfallwege oben dokumentiert
-- [ ] Public Key des Dienstleisters anfordern (Mail-Entwurf liegt bereit)
+- [x] ~~Public Key des Dienstleisters anfordern~~ → eingetragen 2026-09-06
 - [ ] Welches System wird installiert? Bestimmt Ports, DNS-Records, TLS-Verantwortung
 - [ ] DNS-Records: welche Namen auf diesen Server
 - [ ] Backup-Konzept — bei der Abnahme vom Dienstleister einfordern
