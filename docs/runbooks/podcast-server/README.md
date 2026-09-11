@@ -1,6 +1,6 @@
 # Podcast Server — Runbook
 
-**Status:** Foundation komplett (Module 01), `vendor`-Zugang offen seit 2026-09-06 — Installation durch den Dienstleister läuft
+**Status:** Foundation komplett (Module 01), `vendor`-Zugang offen seit 2026-09-06, volles sudo seit 2026-09-09 — Installation durch den Dienstleister läuft
 **Erstellt:** 2026-09-04
 **Zweck:** Server für das Podcast-Verteilsystem. Installation der Anwendung durch externen Dienstleister.
 
@@ -17,6 +17,7 @@
 | Hardware | 4 vCPU, 3.7 GB RAM, 116 GB Disk |
 | Timezone | Europe/Vienna |
 | Hostname | `scriptorium` (gesetzt 2026-09-05, vorher `ubuntu`) |
+| DNS | `podcast.chrisbuilds64.com` · `test-podcast.chrisbuilds64.com` — beide A auf die IPv4, verifiziert 2026-09-09 |
 
 ## Zugang
 
@@ -49,43 +50,40 @@ Offene Ports nach außen: nur 22. DNS-Resolver lauscht nur auf loopback.
 - **Fail2Ban `backend = systemd`** statt `logpath = /var/log/auth.log`. Ubuntu 24.04 protokolliert SSH über journald; mit dem Dateipfad greift der Jail nicht zuverlässig. Sollte in Module 01 nachgezogen werden.
 - **Kein Reverse Proxy.** Module 02 (Docker + Caddy) bewusst nicht gefahren — der Dienstleister bringt seinen eigenen Stack mit, wir legen ihm nichts vor.
 
-## Vendor-Zugang — vorbereitet, wartet auf den Key
+## Vendor-Zugang — offen, mit vollem sudo
 
 Der Dienstleister bekommt einen eigenen User, nicht den `deploy`-Zugang.
 
 **Zugang offen seit 2026-09-06.** Der Public Key des Dienstleisters ist eingetragen, Datei 600 und `vendor:vendor`, `sshd -T -C user=vendor` gegengeprüft. Key-Fingerprint und Zuordnung stehen in `control/planning/2026-09-04_podcast-server-vendor.md` (PRIVATE, Personenbezug).
 
-**Am 2026-09-05 vorbereitet** (SEC-036): `vendor` angelegt (UID 1001, Gruppe `sudo`), `/home/vendor/.ssh` mit 700 und eine leere `authorized_keys` mit 600, `AllowUsers deploy vendor` aktiv und per `sshd -t` geprüft. Verifiziert: `deploy` kommt weiterhin rein, `vendor` bekommt `Permission denied (publickey)`, weil die `authorized_keys` leer ist und Passwort-Auth global aus ist. **Der User existiert, das Tor bleibt zu, bis der Key eingetragen wird.**
+**sudo seit 2026-09-09** über `/etc/sudoers.d/vendor` mit `vendor ALL=(ALL) NOPASSWD:ALL`, Datei 440, `visudo -c` grün. Anlass: Der Dienstleister installiert ein Control Panel und übernimmt anschließend die Wartung.
 
-Es fehlt nur noch der Key selbst.
+**Gruppe `sudo` allein genügt nicht — das ist die eigentliche Falle.** `vendor` war am 05.09. mit `adduser --disabled-password` angelegt und per `usermod -aG sudo vendor` in die Gruppe gesteckt. Die Gruppe erlaubt sudo, aber sudo verlangt das Passwort des aufrufenden Users, und ein Passwort existiert bei `--disabled-password` nicht. Ergebnis: Gruppenmitgliedschaft vorhanden, sudo unbenutzbar, drei Tage lang unbemerkt. **Bei key-only-Usern immer eine NOPASSWD-Regel setzen oder ein Passwort vergeben — sonst ist das Recht nur behauptet.**
 
-Sobald der Public Key vorliegt, fehlt nur noch eine Zeile:
-
-```bash
-ssh strato-podcast
-echo "SSH-PUBLIC-KEY-DES-VENDORS" | sudo tee -a /home/vendor/.ssh/authorized_keys
-```
-
-Die ursprüngliche Vollanleitung, falls der Zugang neu aufgebaut werden muss:
+Die Vollanleitung, falls der Zugang neu aufgebaut werden muss:
 
 ```bash
 ssh strato-podcast
 sudo adduser --disabled-password --gecos "Vendor" vendor
-sudo usermod -aG sudo vendor
 sudo mkdir -p /home/vendor/.ssh
 echo "SSH-PUBLIC-KEY-DES-VENDORS" | sudo tee /home/vendor/.ssh/authorized_keys
 sudo chown -R vendor:vendor /home/vendor/.ssh
 sudo chmod 700 /home/vendor/.ssh
 sudo chmod 600 /home/vendor/.ssh/authorized_keys
+echo "vendor ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/vendor
+sudo chmod 440 /etc/sudoers.d/vendor
+sudo visudo -c
 ```
 
-**Stolperfalle:** `AllowUsers deploy` in `99-hardening.conf` sperrt jeden anderen User aus. Zeile auf `AllowUsers deploy vendor` ändern, dann `sudo sshd -t && sudo systemctl reload ssh`. Ohne diesen Schritt kommt der Vendor trotz gültigem Key nicht rein.
+`visudo -c` ist nicht optional. Eine fehlerhafte Datei in `sudoers.d/` sperrt sudo für **alle** User; der Rückweg führt dann nur über die VNC-Konsole.
+
+**Stolperfalle SSH:** `AllowUsers deploy` in `99-hardening.conf` sperrt jeden anderen User aus. Zeile auf `AllowUsers deploy vendor` ändern, dann `sudo sshd -t && sudo systemctl reload ssh`. Ohne diesen Schritt kommt der Vendor trotz gültigem Key nicht rein.
 
 **Ein Key pro Person**, kein geteilter Account — sonst ist im `auth.log` nicht unterscheidbar, wer was getan hat.
 
 **Entscheid 2026-09-06: genau ein Zugang.** Der Server-Zugang liegt ausschließlich beim technischen Ansprechpartner des Dienstleisters. Weitere Personen bekommen keinen Shell-Zugang; die Abstimmung läuft über Mail. Bei der Abnahme wird die User-Liste gegen diese Vorgabe geprüft.
 
-**Nach Abnahme:** `sudo deluser --remove-home vendor` und `AllowUsers` zurücksetzen.
+**Nach Abnahme: `sudo deluser --remove-home vendor` und `AllowUsers` zurücksetzen — unter Vorbehalt.** Eine Wartungsübernahme durch den Dienstleister ist angesprochen, aber nicht vereinbart; geklärt wird sie nach Abschluss der Installation. Kommt sie, bleibt der User samt sudo bestehen und dieser Punkt entfällt. In beiden Fällen wird bei der Abnahme die User-Liste gegen die Ein-Zugang-Vorgabe geprüft: ob neben `deploy` und `vendor` weitere Accounts oder Keys entstanden sind.
 
 ## Rückfallwege — es gibt kein Backup und keinen Snapshot
 
@@ -121,6 +119,10 @@ Die 16 Millisekunden gegen 6 Sekunden sind der Beleg: Bei 80/443 antwortet der K
 - [x] ~~`vendor`-User anlegen~~ → angelegt 2026-09-05, wartet nur noch auf den Key
 - [x] ~~Snapshot-Möglichkeit bei STRATO prüfen~~ → existiert nicht, Rückfallwege oben dokumentiert
 - [x] ~~Public Key des Dienstleisters anfordern~~ → eingetragen 2026-09-06
-- [ ] Welches System wird installiert? Bestimmt Ports, DNS-Records, TLS-Verantwortung
-- [ ] DNS-Records: welche Namen auf diesen Server
+- [x] ~~sudo für `vendor`~~ → `/etc/sudoers.d/vendor`, NOPASSWD, 2026-09-09
+- [ ] **Welches Control Panel wird installiert?** Der Dienstleister nannte "CP Panel". Falls cPanel/WHM gemeint ist: **das läuft auf Ubuntu 24.04 nicht** — offiziell unterstützt sind AlmaLinux, CloudLinux und RHEL, Ubuntu kam über 20.04 LTS nie hinaus. Dann steht eine Neuinstallation mit anderem OS an, und Module 01 ist erneut zu fahren. Plesk, CloudPanel und CyberPanel laufen auf 24.04. **Diese Frage entscheidet, ob der Server so bestehen bleibt.**
+- [ ] Ports für das Panel öffnen (cPanel 2082–2087, Plesk 8443). Aktuell nur 22/80/443. Wer UFW anfasst, ist abzustimmen — bringt das Panel eine eigene Firewall mit (cPanel: csf), kollidiert sie mit UFW
+- [x] ~~DNS-Records: welche Namen auf diesen Server~~ → `podcast.chrisbuilds64.com` und `test-podcast.chrisbuilds64.com`, beide A auf `87.106.162.116`, per `dig` verifiziert 2026-09-09
+- [ ] TLS: Let's Encrypt aus dem Vendor-Stack oder Zertifikate von uns — offen
 - [ ] Backup-Konzept — bei der Abnahme vom Dienstleister einfordern
+- [ ] Reboot ausstehend (Kernel-Update, `*** System restart required ***` seit 2026-09-09) + 2 offene Updates. **Nicht ohne Abstimmung** — der Dienstleister arbeitet auf der Maschine
