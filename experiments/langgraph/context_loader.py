@@ -67,9 +67,14 @@ def load_agent_context(agent: str, budget: int = DEFAULT_CHAR_BUDGET) -> str:
     Load shared context + agent signature for a named instance.
     Signature is injected first (identity before operational state).
 
-    agent: "atlas" | "axel" | "chris"
+    agent: "atlas" | "axel" | "astrid" | "aris" | "chris" | "akhil"
     """
-    signature_path = AGENTS_PATH / f"{agent}-signature.md"
+    # One directory per instance since 2026-09-13, so that avatars and future
+    # per-instance artifacts live next to the signature. Falls back to the flat
+    # layout so an older checkout still loads.
+    signature_path = AGENTS_PATH / agent / f"{agent}-signature.md"
+    if not signature_path.exists():
+        signature_path = AGENTS_PATH / f"{agent}-signature.md"
     signature_section = ""
 
     if signature_path.exists():
