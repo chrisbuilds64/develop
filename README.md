@@ -20,7 +20,7 @@ develop/
 │   └── oracle/           # Oracle 26ai Free: Dev/Test/Prod PDBs, Liquibase
 ├── apps/                 # Example applications (Flutter, web)
 │   ├── pressroom/        # Editorial pipeline desktop app
-│   ├── feldorakel/       # Small FastAPI + LLM web example
+│   ├── feldorakel/       # Small FastAPI + LLM web example — frozen 2026-09-19, see its README
 │   └── tweight/          # Mobile example (real device deploy)
 ├── experiments/          # LangGraph multi-agent, agent specs
 └── shared/               # Shared components (as needed)

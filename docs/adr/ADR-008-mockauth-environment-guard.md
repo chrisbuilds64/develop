@@ -39,3 +39,20 @@ Auth is an exchangeable port (`AuthProvider` interface) with environment-gated w
 **Trade-offs:**
 - Production has no working auth until ClerkAdapter is implemented — acceptable while no production feature requires login.
 - Mock tokens are deliberately permissive in dev (any non-empty token maps to a default user); dev environments must never be exposed publicly.
+
+---
+
+## Note, 2026-09-19
+
+**Clerk is no longer the intended provider.** The account was deactivated and deleted; its secret
+key no longer has API access.
+
+**The decision in this ADR stands unchanged.** It is about the guard, not about the vendor: no ENV
+value may silently fall back to mock auth, and production fails closed until a real adapter exists.
+That is still correct and still in force — `get_auth_provider()` refuses MockAuth outside
+test/development/local, so authenticated endpoints in production return an error rather than
+accepting `test-chris`.
+
+What changed is only the name of the adapter that was meant to land in the empty slot. The port
+interface keeps that a drop-in for whichever provider is chosen. See UC-BE-003 for the open
+decision.

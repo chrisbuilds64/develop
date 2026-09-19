@@ -3,7 +3,12 @@
 **Created:** 2026-01-22
 **Last Updated:** 2026-04-15
 **Status:** BLOCKED
-**Blocked by:** Clerk v2 (ClerkAdapter unimplemented)
+**Blocked by:** no auth provider chosen. **Corrected 2026-09-19: Clerk is gone.** The account was
+deactivated and deleted (Chris); the secret key no longer has API access, verified. The line here
+read "Clerk v2 (ClerkAdapter unimplemented)", which described a dependency that would resolve
+itself. It will not — there is nothing to wait for, only a decision to make (see Open Questions).
+**The status value itself needs re-deciding:** BLOCKED means a dependency that resolves on its own,
+and that no longer fits. PARKED or active work — Chris decides.
 **Corrected 2026-09-05:** the marker read "DEPLOYED v1 (MockAuth)". It is not. `get_auth_provider()` refuses to serve MockAuth outside test/development/local and raises instead — deliberately, so production cannot silently fall back to mock auth. Verified against production the same day: `GET /api/v1/items` returns 401 without a token and **500 (E5001) with one**. No authenticated request can succeed until ClerkAdapter exists.
 **Owner:** Christian
 **Provenance:** Migrated from the private control repo and translated to English, 2026-07-19. Prior revision history remains in the control repo.
@@ -95,7 +100,7 @@ adapters/auth/
 | **SuperTokens** | Self-hosting possible, OSS | More setup |
 | **Auth0** | Enterprise-ready | Expensive at scale |
 
-**Tendency:** self-built JWT for the backend, possibly Clerk for the frontend later
+**Tendency:** self-built JWT for the backend. *(Until 2026-09-19 this line added "possibly Clerk for the frontend later". Clerk is no longer available as an option.)*
 
 ---
 
@@ -160,7 +165,7 @@ adapters/auth/
 
 ## Next Steps (v2)
 
-1. [ ] Decision: self-built JWT vs. Clerk vs. SuperTokens
+1. [ ] Decision: self-built JWT vs. SuperTokens vs. another provider — **Clerk is out since 2026-09-19**
 2. [ ] User table + migration
 3. [ ] Implement password hashing
 4. [ ] Write JWT adapter
