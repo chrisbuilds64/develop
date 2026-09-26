@@ -65,6 +65,7 @@ def test_login_records_the_client_ip_and_locks_after_repeated_failures(client, w
 def test_media_is_served_through_access_and_text_is_not(client, world):
     piece = world / "flow" / "30-review-human" / "piece-30-01"
     (piece / "thumbnail-16x9.v1.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+    (piece / "meta.json").write_text('{"label": "POD", "title": "One"}')
     sign_in(client, "sam")
     r = client.get("/m/pipeline/file/30-review-human/piece-30-01/thumbnail-16x9.v1.png")
     assert r.status_code == 200 and r.headers["content-type"] == "image/png"
@@ -72,7 +73,8 @@ def test_media_is_served_through_access_and_text_is_not(client, world):
     assert client.get("/m/pipeline/file/30-review-human/piece-30-01/meta.json").status_code == 404
     assert client.get("/m/pipeline/file/../../users.json").status_code in (404, 303)
     page = client.get("/m/pipeline/doc/30-review-human/piece-30-01").text
-    assert "<img" in page and "thumbnail-16x9.v1.png" in page
+    assert 'class="tile tile-image"' in page and "thumbnail-16x9.v1.png" in page and 'class="tile tile-data"' in page
+    assert 'class="filelist" hidden' in page
 
 
 # ----------------------------------------------------------------- actions

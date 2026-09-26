@@ -201,5 +201,11 @@
   "field.series": "Series",
   "field.for": "For",
   "field.text": "Text",
-  "field.resolves": "Resolves (REV-nnn, optional)"
+  "field.resolves": "Resolves (REV-nnn, optional)",
+  "doc.files": "Files",
+  "view.tiles": "Tiles",
+  "view.list": "List",
+  "list.file": "file",
+  "list.kind": "kind",
+  "list.size": "size"
 }

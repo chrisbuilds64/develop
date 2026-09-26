@@ -201,5 +201,11 @@
   "field.series": "Serie",
   "field.for": "An",
   "field.text": "Text",
-  "field.resolves": "Beantwortet (REV-nnn, optional)"
+  "field.resolves": "Beantwortet (REV-nnn, optional)",
+  "doc.files": "Dateien",
+  "view.tiles": "Kacheln",
+  "view.list": "Liste",
+  "list.file": "Datei",
+  "list.kind": "Art",
+  "list.size": "Größe"
 }

@@ -26,17 +26,46 @@
       {% endif %}
       <div class="doc doc-page">{{ doc.html|safe }}</div>
       {% if doc.files %}
-      <section class="block media">
-        <h3>{{ t('doc.media') }}</h3>
-        <div class="media-grid">
+      <section class="block files" data-files>
+        <h3>{{ t('doc.files') }} <span class="dim">· {{ doc.files|length }}</span>
+          <span class="view-toggle"><button type="button" data-view="tiles" class="on">{{ t('view.tiles') }}</button><button type="button" data-view="list">{{ t('view.list') }}</button></span>
+        </h3>
+        <div class="tiles">
           {% for f in doc.files %}
-          <figure>
-            {% if f.kind == 'video' %}<video controls preload="metadata" src="{{ f.href }}"></video>
-            {% else %}<a href="{{ f.href }}" target="_blank"><img src="{{ f.href }}" alt="{{ f.name }}" loading="lazy"></a>{% endif %}
-            <figcaption><code>{{ f.name }}</code> · {{ f.size_kb }} KB</figcaption>
-          </figure>
+          <a class="tile tile-{{ f.kind }}" {% if f.href %}href="{{ f.href }}"{% if f.kind in ('image', 'video') %} target="_blank"{% endif %}{% endif %} title="{{ f.name }} · {{ f.size_kb }} KB">
+            <span class="thumb">
+              {% if f.kind == 'image' %}<img src="{{ f.href }}" alt="" loading="lazy">
+              {% elif f.kind == 'video' %}<video preload="metadata" muted src="{{ f.href }}#t=0.5"></video><i class="play"></i>
+              {% elif f.kind == 'review' %}<svg viewBox="0 0 48 48"><path d="M10 8h28v24l-8 8H10z"/><path class="ln" d="M16 18h16M16 24h16M16 30h8"/><path d="M30 40v-8h8"/></svg>
+              {% elif f.kind == 'data' %}<svg viewBox="0 0 48 48"><path d="M16 8c-4 0-6 2-6 6v6c0 2-2 4-4 4 2 0 4 2 4 4v6c0 4 2 6 6 6M32 8c4 0 6 2 6 6v6c0 2 2 4 4 4-2 0-4 2-4 4v6c0 4-2 6-6 6"/></svg>
+              {% elif f.kind == 'text' %}<svg viewBox="0 0 48 48"><path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8"/><path class="ln" d="M18 22h14M18 28h14M18 34h9"/></svg>
+              {% elif f.kind == 'plain' %}<svg viewBox="0 0 48 48"><path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8"/><path class="ln" d="M18 24h14M18 30h14"/></svg>
+              {% elif f.kind == 'pdf' %}<svg viewBox="0 0 48 48"><path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8"/><text x="24" y="34" text-anchor="middle">PDF</text></svg>
+              {% else %}<svg viewBox="0 0 48 48"><path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8"/></svg>{% endif %}
+            </span>
+            <span class="fname">{{ f.name }}</span>
+            <span class="fmeta">{% if f.version %}v{{ f.version }} · {% endif %}{{ f.size_kb }} KB</span>
+          </a>
           {% endfor %}
         </div>
+        <table class="filelist" hidden>
+          <thead><tr><th>{{ t('list.file') }}</th><th>{{ t('list.kind') }}</th><th>{{ t('list.size') }}</th></tr></thead>
+          <tbody>{% for f in doc.files %}<tr><td>{% if f.href %}<a href="{{ f.href }}">{{ f.name }}</a>{% else %}{{ f.name }}{% endif %}</td><td>{{ f.kind }}</td><td>{{ f.size_kb }} KB</td></tr>{% endfor %}</tbody>
+        </table>
+        <script>
+        (function () {
+          // Tiles or list — a viewer's preference, remembered in this browser only.
+          var box = document.currentScript.parentNode, key = "cockpit.files.view";
+          function show(v) {
+            box.querySelector(".tiles").hidden = v === "list"; box.querySelector(".filelist").hidden = v !== "list";
+            box.querySelectorAll("[data-view]").forEach(function (b) { b.classList.toggle("on", b.dataset.view === v); });
+            try { localStorage.setItem(key, v); } catch (e) {}
+          }
+          box.querySelectorAll("[data-view]").forEach(function (b) { b.addEventListener("click", function () { show(b.dataset.view); }); });
+          var saved = null; try { saved = localStorage.getItem(key); } catch (e) {}
+          if (saved === "list") show("list");
+        })();
+        </script>
       </section>
       {% endif %}
     </div>

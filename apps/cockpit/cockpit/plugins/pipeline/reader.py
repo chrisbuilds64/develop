@@ -15,7 +15,27 @@ IMAGES = (".png", ".jpg", ".jpeg", ".gif", ".webp")
 VIDEOS = (".mp4", ".mov", ".webm")
 TEXT = (".md", ".txt", ".json")
 
+
+def _kind(name: str) -> str:
+    n = name.lower()
+    if n.endswith(IMAGES):
+        return "image"
+    if n.endswith(VIDEOS):
+        return "video"
+    if n == "meta.json" or n.endswith(".json"):
+        return "data"
+    if n == "review.md":
+        return "review"
+    if n.endswith(".md"):
+        return "text"
+    if n.endswith(".txt"):
+        return "plain"
+    if n.endswith((".pdf",)):
+        return "pdf"
+    return "other"
+
 STAGE = re.compile(r"^(\d{2})-(.+)$")
+VERSION = re.compile(r"\.v(\d+)\.")
 
 
 def read(access, role, module, config) -> dict:
@@ -146,25 +166,24 @@ def document(access, role, module, config, ref) -> dict | None:
     parts_md = [f"# {meta.get('title', name)}", ""]
     if meta.get("subtitle"):
         parts_md += [f"*{meta['subtitle']}*", ""]
-    parts_md += [f"`{stage}` · `{name}`", "", "| file | size | |", "|---|---|---|"]
-    media = []
+    parts_md += [f"`{stage}` · `{name}`"]
+    tiles = []
     for f in files:
         p = access.resolve(src, f"{stage}/{name}/{f}", role)
-        low = f.lower()
-        if low.endswith(TEXT):
-            link = f"[open](/m/{module.id}/doc/{stage}/{name}/{f})"
-        elif low.endswith(IMAGES + VIDEOS):
-            link = f"[view](/m/{module.id}/file/{stage}/{name}/{f})"
-            media.append({"name": f, "kind": "video" if low.endswith(VIDEOS) else "image",
-                          "href": f"/m/{module.id}/file/{stage}/{name}/{f}", "size_kb": max(1, p.stat().st_size // 1024)})
+        kind = _kind(f)
+        if kind in ("image", "video"):
+            href = f"/m/{module.id}/file/{stage}/{name}/{f}"
+        elif kind in ("data", "review", "text", "plain"):
+            href = f"/m/{module.id}/doc/{stage}/{name}/{f}"
         else:
-            link = ""
-        parts_md.append(f"| `{f}` | {max(1, p.stat().st_size // 1024)} KB | {link} |")
+            href = ""
+        tiles.append({"name": f, "kind": kind, "href": href, "size_kb": max(1, p.stat().st_size // 1024),
+                      "version": (VERSION.search(f).group(1) if VERSION.search(f) else "")})
     if meta:
         parts_md += ["", "## meta.json", "", "| field | value |", "|---|---|"]
         for k, v in meta.items():
             parts_md.append(f"| `{k}` | {str(v)[:120].replace('|', '\\|')} |")
     out = {"title": meta.get("title", name), "body": "\n".join(parts_md)}
-    if media:
-        out["files"] = media
+    if tiles:
+        out["files"] = tiles
     return out

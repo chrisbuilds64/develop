@@ -294,11 +294,24 @@ tr:last-child td { border-bottom: 0; }
 .doc.proposal { border-left: 3px solid var(--warn); }
 .action textarea[name="body"] { font-family: var(--mono); font-size: 12px; line-height: 1.45; }
 
-/* media in a document: images and small videos out of the pipeline */
-.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-.media-grid figure { margin: 0; }
-.media-grid img, .media-grid video { width: 100%; border-radius: 8px; border: 1px solid var(--line); background: var(--bg-2, #111); display: block; }
-.media-grid figcaption { font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+/* files in a container: tiles (thumbnail or type icon, name below) or a plain list */
+.view-toggle { float: right; display: inline-flex; gap: 2px; }
+.view-toggle button { font-size: 11px; padding: 3px 9px; background: transparent; border: 1px solid var(--line); color: var(--ink-2); cursor: pointer; }
+.view-toggle button.on { background: var(--surface-2, var(--line)); color: var(--ink); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.tile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--surface); min-width: 0; }
+.tile:hover { border-color: var(--accent); }
+.tile .thumb { position: relative; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; background: var(--bg-2, #111); display: flex; align-items: center; justify-content: center; }
+.tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile svg { width: 46%; height: 46%; fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.tile svg .ln { stroke: var(--accent); }
+.tile svg text { fill: var(--ink-2); stroke: none; font-size: 11px; font-weight: 700; font-family: inherit; }
+.tile-review svg { stroke: var(--warn); }
+.tile .play { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform: translate(-40%, -50%); border-left: 16px solid #fff; border-top: 10px solid transparent; border-bottom: 10px solid transparent; opacity: .85; filter: drop-shadow(0 0 4px rgba(0,0,0,.6)); }
+.tile .fname { font-size: 12px; font-family: var(--mono, ui-monospace, monospace); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .fmeta { font-size: 11px; color: var(--ink-2); }
+.filelist { width: 100%; border-collapse: collapse; font-size: 13px; }
+.filelist th, .filelist td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 input[type=file] { font-size: 13px; }
 
 /* board filters: one select per value list in the data's schema */
