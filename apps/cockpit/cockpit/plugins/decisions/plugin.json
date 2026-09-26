@@ -4,7 +4,13 @@
   "version": "0.1.0",
   "description": "The decision log of a Context Loop workspace — one entry per decision, newest at the bottom, never edited afterwards. The example plugin: a reader, a working view, one action, three files.",
   "reader": "reader.py",
-  "needs": ["context"],
-  "actions": ["record"],
-  "maturity": "running"
+  "needs": [
+    "context"
+  ],
+  "actions": [
+    "record"
+  ],
+  "maturity": "running",
+  "icon": "gavel",
+  "accent": "#f06292"
 }

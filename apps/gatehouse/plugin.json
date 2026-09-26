@@ -13,5 +13,7 @@
   "needs": [
     "elicitation"
   ],
-  "maturity": "running"
+  "maturity": "running",
+  "icon": "gate",
+  "accent": "#e0a52a"
 }

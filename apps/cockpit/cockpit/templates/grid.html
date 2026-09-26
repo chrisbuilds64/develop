@@ -1,10 +1,13 @@
 {% from "figures.html" import figure with context %}
+{% from "glyphs.html" import glyph %}
 {% macro card(c) %}
 {% set p = c.panel %}
 {% set state = p.state if c.shown else c.verdict %}
-<article class="card" data-state="{{ state }}" data-module="{{ c.module_id }}">
+{% set pl = plugins.get(modules_by_id[c.module_id].plugin) if plugins and c.module_id in modules_by_id else none %}
+<article class="card" data-state="{{ state }}" data-module="{{ c.module_id }}" style="--m: {{ pl.accent if pl else '#3b82f6' }}">
   <div class="card-head">
-    <div>
+    <span class="card-glyph">{{ glyph(pl.icon if pl else 'box', 20) }}</span>
+    <div class="card-title">
       <h2>{% if p %}{{ t(p.title) }}{% else %}{{ t(c.module_id ~ '.title') }}{% endif %}</h2>
       {% if p and p.subtitle %}<div class="sub">{{ t(p.subtitle) }}</div>{% endif %}
     </div>

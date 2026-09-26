@@ -140,3 +140,12 @@ def test_every_piece_with_a_meta_gets_a_cover_drawn_from_it(client, world):
     assert '<svg class="cover"' in board and 'fill="#2f6fed"' in board and ">SIM-01<" in board
     page = client.get("/m/pipeline/doc/30-review-human/piece-30-01").text
     assert 'class="doc-cover"' in page and 'aria-label="The Model Cannot Verify Itself"' in page
+
+
+def test_the_overview_greets_the_person_and_the_rail_lists_only_their_modules(client):
+    sign_in(client, "sam")
+    page = client.get("/").text
+    assert 'class="hello"' in page and ", Sam" in page and 'class="rail"' in page
+    rail = page.split('<nav class="rail"')[1].split("</nav>")[0]
+    assert 'href="/m/pipeline"' in rail and 'href="/m/audits"' not in rail       # sam may not open audits
+    assert 'class="card-glyph"' in page and 'href="/setup"' not in rail

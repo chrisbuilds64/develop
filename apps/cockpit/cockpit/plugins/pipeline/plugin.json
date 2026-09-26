@@ -14,5 +14,7 @@
     "upload",
     "verify",
     "skill"
-  ]
+  ],
+  "icon": "film",
+  "accent": "#3b82f6"
 }

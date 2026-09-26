@@ -7,5 +7,7 @@
   "needs": [
     "contextloop"
   ],
-  "maturity": "running"
+  "maturity": "running",
+  "icon": "loop",
+  "accent": "#22b8cf"
 }

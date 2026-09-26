@@ -1,5 +1,19 @@
 {% extends "base.html" %}
 {% block main %}
-<p class="stamp">{{ t('app.as_of', when=now) }} · {{ t('app.role') }} <strong>{{ role.id }}</strong> · {{ cards|length }} {{ t('app.modules') }}</p>
+{% set hour = now[11:13]|int %}
+{% set ns = namespace(attention=[], blocked=[]) %}
+{% for c in cards if c.shown %}
+  {% if c.panel.state == 'blocked' %}{% set _ = ns.blocked.append(t(c.panel.title)) %}
+  {% elif c.panel.state == 'attention' %}{% set _ = ns.attention.append(t(c.panel.title)) %}{% endif %}
+{% endfor %}
+<section class="hello">
+  <h2>{{ t('home.morning' if hour < 11 else 'home.afternoon' if hour < 18 else 'home.evening', name=(', ' ~ user.display.split(' ')[0]) if user else '') }}</h2>
+  <p class="hello-line">
+    {% if ns.blocked %}<span class="dot bad"></span>{{ t('home.blocked', n=ns.blocked|length, list=ns.blocked|join(', ')) }}
+    {% elif ns.attention %}<span class="dot warn"></span>{{ t('home.attention', n=ns.attention|length, list=ns.attention|join(', ')) }}
+    {% else %}<span class="dot ok"></span>{{ t('home.all_good') }}{% endif %}
+  </p>
+  <p class="stamp">{{ t('app.as_of', when=now) }} · {{ t('app.role') }} <strong>{{ role.id }}</strong> · {{ cards|length }} {{ t('app.modules') }}</p>
+</section>
 {% include "grid.html" %}
 {% endblock %}

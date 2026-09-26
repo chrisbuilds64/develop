@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% from "grid.html" import card with context %}
 {% from "blocks.html" import block with context %}
+{% from "glyphs.html" import glyph %}
 {% block main %}
 <div class="module-page">
   <a class="back" href="/">← {{ t('app.back') }}</a>
-  <h2>{% if card_.panel %}{{ t(card_.panel.title) }}{% else %}{{ module.label or module.id }}{% endif %}</h2>
+  <h2 class="with-glyph" style="--m: {{ plugin.accent if plugin else '#3b82f6' }}"><span class="card-glyph">{{ glyph(plugin.icon if plugin else 'box', 24) }}</span>{% if card_.panel %}{{ t(card_.panel.title) }}{% else %}{{ module.label or module.id }}{% endif %}</h2>
   <p class="stamp">{{ module.id }} · {{ t('maturity.' ~ module.maturity) }} · {{ t('app.source') }}: {{ module.sources|join(', ') }}{% if plugin %} · plugin {{ plugin.id }} {{ plugin.version }}{% endif %}</p>
 
   {% if module.app %}

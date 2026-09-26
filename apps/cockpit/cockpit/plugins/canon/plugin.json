@@ -13,5 +13,7 @@
     "ask",
     "accept",
     "discard"
-  ]
+  ],
+  "icon": "book",
+  "accent": "#8a5cf6"
 }

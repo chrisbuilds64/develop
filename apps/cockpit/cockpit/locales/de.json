@@ -217,5 +217,11 @@
   "run.container": "Vorgang",
   "run.by": "von",
   "run.status": "Status",
-  "board.show_all": "alle {n} zeigen"
+  "board.show_all": "alle {n} zeigen",
+  "home.morning": "Guten Morgen{name}",
+  "home.afternoon": "Guten Tag{name}",
+  "home.evening": "Guten Abend{name}",
+  "home.attention": "{n} brauchen deine Aufmerksamkeit: {list}.",
+  "home.blocked": "{n} blockiert: {list}.",
+  "home.all_good": "Alles auf Kurs."
 }

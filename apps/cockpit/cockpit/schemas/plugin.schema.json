@@ -1,87 +1,106 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://chrisbuilds64.com/schema/cockpit-plugin-1.json",
-  "title": "Plugin",
-  "description": "What a plugin declares about itself in its plugin.json. The cockpit is the surface; plugins bring the mechanisms — a reader for the card and the working view, optional actions, optionally a whole web application mounted under /m/<id>/app. A customer's own tool is attached the same way: a manifest, a reader, and the sources it needs released in cockpit.toml. A plugin runs inside the cockpit's process with the cockpit's rights: the access layer governs readers that go through it, it cannot stop code that does not. Install plugins you have read.",
-  "type": "object",
-  "required": [
-    "id",
-    "name",
-    "version",
-    "reader"
-  ],
-  "additionalProperties": false,
-  "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9-]*$"
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://chrisbuilds64.com/schema/cockpit-plugin-1.json",
+ "title": "Plugin",
+ "description": "What a plugin declares about itself in its plugin.json. The cockpit is the surface; plugins bring the mechanisms — a reader for the card and the working view, optional actions, optionally a whole web application mounted under /m/<id>/app. A customer's own tool is attached the same way: a manifest, a reader, and the sources it needs released in cockpit.toml. A plugin runs inside the cockpit's process with the cockpit's rights: the access layer governs readers that go through it, it cannot stop code that does not. Install plugins you have read.",
+ "type": "object",
+ "required": [
+  "id",
+  "name",
+  "version",
+  "reader"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9-]*$"
+  },
+  "name": {
+   "type": "string",
+   "minLength": 1
+  },
+  "version": {
+   "type": "string",
+   "pattern": "^\\d+\\.\\d+\\.\\d+"
+  },
+  "description": {
+   "type": "string"
+  },
+  "reader": {
+   "type": "string",
+   "description": "Dotted module providing read(), and optionally detail() and document()."
+  },
+  "app": {
+   "type": "object",
+   "description": "A web application the plugin brings, mounted inside the cockpit.",
+   "required": [
+    "factory"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "factory": {
+     "type": "string",
+     "description": "package.module:function taking a config path and returning an ASGI app."
     },
-    "name": {
-      "type": "string",
-      "minLength": 1
+    "path": {
+     "type": "string",
+     "description": "Where the package lives, relative to the manifest."
     },
-    "version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+"
+    "config": {
+     "type": "string",
+     "description": "Default config file for the factory."
     },
-    "description": {
-      "type": "string"
-    },
-    "reader": {
-      "type": "string",
-      "description": "Dotted module providing read(), and optionally detail() and document()."
-    },
-    "app": {
-      "type": "object",
-      "description": "A web application the plugin brings, mounted inside the cockpit.",
-      "required": [
-        "factory"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "factory": {
-          "type": "string",
-          "description": "package.module:function taking a config path and returning an ASGI app."
-        },
-        "path": {
-          "type": "string",
-          "description": "Where the package lives, relative to the manifest."
-        },
-        "config": {
-          "type": "string",
-          "description": "Default config file for the factory."
-        },
-        "mounts_under_prefix": {
-          "type": "boolean",
-          "description": "true when the app builds its links from request.scope['root_path'] — the one requirement for mounting."
-        }
-      }
-    },
-    "needs": {
-      "type": "array",
-      "description": "Source ids the reader expects, in the order the module's `sources` should list them.",
-      "items": {
-        "type": "string"
-      }
-    },
-    "actions": {
-      "type": "array",
-      "description": "Action ids the plugin's tool supports; the cockpit config maps forms onto them.",
-      "items": {
-        "type": "string"
-      }
-    },
-    "locales": {
-      "type": "string",
-      "description": "Directory of <lang>.json files merged into the cockpit's, relative to the manifest."
-    },
-    "maturity": {
-      "enum": [
-        "running",
-        "draft",
-        "planned",
-        "assumption"
-      ]
+    "mounts_under_prefix": {
+     "type": "boolean",
+     "description": "true when the app builds its links from request.scope['root_path'] — the one requirement for mounting."
     }
+   }
+  },
+  "needs": {
+   "type": "array",
+   "description": "Source ids the reader expects, in the order the module's `sources` should list them.",
+   "items": {
+    "type": "string"
+   }
+  },
+  "actions": {
+   "type": "array",
+   "description": "Action ids the plugin's tool supports; the cockpit config maps forms onto them.",
+   "items": {
+    "type": "string"
+   }
+  },
+  "locales": {
+   "type": "string",
+   "description": "Directory of <lang>.json files merged into the cockpit's, relative to the manifest."
+  },
+  "maturity": {
+   "enum": [
+    "running",
+    "draft",
+    "planned",
+    "assumption"
+   ]
+  },
+  "icon": {
+   "type": "string",
+   "enum": [
+    "film",
+    "check",
+    "book",
+    "shield",
+    "loop",
+    "gate",
+    "gavel",
+    "box"
+   ],
+   "description": "The plugin's glyph, from the cockpit's built-in set — on its card, its page and in the rail."
+  },
+  "accent": {
+   "type": "string",
+   "pattern": "^#[0-9a-fA-F]{6}$",
+   "description": "The plugin's colour, used for its glyph. State colours stay the state's."
   }
+ }
 }

@@ -11,7 +11,17 @@
 <script src="/static/htmx.min.js" defer></script>
 {% endif %}
 </head>
-<body>
+<body{% if not export and (user or not config.login_required) %} class="has-rail"{% endif %}>
+{% if not export and (user or not config.login_required) %}
+{% from "glyphs.html" import glyph %}
+<nav class="rail" aria-label="modules">
+  <a href="/" class="rail-home{% if not current %} on{% endif %}" title="{{ t('app.overview') }}">{{ glyph('box') }}</a>
+  {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
+  <a href="/m/{{ m.id }}" class="{% if current == m.id %}on{% endif %}" title="{{ t(m.id ~ '.title') }}" style="--m: {{ pl.accent if pl else '#3b82f6' }}">{{ glyph(pl.icon if pl else 'box') }}</a>
+  {% endfor %}
+  {% if role.may_act('*') or role.may_act('setup.view') %}<a href="/setup" class="rail-setup{% if request.url.path.startswith('/setup') %} on{% endif %}" title="{{ t('setup.title') }}"><svg class="glyph" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>{% endif %}
+</nav>
+{% endif %}
 <header class="top">
   <div class="brand">
     <h1>{{ config.name }}</h1>

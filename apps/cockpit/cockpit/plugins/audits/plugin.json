@@ -7,5 +7,7 @@
   "needs": [
     "audits"
   ],
-  "maturity": "running"
+  "maturity": "running",
+  "icon": "shield",
+  "accent": "#ff7a59"
 }

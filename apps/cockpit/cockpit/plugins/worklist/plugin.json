@@ -12,5 +12,7 @@
     "add",
     "done",
     "move"
-  ]
+  ],
+  "icon": "check",
+  "accent": "#2fa36b"
 }

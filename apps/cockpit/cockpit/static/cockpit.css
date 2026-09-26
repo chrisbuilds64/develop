@@ -342,3 +342,33 @@ input[type=file] { font-size: 13px; }
 .kcol.collapsed { flex-basis: 150px; }
 .kcol.collapsed summary { cursor: pointer; font-size: 12px; color: var(--ink-2); padding: 6px 0; }
 .kcol.collapsed details[open] { flex-basis: 240px; }
+
+/* ------------------------------------------------------------ the rail */
+body.has-rail { padding-left: 64px; }
+.rail {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 64px; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0;
+  background: var(--surface); border-right: 1px solid var(--line);
+}
+.rail a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; color: var(--ink-3); }
+.rail a:hover { background: var(--surface-2); color: var(--m, var(--ink)); text-decoration: none; }
+.rail a.on { background: var(--surface-2); color: var(--m, var(--ink)); box-shadow: inset 0 0 0 1px var(--line); }
+.rail .rail-home { margin-bottom: 8px; color: var(--ink-2); }
+.rail .rail-setup { margin-top: auto; }
+.glyph { display: block; }
+
+/* card head: glyph in the plugin's colour, then title and subtitle */
+.card-head { align-items: flex-start; }
+.card-glyph { color: var(--m, var(--accent)); display: inline-flex; align-items: center; justify-content: center;
+              width: 34px; height: 34px; border-radius: 9px; background: color-mix(in srgb, var(--m, var(--accent)) 14%, transparent); flex: 0 0 auto; }
+.card-title { flex: 1; min-width: 0; }
+.card-head .badge { margin-left: auto; }
+h2.with-glyph { display: flex; align-items: center; gap: 10px; }
+
+/* the greeting */
+.hello { margin: 4px 0 22px; }
+.hello h2 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.hello-line { margin: 6px 0 4px; font-size: 15px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+.hello .stamp { margin: 0; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--ink-3); }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }

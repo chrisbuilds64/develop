@@ -49,6 +49,14 @@ class Plugin:
         return self.manifest.get("app")
 
     @property
+    def icon(self) -> str:
+        return self.manifest.get("icon") or "box"
+
+    @property
+    def accent(self) -> str:
+        return self.manifest.get("accent") or "#3b82f6"
+
+    @property
     def locales(self) -> Path | None:
         d = self.manifest.get("locales")
         return (self.path / d) if d else None

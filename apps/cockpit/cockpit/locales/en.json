@@ -217,5 +217,11 @@
   "run.container": "piece",
   "run.by": "by",
   "run.status": "status",
-  "board.show_all": "show all {n}"
+  "board.show_all": "show all {n}",
+  "home.morning": "Good morning{name}",
+  "home.afternoon": "Good afternoon{name}",
+  "home.evening": "Good evening{name}",
+  "home.attention": "{n} need your attention: {list}.",
+  "home.blocked": "{n} blocked: {list}.",
+  "home.all_good": "Everything is on track."
 }
