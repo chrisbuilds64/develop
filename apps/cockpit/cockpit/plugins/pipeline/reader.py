@@ -71,7 +71,8 @@ def _pieces(access, role, src, stage):
         except Exception:
             meta = {}
         out.append({
-            "tag": meta.get("number") or meta.get("label") or name.split("-", 1)[0],
+            # label + number is the whole tag — three pieces can share number "SIM-01"
+            "tag": " ".join(str(x) for x in (meta.get("label"), meta.get("number")) if x) or name.split("-", 1)[0],
             "title": meta.get("title") or name,
             "meta": [m for m in (meta.get("show"), meta.get("track"), meta.get("publishDate")) if m],
             "href": f"/m/pipeline/doc/{stage}/{name}",
