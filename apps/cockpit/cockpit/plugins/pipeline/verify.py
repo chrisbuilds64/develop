@@ -60,17 +60,25 @@ def check_meta(folder: Path, schema: dict | None) -> list[str]:
 def check(root: Path, stage: str, name: str, schema: dict | None) -> list[str]:
     folder = root / stage / name
     findings = check_meta(folder, schema)
-    hashes = {}
-    for f in sorted(folder.iterdir()):
-        if f.is_dir() or f.name.startswith("."):
-            continue
+    files = [f for f in sorted(folder.iterdir()) if f.is_file() and not f.name.startswith(".")]
+    for f in files:
         n = f.name.lower()
         if n not in FIXED and not VERSIONED.match(n) and not re.match(r"^[a-z0-9-]+\.[a-z0-9]+$", n):
             findings.append(f"naming: '{f.name}' follows neither <stem>.vN.<ext> nor a fixed name")
-        h = hashlib.sha256(f.read_bytes()).hexdigest()
-        if h in hashes:
-            findings.append(f"duplicate: '{f.name}' is identical to '{hashes[h]}'")
-        hashes[h] = f.name
+    # Duplicates: only files of the same size are hashed — over a network mount, reading
+    # every image to compare it would take minutes; sizes are free.
+    by_size: dict[int, list[Path]] = {}
+    for f in files:
+        by_size.setdefault(f.stat().st_size, []).append(f)
+    for group in by_size.values():
+        if len(group) < 2:
+            continue
+        hashes = {}
+        for f in group:
+            h = hashlib.sha256(f.read_bytes()).hexdigest()
+            if h in hashes:
+                findings.append(f"duplicate: '{f.name}' is identical to '{hashes[h]}'")
+            hashes[h] = f.name
     review = folder / "review.md"
     if review.exists():
         dates = HEADING.findall(review.read_text(encoding="utf-8"))
