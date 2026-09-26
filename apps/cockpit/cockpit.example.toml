@@ -1,0 +1,108 @@
+# Cockpit — Konfiguration
+#
+# Drei Segmente, in dieser Reihenfolge gelesen:
+#   [[source]]  was das Cockpit überhaupt sehen darf   (nichts, was hier nicht steht)
+#   [[module]]  was angezeigt wird, und aus welchen Quellen
+#   [[role]]    wer welche Module öffnen und bis zu welcher Stufe lesen darf
+#
+# Pfade dürfen mit ~ beginnen. Relative Pfade gelten ab dem Ordner dieser Datei.
+# Das Cockpit schreibt nichts, was einem Werkzeug gehört; es liest, und jeder
+# Zugriff — auch ein abgelehnter — landet in der Protokolldatei.
+
+[cockpit]
+name = "Leitstand"
+locale = "de"
+bind = "127.0.0.1:8200"
+default_role = "operator"
+audit = "cockpit-audit.jsonl"
+stale_after_hours = 24          # ältere Angaben werden nicht mehr gezeigt
+
+# --- Quellen -----------------------------------------------------------------
+# sensitivity: public < internal < confidential. Eine Rolle sieht bis zu ihrer Stufe.
+# include:     Freigabeliste. Fehlt sie, gilt der ganze Ordner als freigegeben —
+#              in dieser Beispieldatei absichtlich nirgends genutzt.
+
+[[source]]
+id = "worklist"
+label = "Arbeitsliste"
+path = "~/ChrisBuilds64/control/context"
+include = ["todo.json", "todo.schema.json"]
+sensitivity = "internal"
+
+[[source]]
+id = "pipeline"
+label = "Content-Pipeline"
+path = "~/ChrisBuilds64/content/flow"
+sensitivity = "internal"
+
+[[source]]
+id = "audits"
+label = "Prüfläufe"
+path = "~/ChrisBuilds64/control/audits"
+sensitivity = "internal"
+
+[[source]]
+id = "contextloop"
+label = "Context Loop"
+path = "~/ChrisBuilds64/context-loop"
+include = [".claude-plugin", "skills"]
+sensitivity = "public"
+
+[[source]]
+id = "elicitation"
+label = "Kanon-Erhebung"
+path = "~/ChrisBuilds64/develop/apps/gatehouse/instances/demo"
+include = ["run.json", "audit.jsonl"]
+sensitivity = "confidential"
+
+# --- Module ------------------------------------------------------------------
+# maturity: running | draft | planned | assumption — wird auf der Karte angezeigt.
+# Ein Modul, dessen Quelle die Rolle nicht sehen darf, verschwindet nicht:
+# es erscheint als Karte "nicht freigegeben".
+
+[[module]]
+id = "worklist"
+label = "Arbeitsliste"
+reader = "cockpit.readers.worklist"
+sources = ["worklist"]
+maturity = "running"
+
+[[module]]
+id = "pipeline"
+label = "Content-Pipeline"
+reader = "cockpit.readers.pipeline"
+sources = ["pipeline"]
+maturity = "running"
+
+[[module]]
+id = "audits"
+label = "Prüfläufe"
+reader = "cockpit.readers.audits"
+sources = ["audits"]
+maturity = "running"
+
+[[module]]
+id = "contextloop"
+label = "Context Loop"
+reader = "cockpit.readers.contextloop"
+sources = ["contextloop"]
+maturity = "running"
+
+[[module]]
+id = "gatehouse"
+label = "Kanon-Erhebung"
+reader = "cockpit.readers.gatehouse"
+sources = ["elicitation"]
+maturity = "running"
+
+# --- Rollen ------------------------------------------------------------------
+
+[[role]]
+id = "operator"
+modules = ["*"]
+max_sensitivity = "confidential"
+
+[[role]]
+id = "guest"
+modules = ["worklist", "pipeline", "contextloop"]
+max_sensitivity = "public"

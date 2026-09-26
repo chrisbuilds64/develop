@@ -1,0 +1,48 @@
+{% from "figures.html" import figure with context %}
+{% macro card(c) %}
+{% set p = c.panel %}
+{% set state = p.state if c.shown else c.verdict %}
+<article class="card" data-state="{{ state }}" data-module="{{ c.module_id }}">
+  <div class="card-head">
+    <div>
+      <h2>{% if p %}{{ t(p.title) }}{% else %}{{ t(c.module_id ~ '.title') }}{% endif %}</h2>
+      {% if p and p.subtitle %}<div class="sub">{{ t(p.subtitle) }}</div>{% endif %}
+    </div>
+    {% set maturity = (p.maturity if p else none) or (modules_by_id[c.module_id].maturity if c.module_id in modules_by_id else 'assumption') %}
+    <span class="badge {{ maturity }}">{{ t('maturity.' ~ maturity) }}</span>
+  </div>
+
+  {% if c.shown %}
+  <div class="headline">
+    <span class="num">{{ p.headline.value }}</span>
+    <span class="unit">{{ t(p.headline.unit) }}</span>
+  </div>
+  {% if p.figure %}{{ figure(p.figure) }}{% endif %}
+  <ul class="lines">
+    {% for line in p.lines %}
+    <li><span class="label">{{ t(line.label) }}</span>
+        <span class="value {{ line.tone or '' }}">{{ line.value }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="headline"><span class="num">—</span><span class="unit">{{ t('state.' ~ c.verdict) }}</span></div>
+  <p class="hint">
+    {% if c.verdict == 'stale' %}{{ t('panel.stale_hint', hours=config.stale_after_hours) }}
+    {% elif c.verdict == 'denied' %}{{ t('panel.denied_hint') }}
+    {% else %}{{ t('panel.error_hint', reason=c.reason) }}{% endif %}
+  </p>
+  {% endif %}
+
+  <div class="card-foot">
+    <span class="src" title="{{ t('app.source') }}">{% if p %}{{ p.source }}{% endif %}</span>
+    {% if c.shown %}
+    <span class="badge state-{{ p.state }}">{{ t('state.' ~ p.state) }}</span>
+    {% endif %}
+    {% if not export %}<a href="/m/{{ c.module_id }}">{{ t('app.open') }} →</a>{% endif %}
+  </div>
+</article>
+{% endmacro %}
+
+<section class="grid" id="grid" {% if not export %}hx-get="/grid" hx-trigger="every 60s" hx-swap="outerHTML"{% endif %}>
+  {% for c in cards %}{{ card(c) }}{% endfor %}
+</section>

@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block main %}
+<p class="stamp">{{ t('app.as_of', when=now) }} · {{ t('app.role') }} <strong>{{ role.id }}</strong> · {{ cards|length }} {{ t('app.modules') }}</p>
+{% include "grid.html" %}
+{% endblock %}

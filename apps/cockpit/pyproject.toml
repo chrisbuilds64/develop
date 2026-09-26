@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chrisbuilds64-cockpit"
+version = "0.1.0"
+description = "A surface over the engine: shows what the tools know, owns none of their data."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "Christian Moser", email = "cm@cmoser.com" }]
+# No dependency that needs a build step. What cannot be shipped as a file and
+# included directly stays out — that keeps installation at "install, run".
+dependencies = [
+  "fastapi==0.135.2",
+  "uvicorn[standard]==0.42.0",
+  "jinja2==3.1.6",
+  "python-multipart==0.0.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.3", "httpx==0.26.0"]
+
+[project.scripts]
+cockpit = "cockpit.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["cockpit*"]
+
+[tool.setuptools.package-data]
+cockpit = ["schemas/*.json", "templates/*.html", "static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,95 @@
+{# Figures: typed panel data → inline SVG. Four kinds. A new kind is a new macro here
+   and one more value in panel.schema.json — readers never send markup. #}
+
+{% set TONE = {'ok': 'var(--ok)', 'warn': 'var(--warn)', 'bad': 'var(--bad)', 'muted': 'var(--ink-3)', 'accent': 'var(--accent)'} %}
+
+{% macro figure(f) %}
+  {% if f.kind == 'bar' %}{{ bar(f) }}
+  {% elif f.kind == 'ring' %}{{ ring(f) }}
+  {% elif f.kind == 'flow' %}{{ flow(f) }}
+  {% elif f.kind == 'route' %}{{ route(f) }}
+  {% endif %}
+{% endmacro %}
+
+{# ---- bar: proportional segments with a legend --------------------------- #}
+{% macro bar(f) %}
+{% set total = f.segments | sum(attribute='value') %}
+<div class="fig fig-bar">
+  <svg viewBox="0 0 100 8" preserveAspectRatio="none" role="img">
+    {% set ns = namespace(x=0) %}
+    {% for s in f.segments if total > 0 and s.value > 0 %}
+      {% set w = s.value / total * 100 %}
+      <rect x="{{ ns.x }}" y="0" width="{{ w }}" height="8" rx="1.2"
+            fill="{{ TONE[s.tone or 'accent'] }}"><title>{{ t(s.label) }}: {{ s.value }}</title></rect>
+      {% set ns.x = ns.x + w + 0.6 %}
+    {% endfor %}
+  </svg>
+  <ul class="legend">
+    {% for s in f.segments %}
+    <li><i style="background:{{ TONE[s.tone or 'accent'] }}"></i>{{ t(s.label) }} <b>{{ s.value }}</b></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endmacro %}
+
+{# ---- ring: one value against a whole -------------------------------------- #}
+{% macro ring(f) %}
+{% set pct = (f.value / f.max) if f.max else 0 %}
+{% set r = 15.9155 %}
+<div class="fig fig-ring">
+  <svg viewBox="0 0 42 42" role="img">
+    <circle cx="21" cy="21" r="{{ r }}" fill="none" stroke="var(--line)" stroke-width="4"/>
+    <circle cx="21" cy="21" r="{{ r }}" fill="none" stroke="var(--accent)" stroke-width="4"
+            stroke-dasharray="{{ '%.1f' % (pct * 100) }} {{ '%.1f' % (100 - pct * 100) }}"
+            stroke-dashoffset="25" stroke-linecap="round"/>
+    <text x="21" y="22.5" text-anchor="middle" font-size="8" font-weight="700" fill="var(--ink)">{{ '%d' % (pct * 100) }}%</text>
+  </svg>
+  <div class="ring-label">{{ f.value }} / {{ f.max }}</div>
+</div>
+{% endmacro %}
+
+{# ---- flow: stages left to right, box height follows the count ------------- #}
+{% macro flow(f) %}
+{% set n = f.steps | length %}
+{% set peak = (f.steps | map(attribute='value') | max) or 1 %}
+<div class="fig fig-flow">
+  <svg viewBox="0 0 {{ n * 26 }} 34" role="img">
+    {% for s in f.steps %}
+      {% set h = 4 + (s.value / peak) * 18 %}
+      {% set x = loop.index0 * 26 %}
+      <rect x="{{ x + 3 }}" y="{{ 24 - h }}" width="18" height="{{ h }}" rx="2"
+            fill="{{ TONE[s.tone or 'accent'] }}" opacity="{{ 0.35 if s.value == 0 else 1 }}">
+        <title>{{ t(s.label) }}: {{ s.value }}</title></rect>
+      <text x="{{ x + 12 }}" y="31" text-anchor="middle" font-size="5" fill="var(--ink-3)">{{ s.value }}</text>
+      {% if not loop.last %}<path d="M{{ x + 21 }} 14 l4 0" stroke="var(--line)" stroke-width="1"/>{% endif %}
+    {% endfor %}
+  </svg>
+  <div class="flow-ends"><span>{{ t(f.steps[0].label) }}</span><span>{{ t(f.steps[-1].label) }}</span></div>
+</div>
+{% endmacro %}
+
+{# ---- route: where the data goes — inside the building, or out of it ------- #}
+{% macro route(f) %}
+{% set n = f.routes | length %}
+{% set h = 14 + n * 18 %}
+<div class="fig fig-route">
+  <svg viewBox="0 0 160 {{ h }}" role="img">
+    {# the building #}
+    <rect x="2" y="{{ h/2 - 10 }}" width="40" height="20" rx="3" fill="var(--surface-2)" stroke="var(--line)"/>
+    <text x="22" y="{{ h/2 + 2.5 }}" text-anchor="middle" font-size="6" font-weight="600" fill="var(--ink)">{{ t(f.origin or 'route.you') }}</text>
+    {# a dashed line marks the edge of the building #}
+    <line x1="88" y1="2" x2="88" y2="{{ h - 2 }}" stroke="var(--line)" stroke-dasharray="2 2"/>
+    <text x="90" y="8" font-size="4.5" fill="var(--ink-3)">{{ t('route.outside') }}</text>
+    {% for r in f.routes %}
+      {% set y = 12 + loop.index0 * 18 + 4 %}
+      {% set x2 = 60 if r.local else 112 %}
+      <path d="M42 {{ h/2 }} C 52 {{ h/2 }}, 48 {{ y }}, {{ x2 }} {{ y }}" fill="none"
+            stroke="{{ 'var(--ok)' if r.local else 'var(--warn)' }}" stroke-width="1.6" stroke-linecap="round"/>
+      <rect x="{{ x2 }}" y="{{ y - 6 }}" width="44" height="12" rx="2"
+            fill="var(--surface-2)" stroke="{{ 'var(--ok)' if r.local else 'var(--warn)' }}" stroke-width="0.8"/>
+      <text x="{{ x2 + 22 }}" y="{{ y + 2 }}" text-anchor="middle" font-size="5" fill="var(--ink)">{{ r.label }}</text>
+      <text x="{{ x2 + 22 }}" y="{{ y + 10.5 }}" text-anchor="middle" font-size="4" fill="var(--ink-3)">{{ r.value }}</text>
+    {% endfor %}
+  </svg>
+</div>
+{% endmacro %}

@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chrisbuilds64.com/schema/to-do-1.json",
+  "title": "Arbeitsliste",
+  "description": "Eine To-do-Datei: Metadaten, Wertelisten, Vorgänge. Wertelisten sind Teil der Datei und jederzeit erweiterbar; ein Vorgang verweist auf sie über ihre id. Neue Attribute werden hier definiert, bevor sie in der Datei auftauchen dürfen — deshalb sind Zusatzfelder überall verboten.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "meta",
+    "lov",
+    "todos"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "updated",
+        "defaultAssignee"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "updated": {
+          "$ref": "#/$defs/date"
+        },
+        "defaultAssignee": {
+          "$ref": "#/$defs/slug"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "lov": {
+      "description": "Wertelisten. Erweitern heißt: hier einen Eintrag ergänzen — kein Schemawechsel.",
+      "type": "object",
+      "required": [
+        "clusters",
+        "statuses",
+        "priorities",
+        "people",
+        "sourceKinds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "clusters": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/cluster"
+          }
+        },
+        "statuses": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/status"
+          }
+        },
+        "priorities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/priority"
+          }
+        },
+        "people": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/person"
+          }
+        },
+        "sourceKinds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/labelled"
+          }
+        }
+      }
+    },
+    "todos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/todo"
+      }
+    }
+  },
+  "$defs": {
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "ref": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,5}-[0-9]{2,4}$"
+    },
+    "labelled": {
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "status": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "order"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer"
+        },
+        "terminal": {
+          "type": "boolean",
+          "description": "Endzustand — der Vorgang ist erledigt oder verworfen."
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "priority": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "rank"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rank": {
+          "type": "integer",
+          "description": "Höher ist wichtiger."
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "person": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "human",
+            "agent",
+            "group",
+            "external"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "source": {
+      "description": "Woher der Vorgang stammt. kind verweist auf lov.sourceKinds, ref ist der Dateiname oder Bezeichner ohne Pfad.",
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/slug"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "$ref": "#/$defs/date"
+        }
+      }
+    },
+    "todo": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "cluster",
+        "status",
+        "priority",
+        "assignee",
+        "created",
+        "updated"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "detail": {
+          "type": "string",
+          "description": "Optionaler Langtext. Der Titel bleibt eine Zeile."
+        },
+        "cluster": {
+          "$ref": "#/$defs/slug"
+        },
+        "status": {
+          "$ref": "#/$defs/slug"
+        },
+        "priority": {
+          "$ref": "#/$defs/slug"
+        },
+        "assignee": {
+          "$ref": "#/$defs/slug"
+        },
+        "due": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created": {
+          "$ref": "#/$defs/date"
+        },
+        "updated": {
+          "$ref": "#/$defs/date"
+        },
+        "closed": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdIsEstimate": {
+          "type": "boolean",
+          "description": "true, wenn das Datum aus der Quelle geschätzt und nicht belegt ist."
+        },
+        "blockedBy": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ref"
+          },
+          "uniqueItems": true
+        },
+        "withPeople": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "uniqueItems": true,
+          "description": "Weitere Beteiligte neben assignee — assignee bleibt die eine zuständige Person."
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "cluster": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "order",
+        "prefix"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer"
+        },
+        "prefix": {
+          "type": "string",
+          "pattern": "^[A-Z]{2,5}$",
+          "description": "Kuerzel fuer neue Vorgangsnummern in diesem Cluster."
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chrisbuilds64.com/schema/cockpit-panel-1.json",
+  "title": "Panel",
+  "description": "What a module reports about itself: one state, one headline number, a few lines, and where the numbers come from. Labels are translation keys, never sentences — the surface renders them in the viewer's language.",
+  "type": "object",
+  "required": [
+    "panel",
+    "title",
+    "maturity",
+    "as_of",
+    "state",
+    "headline",
+    "lines",
+    "source"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "panel": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Translation key or literal."
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "maturity": {
+      "enum": [
+        "running",
+        "draft",
+        "planned",
+        "assumption"
+      ]
+    },
+    "as_of": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([+-]\\d{2}:\\d{2}|Z)$",
+      "description": "ISO 8601 with zone. Older than the configured limit → the card shows 'status unknown'."
+    },
+    "state": {
+      "enum": [
+        "ok",
+        "attention",
+        "blocked"
+      ]
+    },
+    "headline": {
+      "type": "object",
+      "required": [
+        "value",
+        "unit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "description": "Translation key or literal."
+        }
+      }
+    },
+    "lines": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "label",
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "tone": {
+            "enum": [
+              "ok",
+              "warn",
+              "muted"
+            ]
+          }
+        }
+      }
+    },
+    "detail": {
+      "type": "object",
+      "required": [
+        "label",
+        "href"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        }
+      }
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Where the numbers come from, shown on the card."
+    },
+    "figure": {
+      "description": "An optional picture. Typed data, never markup — the surface draws it, so every module's figure looks like every other's and nothing a reader returns reaches the page unescaped.",
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "bar",
+            "ring",
+            "flow",
+            "route"
+          ]
+        },
+        "segments": {
+          "description": "bar: proportional segments, left to right.",
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              },
+              "tone": {
+                "enum": [
+                  "ok",
+                  "warn",
+                  "bad",
+                  "muted",
+                  "accent"
+                ]
+              }
+            }
+          }
+        },
+        "value": {
+          "type": "number",
+          "description": "ring: the filled part."
+        },
+        "max": {
+          "type": "number",
+          "description": "ring: the whole."
+        },
+        "steps": {
+          "description": "flow: stages in order, each with a count.",
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              },
+              "tone": {
+                "enum": [
+                  "ok",
+                  "warn",
+                  "bad",
+                  "muted",
+                  "accent"
+                ]
+              }
+            }
+          }
+        },
+        "origin": {
+          "type": "string",
+          "description": "route: where the data starts (a translation key)."
+        },
+        "routes": {
+          "description": "route: where data goes — inside the building or out of it.",
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "value",
+              "local"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              },
+              "local": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

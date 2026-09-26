@@ -1,0 +1,455 @@
+{
+  "pack_name": "core-de",
+  "pack_version": "0.3",
+  "client": "Northwind Manufacturing",
+  "started_at": "2026-09-25T09:30:00+02:00",
+  "current_block": "b5",
+  "answers": {
+    "q1": {
+      "question_id": "q1",
+      "question": "Question 1",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q2": {
+      "question_id": "q2",
+      "question": "Question 2",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q3": {
+      "question_id": "q3",
+      "question": "Question 3",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q4": {
+      "question_id": "q4",
+      "question": "Question 4",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q5": {
+      "question_id": "q5",
+      "question": "Question 5",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q6": {
+      "question_id": "q6",
+      "question": "Question 6",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q7": {
+      "question_id": "q7",
+      "question": "Question 7",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q8": {
+      "question_id": "q8",
+      "question": "Question 8",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q9": {
+      "question_id": "q9",
+      "question": "Question 9",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q10": {
+      "question_id": "q10",
+      "question": "Question 10",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q11": {
+      "question_id": "q11",
+      "question": "Question 11",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q12": {
+      "question_id": "q12",
+      "question": "Question 12",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q13": {
+      "question_id": "q13",
+      "question": "Question 13",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q14": {
+      "question_id": "q14",
+      "question": "Question 14",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q15": {
+      "question_id": "q15",
+      "question": "Question 15",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q16": {
+      "question_id": "q16",
+      "question": "Question 16",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q17": {
+      "question_id": "q17",
+      "question": "Question 17",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q18": {
+      "question_id": "q18",
+      "question": "Question 18",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q19": {
+      "question_id": "q19",
+      "question": "Question 19",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q20": {
+      "question_id": "q20",
+      "question": "Question 20",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q21": {
+      "question_id": "q21",
+      "question": "Question 21",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q22": {
+      "question_id": "q22",
+      "question": "Question 22",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q23": {
+      "question_id": "q23",
+      "question": "Question 23",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q24": {
+      "question_id": "q24",
+      "question": "Question 24",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q25": {
+      "question_id": "q25",
+      "question": "Question 25",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q26": {
+      "question_id": "q26",
+      "question": "Question 26",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q27": {
+      "question_id": "q27",
+      "question": "Question 27",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q28": {
+      "question_id": "q28",
+      "question": "Question 28",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q29": {
+      "question_id": "q29",
+      "question": "Question 29",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q30": {
+      "question_id": "q30",
+      "question": "Question 30",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q31": {
+      "question_id": "q31",
+      "question": "Question 31",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q32": {
+      "question_id": "q32",
+      "question": "Question 32",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q33": {
+      "question_id": "q33",
+      "question": "Question 33",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q34": {
+      "question_id": "q34",
+      "question": "Question 34",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q35": {
+      "question_id": "q35",
+      "question": "Question 35",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q36": {
+      "question_id": "q36",
+      "question": "Question 36",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q37": {
+      "question_id": "q37",
+      "question": "Question 37",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q38": {
+      "question_id": "q38",
+      "question": "Question 38",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q39": {
+      "question_id": "q39",
+      "question": "Question 39",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q40": {
+      "question_id": "q40",
+      "question": "Question 40",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q41": {
+      "question_id": "q41",
+      "question": "Question 41",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q42": {
+      "question_id": "q42",
+      "question": "Question 42",
+      "text": "An answer.",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q43": {
+      "question_id": "q43",
+      "question": "Question 43",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q44": {
+      "question_id": "q44",
+      "question": "Question 44",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q45": {
+      "question_id": "q45",
+      "question": "Question 45",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q46": {
+      "question_id": "q46",
+      "question": "Question 46",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q47": {
+      "question_id": "q47",
+      "question": "Question 47",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q48": {
+      "question_id": "q48",
+      "question": "Question 48",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q49": {
+      "question_id": "q49",
+      "question": "Question 49",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q50": {
+      "question_id": "q50",
+      "question": "Question 50",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q51": {
+      "question_id": "q51",
+      "question": "Question 51",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q52": {
+      "question_id": "q52",
+      "question": "Question 52",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q53": {
+      "question_id": "q53",
+      "question": "Question 53",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q54": {
+      "question_id": "q54",
+      "question": "Question 54",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    },
+    "q55": {
+      "question_id": "q55",
+      "question": "Question 55",
+      "text": "",
+      "follow_ups": [],
+      "marker": "AS-IS",
+      "answered_at": "2026-09-26"
+    }
+  },
+  "closed_blocks": [
+    "b1",
+    "b2",
+    "b3",
+    "b4"
+  ]
+}

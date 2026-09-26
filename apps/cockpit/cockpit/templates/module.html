@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "grid.html" import card with context %}
+{% block main %}
+<div class="module-page">
+  <a class="back" href="/">← {{ t('app.back') }}</a>
+  <h2>{% if card_.panel %}{{ t(card_.panel.title) }}{% else %}{{ module.label or module.id }}{% endif %}</h2>
+  <p class="stamp">{{ module.id }} · {{ t('maturity.' ~ module.maturity) }} · {{ t('app.source') }}: {{ module.sources|join(', ') }}</p>
+
+  <div class="two">
+    <div class="grid" style="grid-template-columns: minmax(300px, 520px);">
+      {{ card(card_) }}
+    </div>
+
+    {% set allowed = [] %}
+    {% for a in module.actions if role.may_act(module.id ~ '.' ~ a.id) %}{% set _ = allowed.append(a) %}{% endfor %}
+    {% if allowed %}
+    <section class="actions">
+      <h3>{{ t('app.actions') }}</h3>
+      {% if outcome %}
+      <div class="outcome {{ 'ok' if outcome.ok else 'bad' }}">
+        <div class="outcome-head">{{ t('app.ran') }} <b>{{ t(ran.label) }}</b> — {{ t('app.ok') if outcome.ok else t('app.failed') }}</div>
+        <pre>{{ outcome.output }}</pre>
+        {% if outcome.argv %}<div class="argv">{{ t('app.command') }}: <code>{{ outcome.argv|join(' ') }}</code></div>{% endif %}
+      </div>
+      {% endif %}
+      {% for a in allowed %}
+      <form class="action" method="post" action="/m/{{ module.id }}/a/{{ a.id }}">
+        <h4>{{ t(a.label) }}</h4>
+        {% for f in a.fields %}
+        <label>
+          <span>{{ t(f.label) }}{% if f.required %} *{% endif %}</span>
+          {% if f.type == 'select' %}
+          <select name="{{ f.name }}" {% if f.required %}required{% endif %}>
+            {% if not f.required %}<option value="">—</option>{% endif %}
+            {% for o in f.options %}<option value="{{ o }}">{{ t(o) if '.' in o else o }}</option>{% endfor %}
+          </select>
+          {% elif f.type == 'textarea' %}
+          <textarea name="{{ f.name }}" rows="3" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}></textarea>
+          {% else %}
+          <input type="{{ 'date' if f.type == 'date' else 'text' }}" name="{{ f.name }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}>
+          {% endif %}
+        </label>
+        {% endfor %}
+        <button type="submit">{{ t('app.run') }}</button>
+      </form>
+      {% endfor %}
+    </section>
+    {% endif %}
+  </div>
+
+  {% if raw %}
+  <h3 style="margin:24px 0 8px; font-size:13px; color:var(--ink-2)">Panel · JSON</h3>
+  <pre class="raw">{{ raw }}</pre>
+  {% endif %}
+</div>
+{% endblock %}

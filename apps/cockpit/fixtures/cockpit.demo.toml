@@ -1,0 +1,148 @@
+# Demo: everything below points into fixtures/. Nothing on this machine is read.
+[cockpit]
+name = "Control Room"
+locale = "en"
+bind = "127.0.0.1:8200"
+default_role = "operator"
+role_switch = true
+audit = "demo-audit.jsonl"
+stale_after_hours = 24
+
+[[source]]
+id = "worklist"
+label = "Work list"
+path = "worklist"
+include = ["todo.json"]
+sensitivity = "internal"
+
+[[source]]
+id = "pipeline"
+label = "Content pipeline"
+path = "flow"
+sensitivity = "internal"
+
+[[source]]
+id = "audits"
+label = "Audits"
+path = "audits"
+sensitivity = "internal"
+
+[[source]]
+id = "contextloop"
+label = "Context Loop"
+path = "context-loop"
+include = [".claude-plugin", "skills"]
+sensitivity = "public"
+
+[[source]]
+id = "elicitation"
+label = "Canon elicitation"
+path = "gatehouse-instance"
+include = ["run.json", "audit.jsonl"]
+sensitivity = "confidential"
+
+[[source]]
+id = "tools"
+label = "Tools"
+path = "tools"
+include = ["todo.py", "todo_validate.py"]
+sensitivity = "internal"
+
+[[module]]
+id = "worklist"
+reader = "cockpit.readers.worklist"
+sources = ["worklist"]
+maturity = "running"
+
+[[module.action]]
+id = "add"
+label = "worklist.add"
+tool = "tools"
+command = "todo.py"
+data = "worklist"
+args = ["add", "{title}", "--cluster", "{cluster}", "--prio", "{prio}", "--due", "{due}", "--source-kind", "decision", "--source-ref", "Cockpit"]
+  [[module.action.field]]
+  name = "title"
+  label = "field.title"
+  required = true
+  [[module.action.field]]
+  name = "cluster"
+  label = "field.cluster"
+  type = "select"
+  required = true
+  options = ["product", "ops", "sales"]
+  [[module.action.field]]
+  name = "prio"
+  label = "field.prio"
+  type = "select"
+  options = ["high", "medium", "low"]
+  [[module.action.field]]
+  name = "due"
+  label = "field.due"
+  type = "date"
+
+[[module.action]]
+id = "done"
+label = "worklist.done"
+tool = "tools"
+command = "todo.py"
+data = "worklist"
+args = ["done", "{id}"]
+  [[module.action.field]]
+  name = "id"
+  label = "field.id"
+  required = true
+  placeholder = "PRD-01"
+
+[[module.action]]
+id = "move"
+label = "worklist.move"
+tool = "tools"
+command = "todo.py"
+data = "worklist"
+args = ["set", "{id}", "--status", "{status}"]
+  [[module.action.field]]
+  name = "id"
+  label = "field.id"
+  required = true
+  [[module.action.field]]
+  name = "status"
+  label = "field.status"
+  type = "select"
+  required = true
+  options = ["next", "doing", "waiting", "backlog", "done"]
+
+[[module]]
+id = "pipeline"
+reader = "cockpit.readers.pipeline"
+sources = ["pipeline"]
+maturity = "running"
+
+[[module]]
+id = "audits"
+reader = "cockpit.readers.audits"
+sources = ["audits"]
+maturity = "running"
+
+[[module]]
+id = "contextloop"
+reader = "cockpit.readers.contextloop"
+sources = ["contextloop"]
+maturity = "running"
+
+[[module]]
+id = "gatehouse"
+reader = "cockpit.readers.gatehouse"
+sources = ["elicitation"]
+maturity = "running"
+
+[[role]]
+id = "operator"
+modules = ["*"]
+max_sensitivity = "confidential"
+actions = ["*"]
+
+[[role]]
+id = "guest"
+modules = ["worklist", "pipeline", "contextloop"]
+max_sensitivity = "public"

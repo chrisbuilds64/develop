@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ config.name }} · {{ t('app.title') }}</title>
+{% if export %}
+<style>{{ inline_css }}</style>
+{% else %}
+<link rel="stylesheet" href="/static/cockpit.css">
+<script src="/static/htmx.min.js" defer></script>
+{% endif %}
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>{{ config.name }}</h1>
+    <span class="tag">{{ t('app.tagline') }}</span>
+  </div>
+  {% if not export %}
+  <div class="controls">
+    <label>{{ t('app.language') }}
+      <select onchange="location.href='/set?lang='+this.value">
+        {% for code, name in languages %}
+        <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if roles %}
+    <label>{{ t('app.role') }}
+      <select onchange="location.href='/set?role='+this.value">
+        {% for r in roles %}
+        <option value="{{ r }}" {% if r == role.id %}selected{% endif %}>{{ r }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endif %}
+    <button onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'">◐</button>
+  </div>
+  {% endif %}
+</header>
+<main>
+{% block main %}{% endblock %}
+</main>
+</body>
+</html>
