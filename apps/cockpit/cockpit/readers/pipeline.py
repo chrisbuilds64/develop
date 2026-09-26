@@ -51,3 +51,67 @@ def read(access, role, module, config) -> dict:
             for num, n, c in stages
         ]},
     }
+
+
+def _pieces(access, role, src, stage):
+    """Every piece in a stage, with what its meta.json says — if it has one."""
+    out = []
+    for name in access.listdir(src, role, stage):
+        if name.startswith("_"):
+            continue
+        meta = {}
+        try:
+            if "meta.json" in access.listdir(src, role, f"{stage}/{name}"):
+                meta = access.read_json(src, f"{stage}/{name}/meta.json", role)
+        except Exception:
+            meta = {}
+        out.append({
+            "tag": meta.get("number") or meta.get("label") or name.split("-", 1)[0],
+            "title": meta.get("title") or name,
+            "meta": [m for m in (meta.get("show"), meta.get("track"), meta.get("publishDate")) if m],
+            "href": f"/m/pipeline/doc/{stage}/{name}",
+        })
+    return out
+
+
+def detail(access, role, module, config) -> dict:
+    src = module.sources[0]
+    columns = []
+    for name in access.listdir(src, role):
+        m = STAGE.match(name)
+        if not m:
+            continue
+        num = int(m.group(1))
+        columns.append({
+            "label": name.split("-", 1)[1].replace("-", " "),
+            "tone": "warn" if num == 30 else "ok" if num >= 60 else "",
+            "cards": _pieces(access, role, src, name),
+        })
+    return {"blocks": [
+        {"kind": "kanban", "title": "block.by_stage", "columns": columns},
+        {"kind": "links", "title": "block.tools", "items": [
+            {"label": "tool.pressroom", "href": "pressroom://", "note": "drag & drop, macOS", "external": True},
+            {"label": "tool.folder", "href": f"file://{access.source(src).path.expanduser()}", "external": True},
+        ]},
+    ]}
+
+
+def document(access, role, module, config, ref) -> dict | None:
+    """A piece: its meta plus every text file it carries, in order."""
+    src = module.sources[0]
+    stage, _, name = ref.partition("/")
+    files = access.listdir(src, role, f"{stage}/{name}")
+    meta = access.read_json(src, f"{stage}/{name}/meta.json", role) if "meta.json" in files else {}
+    parts = [f"# {meta.get('title', name)}", ""]
+    if meta.get("subtitle"):
+        parts += [f"*{meta['subtitle']}*", ""]
+    parts += [f"`{stage}` · `{name}`", ""]
+    parts += ["| file | size |", "|---|---|"]
+    for f in files:
+        p = access.resolve(src, f"{stage}/{name}/{f}", role)
+        parts.append(f"| `{f}` | {p.stat().st_size // 1024 or 1} KB |")
+    for f in files:
+        if f.endswith((".md", ".txt")) and f not in ("meta.json",):
+            body = access.read_text(src, f"{stage}/{name}/{f}", role)
+            parts += ["", "---", "", f"## {f}", "", body[:6000] + ("\n\n*… truncated*" if len(body) > 6000 else "")]
+    return {"title": meta.get("title", name), "body": "\n".join(parts)}

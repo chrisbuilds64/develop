@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "grid.html" import card with context %}
+{% from "blocks.html" import block with context %}
 {% block main %}
 <div class="module-page">
   <a class="back" href="/">← {{ t('app.back') }}</a>
@@ -48,9 +49,10 @@
     {% endif %}
   </div>
 
+  {% for b in blocks %}{{ block(b) }}{% endfor %}
+
   {% if raw %}
-  <h3 style="margin:24px 0 8px; font-size:13px; color:var(--ink-2)">Panel · JSON</h3>
-  <pre class="raw">{{ raw }}</pre>
+  <details class="rawbox"><summary>Panel · JSON</summary><pre class="raw">{{ raw }}</pre></details>
   {% endif %}
 </div>
 {% endblock %}

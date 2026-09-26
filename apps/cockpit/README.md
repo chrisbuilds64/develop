@@ -101,3 +101,15 @@ touched. The switch is in the header.
 
 `cockpit run --demo` reads `fixtures/` — an invented company, nothing from this machine.
 Actions write through the real tools, so click freely; `python3 fixtures/make.py` resets it.
+
+## Behind the card
+
+A card is the entry. `Open` leads to the working view: typed **blocks** a reader returns —
+`kanban` (columns with cards), `table` (rows, cells may be links or badges), `document`
+(markdown, rendered by the surface), `links` (other tools). A reader may also serve single
+documents under `/m/<module>/doc/<ref>` — an audit, a content piece, a procedure.
+
+The pipeline opens as a board by stage with every piece; audits open as a table of runs plus a
+table of findings in their current state, each linking to the audit that carries it. Same
+contract for every module (`schemas/detail.schema.json`); a new module gets the full view
+without a new template.

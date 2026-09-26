@@ -48,3 +48,22 @@ def read(access, role, module, config) -> dict:
             for s in sorted(doc["lov"]["statuses"], key=lambda s: s["order"])
         ]},
     }
+
+
+def detail(access, role, module, config) -> dict:
+    src = module.sources[0]
+    doc = access.read_json(src, "todo.json", role)
+    people = {p["id"]: p["name"].split()[0] for p in doc["lov"]["people"]}
+    clusters = {c["id"]: c["label"] for c in doc["lov"]["clusters"]}
+    columns = []
+    for s in sorted(doc["lov"]["statuses"], key=lambda s: s["order"]):
+        items = [t for t in doc["todos"] if t["status"] == s["id"]]
+        items.sort(key=lambda t: (t.get("due") or "9999", t["id"]))
+        columns.append({
+            "label": s["label"], "tone": "warn" if s["id"] == "waiting" else "ok" if s.get("terminal") else "",
+            "cards": [{"tag": f'{t["id"]} · {clusters[t["cluster"]]}', "title": t["title"],
+                       "meta": [m for m in (t.get("due"), t["priority"], people.get(t["assignee"]),
+                                            ("⟵ " + ", ".join(t["blockedBy"])) if t.get("blockedBy") else None) if m]}
+                      for t in items[:40]],
+        })
+    return {"blocks": [{"kind": "kanban", "title": "block.by_status", "columns": columns}]}

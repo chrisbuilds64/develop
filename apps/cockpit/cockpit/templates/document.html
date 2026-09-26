@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="module-page">
+  <a class="back" href="/m/{{ module.id }}">← {{ t(module.id ~ '.title') }}</a>
+  <h2>{{ doc.title }}</h2>
+  <p class="stamp">{{ module.id }} · {{ doc.ref }}</p>
+  <div class="doc doc-page">{{ doc.html|safe }}</div>
+</div>
+{% endblock %}

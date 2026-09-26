@@ -1,0 +1,53 @@
+{# Detail blocks: typed data → the working view behind a card. Four kinds.
+   A cell in a table is a string, a number, {text, href} or {badge, tone}. #}
+
+{% macro cell(c) %}
+  {%- if c is mapping -%}
+    {%- if c.href -%}<a href="{{ c.href }}">{{ c.text }}</a>
+    {%- elif c.badge is defined -%}<span class="badge tone-{{ c.tone or 'muted' }}">{{ t(c.badge) if '.' in (c.badge|string) else c.badge }}</span>
+    {%- else -%}{{ c.text }}{%- endif -%}
+  {%- else -%}{{ c }}{%- endif -%}
+{% endmacro %}
+
+{% macro block(b) %}
+<section class="block block-{{ b.kind }}">
+  {% if b.title %}<h3>{{ t(b.title) if '.' in b.title else b.title }}</h3>{% endif %}
+
+  {% if b.kind == 'kanban' %}
+  <div class="kanban">
+    {% for col in b.columns %}
+    <div class="kcol" data-tone="{{ col.tone or '' }}">
+      <h4>{{ t(col.label) if '.' in (col.label|string) else col.label }} <span>{{ col.cards|length }}</span></h4>
+      {% for k in col.cards %}
+      <article class="kcard">
+        {% if k.tag %}<div class="ktag">{{ k.tag }}</div>{% endif %}
+        <div class="ktitle">{% if k.href %}<a href="{{ k.href }}">{{ k.title }}</a>{% else %}{{ k.title }}{% endif %}</div>
+        {% if k.meta %}<div class="kmeta">{% for m in k.meta %}<span>{{ m }}</span>{% endfor %}</div>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% elif b.kind == 'table' %}
+  <div class="tablewrap"><table>
+    <thead><tr>{% for h in b.columns %}<th>{{ t(h) if '.' in (h|string) else h }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for row in b.rows %}<tr>{% for c in row %}<td>{{ cell(c) }}</td>{% endfor %}</tr>{% endfor %}
+    </tbody>
+  </table></div>
+
+  {% elif b.kind == 'document' %}
+  <div class="doc">{{ b.html|safe }}</div>
+  {% if b.ref %}<p class="hint"><a href="{{ b.ref }}">{{ t('app.open') }} →</a></p>{% endif %}
+
+  {% elif b.kind == 'links' %}
+  <ul class="links">
+    {% for l in b['items'] %}
+    <li><a href="{{ l.href }}" {% if l.external %}target="_blank" rel="noopener"{% endif %}>{{ t(l.label) if '.' in l.label else l.label }}{% if l.external %} ↗{% endif %}</a>
+        {% if l.note %}<span class="note">{{ l.note }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endmacro %}

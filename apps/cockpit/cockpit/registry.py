@@ -51,6 +51,10 @@ def build_cards(config: Config, access: Access, role: Role) -> list[Card]:
     return cards
 
 
+def reader_for(module):
+    return importlib.import_module(module.reader)
+
+
 def card_for(config: Config, access: Access, role: Role, module_id: str) -> Card | None:
     for card in build_cards(config, access, role):
         if card.module_id == module_id:
