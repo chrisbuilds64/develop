@@ -212,6 +212,32 @@ def create_app(config: Config) -> FastAPI:
         if doc is None:
             return RedirectResponse(f"/m/{module_id}", status_code=303)
         c["module"], c["doc"] = module, doc
+        c["outcome"], c["ran"] = None, None
+        return templates.TemplateResponse(request, "document.html", c)
+
+    @app.post("/m/{module_id}/doc/{ref:path}/a/{action_id}", response_class=HTMLResponse)
+    async def act_on_document(request: Request, module_id: str, ref: str, action_id: str):
+        """A document-scoped action: the tool gets {ref}, and the page shows the result on the document."""
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        module = find_module(module_id)
+        action = c["_actions"].find(module, action_id) if module else None
+        if module is None or action is None or action.scope != "document":
+            return RedirectResponse("/", status_code=303)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        try:
+            if not csrf_ok(request, form):
+                raise Denied("the form token did not match — reload the page and try again")
+            outcome = c["_actions"].run(module, action, form, c["role"], ref=ref)
+        except Denied as exc:
+            outcome = type("O", (), {"ok": False, "output": str(exc), "argv": []})()
+        try:
+            doc = document_for(reader_for(module, config), c["_access"], c["role"], module, config, ref)
+        except Denied as exc:
+            doc = {"title": ref, "html": f"<p class='hint'>{exc}</p>", "ref": ref}
+        c["module"], c["doc"] = module, doc or {"title": ref, "html": "", "ref": ref}
+        c["outcome"], c["ran"] = outcome, action
         return templates.TemplateResponse(request, "document.html", c)
 
     # ---------------------------------------------------------------- setup

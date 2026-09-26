@@ -4,15 +4,15 @@
       "role": "operator",
       "context": "home/alex/context",
       "display": "Alex Rivera",
-      "salt": "/5rOwkGKD0aa+D1lcCSSTg==",
-      "hash": "kRVFiQAd/umNu91XlVQNF94DU2ay4JSwaXJfMZ67gVQ="
+      "salt": "uD6BOxvMDnGxAjbntJ8Pmw==",
+      "hash": "R7FLrtrvtgXiEbjCZv3N+yz7+N7Jx2iZ2b1S7yYxjlk="
     },
     "sam": {
       "role": "guest",
       "context": "home/sam/context",
       "display": "Sam Okafor",
-      "salt": "u3HY2v+hvrJddq9dMWk+Xw==",
-      "hash": "MkDLfEND5q9G2g8edXSNhUm8fE2KLMhzGFwmiGNaWDw="
+      "salt": "kf/u0G5OsXeVnnhGJRcS+g==",
+      "hash": "SuvOBtTCd/dvY2T7vSYHLqCiA2uqhxxAOMXnTl2yOek="
     }
   }
 }

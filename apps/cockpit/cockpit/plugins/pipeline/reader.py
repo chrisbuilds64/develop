@@ -97,21 +97,34 @@ def detail(access, role, module, config) -> dict:
 
 
 def document(access, role, module, config, ref) -> dict | None:
-    """A piece: its meta plus every text file it carries, in order."""
+    """stage/name → the piece: meta and its files as links. stage/name/file → that file."""
     src = module.sources[0]
-    stage, _, name = ref.partition("/")
+    parts = ref.split("/")
+    if len(parts) == 3:
+        stage, name, fname = parts
+        if not fname.endswith((".md", ".txt", ".json")):
+            return None
+        body = access.read_text(src, ref, role)
+        if fname.endswith(".json"):
+            body = "```json\n" + body + "\n```"
+        elif fname.endswith(".txt"):
+            body = "```\n" + body + "\n```"
+        return {"title": f"{name} · {fname}", "body": body}
+    if len(parts) != 2:
+        return None
+    stage, name = parts
     files = access.listdir(src, role, f"{stage}/{name}")
     meta = access.read_json(src, f"{stage}/{name}/meta.json", role) if "meta.json" in files else {}
-    parts = [f"# {meta.get('title', name)}", ""]
+    parts_md = [f"# {meta.get('title', name)}", ""]
     if meta.get("subtitle"):
-        parts += [f"*{meta['subtitle']}*", ""]
-    parts += [f"`{stage}` · `{name}`", ""]
-    parts += ["| file | size |", "|---|---|"]
+        parts_md += [f"*{meta['subtitle']}*", ""]
+    parts_md += [f"`{stage}` · `{name}`", "", "| file | size | |", "|---|---|---|"]
     for f in files:
         p = access.resolve(src, f"{stage}/{name}/{f}", role)
-        parts.append(f"| `{f}` | {p.stat().st_size // 1024 or 1} KB |")
-    for f in files:
-        if f.endswith((".md", ".txt")) and f not in ("meta.json",):
-            body = access.read_text(src, f"{stage}/{name}/{f}", role)
-            parts += ["", "---", "", f"## {f}", "", body[:6000] + ("\n\n*… truncated*" if len(body) > 6000 else "")]
-    return {"title": meta.get("title", name), "body": "\n".join(parts)}
+        link = f"[open](/m/{module.id}/doc/{stage}/{name}/{f})" if f.endswith((".md", ".txt", ".json")) else ""
+        parts_md.append(f"| `{f}` | {max(1, p.stat().st_size // 1024)} KB | {link} |")
+    if meta:
+        parts_md += ["", "## meta.json", "", "| field | value |", "|---|---|"]
+        for k, v in meta.items():
+            parts_md.append(f"| `{k}` | {str(v)[:120].replace('|', '\\|')} |")
+    return {"title": meta.get("title", name), "body": "\n".join(parts_md)}

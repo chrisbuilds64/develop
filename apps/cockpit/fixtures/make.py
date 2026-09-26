@@ -14,7 +14,7 @@ F = Path(__file__).resolve().parent
 today = dt.date.today()
 iso = lambda d: d.isoformat()
 
-for d in ("worklist", "flow", "audits", "context-loop", "gatehouse-instance", "home", "plugins", "users.json", ".demo-secret"):
+for d in ("worklist", "flow", "audits", "context-loop", "gatehouse-instance", "home", "plugins", "users.json", ".demo-secret", "canon"):
     p = F / d
     if p.is_symlink() or p.is_file():
         p.unlink()
@@ -137,6 +137,19 @@ for who, entries in (("alex", [
     for d, what, why, instead in entries:
         body += f"\n## {iso(d)} — {what}\n**Why:** {why}\n**Instead of:** {instead}\n"
     (F / "home" / who / "context" / "decisions.md").write_text(body, encoding="utf-8")
+
+# --- a small canon: two layers, three documents --------------------------------------
+canon = F / "canon"
+for rel, typ, purpose, body in (
+    ("foundation/principles.md", "principles · canonical", "The rules every domain follows.",
+     "# Principles\n\n## 1. A person decides\n\nA model proposes; a person accepts. Nothing enters the rulebook without a name on it.\n\n## 2. Written before built\n\nWhat is not written down is not decided.\n"),
+    ("software/review.md", "rule · domain software", "How a change reaches production.",
+     "# Review before merge\n\nEvery change is read by a second person before it merges. The reader checks against the specification, not against taste.\n"),
+    ("content/voice.md", "rule · domain content", "How the company sounds.",
+     "# Voice\n\nShort sentences. One thought per paragraph. No adjectives that do not change a decision.\n"),
+):
+    p = canon / rel; p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(f"```\npath:        canon/{rel}\ntype:        {typ}\npurpose:     {purpose}\nmaintained:  the owner\nupdated:     {iso(today - dt.timedelta(days=30))}\n```\n\n{body}", encoding="utf-8")
 
 # --- users: password "demo" for both -------------------------------------------------
 sys.path.insert(0, str(F.parent))

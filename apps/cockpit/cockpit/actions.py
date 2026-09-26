@@ -39,7 +39,8 @@ class Actions:
     def find(self, module: Module, action_id: str) -> Action | None:
         return next((a for a in module.actions if a.id == action_id), None)
 
-    def run(self, module: Module, action: Action, form: dict[str, str], role: Role) -> Outcome:
+    def run(self, module: Module, action: Action, form: dict[str, str], role: Role,
+            ref: str | None = None) -> Outcome:
         name = f"{module.id}.{action.id}"
         if not role.may_act(name):
             self._audit.record(role.id, action.tool, name, "act", ok=False,
@@ -59,7 +60,9 @@ class Actions:
             # A released script: same source rules as any file, same log line.
             script = self._access.resolve(action.tool, action.command, role)
 
-        values = {}
+        values = {"ref": ref or ""}
+        if action.scope == "document" and not ref:
+            raise Denied("this action needs a document")
         for f in action.fields:
             v = (form.get(f.name) or "").strip()
             if f.required and not v:
@@ -87,7 +90,8 @@ class Actions:
         if data_src:
             env["COCKPIT_DATA_DIR"] = env["CONTEXT_LOOP_DIR"] = str(data_src.path.expanduser())
 
-        r = subprocess.run(argv, capture_output=True, text=True, env=env, timeout=30)
+        feed = values.get(action.stdin, "") if action.stdin else None
+        r = subprocess.run(argv, capture_output=True, text=True, env=env, timeout=120, input=feed)
         out = (r.stdout + ("\n" + r.stderr if r.stderr else "")).strip()
         self._audit.record(role.id, action.tool, name, "act", ok=r.returncode == 0,
                            reason=None if r.returncode == 0 else out[-300:])

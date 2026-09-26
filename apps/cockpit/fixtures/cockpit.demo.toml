@@ -54,6 +54,13 @@ include = [".claude-plugin", "skills"]
 sensitivity = "public"
 
 [[source]]
+id = "canon"
+label = "Canon"
+path = "canon"
+mode = "read-write"
+sensitivity = "internal"
+
+[[source]]
 id = "elicitation"
 label = "Canon elicitation"
 path = "gatehouse-instance"
@@ -152,6 +159,59 @@ args = ["{what}", "--why", "{why}", "--instead", "{instead}"]
   label = "field.instead"
 
 [[module]]
+id = "canon"
+plugin = "canon"
+sources = ["canon"]
+maturity = "running"
+
+[[module.action]]
+id = "edit"
+label = "canon.edit"
+tool = "plugin"
+command = "canon_edit.py"
+data = "canon"
+scope = "document"
+stdin = "body"
+args = ["write", "{ref}"]
+  [[module.action.field]]
+  name = "body"
+  label = "field.body"
+  type = "textarea"
+  required = true
+
+[[module.action]]
+id = "ask"
+label = "canon.ask"
+tool = "plugin"
+command = "canon_ask.py"
+data = "canon"
+scope = "document"
+args = ["{ref}", "--ask", "{ask}"]
+  [[module.action.field]]
+  name = "ask"
+  label = "field.ask"
+  type = "textarea"
+  required = true
+
+[[module.action]]
+id = "accept"
+label = "canon.accept"
+tool = "plugin"
+command = "canon_edit.py"
+data = "canon"
+scope = "document"
+args = ["accept", "{ref}"]
+
+[[module.action]]
+id = "discard"
+label = "canon.discard"
+tool = "plugin"
+command = "canon_edit.py"
+data = "canon"
+scope = "document"
+args = ["discard", "{ref}"]
+
+[[module]]
 id = "pipeline"
 plugin = "pipeline"
 sources = ["pipeline"]
@@ -185,6 +245,6 @@ actions = ["*"]
 
 [[role]]
 id = "guest"
-modules = ["worklist", "decisions", "pipeline", "contextloop"]
+modules = ["worklist", "decisions", "canon", "pipeline", "contextloop"]
 max_sensitivity = "internal"
 actions = ["decisions.record"]

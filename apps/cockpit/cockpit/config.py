@@ -59,7 +59,9 @@ class Action:
     command: str                     # path inside that source
     args: tuple[str, ...]            # argv template; "{field}" is substituted
     fields: tuple[Field, ...] = ()
-    data: str | None = None          # a source id the tool works on (sets CONTEXT_LOOP_DIR)
+    data: str | None = None          # a source id the tool works on (sets COCKPIT_DATA_DIR)
+    scope: str = "module"            # "module": on the module page · "document": on a document page, with {ref}
+    stdin: str | None = None         # name of a field whose value goes to the tool on stdin
 
 
 @dataclass(frozen=True)
@@ -203,6 +205,8 @@ def load(path: Path) -> Config:
                 id=_need(a, "id", aw), label=a.get("label", a["id"]), tool=tool,
                 command=_need(a, "command", aw), args=tuple(a.get("args", [])),
                 fields=fields, data=data,
+                scope=_choice(a.get("scope", "module"), ("module", "document"), aw, "scope"),
+                stdin=a.get("stdin"),
             ))
         modules.append(Module(
             id=mid,

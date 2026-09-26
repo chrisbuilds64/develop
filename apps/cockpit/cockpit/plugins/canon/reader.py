@@ -22,7 +22,7 @@ def _now():
 def _walk(access, role, src, sub="."):
     for n in access.listdir(src, role, sub):
         p = n if sub == "." else f"{sub}/{n}"
-        if n.startswith((".", "_")):
+        if n.startswith((".", "_")) or n.endswith(".proposal.md"):
             continue
         try:
             names = access.listdir(src, role, p)     # a directory
@@ -46,7 +46,7 @@ def _docs(access, role, src):
         head = dict(LINE.findall(m.group(1))) if m else {}
         title = next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), p.rsplit("/", 1)[-1])
         out.append({"path": p, "title": title, "type": head.get("type", "—"), "purpose": head.get("purpose", ""),
-                    "updated": head.get("updated", "—"), "header": bool(m)})
+                    "updated": head.get("updated", "—"), "header": bool(m), "proposal": p.endswith(".proposal.md")})
     return out
 
 
@@ -56,10 +56,18 @@ def read(access, role, module, config) -> dict:
     cutoff = (dt.date.today() - dt.timedelta(days=90)).isoformat()
     with_header = [d for d in docs if d["header"]]
     stale = [d for d in with_header if d["updated"] < cutoff and d["updated"] != "—"]
-    kinds = {}
-    for d in with_header:
-        k = d["type"].split("·")[0].strip()
-        kinds[k] = kinds.get(k, 0) + 1
+    layers = {}
+    for d in docs:                                  # the first directory is the layer: foundation, marke, editorial, software …
+        k = d["path"].split("/", 1)[0] if "/" in d["path"] else "—"
+        layers[k] = layers.get(k, 0) + 1
+    proposals = 0
+    for d in docs:                                  # a proposal sits beside its document as <name>.proposal.md
+        folder, _, name = d["path"].rpartition("/")
+        try:
+            if name[:-3] + ".proposal.md" in access.listdir(src, role, folder or "."):
+                proposals += 1
+        except Exception:
+            pass
     return {
         "title": "canon.title", "subtitle": "canon.subtitle", "as_of": _now(),
         "state": "attention" if stale else "ok",
@@ -68,9 +76,10 @@ def read(access, role, module, config) -> dict:
             {"label": "canon.with_header", "value": len(with_header), "tone": "ok"},
             {"label": "canon.without_header", "value": len(docs) - len(with_header), "tone": "warn" if len(docs) - len(with_header) else "muted"},
             {"label": "canon.stale", "value": len(stale), "tone": "warn" if stale else "muted"},
+            {"label": "canon.proposals", "value": proposals, "tone": "warn" if proposals else "muted"},
         ],
         "source": f"{access.source(src).label} · *.md",
-        "figure": {"kind": "bar", "segments": [{"label": k, "value": v, "tone": "accent"} for k, v in sorted(kinds.items(), key=lambda kv: -kv[1])[:8]]},
+        "figure": {"kind": "bar", "segments": [{"label": k, "value": v, "tone": "accent"} for k, v in sorted(layers.items(), key=lambda kv: -kv[1])[:8]]},
     }
 
 
@@ -82,7 +91,17 @@ def detail(access, role, module, config) -> dict:
 
 
 def document(access, role, module, config, ref) -> dict | None:
-    if not ref.endswith(".md"):
+    if not ref.endswith(".md") or ref.endswith(".proposal.md"):
         return None
-    text = access.read_text(module.sources[0], ref, role)
-    return {"title": ref, "body": text}
+    src = module.sources[0]
+    text = access.read_text(src, ref, role)
+    out = {"title": ref, "body": text}
+    folder, _, name = ref.rpartition("/")
+    try:
+        siblings = access.listdir(src, role, folder or ".")
+    except Exception:
+        siblings = []
+    prop = name[:-3] + ".proposal.md"
+    if prop in siblings:
+        out["proposal"] = access.read_text(src, (folder + "/" if folder else "") + prop, role)
+    return out

@@ -172,5 +172,16 @@
   "col.purpose": "Purpose",
   "pipeline.move": "Move a container",
   "field.container": "Container",
-  "field.stage": "To stage"
+  "field.stage": "To stage",
+  "canon.proposals": "proposals waiting",
+  "doc.has_proposal": "proposal waiting",
+  "doc.proposal": "Proposal",
+  "doc.current": "Current text",
+  "canon.edit": "Edit the text",
+  "canon.ask": "Ask a model",
+  "canon.accept": "Accept the proposal",
+  "canon.discard": "Discard the proposal",
+  "field.body": "Text",
+  "field.ask": "What should change, and why",
+  "gatehouse.started": "started"
 }

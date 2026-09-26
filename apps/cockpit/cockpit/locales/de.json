@@ -172,5 +172,16 @@
   "col.purpose": "Zweck",
   "pipeline.move": "Container verschieben",
   "field.container": "Container",
-  "field.stage": "Nach Stufe"
+  "field.stage": "Nach Stufe",
+  "canon.proposals": "Vorschläge warten",
+  "doc.has_proposal": "Vorschlag wartet",
+  "doc.proposal": "Vorschlag",
+  "doc.current": "Aktueller Text",
+  "canon.edit": "Text bearbeiten",
+  "canon.ask": "KI fragen",
+  "canon.accept": "Vorschlag annehmen",
+  "canon.discard": "Vorschlag verwerfen",
+  "field.body": "Text",
+  "field.ask": "Was soll sich ändern, und warum",
+  "gatehouse.started": "begonnen"
 }

@@ -61,4 +61,15 @@ def document_for(reader, access, role: Role, module: Module, config: Config, ref
     doc = fn(access, role, module, config, ref)
     if doc is None:
         return None
-    return {"title": doc.get("title", ref), "html": render_md(doc.get("body", "")), "ref": ref}
+    out = {"title": doc.get("title", ref), "html": render_md(doc.get("body", "")), "ref": ref,
+           "raw": doc.get("body", "")}
+    if doc.get("proposal"):
+        prop = doc["proposal"]
+        provenance = ""
+        if prop.startswith("<!-- proposal"):
+            provenance, prop = prop.split("-->", 1)
+            provenance = provenance.replace("<!-- proposal", "").strip(" ·")
+        out["proposal"] = {"html": render_md(prop.strip()), "provenance": provenance}
+    if doc.get("files"):
+        out["files"] = doc["files"]
+    return out

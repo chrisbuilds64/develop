@@ -2,8 +2,16 @@
   "id": "canon",
   "name": "Canon",
   "version": "0.1.0",
-  "description": "The rulebook as it is on disk: every document with its header block — path, type, purpose, maintained, updated — readable. Read-only. Types and layers come with the next version.",
+  "description": "The rulebook as it is on disk: every document with its header block, by layer, readable — and editable. A person edits the text, or asks a model; the model writes a proposal beside the document, never the document. Accept or discard is a person's click.",
   "reader": "reader.py",
-  "needs": ["canon"],
-  "maturity": "draft"
+  "needs": [
+    "canon"
+  ],
+  "maturity": "running",
+  "actions": [
+    "edit",
+    "ask",
+    "accept",
+    "discard"
+  ]
 }

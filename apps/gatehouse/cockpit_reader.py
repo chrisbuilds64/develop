@@ -57,11 +57,12 @@ def read(access, role, module, config) -> dict:
     return {
         "title": "gatehouse.title",
         "subtitle": f"{run.get('client', '')} · {run.get('pack_name', '')} {run.get('pack_version', '')}".strip(" ·"),
-        "as_of": mtime_iso(run_path),
+        "as_of": now_iso(),          # a live read: the run may be weeks old and still be the state
         "state": "ok" if closed else "attention",
         "headline": {"value": answered, "unit": "gatehouse.answered"},
         "lines": [
             {"label": "gatehouse.blocks", "value": closed, "tone": "ok" if closed else "muted"},
+            {"label": "gatehouse.started", "value": (run.get("started_at") or "")[:10], "tone": "muted"},
             {"label": "gatehouse.calls", "value": calls, "tone": "muted"},
             {"label": "gatehouse.destinations", "value": ", ".join(destinations) or "—", "tone": "muted"},
         ],
