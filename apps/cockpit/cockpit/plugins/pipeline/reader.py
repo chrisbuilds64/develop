@@ -58,7 +58,26 @@ def read(access, role, module, config) -> dict:
     }
 
 
-def _pieces(access, role, src, stage):
+def _filters(access, role, src) -> list[dict]:
+    """The fields the board filters by, straight from meta.schema.json at the pipeline root.
+
+    Every property with a value list becomes a select; no schema, no filters. The
+    surface never invents a value: what is not in the list cannot be chosen.
+    """
+    try:
+        if "meta.schema.json" not in access.listdir(src, role):
+            return []
+        schema = access.read_json(src, "meta.schema.json", role)
+    except Exception:
+        return []
+    out = []
+    for name, prop in schema.get("properties", {}).items():
+        if isinstance(prop, dict) and prop.get("enum") and not prop.get("deprecated"):
+            out.append({"name": name, "label": name, "values": [str(v) for v in prop["enum"]]})
+    return out
+
+
+def _pieces(access, role, src, stage, facets=()):
     """Every piece in a stage, with what its meta.json says — if it has one."""
     out = []
     for name in access.listdir(src, role, stage):
@@ -76,12 +95,15 @@ def _pieces(access, role, src, stage):
             "title": meta.get("title") or name,
             "meta": [m for m in (meta.get("show"), meta.get("track"), meta.get("publishDate")) if m],
             "href": f"/m/pipeline/doc/{stage}/{name}",
+            "facets": {f: str(meta[f]) for f in facets if meta.get(f) is not None},
         })
     return out
 
 
 def detail(access, role, module, config) -> dict:
     src = module.sources[0]
+    filters = _filters(access, role, src)
+    facets = [f["name"] for f in filters]
     columns = []
     for name in access.listdir(src, role):
         m = STAGE.match(name)
@@ -91,10 +113,10 @@ def detail(access, role, module, config) -> dict:
         columns.append({
             "label": name.split("-", 1)[1].replace("-", " "),
             "tone": "warn" if num == 30 else "ok" if num >= 60 else "",
-            "cards": _pieces(access, role, src, name),
+            "cards": _pieces(access, role, src, name, facets),
         })
     return {"blocks": [
-        {"kind": "kanban", "title": "block.by_stage", "columns": columns},
+        {"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters},
         {"kind": "links", "title": "block.tools", "items": [
             {"label": "tool.pressroom", "href": "pressroom://", "note": "drag & drop, macOS", "external": True},
             {"label": "tool.folder", "href": f"file://{access.source(src).path.expanduser()}", "external": True},

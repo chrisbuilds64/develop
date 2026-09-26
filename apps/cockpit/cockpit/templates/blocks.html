@@ -14,12 +14,22 @@
   {% if b.title %}<h3>{{ t(b.title) if '.' in b.title else b.title }}</h3>{% endif %}
 
   {% if b.kind == 'kanban' %}
+  {% if b.filters %}
+  <form class="kfilters" data-kanban-filters onsubmit="return false">
+    {% for f in b.filters %}
+    <label><span>{{ t('field.' ~ f.name) }}</span>
+      <select data-filter="{{ f.name }}"><option value="">{{ t('filter.any') }}</option>{% for v in f['values'] %}<option>{{ v }}</option>{% endfor %}</select>
+    </label>
+    {% endfor %}
+    <button type="button" data-filter-reset>{{ t('filter.reset') }}</button>
+  </form>
+  {% endif %}
   <div class="kanban">
     {% for col in b.columns %}
     <div class="kcol" data-tone="{{ col.tone or '' }}">
-      <h4>{{ t(col.label) if '.' in (col.label|string) else col.label }} <span>{{ col.cards|length }}</span></h4>
+      <h4>{{ t(col.label) if '.' in (col.label|string) else col.label }} <span data-count>{{ col.cards|length }}</span></h4>
       {% for k in col.cards %}
-      <article class="kcard">
+      <article class="kcard"{% for fk, fv in (k.facets or {}).items() %} data-f-{{ fk }}="{{ fv }}"{% endfor %}>
         {% if k.tag %}<div class="ktag">{{ k.tag }}</div>{% endif %}
         <div class="ktitle">{% if k.href %}<a href="{{ k.href }}">{{ k.title }}</a>{% else %}{{ k.title }}{% endif %}</div>
         {% if k.meta %}<div class="kmeta">{% for m in k.meta %}<span>{{ m }}</span>{% endfor %}</div>{% endif %}
@@ -28,6 +38,28 @@
     </div>
     {% endfor %}
   </div>
+  {% if b.filters %}
+  <script>
+  (function () {
+    // Filters hide cards; the server sent every card and every allowed value. Nothing is fetched.
+    var script = document.currentScript, board = script.previousElementSibling, form = board.previousElementSibling;
+    function apply() {
+      var active = [];
+      form.querySelectorAll("select[data-filter]").forEach(function (s) { if (s.value) active.push([s.dataset.filter, s.value]); });
+      board.querySelectorAll(".kcol").forEach(function (col) {
+        var shown = 0;
+        col.querySelectorAll(".kcard").forEach(function (card) {
+          var ok = active.every(function (f) { return card.getAttribute("data-f-" + f[0]) === f[1]; });
+          card.hidden = !ok; if (ok) shown++;
+        });
+        col.querySelector("[data-count]").textContent = shown;
+      });
+    }
+    form.addEventListener("change", apply);
+    form.querySelector("[data-filter-reset]").addEventListener("click", function () { form.reset(); apply(); });
+  })();
+  </script>
+  {% endif %}
 
   {% elif b.kind == 'table' %}
   <div class="tablewrap"><table>

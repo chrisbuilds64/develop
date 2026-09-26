@@ -1,40 +1,102 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://chrisbuilds64.com/schema/cockpit-detail-1.json",
-  "title": "Detail",
-  "description": "What a module shows behind its card: an ordered list of typed blocks. The surface draws each kind the same way for every module, so a new module gets a full working view without a new template.",
-  "type": "object",
-  "required": ["blocks"],
-  "additionalProperties": false,
-  "properties": {
-    "blocks": {
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://chrisbuilds64.com/schema/cockpit-detail-1.json",
+ "title": "Detail",
+ "description": "What a module shows behind its card: an ordered list of typed blocks. The surface draws each kind the same way for every module, so a new module gets a full working view without a new template.",
+ "type": "object",
+ "required": [
+  "blocks"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "blocks": {
+   "type": "array",
+   "maxItems": 12,
+   "items": {
+    "type": "object",
+    "required": [
+     "kind"
+    ],
+    "properties": {
+     "kind": {
+      "enum": [
+       "kanban",
+       "table",
+       "document",
+       "links"
+      ]
+     },
+     "title": {
+      "type": "string"
+     },
+     "columns": {
+      "description": "kanban: columns with cards. table: column headers.",
+      "type": "array"
+     },
+     "rows": {
+      "description": "table: rows of cells. A cell is a string, a number, or {text, href} for a link, or {badge, tone} for a marker.",
+      "type": "array"
+     },
+     "body": {
+      "type": "string",
+      "description": "document: markdown, rendered by the surface."
+     },
+     "ref": {
+      "type": "string",
+      "description": "document: what to open for the full text (a reader ref)."
+     },
+     "items": {
+      "description": "links: things to open — inside the cockpit or another tool.",
       "type": "array",
-      "maxItems": 12,
       "items": {
-        "type": "object",
-        "required": ["kind"],
-        "properties": {
-          "kind": { "enum": ["kanban", "table", "document", "links"] },
-          "title": { "type": "string" },
-          "columns": {
-            "description": "kanban: columns with cards. table: column headers.",
-            "type": "array"
-          },
-          "rows": {
-            "description": "table: rows of cells. A cell is a string, a number, or {text, href} for a link, or {badge, tone} for a marker.",
-            "type": "array"
-          },
-          "body": { "type": "string", "description": "document: markdown, rendered by the surface." },
-          "ref":  { "type": "string", "description": "document: what to open for the full text (a reader ref)." },
-          "items": {
-            "description": "links: things to open — inside the cockpit or another tool.",
-            "type": "array",
-            "items": { "type": "object", "required": ["label", "href"],
-                       "properties": { "label": { "type": "string" }, "href": { "type": "string" },
-                                       "note": { "type": "string" }, "external": { "type": "boolean" } } }
-          }
+       "type": "object",
+       "required": [
+        "label",
+        "href"
+       ],
+       "properties": {
+        "label": {
+         "type": "string"
+        },
+        "href": {
+         "type": "string"
+        },
+        "note": {
+         "type": "string"
+        },
+        "external": {
+         "type": "boolean"
         }
+       }
       }
+     },
+     "filters": {
+      "description": "kanban: fields the viewer may filter cards by — name, label, allowed values, taken from the data's own schema, never typed in. A card carries its values in `facets` {name: value}.",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "name",
+        "values"
+       ],
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "label": {
+         "type": "string"
+        },
+        "values": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
+        }
+       }
+      }
+     }
     }
+   }
   }
+ }
 }

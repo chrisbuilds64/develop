@@ -192,5 +192,11 @@
   "field.note": "Deine Anmerkung",
   "field.kind": "Was ist es",
   "field.file": "Datei",
-  "login.locked": "Zu viele Versuche — dieser Name ist eine Weile gesperrt."
+  "login.locked": "Zu viele Versuche — dieser Name ist eine Weile gesperrt.",
+  "filter.any": "alle",
+  "filter.reset": "Zurücksetzen",
+  "field.label": "Typ",
+  "field.track": "Track",
+  "field.show": "Show",
+  "field.series": "Serie"
 }

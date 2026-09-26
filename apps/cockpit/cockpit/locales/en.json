@@ -192,5 +192,11 @@
   "field.note": "Your note",
   "field.kind": "What is it",
   "field.file": "File",
-  "login.locked": "Too many attempts — this name is locked for a while."
+  "login.locked": "Too many attempts — this name is locked for a while.",
+  "filter.any": "any",
+  "filter.reset": "Reset",
+  "field.label": "Type",
+  "field.track": "Track",
+  "field.show": "Show",
+  "field.series": "Series"
 }

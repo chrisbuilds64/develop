@@ -112,3 +112,14 @@ def test_guest_may_not_move_but_operator_may(client, world):
                                                 "_csrf": client.cookies["csrf"]})
     assert "may not run" in r.text and "pipeline.move" in r.text
     assert (world / "flow" / "30-review-human" / "piece-30-01").exists()
+
+
+def test_board_filters_come_from_the_schema_and_cards_carry_their_values(client, world):
+    (world / "flow" / "meta.schema.json").write_text(json.dumps({
+        "properties": {"label": {"enum": ["FN", "POD"]}, "track": {"enum": ["deep-tech"]},
+                       "status": {"enum": ["x"], "deprecated": True}, "title": {"type": "string"}}}))
+    (world / "flow" / "30-review-human" / "piece-30-01" / "meta.json").write_text(json.dumps({"label": "POD", "title": "One"}))
+    sign_in(client, "sam")
+    page = client.get("/m/pipeline").text
+    assert 'data-filter="label"' in page and 'data-filter="track"' in page and 'data-filter="status"' not in page
+    assert 'data-f-label="' in page
