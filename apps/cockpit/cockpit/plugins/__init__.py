@@ -15,6 +15,7 @@ app and locales come from the manifest.
 
 from __future__ import annotations
 
+import importlib.machinery
 import importlib.util
 import json
 import os
@@ -90,22 +91,54 @@ def discover(installed_dir: Path | None) -> dict[str, Plugin]:
 
 
 def reader_of(plugin: Plugin):
-    """Import the plugin's reader from its own directory, under a name of its own."""
+    """Import the plugin's reader as part of a package named after the plugin.
+
+    The plugin directory becomes a package (`cockpit_plugin_<id>`), so a reader
+    may use relative imports and helper modules beside it. Loaded once.
+    """
+    pkg = f"cockpit_plugin_{plugin.id.replace('-', '_')}"
     target = plugin.manifest["reader"]
-    if target.endswith(".py") or "/" in target:
-        file = plugin.path / target
-    else:
-        file = plugin.path / (target.replace(".", "/") + ".py")
+    rel = target[:-3] if target.endswith(".py") else target.replace(".", "/")
+    file = plugin.path / (rel + ".py")
     if not file.is_file():
         raise PluginError(f"{plugin.id}: reader '{target}' not found at {file}")
-    name = f"cockpit_plugin_{plugin.id.replace('-', '_')}_reader"
-    if name in sys.modules:
-        return sys.modules[name]
-    spec = importlib.util.spec_from_file_location(name, file)
+    if pkg not in sys.modules:
+        spec = importlib.util.spec_from_file_location(pkg, plugin.path / "__init__.py",
+                                                      submodule_search_locations=[str(plugin.path)])
+        if (plugin.path / "__init__.py").is_file():
+            pkg_mod = importlib.util.module_from_spec(spec)
+            sys.modules[pkg] = pkg_mod
+            spec.loader.exec_module(pkg_mod)
+        else:                                   # a package without __init__: namespace-style
+            pkg_mod = importlib.util.module_from_spec(importlib.machinery.ModuleSpec(pkg, None, is_package=True))
+            pkg_mod.__path__ = [str(plugin.path)]
+            sys.modules[pkg] = pkg_mod
+    mod_name = pkg + "." + rel.replace("/", ".")
+    if mod_name in sys.modules:
+        return sys.modules[mod_name]
+    spec = importlib.util.spec_from_file_location(mod_name, file)
     mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
+    sys.modules[mod_name] = mod
     spec.loader.exec_module(mod)
+    _check_contract(plugin, mod)
     return mod
+
+
+def _check_contract(plugin: Plugin, mod) -> None:
+    """A reader must offer read(access, role, module, config); detail and document are optional but must fit."""
+    import inspect
+    fn = getattr(mod, "read", None)
+    if not callable(fn):
+        raise PluginError(f"{plugin.id}: reader has no read()")
+    want = {"read": 4, "detail": 4, "document": 5}
+    for name, n in want.items():
+        f = getattr(mod, name, None)
+        if f is None:
+            continue
+        params = [p for p in inspect.signature(f).parameters.values()
+                  if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+        if len(params) != n:
+            raise PluginError(f"{plugin.id}: {name}() takes {len(params)} arguments, the contract has {n}")
 
 
 def app_of(plugin: Plugin, config_path: Path | None):

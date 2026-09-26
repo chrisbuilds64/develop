@@ -18,6 +18,7 @@ from pathlib import Path
 
 SENSITIVITY = ("public", "internal", "confidential")
 MODES = ("read", "read-write")
+KINDS = ("dir",)        # "http" comes with the same rules: named, released, per role, recorded
 MATURITY = ("running", "draft", "planned", "assumption")
 
 
@@ -34,6 +35,7 @@ class Source:
     id: str
     label: str
     path: Path
+    kind: str = "dir"
     mode: str = "read"
     include: tuple[str, ...] = ()
     sensitivity: str = "internal"
@@ -161,6 +163,7 @@ def load(path: Path) -> Config:
             id=sid,
             label=s.get("label", sid),
             path=_path(_need(s, "path", where), base),
+            kind=_choice(s.get("kind", "dir"), KINDS, where, "kind"),
             mode=_choice(s.get("mode", "read"), MODES, where, "mode"),
             include=tuple(s.get("include", [])),
             sensitivity=_choice(s.get("sensitivity", "internal"), SENSITIVITY, where, "sensitivity"),
@@ -188,6 +191,8 @@ def load(path: Path) -> Config:
             data = a.get("data")
             if data and data not in sources:
                 raise ConfigError(f"{aw}: data source '{data}' is not defined")
+            if data and sources[data].mode != "read-write":
+                raise ConfigError(f"{aw}: data source '{data}' is mode = \"read\" — an action that writes needs mode = \"read-write\"")
             fields = tuple(Field(
                 name=_need(f, "name", aw), label=f.get("label", f["name"]),
                 type=_choice(f.get("type", "text"), ("text", "select", "textarea", "date"), aw, "type"),

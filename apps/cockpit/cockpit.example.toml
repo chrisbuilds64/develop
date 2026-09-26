@@ -25,6 +25,7 @@ stale_after_hours = 24
 id = "context"
 label = "Your context"
 path = "{user.context}"
+mode = "read-write"                   # tools may write here — the cockpit itself never does
 sensitivity = "internal"
 
 [[source]]
@@ -32,6 +33,7 @@ id = "worklist"
 label = "Work list"
 path = "{user.context}"
 include = ["todo.json", "todo.schema.json"]
+mode = "read-write"
 sensitivity = "internal"
 
 [[source]]

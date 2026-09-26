@@ -9,7 +9,8 @@
     cockpit plugin add     <path> [--link] [cockpit.toml]
     cockpit plugin remove  <id> [cockpit.toml]
 
-    cockpit user add       <name> --role <role> --context <dir> [--password …] [cockpit.toml]
+    cockpit user add       <name> --role <role> [--context <dir>] [--password …] [cockpit.toml]
+                           context defaults to home/<name>/context beside the configuration
     cockpit user list      [cockpit.toml]
     cockpit user remove    <name> [cockpit.toml]
 
@@ -165,8 +166,11 @@ def cmd_user(args):
         if args.role not in config.roles:
             sys.exit(f"role '{args.role}' is not defined in the configuration")
         pw = args.password or getpass.getpass(f"password for {args.name}: ")
-        users.add(args.name, pw, args.role, args.context, args.display or "")
-        print(f"user {args.name}: role {args.role}, context {args.context}")
+        context = args.context or f"home/{args.name}/context"
+        users.add(args.name, pw, args.role, context, args.display or "")
+        ctx_dir = config.bind_path(Path(context))
+        ctx_dir.mkdir(parents=True, exist_ok=True)
+        print(f"user {args.name}: role {args.role}, context {ctx_dir}")
         return 0
     if args.sub == "list":
         for n in users.names():
@@ -206,7 +210,7 @@ def main(argv=None) -> int:
 
     us = sub.add_parser("user"); uss = us.add_subparsers(dest="sub", required=True)
     s = uss.add_parser("add"); s.add_argument("name"); s.add_argument("--role", required=True)
-    s.add_argument("--context", required=True); s.add_argument("--password"); s.add_argument("--display"); common(s)
+    s.add_argument("--context"); s.add_argument("--password"); s.add_argument("--display"); common(s)
     s = uss.add_parser("list"); common(s)
     s = uss.add_parser("remove"); s.add_argument("name"); common(s)
     us.set_defaults(fn=cmd_user)

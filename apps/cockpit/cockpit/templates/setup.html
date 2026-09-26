@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="module-page setup">
+  <a class="back" href="/">← {{ t('app.back') }}</a>
+  <h2>{{ t('setup.title') }}</h2>
+  <p class="stamp">{{ t('setup.subtitle') }}</p>
+
+  <nav class="tabs">
+    <a href="#plugins">{{ t('setup.plugins') }}</a>
+    <a href="#sources">{{ t('setup.sources') }}</a>
+    <a href="#modules">{{ t('setup.modules') }}</a>
+    <a href="#roles">{{ t('setup.roles') }}</a>
+    <a href="#schemas">{{ t('setup.schemas') }}</a>
+  </nav>
+
+  <section class="block" id="plugins">
+    <h3>{{ t('setup.plugins') }}</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>{{ t('setup.version') }}</th><th>{{ t('setup.origin') }}</th><th>App</th><th>{{ t('setup.used_by') }}</th><th>{{ t('setup.path') }}</th></tr></thead>
+      <tbody>
+      {% for p in plugins.values() %}
+      <tr><td><b>{{ p.id }}</b><br><span class="dim">{{ p.name }}</span></td><td>{{ p.version }}</td>
+          <td>{{ t('setup.bundled') if p.bundled else t('setup.installed') }}</td>
+          <td>{% if p.app %}✓ {{ p.app.factory }}{% else %}—{% endif %}</td>
+          <td>{{ (modules_using.get(p.id) or ['—'])|join(', ') }}</td>
+          <td class="mono dim">{{ p.path }}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+    <p class="hint">{{ t('setup.plugins_hint') }} <code>cockpit plugin add &lt;path&gt;</code></p>
+  </section>
+
+  <section class="block" id="sources">
+    <h3>{{ t('setup.sources') }}</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>{{ t('setup.kind') }}</th><th>{{ t('setup.mode') }}</th><th>{{ t('setup.sensitivity') }}</th><th>{{ t('setup.released') }}</th><th>{{ t('setup.path') }}</th></tr></thead>
+      <tbody>
+      {% for s in config.sources.values() %}
+      <tr><td><b>{{ s.id }}</b><br><span class="dim">{{ s.label }}</span></td><td>{{ s.kind }}</td>
+          <td>{% if s.mode == 'read-write' %}<span class="badge tone-warn">{{ s.mode }}</span>{% else %}{{ s.mode }}{% endif %}</td>
+          <td><span class="badge">{{ s.sensitivity }}</span></td>
+          <td>{{ s.include|join(', ') if s.include else '*' }}</td>
+          <td class="mono dim">{{ s.path }}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+  </section>
+
+  <section class="block" id="modules">
+    <h3>{{ t('setup.modules') }}</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Plugin</th><th>{{ t('setup.sources') }}</th><th>{{ t('maturity.running') }}/…</th><th>{{ t('app.actions') }}</th></tr></thead>
+      <tbody>
+      {% for m in config.modules %}
+      <tr><td><b>{{ m.id }}</b></td><td>{{ m.plugin }}</td><td>{{ m.sources|join(', ') }}</td>
+          <td><span class="badge {{ m.maturity }}">{{ t('maturity.' ~ m.maturity) }}</span></td>
+          <td>{% for a in m.actions %}<code>{{ a.id }}</code> {% else %}—{% endfor %}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+  </section>
+
+  <section class="block" id="roles">
+    <h3>{{ t('setup.roles') }}</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>{{ t('setup.modules') }}</th><th>{{ t('setup.sensitivity') }}</th><th>{{ t('app.actions') }}</th></tr></thead>
+      <tbody>
+      {% for r in config.roles.values() %}
+      <tr><td><b>{{ r.id }}</b></td><td>{{ r.modules|join(', ') }}</td><td><span class="badge">≤ {{ r.max_sensitivity }}</span></td><td>{{ r.actions|join(', ') or '—' }}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+  </section>
+
+  <section class="block" id="schemas">
+    <h3>{{ t('setup.schemas') }}</h3>
+    <p class="hint">{{ t('setup.schemas_hint') }}</p>
+    {% if outcome %}
+    <div class="outcome {{ 'ok' if outcome.ok else 'bad' }}"><pre>{{ outcome.output }}</pre></div>
+    {% endif %}
+    {% for sc in schemas %}
+    <details class="schema" {% if loop.first %}open{% endif %}>
+      <summary><b>{{ sc.title }}</b> <span class="dim">· {{ sc.owner }} · {{ sc.fields|length }} {{ t('setup.attributes') }}{% if sc.defs %} · {{ sc.defs|length }} {{ t('setup.types') }}{% endif %}</span>
+        {% if sc.writable %}<span class="badge tone-warn">{{ t('setup.extensible') }}</span>{% endif %}</summary>
+      {% if sc.description %}<p class="hint">{{ sc.description }}</p>{% endif %}
+      <div class="tablewrap"><table>
+        <thead><tr><th>{{ t('setup.attribute') }}</th><th>{{ t('setup.type') }}</th><th>{{ t('setup.required') }}</th><th>{{ t('setup.description') }}</th></tr></thead>
+        <tbody>
+        {% for f in sc.fields %}<tr><td class="mono">{{ f.name }}</td><td>{{ f.type }}</td><td>{{ '✓' if f.required else '' }}</td><td class="dim">{{ f.description }}</td></tr>{% endfor %}
+        {% for dname, rows in sc.defs.items() %}
+          <tr><th colspan="4" class="defhead">$defs.{{ dname }}</th></tr>
+          {% for f in rows %}<tr><td class="mono">{{ f.name }}</td><td>{{ f.type }}</td><td>{{ '✓' if f.required else '' }}</td><td class="dim">{{ f.description }}</td></tr>{% endfor %}
+        {% endfor %}
+        </tbody></table></div>
+      {% if sc.writable and role.may_act('setup.schema_add') %}
+      <form class="action" method="post" action="/setup/schema/{{ sc.id }}/add">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <h4>{{ t('setup.add_attribute') }}</h4>
+        <div class="row">
+          <label><span>{{ t('setup.attribute') }} *</span><input name="name" required pattern="[a-zA-Z][a-zA-Z0-9_]*"></label>
+          <label><span>{{ t('setup.type') }}</span><select name="type">
+            {% for tp in ['string','integer','number','boolean','date'] %}<option>{{ tp }}</option>{% endfor %}</select></label>
+          <label><span>{{ t('setup.target') }}</span><select name="target"><option value="">{{ t('setup.top_level') }}</option>
+            {% for dname in sc.defs %}<option value="$defs.{{ dname }}">$defs.{{ dname }}</option>{% endfor %}</select></label>
+        </div>
+        <label><span>{{ t('setup.description') }}</span><input name="description"></label>
+        <label><span>{{ t('setup.enum') }}</span><input name="enum" placeholder="a, b, c"></label>
+        <label class="check"><input type="checkbox" name="required" value="1"> {{ t('setup.required') }}</label>
+        <button type="submit">{{ t('setup.add_attribute') }}</button>
+      </form>
+      {% endif %}
+      <details class="rawbox"><summary>JSON</summary><pre class="raw">{{ sc.schema|tojson(indent=2) }}</pre></details>
+    </details>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

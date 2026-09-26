@@ -155,5 +155,27 @@ action runs to record a decision — into the signed-in user's context. Copy it 
 A customer's own tool is attached the same way: manifest, reader, released sources. Nothing in
 the core changes for a new plugin — that is the test for whether the boundary holds.
 
+**The trust boundary, plainly:** a plugin runs inside the cockpit's process with the cockpit's
+rights. The access layer governs readers that go through it; it cannot stop code that does not.
+"Nothing is readable that is not named" holds for plugins you have read. Install those. For
+plugins that talk to outside systems, the rule for secrets is Gatehouse's: never in
+`cockpit.toml`, only the *name* of an environment variable that holds the value.
+
 **Next:** a source kind `http`, so a reader can consult an API — Jira, Confluence, a ticket
 system — under the same rules as a directory: named, released, per role, recorded.
+
+## Setup
+
+`/setup` — for roles granted `setup.view` or `*` — shows what the cockpit is made of: plugins
+(origin, version, app, used by), sources (kind, mode, sensitivity, release list), modules, roles,
+and **every schema it knows**: its own three, and any `*.schema.json` inside a released source,
+each as a table of attributes.
+
+A schema in a source with `mode = "read-write"` can be **extended** from there: one attribute
+at a time, with type, description, optional allowed values, optionally required, at the top
+level or inside a `$defs` type. It runs the bundled `tools/schema_add.py`, which refuses to
+overwrite anything that exists. Define first, then use — and the tool that owns the data
+(`todo.py`) validates against the extended schema on its next write.
+
+`mode` matters now: an action whose `data` points at a source that is not `read-write` is
+refused when the configuration loads. The cockpit never writes; released tools may.

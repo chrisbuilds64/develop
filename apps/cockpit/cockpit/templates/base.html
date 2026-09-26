@@ -26,6 +26,7 @@
         {% endfor %}
       </select>
     </label>
+    {% if role.may_act('*') or role.may_act('setup.view') %}<a class="setuplink" href="/setup">{{ t('setup.title') }}</a>{% endif %}
     {% if user %}
     <span class="who" title="{{ t('app.context') }}: {{ user.context }}">
       <span class="avatar">{{ user.display[:2]|upper }}</span>

@@ -13,10 +13,12 @@ machine, never for a shared one.
 from __future__ import annotations
 
 import datetime as dt
+import hmac
 import json
+import secrets
 from pathlib import Path
 
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -29,6 +31,7 @@ from .config import Config
 from .detail import blocks_for, document_for
 from .i18n import I18n
 from .registry import build_cards, card_for, mount_apps, plugins_for, reader_for
+from .setup import add_attribute, schemas_for
 from .users import User, Users
 
 HERE = Path(__file__).parent
@@ -47,6 +50,18 @@ def create_app(config: Config) -> FastAPI:
     users = Users(config.users_path, config.secret_path)
 
     # ------------------------------------------------------------- identity
+    def csrf_token(request: Request) -> str:
+        """One token per browser, in a cookie; every POST form carries it as a field.
+
+        The middleware below decides the token for this request before any page
+        renders, so the field in the form and the cookie on the response agree.
+        """
+        return getattr(request.state, "csrf", None) or request.cookies.get("csrf") or ""
+
+    def csrf_ok(request: Request, form: dict) -> bool:
+        cookie = request.cookies.get("csrf")
+        return bool(cookie) and hmac.compare_digest(cookie, form.get("_csrf", ""))
+
     def who(request: Request) -> User | None:
         name = users.redeem(request.cookies.get("session"))
         return users.get(name, config.base_dir) if name else None
@@ -72,6 +87,7 @@ def create_app(config: Config) -> FastAPI:
             "now": dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
             "_access": access,
             "_actions": Actions(config, access, audit, plugins_for(config)),
+            "csrf": csrf_token(request),
         }
 
     def gate(request: Request):
@@ -97,8 +113,11 @@ def create_app(config: Config) -> FastAPI:
         return resp
 
     @app.post("/login")
-    def login(request: Request, name: str = Form(""), password: str = Form("")):
-        name = name.strip()
+    async def login(request: Request):
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        name, password = form.get("name", "").strip(), form.get("password", "")
+        if not csrf_ok(request, form):
+            return RedirectResponse("/login?failed=1", status_code=303)
         if users.verify(name, password):
             audit.record(name, "cockpit", "session", "login")
             resp = RedirectResponse("/", status_code=303)
@@ -171,6 +190,8 @@ def create_app(config: Config) -> FastAPI:
             return RedirectResponse("/", status_code=303)
         form = {k: str(v) for k, v in (await request.form()).items()}
         try:
+            if not csrf_ok(request, form):
+                raise Denied("the form token did not match — reload the page and try again")
             outcome = c["_actions"].run(module, action, form, c["role"])
         except Denied as exc:
             outcome = type("O", (), {"ok": False, "output": str(exc), "argv": []})()
@@ -192,6 +213,40 @@ def create_app(config: Config) -> FastAPI:
             return RedirectResponse(f"/m/{module_id}", status_code=303)
         c["module"], c["doc"] = module, doc
         return templates.TemplateResponse(request, "document.html", c)
+
+    # ---------------------------------------------------------------- setup
+    def setup_page(request: Request, c: dict, outcome=None):
+        c["plugins"] = plugins_for(config)
+        used: dict[str, list[str]] = {}
+        for m in config.modules:
+            used.setdefault(m.plugin, []).append(m.id)
+        c["modules_using"] = used
+        c["schemas"] = schemas_for(config, c["_access"], c["role"])
+        c["outcome"] = outcome
+        return templates.TemplateResponse(request, "setup.html", c)
+
+    @app.get("/setup", response_class=HTMLResponse)
+    def setup(request: Request):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        if not c["role"].may_act("setup.view") and not c["role"].may_act("*"):
+            return RedirectResponse("/", status_code=303)
+        return setup_page(request, c)
+
+    @app.post("/setup/schema/{schema_id:path}/add", response_class=HTMLResponse)
+    async def setup_schema_add(request: Request, schema_id: str):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["role"].may_act("setup.schema_add") and not c["role"].may_act("*"):
+            return RedirectResponse("/", status_code=303)
+        if not csrf_ok(request, form):
+            ok, out = False, "the form token did not match — reload the page and try again"
+        else:
+            ok, out = add_attribute(config, c["_access"], c["role"], schema_id, form)
+        return setup_page(request, c, type("O", (), {"ok": ok, "output": out})())
 
     @app.get("/set")
     def set_prefs(request: Request, lang: str | None = None, role: str | None = None):
@@ -224,6 +279,15 @@ def create_app(config: Config) -> FastAPI:
         app.openapi_schema = schema
         return schema
     app.openapi = openapi
+
+    @app.middleware("http")
+    async def csrf_cookie(request: Request, call_next):
+        token = request.cookies.get("csrf") or secrets.token_urlsafe(24)
+        request.state.csrf = token
+        response = await call_next(request)
+        if "csrf" not in request.cookies and response.headers.get("content-type", "").startswith("text/html"):
+            response.set_cookie("csrf", token, samesite="strict", httponly=False)
+        return response
 
     # Mounted plugin apps sit behind the same gate and the same role check as the pages.
     @app.middleware("http")

@@ -37,6 +37,7 @@
       {% endif %}
       {% for a in allowed %}
       <form class="action" method="post" action="/m/{{ module.id }}/a/{{ a.id }}">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
         <h4>{{ t(a.label) }}</h4>
         {% for f in a.fields %}
         <label>
