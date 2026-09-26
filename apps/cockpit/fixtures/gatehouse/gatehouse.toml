@@ -1,0 +1,20 @@
+# Gatehouse inside the cockpit demo: the example pack, an invented client, no model.
+[pack]
+path = "../../../gatehouse/packs/example"
+
+[instance]
+path = "../gatehouse-instance"
+
+[model]
+default = "none"
+
+[model.tasks]
+
+[model.profiles.none]
+adapter = "echo"
+destination = "no model attached"
+local = true
+
+[server]
+host = "127.0.0.1"
+port = 8100

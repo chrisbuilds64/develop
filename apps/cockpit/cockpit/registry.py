@@ -60,3 +60,28 @@ def card_for(config: Config, access: Access, role: Role, module_id: str) -> Card
         if card.module_id == module_id:
             return card
     return None
+
+
+def mount_apps(shell, config: Config) -> list[tuple[str, str]]:
+    """Mount every module's app under /m/<id>/app. Returns (module, error) for those that failed.
+
+    A plugin that brings its own web app — Gatehouse is the first — runs inside
+    the cockpit's process and under its URL. The app must build its links from
+    the mount prefix (`request.scope["root_path"]`); that is the one thing it
+    has to do to be mountable.
+    """
+    import sys
+    failures = []
+    for module in config.modules:
+        if not module.enabled or not module.app:
+            continue
+        try:
+            if module.app_path and str(module.app_path) not in sys.path:
+                sys.path.insert(0, str(module.app_path))
+            mod_name, _, factory_name = module.app.partition(":")
+            factory = getattr(importlib.import_module(mod_name), factory_name)
+            app = factory(module.app_config) if module.app_config else factory()
+            shell.mount(f"/m/{module.id}/app", app, name=f"app-{module.id}")
+        except Exception as exc:
+            failures.append((module.id, f"{type(exc).__name__}: {exc}"))
+    return failures

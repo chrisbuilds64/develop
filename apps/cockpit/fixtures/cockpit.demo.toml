@@ -135,6 +135,9 @@ id = "gatehouse"
 reader = "cockpit.readers.gatehouse"
 sources = ["elicitation"]
 maturity = "running"
+app = "gatehouse.api:create_app_from_path"
+app_path = "../../gatehouse"
+app_config = "gatehouse/gatehouse.toml"
 
 [[role]]
 id = "operator"

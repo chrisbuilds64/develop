@@ -48,7 +48,8 @@ def blocks_for(reader, access, role: Role, module: Module, config: Config) -> li
     out = []
     for b in detail["blocks"]:
         if b["kind"] == "document" and "body" in b:
-            b = {**b, "html": render_md(b.pop("body"))}
+            b = dict(b)
+            b["html"] = render_md(b.pop("body"))
         out.append(b)
     return out
 

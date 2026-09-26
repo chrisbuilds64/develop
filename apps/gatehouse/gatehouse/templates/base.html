@@ -84,10 +84,10 @@
     {{ pack.layers | join(' + ') if pack.layers else pack.name ~ ' ' ~ pack.version }}
   </span>
   <nav class="dim">
-    <a href="/">Interview</a>
-    <a href="/artifacts">Artifacts</a>
-    {% if pack.synthesis %}<a href="/analysis">Reading</a>{% endif %}
-    <a href="/audit">Audit</a>
+    <a href="{{ root }}/">Interview</a>
+    <a href="{{ root }}/artifacts">Artifacts</a>
+    {% if pack.synthesis %}<a href="{{ root }}/analysis">Reading</a>{% endif %}
+    <a href="{{ root }}/audit">Audit</a>
   </nav>
 </header>
 <main>

@@ -26,6 +26,12 @@ from .pack import load as load_pack
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 
+def create_app_from_path(config_path) -> FastAPI:
+    """What a host mounts: the app built from a config file. Used by the cockpit."""
+    from .config import load
+    return create_app(load(Path(config_path)))
+
+
 def create_app(config: Config) -> FastAPI:
     pack = load_pack(config.pack_path)
     audit = AuditLog(config.instance_path)
@@ -33,6 +39,14 @@ def create_app(config: Config) -> FastAPI:
     instance = Instance(config.instance_path, pack)
 
     app = FastAPI(title="Gatehouse", version=__version__)
+
+    def root(request: Request) -> str:
+        """The path this app is mounted under — "" when it runs alone.
+
+        Every redirect and every link is built on this, so Gatehouse can be
+        mounted inside another surface without a single absolute path breaking.
+        """
+        return request.scope.get("root_path", "").rstrip("/")
 
     def page(request: Request, name: str, **context) -> HTMLResponse:
         return TEMPLATES.TemplateResponse(
@@ -42,6 +56,7 @@ def create_app(config: Config) -> FastAPI:
                 "pack": pack,
                 "destinations": config.destinations,
                 "version": __version__,
+                "root": root(request),
                 **context,
             },
         )
@@ -51,13 +66,13 @@ def create_app(config: Config) -> FastAPI:
         run = instance.load()
         if run is None:
             return page(request, "start.html")
-        return RedirectResponse(f"/block/{run.current_block}", status_code=303)
+        return RedirectResponse(f"{root(request)}/block/{run.current_block}", status_code=303)
 
     @app.post("/start")
-    def start(client: str = Form(...)):
+    def start(request: Request, client: str = Form(...)):
         run = instance.start(client.strip() or "unnamed")
         audit.record(event="run_started", client=run.client, pack=pack.name)
-        return RedirectResponse(f"/block/{run.current_block}", status_code=303)
+        return RedirectResponse(f"{root(request)}/block/{run.current_block}", status_code=303)
 
     @app.get("/block/{block_id}", response_class=HTMLResponse)
     def show_block(request: Request, block_id: str, incomplete: str = ""):
@@ -66,8 +81,9 @@ def create_app(config: Config) -> FastAPI:
             return page(request, "empty.html", heading="No run started",
                         detail="Start a run before opening a block.")
         block = pack.block(block_id)
-        run.current_block = block_id
-        instance.save(run)
+        # Reading a block must not move the interview: a click on an earlier
+        # block, or a browser prefetching links, would otherwise rewind it.
+        # current_block changes in answer() and close_block() only.
         return page(
             request, "block.html", run=run, block=block,
             incomplete=[i for i in incomplete.split(",") if i],
@@ -75,6 +91,7 @@ def create_app(config: Config) -> FastAPI:
 
     @app.post("/block/{block_id}/answer")
     def answer(
+        request: Request,
         block_id: str,
         question_id: str = Form(...),
         text: str = Form(""),
@@ -86,12 +103,13 @@ def create_app(config: Config) -> FastAPI:
 
         question = next(q for q in block.questions if q.id == question_id)
         recorded.follow_ups = elicit.follow_ups(models, pack, block, question, text)
+        run.current_block = block_id
         instance.save(run)
 
-        return RedirectResponse(f"/block/{block_id}#{question_id}", status_code=303)
+        return RedirectResponse(f"{root(request)}/block/{block_id}#{question_id}", status_code=303)
 
     @app.post("/block/{block_id}/close")
-    def close_block(block_id: str):
+    def close_block(request: Request, block_id: str):
         run = _require_run(instance)
         block = pack.block(block_id)
 
@@ -104,7 +122,7 @@ def create_app(config: Config) -> FastAPI:
             # with a client; they need to see which questions are open, on
             # the page they are already on.
             return RedirectResponse(
-                f"/block/{block_id}?incomplete={','.join(unanswered)}",
+                f"{root(request)}/block/{block_id}?incomplete={','.join(unanswered)}",
                 status_code=303,
             )
 
@@ -118,8 +136,8 @@ def create_app(config: Config) -> FastAPI:
 
         if following is None:
             target = "/analysis" if pack.synthesis else "/artifacts"
-            return RedirectResponse(target, status_code=303)
-        return RedirectResponse(f"/block/{following}", status_code=303)
+            return RedirectResponse(root(request) + target, status_code=303)
+        return RedirectResponse(f"{root(request)}/block/{following}", status_code=303)
 
     @app.get("/artifacts", response_class=HTMLResponse)
     def artifacts(request: Request):
@@ -174,7 +192,7 @@ def create_app(config: Config) -> FastAPI:
 
         instance.save_analysis(run, pack.synthesis.title, pack.synthesis.lead, body)
         audit.record(event="analysis_written", answers=len(run.answers))
-        return RedirectResponse("/analysis", status_code=303)
+        return RedirectResponse(f"{root(request)}/analysis", status_code=303)
 
     @app.get("/audit", response_class=HTMLResponse)
     def audit_view(request: Request):
@@ -196,6 +214,7 @@ def create_app(config: Config) -> FastAPI:
                 "pack": pack,
                 "destinations": config.destinations,
                 "version": __version__,
+                "root": root(request),
                 "heading": "That page is not available",
                 "detail": str(exc.detail),
             },

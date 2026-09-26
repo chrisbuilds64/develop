@@ -10,7 +10,7 @@
 
 <div class="destination">
   <strong>Where answers go:</strong> {{ destinations | join("; ") }}.
-  Every call is recorded under <a href="/audit">Audit</a>.
+  Every call is recorded under <a href="{{ root }}/audit">Audit</a>.
 </div>
 
 {% if pack.directions %}
@@ -18,7 +18,7 @@
 <ul class="dim">{% for rule in pack.directions %}<li>{{ rule }}</li>{% endfor %}</ul>
 {% endif %}
 
-<form method="post" action="/start" class="row">
+<form method="post" action="{{ root }}/start" class="row">
   <input type="text" name="client" placeholder="Client or subject" required>
   <button type="submit">Begin</button>
 </form>

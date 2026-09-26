@@ -113,3 +113,19 @@ The pipeline opens as a board by stage with every piece; audits open as a table 
 table of findings in their current state, each linking to the audit that carries it. Same
 contract for every module (`schemas/detail.schema.json`); a new module gets the full view
 without a new template.
+
+## Plugins
+
+The cockpit is the surface; **plugins** bring the mechanisms. A plugin is a directory with a
+`plugin.json` (`cockpit/schemas/plugin.schema.json`) that declares a reader — the card and the
+working view — and optionally actions and a **whole web application** mounted under
+`/m/<id>/app`, running inside the cockpit's process and URL. Gatehouse is the first: the
+interview, the artifacts, the reading and the audit are all reachable from its card. The one
+requirement for an app to be mountable is that it builds its links from
+`request.scope["root_path"]`.
+
+A customer's own tool is attached the same way: manifest, reader, released sources. Nothing in
+the core changes for a new plugin — that is the test for whether the boundary holds.
+
+**Next:** a source kind `http`, so a reader can consult an API — Jira, Confluence, a ticket
+system — under the same rules as a directory: named, released, per role, recorded.

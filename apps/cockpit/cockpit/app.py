@@ -27,7 +27,7 @@ from .config import Config
 from .detail import blocks_for, document_for
 from .i18n import I18n
 from .panel import SCHEMA_PATH
-from .registry import build_cards, card_for, reader_for
+from .registry import build_cards, card_for, mount_apps, reader_for
 
 HERE = Path(__file__).parent
 
@@ -84,6 +84,7 @@ def create_app(config: Config) -> FastAPI:
         c["raw"] = json.dumps(card.panel, ensure_ascii=False, indent=2) if card.panel else ""
         c["outcome"] = None
         c["blocks"] = blocks_for(reader_for(c["module"]), access, c["role"], c["module"], config) if card.shown else []
+        c["app_error"] = app.state.app_failures.get(module_id)
         return templates.TemplateResponse(request, "module.html", c)
 
     @app.get("/m/{module_id}/doc/{ref:path}", response_class=HTMLResponse)
@@ -159,4 +160,5 @@ def create_app(config: Config) -> FastAPI:
     app.state.access = access
     app.state.i18n = i18n
     app.state.templates = templates
+    app.state.app_failures = dict(mount_apps(app, config))
     return app

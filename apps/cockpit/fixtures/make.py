@@ -86,18 +86,38 @@ for s in ["session-start", "session-end", "observe", "todo", "todo-add", "todo-d
     (cl / "skills" / s).mkdir(parents=True)
     (cl / "skills" / s / "SKILL.md").write_text(f"# {s}\n", encoding="utf-8")
 
-# --- gatehouse instance -------------------------------------------------------
+# --- gatehouse instance: must match the example pack, so it is derived from it --------
+import tomllib
+pack = tomllib.loads((F.parent.parent / "gatehouse" / "packs" / "example" / "pack.toml").read_text(encoding="utf-8"))
+now = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+answers, closed, blocks = {}, [], pack["block"]
+for bi, b in enumerate(blocks):
+    for qi, q in enumerate(b["question"]):
+        qid = q.get("id") or f"{b['id']}.{qi + 1}"
+        if bi == 0:
+            answers[qid] = {"question_id": qid, "question": q["text"], "text": "An answer given in the room.",
+                            "follow_ups": [], "marker": "AS-IS", "answered_at": now}
+    if bi == 0:
+        closed.append(b["id"])
 gh = F / "gatehouse-instance"; gh.mkdir()
-answers = {f"q{i}": {"question_id": f"q{i}", "question": f"Question {i}", "text": "An answer." if i <= 42 else "",
-                     "follow_ups": [], "marker": "AS-IS", "answered_at": iso(today)} for i in range(1, 56)}
 (gh / "run.json").write_text(json.dumps({
-    "pack_name": "core-de", "pack_version": "0.3", "client": "Northwind Manufacturing",
-    "started_at": f"{iso(today - dt.timedelta(days=1))}T09:30:00+02:00", "current_block": "b5",
-    "answers": answers, "closed_blocks": ["b1", "b2", "b3", "b4"]}, ensure_ascii=False, indent=2), encoding="utf-8")
+    "pack_name": pack["pack"]["name"], "pack_version": pack["pack"]["version"], "client": "Northwind Manufacturing",
+    "started_at": now, "current_block": blocks[1]["id"], "answers": answers, "closed_blocks": closed},
+    ensure_ascii=False, indent=2), encoding="utf-8")
+# Let Gatehouse render interview.md itself, so the artifact is the real one, not an imitation.
+import sys
+sys.path.insert(0, str(F.parent.parent / "gatehouse"))
+from gatehouse.instance import Instance, Run, Answer          # noqa: E402
+from gatehouse.pack import load as load_pack                  # noqa: E402
+_pack = load_pack(F.parent.parent / "gatehouse" / "packs" / "example")
+_inst = Instance(gh, _pack)
+_inst.save(Run(pack_name=pack["pack"]["name"], pack_version=pack["pack"]["version"], client="Northwind Manufacturing",
+               started_at=now, current_block=blocks[1]["id"],
+               answers={k: Answer(**v) for k, v in answers.items()}, closed_blocks=closed))
 with (gh / "audit.jsonl").open("w", encoding="utf-8") as fh:
-    for i in range(84):
-        fh.write(json.dumps({"at": f"{iso(today)}T10:{i % 60:02d}:00+00:00", "event": "model_call", "task": "followup",
-                             "destination": "Ollama" if i % 3 else "Anthropic API", "egress": i % 3 == 0}) + "\n")
+    for _ in answers:
+        fh.write(json.dumps({"at": now, "event": "model_call", "task": "followup", "destination": "no model attached",
+                             "adapter": "echo", "local": True, "egress": False}) + "\n")
 
 (F / "demo-audit.jsonl").unlink(missing_ok=True)
 print("fixtures rebuilt")

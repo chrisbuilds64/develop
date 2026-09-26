@@ -7,6 +7,17 @@
   <h2>{% if card_.panel %}{{ t(card_.panel.title) }}{% else %}{{ module.label or module.id }}{% endif %}</h2>
   <p class="stamp">{{ module.id }} · {{ t('maturity.' ~ module.maturity) }} · {{ t('app.source') }}: {{ module.sources|join(', ') }}</p>
 
+  {% if module.app %}
+  <div class="applink">
+    {% if app_error %}
+    <span class="hint">{{ t('app.plugin_failed') }}: <code>{{ app_error }}</code></span>
+    {% else %}
+    <a class="button" href="/m/{{ module.id }}/app/">{{ t('app.open_app') }} →</a>
+    <span class="hint">{{ t('app.open_app_hint') }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="two">
     <div class="grid" style="grid-template-columns: minmax(300px, 520px);">
       {{ card(card_) }}

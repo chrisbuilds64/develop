@@ -69,6 +69,9 @@ class Module:
     label: str | None = None
     enabled: bool = True
     actions: tuple[Action, ...] = ()
+    app: str | None = None           # "package.module:factory" — a web app to mount under /m/<id>/app
+    app_path: Path | None = None     # where that package lives, added to sys.path
+    app_config: Path | None = None   # handed to the factory
 
 
 @dataclass(frozen=True)
@@ -197,6 +200,9 @@ def load(path: Path) -> Config:
             label=m.get("label"),
             enabled=bool(m.get("enabled", True)),
             actions=tuple(actions),
+            app=m.get("app"),
+            app_path=_path(m["app_path"], base) if m.get("app_path") else None,
+            app_config=_path(m["app_config"], base) if m.get("app_config") else None,
         ))
 
     # --- roles ------------------------------------------------------------

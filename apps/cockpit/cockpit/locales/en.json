@@ -31,7 +31,7 @@
   "worklist.blocked": "blocked",
   "worklist.done_week": "closed in the last 7 days",
   "worklist.board": "Open the board",
-  "pipeline.title": "Content pipeline",
+  "pipeline.title": "PressRoom · Content pipeline",
   "pipeline.subtitle": "Where every piece stands, from idea to reference",
   "pipeline.in_flight": "pieces in flight",
   "pipeline.review": "waiting for human review",
@@ -103,5 +103,8 @@
   "finding.closed": "closed",
   "tool.pressroom": "PressRoom (macOS app)",
   "tool.board": "Kanban board",
-  "tool.folder": "the folder"
+  "tool.folder": "the folder",
+  "app.open_app": "Open the workspace",
+  "app.open_app_hint": "The full application, inside the cockpit.",
+  "app.plugin_failed": "The plugin's application could not be started"
 }

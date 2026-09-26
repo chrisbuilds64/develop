@@ -55,23 +55,45 @@ def read(access, role, module, config) -> dict:
 
 
 HEADING = re.compile(r"^###\s+([A-Z]{2,5}-\d+)[:\s]+(.+?)\s*$")
+TABLE_ROW = re.compile(r"^\|\s*\*\*([A-Z]{2,5}-\d+)\*\*\s*(.*?)\s*\|")
 SECTION = re.compile(r"^##\s+(.+?)\s*$")
-RISK = re.compile(r"Overall Risk:\s*\**([A-Z]+)", re.I)
+SEVERITY = re.compile(r"^###\s+(KRITISCH|HOCH|MITTEL|NIEDRIG|CRITICAL|HIGH|MEDIUM|LOW)\s*$", re.I)
+BULLET = re.compile(r"^-\s+\[( |x)\]\s+\**(.+?)\**\s*(?:—|-|:)")
+RISK = re.compile(r"(?:Overall Risk|Risk|Risiko)(?:\s+stays|\s+bleibt)?[:\s]+\**([A-Z]{3,})\b")
 
 
 def _findings(text: str) -> list[dict]:
-    """Findings by their `### SEC-038: title` headings, classified by the `##` section above."""
-    out, section = [], ""
+    """Findings, from three shapes audits actually use.
+
+    `### SEC-038: title` headings under a `## New` / `## Open` / `## Resolved`
+    section; `| **SEC-034** title | resolution |` table rows in a resolved
+    section; and `- [ ] **title** — …` items under a severity heading, which is
+    how documentation audits list theirs.
+    """
+    out, section, severity = [], "", ""
     for line in text.splitlines():
         m = SECTION.match(line)
         if m:
-            section = m.group(1).lower()
+            section, severity = m.group(1).lower(), ""
             continue
+        m = SEVERITY.match(line)
+        if m:
+            severity = m.group(1).upper()
+            continue
+        state = ("closed" if "resolved" in section or "closed" in section or "erledigt" in section
+                 else "new" if "new" in section or "neu" in section else "open")
         m = HEADING.match(line)
         if m:
-            state = ("closed" if "resolved" in section or "closed" in section
-                     else "new" if "new" in section else "open")
             out.append({"id": m.group(1), "title": m.group(2), "state": state})
+            continue
+        m = TABLE_ROW.match(line)
+        if m and state == "closed":
+            out.append({"id": m.group(1), "title": m.group(2) or m.group(1), "state": "closed"})
+            continue
+        m = BULLET.match(line)
+        if m and severity and "finding" in section:
+            out.append({"id": severity, "title": m.group(2).strip("* "),
+                        "state": "closed" if m.group(1) == "x" else "open"})
     return out
 
 
