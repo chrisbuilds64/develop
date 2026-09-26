@@ -10,7 +10,7 @@
 # Users: `cockpit user add <name> --role <role> --context <dir>`. With users on file,
 # sign-in is required. Plugins: `cockpit plugin list | add <path> [--link] | remove <id>`.
 [cockpit]
-name = "Leitstand"
+name = "Cockpit"
 locale = "de"
 bind = "127.0.0.1:8200"
 default_role = "operator"

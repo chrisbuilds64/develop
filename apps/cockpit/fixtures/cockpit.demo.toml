@@ -1,7 +1,7 @@
 # Demo: everything below points into fixtures/. Nothing on this machine is read.
 # Two users: alex (operator) and sam (guest). Password for both: demo
 [cockpit]
-name = "Control Room"
+name = "Cockpit"
 locale = "en"
 bind = "127.0.0.1:8200"
 default_role = "operator"

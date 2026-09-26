@@ -1,6 +1,6 @@
 {
   "_name": "English",
-  "app.title": "Control Room",
+  "app.title": "Cockpit",
   "app.tagline": "What the tools know, in one place.",
   "app.as_of": "as of {when}",
   "app.language": "Language",
@@ -158,5 +158,19 @@
   "setup.target": "Where",
   "setup.top_level": "top level",
   "setup.enum": "Allowed values (optional)",
-  "setup.add_attribute": "Add an attribute"
+  "setup.add_attribute": "Add an attribute",
+  "canon.title": "Canon",
+  "canon.subtitle": "The rulebook, document by document",
+  "canon.documents": "documents",
+  "canon.with_header": "with header block",
+  "canon.without_header": "without header block",
+  "canon.stale": "untouched for 90+ days",
+  "canon.all": "All documents",
+  "col.path": "Path",
+  "col.type": "Type",
+  "col.updated": "Updated",
+  "col.purpose": "Purpose",
+  "pipeline.move": "Move a container",
+  "field.container": "Container",
+  "field.stage": "To stage"
 }

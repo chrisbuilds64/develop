@@ -1,6 +1,6 @@
 {
   "_name": "Deutsch",
-  "app.title": "Leitstand",
+  "app.title": "Cockpit",
   "app.tagline": "Was die Werkzeuge wissen, an einem Ort.",
   "app.as_of": "Stand {when}",
   "app.language": "Sprache",
@@ -158,5 +158,19 @@
   "setup.target": "Wo",
   "setup.top_level": "oberste Ebene",
   "setup.enum": "Erlaubte Werte (optional)",
-  "setup.add_attribute": "Attribut ergänzen"
+  "setup.add_attribute": "Attribut ergänzen",
+  "canon.title": "Kanon",
+  "canon.subtitle": "Das Regelwerk, Dokument für Dokument",
+  "canon.documents": "Dokumente",
+  "canon.with_header": "mit Kopfblock",
+  "canon.without_header": "ohne Kopfblock",
+  "canon.stale": "seit 90+ Tagen unberührt",
+  "canon.all": "Alle Dokumente",
+  "col.path": "Pfad",
+  "col.type": "Typ",
+  "col.updated": "Aktualisiert",
+  "col.purpose": "Zweck",
+  "pipeline.move": "Container verschieben",
+  "field.container": "Container",
+  "field.stage": "Nach Stufe"
 }

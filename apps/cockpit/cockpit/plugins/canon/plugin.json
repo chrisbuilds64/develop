@@ -1,0 +1,9 @@
+{
+  "id": "canon",
+  "name": "Canon",
+  "version": "0.1.0",
+  "description": "The rulebook as it is on disk: every document with its header block — path, type, purpose, maintained, updated — readable. Read-only. Types and layers come with the next version.",
+  "reader": "reader.py",
+  "needs": ["canon"],
+  "maturity": "draft"
+}

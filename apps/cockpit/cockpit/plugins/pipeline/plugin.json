@@ -2,10 +2,13 @@
   "id": "pipeline",
   "name": "PressRoom · Content pipeline",
   "version": "0.1.0",
-  "description": "Folders are stages, subfolders are pieces. The board by stage, every piece with its meta.",
+  "description": "Folders are stages, subfolders are pieces. The board by stage, every piece with its meta. Action: move a container to another stage — the stage folder is the status.",
   "reader": "reader.py",
   "needs": [
     "pipeline"
   ],
-  "maturity": "running"
+  "maturity": "running",
+  "actions": [
+    "move"
+  ]
 }
