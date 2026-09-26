@@ -145,7 +145,7 @@ def detail(access, role, module, config) -> dict:
     blocks = [{"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters}]
     runs = _runs(access, role, src)
     if runs:
-        blocks.append({"kind": "table", "title": "block.runs", "columns": ["run.when", "run.skill", "run.container", "run.by", "run.status"],
+        blocks.append({"kind": "table", "title": "block.runs", "place": "actions", "columns": ["run.when", "run.skill", "run.container", "run.by", "run.status"],
                        "rows": [[r.get("created", "")[:16].replace("T", " "), "/" + r.get("skill", "?"),
                                  {"text": r.get("container", ""), "href": f"/m/pipeline/doc/{r.get('container', '')}"},
                                  r.get("requested_by", ""),

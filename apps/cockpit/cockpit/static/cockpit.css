@@ -320,3 +320,7 @@ input[type=file] { font-size: 13px; }
 .kfilters select { font-size: 13px; min-width: 130px; }
 .kfilters button { align-self: end; font-size: 12px; padding: 5px 10px; }
 .kcard[hidden] { display: none; }
+
+/* blocks that belong beside the card, under the action forms: second grid column */
+.aside-blocks { grid-column: 2; min-width: 0; }
+.aside-blocks .block { margin-top: 0; }

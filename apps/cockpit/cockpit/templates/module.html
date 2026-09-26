@@ -60,9 +60,13 @@
       {% endfor %}
     </section>
     {% endif %}
+    {% set aside = blocks|selectattr('place', 'equalto', 'actions')|list %}
+    {% if aside %}
+    <div class="aside-blocks">{% for b in aside %}{{ block(b) }}{% endfor %}</div>
+    {% endif %}
   </div>
 
-  {% for b in blocks %}{{ block(b) }}{% endfor %}
+  {% for b in blocks if b.place != 'actions' %}{{ block(b) }}{% endfor %}
 
   {% if raw %}
   <details class="rawbox"><summary>Panel · JSON</summary><pre class="raw">{{ raw }}</pre></details>

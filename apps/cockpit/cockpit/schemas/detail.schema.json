@@ -94,6 +94,14 @@
         }
        }
       }
+     },
+     "place": {
+      "type": "string",
+      "enum": [
+       "main",
+       "actions"
+      ],
+      "description": "Where the block sits on the module page: main (default, below the card) or actions (in the column beside the card, under the action forms) — for what belongs next to the buttons, such as the runs they start."
      }
     }
    }
