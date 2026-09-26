@@ -337,3 +337,8 @@ input[type=file] { font-size: 13px; }
 
 /* the hidden attribute wins over every display rule above */
 [hidden] { display: none !important; }
+
+/* a collapsed column (the archive): narrow, cards behind a summary */
+.kcol.collapsed { flex-basis: 150px; }
+.kcol.collapsed summary { cursor: pointer; font-size: 12px; color: var(--ink-2); padding: 6px 0; }
+.kcol.collapsed details[open] { flex-basis: 240px; }

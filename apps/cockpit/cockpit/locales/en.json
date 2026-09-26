@@ -216,5 +216,6 @@
   "run.skill": "skill",
   "run.container": "piece",
   "run.by": "by",
-  "run.status": "status"
+  "run.status": "status",
+  "board.show_all": "show all {n}"
 }

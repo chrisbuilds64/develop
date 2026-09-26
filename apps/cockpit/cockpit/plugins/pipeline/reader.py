@@ -44,7 +44,7 @@ def cover_svg(meta: dict, rules: dict | None = None, size: int = 96) -> str:
     colour = r["track"].get(str(meta.get("track") or ""), r["fallback"])
     number = str(meta.get("number") or "")
     series = str(meta.get("series") or "")
-    title = str(meta.get("title") or "")
+    title = str(meta.get("title") or meta.get("working_title") or "")
     words, lines, cur = title.split(), [], ""
     for w in words:
         if len(cur) + len(w) + 1 > 16 and cur:
@@ -189,7 +189,7 @@ def _pieces(access, role, src, stage, facets=()):
             "cover": cover_svg(meta, rules, 64) if meta else "",
             # label + number is the whole tag — three pieces can share number "SIM-01"
             "tag": " ".join(str(x) for x in (meta.get("label"), meta.get("number")) if x) or name.split("-", 1)[0],
-            "title": meta.get("title") or name,
+            "title": meta.get("title") or meta.get("working_title") or name,
             "meta": [m for m in (meta.get("show"), meta.get("track"), meta.get("publishDate")) if m],
             "href": f"/m/pipeline/doc/{stage}/{name}",
             "facets": {f: str(meta[f]) for f in facets if meta.get(f) is not None},
@@ -211,6 +211,8 @@ def detail(access, role, module, config) -> dict:
             "label": name.split("-", 1)[1].replace("-", " "),
             "tone": "warn" if num == 30 else "ok" if num >= 60 else "",
             "cards": _pieces(access, role, src, name, facets),
+            # The archive holds collections, not pieces: shown as a count, opened on demand.
+            "collapsed": num == 0,
         })
     blocks = [{"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters}]
     runs = _runs(access, role, src)

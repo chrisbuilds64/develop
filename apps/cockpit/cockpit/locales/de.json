@@ -216,5 +216,6 @@
   "run.skill": "Skill",
   "run.container": "Vorgang",
   "run.by": "von",
-  "run.status": "Status"
+  "run.status": "Status",
+  "board.show_all": "alle {n} zeigen"
 }

@@ -26,8 +26,9 @@
   {% endif %}
   <div class="kanban">
     {% for col in b.columns %}
-    <div class="kcol" data-tone="{{ col.tone or '' }}">
+    <div class="kcol{% if col.collapsed %} collapsed{% endif %}" data-tone="{{ col.tone or '' }}">
       <h4>{{ t(col.label) if '.' in (col.label|string) else col.label }} <span data-count>{{ col.cards|length }}</span></h4>
+      {% if col.collapsed %}<details><summary>{{ t('board.show_all', n=col.cards|length) }}</summary>{% endif %}
       {% for k in col.cards %}
       <article class="kcard{% if k.cover %} has-cover{% endif %}"{% for fk, fv in (k.facets or {}).items() %} data-f-{{ fk }}="{{ fv }}"{% endfor %}>
         {% if k.cover %}<a class="kcover" href="{{ k.href }}">{{ k.cover|safe }}</a>{% endif %}
@@ -38,6 +39,7 @@
         </div>
       </article>
       {% endfor %}
+      {% if col.collapsed %}</details>{% endif %}
     </div>
     {% endfor %}
   </div>
