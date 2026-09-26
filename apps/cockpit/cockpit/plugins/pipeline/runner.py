@@ -52,8 +52,9 @@ def take(queue: Path, me: str) -> tuple[Path, dict] | None:
 
 def prompt_for(run: dict) -> str:
     head = ("You are Axel, in a PressRoom session started by a run order from the cockpit — no conversation, "
-            f"one task. Work on the container `{run['container']}` and nothing else. When done, say in five lines "
-            "what you changed and what is open.\n\n")
+            f"one task. Work on the container `{run['container']}` and nothing else. Write review entries and "
+            "your closing summary in English: review.md is read by people who do not read German. When done, "
+            "say in five lines what you changed and what is open.\n\n")
     line = f"/{run['skill']} {run['container'].split('/')[-1]}"
     if run.get("note"):
         line += f"\n\n{run['note']}"
@@ -63,7 +64,8 @@ def prompt_for(run: dict) -> str:
 def execute(f: Path, run: dict, args) -> None:
     queue = f.parent
     log = queue / (f.stem + ".log")
-    cmd = [args.claude, "-p", prompt_for(run), "--output-format", "json", "--permission-mode", args.permission_mode]
+    cmd = [args.claude, "-p", prompt_for(run), "--output-format", "json", "--permission-mode", args.permission_mode,
+           "--add-dir", str(args.data)]                    # the fundus is outside the workspace; Write/Edit need it named
     if args.allowed_tools:
         cmd += ["--allowedTools", args.allowed_tools]
     env = dict(os.environ, COCKPIT_DATA_DIR=str(args.data), CONTEXT_LOOP_DIR=str(args.data))
@@ -83,14 +85,15 @@ def execute(f: Path, run: dict, args) -> None:
             result = stdout.strip()[-1500:]
         out.write(result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
     run.update(status="done" if code == 0 else "failed", finished=now(), exit=code, log=f"_runs/{log.name}",
-               result=result.strip()[-1500:])
+               result=result.strip()[:4000])
     if session:
         run["session"] = session
     f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     # The record in the container: one review entry, info, in the runner's own words.
     title = f"Run /{run['skill']}: {'done' if code == 0 else 'failed'}"
-    text = (result.strip() or "(no output)")[-1200:] + f"\n\n*Run {run['id']}, transcript in `{run['log']}`.*"
+    body = (result.strip() or "(no output)")
+    text = (body[:1800] + (" …" if len(body) > 1800 else "")) + f"\n\n*Run {run['id']}, transcript in `{run['log']}`.*"
     subprocess.run([sys.executable, str(HERE / "review_append.py"), run["container"], "--by", "Axel", "--title", title,
                     "--status", "info"], input=text, capture_output=True, text=True, env=env)
 
@@ -101,7 +104,7 @@ def main(argv=None) -> int:
     p.add_argument("--data", required=True, help="the pipeline root with _runs/")
     p.add_argument("--claude", default=os.environ.get("CLAUDE_BIN", "claude"))
     p.add_argument("--permission-mode", default="acceptEdits")
-    p.add_argument("--allowed-tools", default="Bash(python3:*),Bash(git:*)")
+    p.add_argument("--allowed-tools", default="Bash(python3:*),Bash(git:*),Bash(mv:*),Bash(mkdir:*),Bash(cp:*),Bash(ls:*),Bash(cat:*),WebFetch,WebSearch")
     p.add_argument("--timeout", type=int, default=1800)
     p.add_argument("--interval", type=int, default=10)
     p.add_argument("--once", action="store_true", help="process what is queued, then exit")
