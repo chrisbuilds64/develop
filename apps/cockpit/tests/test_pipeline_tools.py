@@ -1,5 +1,6 @@
 """The pipeline tools: versioned puts, append-only reviews, honest verification."""
 
+import json
 import os
 import subprocess
 import sys
@@ -15,6 +16,7 @@ def run(root, tool, *args, stdin=None):
 
 def make(tmp_path):
     (tmp_path / "30-review-human" / "POD-01").mkdir(parents=True)
+    (tmp_path / "30-review-human" / "POD-01" / "meta.json").write_text('{"label": "POD", "title": "One"}')
     (tmp_path / "40-asset-generation").mkdir()
     (tmp_path / "up.png").write_bytes(b"\x89PNG fake")
     return tmp_path
@@ -27,7 +29,7 @@ def test_put_versions_and_never_overwrites(tmp_path):
     r2 = run(root, "asset_put.py", "POD-01", "thumbnail", str(up), "--name", "again.png")
     assert r1.returncode == 0 and "thumbnail-16x9.v1.png" in r1.stdout
     assert r2.returncode == 0 and "thumbnail-16x9.v2.png" in r2.stdout and "previous versions: [1]" in r2.stdout
-    assert sorted(p.name for p in (root / "30-review-human" / "POD-01").iterdir()) == ["thumbnail-16x9.v1.png", "thumbnail-16x9.v2.png"]
+    assert sorted(p.name for p in (root / "30-review-human" / "POD-01").iterdir() if p.name.startswith("thumb")) == ["thumbnail-16x9.v1.png", "thumbnail-16x9.v2.png"]
 
 
 def test_put_refuses_wrong_type_and_unknown_kind(tmp_path):
@@ -58,4 +60,21 @@ def test_verify_finds_duplicates_and_bad_names(tmp_path):
     r = run(root, "verify.py", "POD-01")
     assert r.returncode == 1 and "duplicate" in r.stdout and "naming" in r.stdout
     (c / "Thumbnail FINAL (2).png").unlink()
+    assert run(root, "verify.py", "POD-01").returncode == 0
+
+
+def test_verify_checks_meta_against_the_schema_and_walks_all(tmp_path):
+    root = make(tmp_path)
+    (root / "meta.schema.json").write_text(json.dumps({
+        "required": ["label", "title"], "additionalProperties": False,
+        "properties": {"label": {"enum": ["FN", "POD"]}, "title": {}, "track": {"enum": ["deep-tech"]}}}))
+    c = root / "30-review-human" / "POD-01"
+    (c / "meta.json").write_text(json.dumps({"label": "EP", "track": "deep-tech", "mood": "x"}))
+    r = run(root, "verify.py", "POD-01")
+    assert r.returncode == 1
+    assert "required field 'title' is missing" in r.stdout and "label = 'EP' is not one of" in r.stdout and "'mood' is not in the schema" in r.stdout
+    (root / "40-asset-generation" / "POD-02").mkdir()
+    r = run(root, "verify.py", "--all")
+    assert "40-asset-generation/POD-02: 1" in r.stdout and "meta.json: missing" in r.stdout and "finding(s)" in r.stdout
+    (c / "meta.json").write_text(json.dumps({"label": "POD", "title": "ok"}))
     assert run(root, "verify.py", "POD-01").returncode == 0
