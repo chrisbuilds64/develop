@@ -2,7 +2,7 @@
   "pack_name": "example",
   "pack_version": "0.1",
   "client": "Northwind Manufacturing",
-  "started_at": "2026-09-26T09:32:05+02:00",
+  "started_at": "2026-09-26T20:14:41+02:00",
   "current_block": "path",
   "answers": {
     "outcomes.1": {
@@ -11,7 +11,7 @@
       "text": "An answer given in the room.",
       "follow_ups": [],
       "marker": "AS-IS",
-      "answered_at": "2026-09-26T09:32:05+02:00"
+      "answered_at": "2026-09-26T20:14:41+02:00"
     },
     "outcomes.2": {
       "question_id": "outcomes.2",
@@ -19,7 +19,7 @@
       "text": "An answer given in the room.",
       "follow_ups": [],
       "marker": "AS-IS",
-      "answered_at": "2026-09-26T09:32:05+02:00"
+      "answered_at": "2026-09-26T20:14:41+02:00"
     },
     "outcomes.3": {
       "question_id": "outcomes.3",
@@ -27,7 +27,7 @@
       "text": "An answer given in the room.",
       "follow_ups": [],
       "marker": "AS-IS",
-      "answered_at": "2026-09-26T09:32:05+02:00"
+      "answered_at": "2026-09-26T20:14:41+02:00"
     },
     "outcomes.4": {
       "question_id": "outcomes.4",
@@ -35,7 +35,7 @@
       "text": "An answer given in the room.",
       "follow_ups": [],
       "marker": "AS-IS",
-      "answered_at": "2026-09-26T09:32:05+02:00"
+      "answered_at": "2026-09-26T20:14:41+02:00"
     }
   },
   "closed_blocks": [

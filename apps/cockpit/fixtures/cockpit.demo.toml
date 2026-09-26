@@ -244,11 +244,31 @@ tool = "plugin"
 command = "review_append.py"
 data = "pipeline"
 scope = "document"
-stdin = "note"
-args = ["{ref}", "--by", "{user}"]
+stdin = "text"
+args = ["{ref}", "--by", "{user}", "--title", "{title}", "--status", "{status}", "--for", "{for}", "--resolves", "{resolves}"]
   [[module.action.field]]
-  name = "note"
-  label = "field.note"
+  name = "title"
+  label = "field.title"
+  required = true
+  placeholder = "one line: what this is about"
+  [[module.action.field]]
+  name = "status"
+  label = "field.status"
+  type = "select"
+  required = true
+  options_from = "review.schema.json:status"      # the value list lives in the data, not here
+  [[module.action.field]]
+  name = "for"
+  label = "field.for"
+  type = "select"
+  options_from = "review.schema.json:for"
+  [[module.action.field]]
+  name = "resolves"
+  label = "field.resolves"
+  placeholder = "REV-002"
+  [[module.action.field]]
+  name = "text"
+  label = "field.text"
   type = "textarea"
   required = true
 

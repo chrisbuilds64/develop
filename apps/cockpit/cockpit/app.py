@@ -176,6 +176,7 @@ def create_app(config: Config) -> FastAPI:
         c["card_"], c["module"] = card, module
         c["raw"] = json.dumps(card.panel, ensure_ascii=False, indent=2) if card and card.panel else ""
         c["outcome"], c["ran"] = outcome, ran
+        c["options"] = c["_actions"].options_for(module, c["role"])
         c["plugin"] = plugins_for(config).get(module.plugin)
         try:
             c["blocks"] = (blocks_for(reader_for(module, config), c["_access"], c["role"], module, config)
@@ -266,6 +267,7 @@ def create_app(config: Config) -> FastAPI:
             return RedirectResponse(f"/m/{module_id}", status_code=303)
         c["module"], c["doc"] = module, doc
         c["outcome"], c["ran"] = None, None
+        c["options"] = c["_actions"].options_for(module, c["role"])
         return templates.TemplateResponse(request, "document.html", c)
 
     @app.post("/m/{module_id}/doc/{ref:path}/a/{action_id}", response_class=HTMLResponse)
@@ -296,6 +298,7 @@ def create_app(config: Config) -> FastAPI:
             doc = {"title": ref, "html": f"<p class='hint'>{exc}</p>", "ref": ref}
         c["module"], c["doc"] = module, doc or {"title": ref, "html": "", "ref": ref}
         c["outcome"], c["ran"] = outcome, action
+        c["options"] = c["_actions"].options_for(module, c["role"])
         return templates.TemplateResponse(request, "document.html", c)
 
     @app.get("/m/{module_id}/file/{ref:path}")

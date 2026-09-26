@@ -22,6 +22,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import review_entries  # noqa: E402
+
 STAGE = re.compile(r"^\d{2}-")
 VERSIONED = re.compile(r"^[a-z0-9-]+\.v\d+\.[a-z0-9]+$")
 FIXED = {"meta.json", "review.md", "validation.md", "source.md", "interpretation.md", "visual-brief.md",
@@ -81,9 +84,21 @@ def check(root: Path, stage: str, name: str, schema: dict | None) -> list[str]:
             hashes[h] = f.name
     review = folder / "review.md"
     if review.exists():
-        dates = HEADING.findall(review.read_text(encoding="utf-8"))
+        text = review.read_text(encoding="utf-8")
+        dates = HEADING.findall(text)
         if dates != sorted(dates):
             findings.append("review.md: dated headings are not in order — something was written above the end")
+        entries = review_entries.parse(text)
+        ids = [e["id"] for e in entries]
+        if ids != sorted(ids):
+            findings.append("review.md: REV numbers are not in order — an entry was written above the end")
+        if len(ids) != len(set(ids)):
+            findings.append("review.md: a REV number occurs twice")
+        rschema = review_entries.load_schema(folder.parent.parent)
+        for e in entries:
+            findings += ["review.md: " + x for x in review_entries.check(e, rschema)]
+            if e.get("resolves") and e["resolves"] not in ids:
+                findings.append(f"review.md: {e['id']} resolves {e['resolves']}, which is not in this file")
     return findings
 
 

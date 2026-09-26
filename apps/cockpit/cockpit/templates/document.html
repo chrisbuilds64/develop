@@ -53,9 +53,9 @@
         <label>
           <span>{{ t(f.label) }}{% if f.required %} *{% endif %}</span>
           {% if f.type == 'textarea' %}
-          <textarea name="{{ f.name }}" rows="{{ 18 if f.name == 'body' else 4 }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}>{% if f.name == 'body' %}{{ doc.raw }}{% endif %}</textarea>
+          <textarea name="{{ f.name }}" rows="{{ 18 if f.name == 'body' else 6 }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}>{% if f.name == 'body' %}{{ doc.raw }}{% endif %}</textarea>
           {% elif f.type == 'select' %}
-          <select name="{{ f.name }}">{% for o in f.options %}<option>{{ o }}</option>{% endfor %}</select>
+          <select name="{{ f.name }}">{% if not f.required %}<option value="">—</option>{% endif %}{% for o in (options[a.id][f.name] if options and a.id in options else f.options) %}<option>{{ o }}</option>{% endfor %}</select>
           {% elif f.type == 'file' %}
           <input type="file" name="{{ f.name }}"{% if f.accept %} accept=".{{ f.accept|join(',.') }}"{% endif %} {% if f.required %}required{% endif %}>
           <small class="dim">{{ t('doc.upload_hint', mb=config.max_upload_mb) }}</small>

@@ -40,16 +40,35 @@ def test_put_refuses_wrong_type_and_unknown_kind(tmp_path):
     assert run(root, "asset_put.py", "../etc", "thumbnail", str(root / "up.png"), "--name", "a.png").returncode != 0
 
 
-def test_review_append_only_appends(tmp_path):
+def test_review_append_writes_numbered_entries_by_the_schema(tmp_path):
     root = make(tmp_path)
+    (root / "review.schema.json").write_text(json.dumps({
+        "required": ["id", "date", "author", "status", "title", "text"], "additionalProperties": False,
+        "properties": {"id": {"pattern": "^REV-\d{3}$"}, "date": {}, "author": {"enum": ["Chris", "Akhil"]}, "for": {"enum": ["Chris", "Akhil", "—"]},
+                       "status": {"enum": ["info", "open", "resolved", "approved"]}, "stage": {}, "title": {}, "resolves": {"pattern": "^REV-\d{3}$"}, "text": {}}}))
     rv = root / "30-review-human" / "POD-01" / "review.md"
     rv.write_text("# Review\n\nOriginal line.\n", encoding="utf-8")
-    r = run(root, "review_append.py", "POD-01", "--by", "akhil", stdin="Thumbnail v2 fixes the crop.")
-    assert r.returncode == 0
+    r = run(root, "review_append.py", "30-review-human/POD-01", "--by", "akhil", "--title", "Thumbnail v2", "--status", "open", "--for", "chris",
+            stdin="v2 fixes the crop.")
+    assert r.returncode == 0 and r.stdout.startswith("REV-001 appended")
+    r = run(root, "review_append.py", "POD-01", "--by", "Chris", "--title", "Take it", "--status", "approved", "--resolves", "rev-001", stdin="Good.")
+    assert r.returncode == 0 and "REV-002" in r.stdout and "resolves REV-001" in r.stdout
     text = rv.read_text(encoding="utf-8")
-    assert text.startswith("# Review\n\nOriginal line.\n") and "— akhil · in `30-review-human`" in text
-    assert text.rstrip().endswith("Thumbnail v2 fixes the crop.")
-    assert run(root, "review_append.py", "POD-01", "--by", "akhil", stdin="   ").returncode != 0
+    assert text.startswith("# Review\n\nOriginal line.\n")
+    assert "## REV-001 — Thumbnail v2\n**Date:** " in text and "**Author:** Akhil · **For:** Chris · **Status:** open · **Stage:** 30-review-human" in text
+    assert "**Status:** approved · **Stage:** 30-review-human · **Resolves:** REV-001" in text
+
+    sys.path.insert(0, str(TOOLS)); import review_entries
+    entries = review_entries.parse(text)
+    assert [e["id"] for e in entries] == ["REV-001", "REV-002"]
+    assert entries[0]["for"] == "Chris" and entries[0]["text"] == "v2 fixes the crop." and entries[1]["resolves"] == "REV-001"
+    assert "for" not in entries[1] and review_entries.check(entries[0], review_entries.load_schema(root)) == []
+
+    # refused: a status outside the list, a resolves that does not exist, an empty text
+    assert "not one of" in run(root, "review_append.py", "POD-01", "--by", "akhil", "--title", "x", "--status", "maybe", stdin="t").stderr
+    assert "not an entry" in run(root, "review_append.py", "POD-01", "--by", "akhil", "--title", "x", "--resolves", "REV-009", stdin="t").stderr
+    assert run(root, "review_append.py", "POD-01", "--by", "akhil", "--title", "x", stdin="   ").returncode != 0
+    assert rv.read_text(encoding="utf-8") == text                      # nothing refused left a trace
 
 
 def test_verify_finds_duplicates_and_bad_names(tmp_path):

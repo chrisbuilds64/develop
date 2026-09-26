@@ -39,6 +39,25 @@ class Actions:
     def find(self, module: Module, action_id: str) -> Action | None:
         return next((a for a in module.actions if a.id == action_id), None)
 
+    def options(self, action: Action, field, role: Role) -> tuple[str, ...]:
+        """A select's values: from the config, or from a schema in the action's data source.
+
+        `options_from = "review.schema.json:status"` reads that file through the
+        access layer and takes the property's value list. The surface shows what
+        the schema allows and the run refuses what it does not — the same list.
+        """
+        if not field.options_from:
+            return field.options
+        file, _, prop = field.options_from.partition(":")
+        try:
+            schema = self._access.read_json(action.data, file, role)
+            return tuple(str(v) for v in schema["properties"][prop]["enum"])
+        except Exception:
+            return ()
+
+    def options_for(self, module: Module, role: Role) -> dict[str, dict[str, tuple[str, ...]]]:
+        return {a.id: {f.name: self.options(a, f, role) for f in a.fields if f.type == "select"} for a in module.actions}
+
     def run(self, module: Module, action: Action, form: dict[str, str], role: Role,
             ref: str | None = None, user: str | None = None) -> Outcome:
         name = f"{module.id}.{action.id}"
@@ -77,8 +96,9 @@ class Actions:
                     values[f.name + ".name"] = orig
                 values[f.name] = v
                 continue
-            if f.options and v and v not in f.options:
-                raise Denied(f"'{v}' is not an allowed value for '{f.name}'")
+            allowed = self.options(action, f, role)
+            if allowed and v and v not in allowed:
+                raise Denied(f"'{v}' is not an allowed value for '{f.name}' — one of: {', '.join(allowed)}")
             values[f.name] = v
 
         argv: list[str] = [sys.executable, str(script)]

@@ -49,6 +49,7 @@ class Field:
     accept: tuple[str, ...] = ()     # file: allowed extensions, e.g. ("png", "jpg")
     required: bool = False
     options: tuple[str, ...] = ()
+    options_from: str = ""           # select: "<schema file>:<property>" in the action's data source — the value list lives there
     placeholder: str = ""
 
 
@@ -205,7 +206,11 @@ def load(path: Path) -> Config:
                 type=_choice(f.get("type", "text"), ("text", "select", "textarea", "date", "file"), aw, "type"),
                 required=bool(f.get("required", False)), options=tuple(f.get("options", [])),
                 placeholder=f.get("placeholder", ""), accept=tuple(x.lower().lstrip(".") for x in f.get("accept", [])),
+                options_from=str(f.get("options_from", "")),
             ) for f in a.get("field", []))
+            for f in fields:
+                if f.options_from and (":" not in f.options_from or not data):
+                    raise ConfigError(f"{aw}: field '{f.name}': options_from is '<schema>.json:<property>' and needs a data source")
             actions.append(Action(
                 id=_need(a, "id", aw), label=a.get("label", a["id"]), tool=tool,
                 command=_need(a, "command", aw), args=tuple(a.get("args", [])),

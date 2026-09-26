@@ -1,0 +1,89 @@
+"""Review entries: the item inside review.md — written once, read back as data.
+
+An entry is a heading `## REV-NNN — <title>`, one head line with its attributes,
+and the text below. review.schema.json at the pipeline root says which
+attributes exist and which values they take. This module is the one place that
+knows the shape; review_append.py writes it, verify.py and the surface read it.
+
+    ## REV-004 — v3 checked against the transcript
+    **Date:** 2026-09-24 14:05 · **Author:** Axel · **For:** Akhil · **Status:** open · **Stage:** 30-review-human · **Resolves:** REV-002
+
+    text …
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+
+HEAD = re.compile(r"^## (REV-\d{3}) — (.+?)\s*$", re.M)
+ATTR = re.compile(r"\*\*([A-Za-z]+):\*\*\s*([^·\n]+?)(?=\s*·\s*\*\*|\s*$)", re.M)
+KEYS = {"date": "Date", "author": "Author", "for": "For", "status": "Status", "stage": "Stage", "resolves": "Resolves"}
+
+
+def load_schema(root: Path) -> dict | None:
+    p = root / "review.schema.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
+def parse(text: str) -> list[dict]:
+    """Every REV entry in a review.md, in file order. Older free-form blocks are not entries."""
+    out = []
+    heads = list(HEAD.finditer(text))
+    for i, m in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+        block = text[m.end():end]
+        entry = {"id": m.group(1), "title": m.group(2).strip()}
+        lines = block.strip("\n").split("\n", 1)
+        attrs = dict(ATTR.findall(lines[0])) if lines and lines[0].startswith("**") else {}
+        for key, label in KEYS.items():
+            if label in attrs and attrs[label].strip() not in ("", "—"):
+                entry[key] = attrs[label].strip()
+        entry["text"] = (lines[1] if len(lines) > 1 else "").strip()
+        out.append(entry)
+    return out
+
+
+def next_id(text: str) -> str:
+    nums = [int(m.group(1)[4:]) for m in HEAD.finditer(text)]
+    return f"REV-{max(nums, default=0) + 1:03d}"
+
+
+def canonical(value: str, allowed: list[str]) -> str | None:
+    """Match a value to the list, case-insensitively — 'akhil' from a login is 'Akhil' in the list."""
+    for a in allowed:
+        if a.lower() == str(value).strip().lower():
+            return a
+    return None
+
+
+def check(entry: dict, schema: dict | None) -> list[str]:
+    """The three checks that matter, without a library: required, value lists, unknown fields."""
+    if not schema:
+        return []
+    out = []
+    props = schema.get("properties", {})
+    for k in schema.get("required", []):
+        if not entry.get(k):
+            out.append(f"{entry.get('id', '?')}: required field '{k}' is missing")
+    for k, v in entry.items():
+        if k not in props:
+            out.append(f"{entry.get('id', '?')}: field '{k}' is not in the schema")
+            continue
+        allowed = props[k].get("enum")
+        if allowed and v not in allowed:
+            out.append(f"{entry.get('id', '?')}: {k} = {v!r} is not one of {allowed}")
+        pat = props[k].get("pattern")
+        if pat and isinstance(v, str) and not re.match(pat, v):
+            out.append(f"{entry.get('id', '?')}: {k} = {v!r} does not match {pat}")
+    return out
+
+
+def render(entry: dict) -> str:
+    """One entry as it goes into the file."""
+    head = [f"**Date:** {entry['date']}", f"**Author:** {entry['author']}", f"**For:** {entry.get('for') or '—'}",
+            f"**Status:** {entry['status']}", f"**Stage:** {entry['stage']}"]
+    if entry.get("resolves"):
+        head.append(f"**Resolves:** {entry['resolves']}")
+    return f"\n## {entry['id']} — {entry['title']}\n{' · '.join(head)}\n\n{entry['text'].strip()}\n"

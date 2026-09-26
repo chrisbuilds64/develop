@@ -198,5 +198,8 @@
   "field.label": "Typ",
   "field.track": "Track",
   "field.show": "Show",
-  "field.series": "Serie"
+  "field.series": "Serie",
+  "field.for": "An",
+  "field.text": "Text",
+  "field.resolves": "Beantwortet (REV-nnn, optional)"
 }

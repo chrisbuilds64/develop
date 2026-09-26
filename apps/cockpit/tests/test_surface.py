@@ -96,11 +96,16 @@ def test_guest_uploads_a_versioned_asset_and_appends_to_the_review(client, world
     assert "larger than 1 MB" in r.text
     assert not list(Path("/tmp").glob("cockpit-upload-*")) or True    # temp files are removed by the route
 
+    page = client.get("/m/pipeline/doc/30-review-human/piece-30-01").text
+    assert '<select name="status">' in page and "<option>approved</option>" in page      # values from review.schema.json
     r = client.post("/m/pipeline/doc/30-review-human/piece-30-01/a/review_append",
-                    data={"note": "v2 fixes the crop.", "_csrf": client.cookies["csrf"]})
+                    data={"title": "Crop", "status": "open", "for": "Alex", "text": "v2 fixes the crop.", "_csrf": client.cookies["csrf"]})
     assert r.status_code == 200
     review = (piece / "review.md").read_text(encoding="utf-8")
-    assert review.rstrip().endswith("v2 fixes the crop.") and "— sam · in `30-review-human`" in review
+    assert review.rstrip().endswith("v2 fixes the crop.") and "**For:** Alex · **Status:** open · **Stage:** 30-review-human" in review
+    r = client.post("/m/pipeline/doc/30-review-human/piece-30-01/a/review_append",
+                    data={"title": "Bad", "status": "maybe", "text": "x", "_csrf": client.cookies["csrf"]})
+    assert "not an allowed value" in r.text
 
     acts = [e for e in audit(world) if e["action"] == "act" and e["name"].startswith("pipeline.")]
     assert [e["ok"] for e in acts] == [True, True, False, True] or len(acts) >= 3

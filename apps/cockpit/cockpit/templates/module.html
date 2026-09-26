@@ -46,7 +46,7 @@
           {% if f.type == 'select' %}
           <select name="{{ f.name }}" {% if f.required %}required{% endif %}>
             {% if not f.required %}<option value="">—</option>{% endif %}
-            {% for o in f.options %}<option value="{{ o }}">{{ t(o) if '.' in o else o }}</option>{% endfor %}
+            {% for o in (options[a.id][f.name] if options and a.id in options else f.options) %}<option value="{{ o }}">{{ t(o) if '.' in o else o }}</option>{% endfor %}
           </select>
           {% elif f.type == 'textarea' %}
           <textarea name="{{ f.name }}" rows="3" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}></textarea>
