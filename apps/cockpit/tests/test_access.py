@@ -201,3 +201,36 @@ modules = ["*"]
 """)
     with pytest.raises(ConfigError, match="default_role"):
         load(cfg)
+
+
+def test_short_cache_serves_back_navigation_and_forgets_after_an_action(tmp_path):
+    from cockpit.access import Access
+    from cockpit.audit import AuditLog
+    from cockpit.config import load
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "x.json").write_text('{"n": 1}')
+    (tmp_path / "cockpit.toml").write_text('''
+[cockpit]
+default_role = "operator"
+cache_seconds = 60
+[[source]]
+id = "data"
+path = "data"
+sensitivity = "internal"
+[[role]]
+id = "operator"
+modules = ["*"]
+max_sensitivity = "internal"
+''')
+    cfg = load(tmp_path / "cockpit.toml")
+    Access.forget()
+    acc = Access(cfg, AuditLog(tmp_path / "audit.jsonl"), {})
+    role = cfg.role()
+    assert acc.read_json("data", "x.json", role) == {"n": 1}
+    (tmp_path / "data" / "x.json").write_text('{"n": 2}')
+    assert acc.read_json("data", "x.json", role) == {"n": 1}          # within the ttl: the kept value
+    assert "x.json" in acc.listdir("data", role)
+    Access.forget()
+    assert acc.read_json("data", "x.json", role) == {"n": 2}          # after an action: fresh
+    audit = (tmp_path / "audit.jsonl").read_text()
+    assert audit.count('"action": "read"') == 3                        # every call is still recorded

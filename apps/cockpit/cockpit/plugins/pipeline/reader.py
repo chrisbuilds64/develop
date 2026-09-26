@@ -98,17 +98,24 @@ def _filters(access, role, src) -> list[dict]:
 
 
 def _pieces(access, role, src, stage, facets=()):
-    """Every piece in a stage, with what its meta.json says — if it has one."""
-    out = []
-    for name in access.listdir(src, role, stage):
-        if name.startswith("_"):
-            continue
-        meta = {}
+    """Every piece in a stage, with what its meta.json says — if it has one.
+
+    One read per piece and the reads in parallel: over a network mount each is
+    a round trip, and ninety of them in a row are the difference between a
+    second and fifteen.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    names = [n for n in access.listdir(src, role, stage) if not n.startswith("_")]
+
+    def meta_of(name):
         try:
-            if "meta.json" in access.listdir(src, role, f"{stage}/{name}"):
-                meta = access.read_json(src, f"{stage}/{name}/meta.json", role)
+            return access.read_json(src, f"{stage}/{name}/meta.json", role)
         except Exception:
-            meta = {}
+            return {}
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        metas = list(pool.map(meta_of, names))
+    out = []
+    for name, meta in zip(names, metas):
         out.append({
             # label + number is the whole tag — three pieces can share number "SIM-01"
             "tag": " ".join(str(x) for x in (meta.get("label"), meta.get("number")) if x) or name.split("-", 1)[0],

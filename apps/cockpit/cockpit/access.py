@@ -35,6 +35,9 @@ def _released(src: Source, name: str) -> bool:
     return any(name == inc.strip("/") or name.startswith(inc.strip("/") + "/") for inc in src.include)
 
 
+_CACHE: dict[tuple, tuple[float, object]] = {}
+
+
 class Access:
     def __init__(self, config: Config, audit: AuditLog, variables: dict | None = None):
         """`variables` fills placeholders in source paths — `{user.context}` for the signed-in user."""
@@ -86,8 +89,50 @@ class Access:
         self._audit.record(role.id, source_id, name, "read")
         return target
 
+    # ----------------------------------------------------------------- cache
+    # Over a network mount every listing and every small read is a round trip; a board with
+    # ninety pieces is two hundred of them. Results are kept for `cache_seconds` per process —
+    # long enough for "back", short enough that another person's change shows within seconds.
+    # Every action the cockpit runs forgets the cache, so what a person just did is never stale.
+    @staticmethod
+    def forget() -> None:
+        _CACHE.clear()
+
+    def _peek(self, key: tuple):
+        """The kept value, or None. A hit still goes through the permission check and the audit."""
+        import time
+        ttl = getattr(self._config, "cache_seconds", 0)
+        hit = _CACHE.get(key) if ttl > 0 else None
+        return hit[1] if hit and time.time() - hit[0] < ttl else None
+
+    def _keep(self, key: tuple, value):
+        import time
+        if getattr(self._config, "cache_seconds", 0) > 0:
+            _CACHE[key] = (time.time(), value)
+        return value
+
+    def _permit(self, source_id: str, name: str, role: Role, action: str) -> None:
+        """The checks that need no disk — done on a cache hit, so a hit is refused and recorded like a miss."""
+        src = self._sources.get(source_id)
+        if src is None:
+            raise self._deny(role, source_id, name, f"source '{source_id}' is not defined")
+        if not role.may_see(src.sensitivity):
+            raise self._deny(role, source_id, name, f"role '{role.id}' may not read '{src.sensitivity}' data")
+        if name != "." and not _released(src, name):
+            raise self._deny(role, source_id, name, f"'{name}' is not released from '{source_id}'")
+        self._audit.record(role.id, source_id, name, action)
+
     # --------------------------------------------------------------- helpers
     def newest(self, source_id: str, role: Role, subdir: str = ".", depth: int = 2) -> float:
+        src = self._sources.get(source_id)
+        key = ("newest", str(src.path) if src else source_id, subdir, depth)
+        hit = self._peek(key)
+        if hit is not None:
+            self._permit(source_id, subdir, role, "stat")
+            return hit
+        return self._keep(key, self._newest(source_id, role, subdir, depth))
+
+    def _newest(self, source_id: str, role: Role, subdir: str = ".", depth: int = 2) -> float:
         """The latest modification time under a released directory, `depth` levels down.
 
         Directory mtimes change when entries come and go, file mtimes when
@@ -126,7 +171,13 @@ class Access:
         return self.resolve(source_id, name, role).read_text(encoding="utf-8")
 
     def read_json(self, source_id: str, name: str, role: Role):
-        return json.loads(self.read_text(source_id, name, role))
+        src = self._sources.get(source_id)
+        key = ("json", str(src.path) if src else source_id, name)
+        hit = self._peek(key)
+        if hit is not None:
+            self._permit(source_id, name, role, "read")
+            return hit
+        return self._keep(key, json.loads(self.read_text(source_id, name, role)))
 
     def listdir(self, source_id: str, role: Role, subdir: str = ".") -> list[str]:
         """Names inside a released source, respecting the release list.
@@ -134,6 +185,15 @@ class Access:
         With an `include` list, only listed names are returned even if more
         exist — the listing must not reveal what the release withholds.
         """
+        src = self._sources.get(source_id)
+        key = ("list", str(src.path) if src else source_id, subdir, role.id)
+        hit = self._peek(key)
+        if hit is not None:
+            self._permit(source_id, subdir, role, "list")
+            return list(hit)
+        return self._keep(key, self._listdir(source_id, role, subdir))
+
+    def _listdir(self, source_id: str, role: Role, subdir: str = ".") -> list[str]:
         src = self._sources.get(source_id)
         if src is None:
             raise self._deny(role, source_id, subdir, f"source '{source_id}' is not defined")

@@ -112,6 +112,7 @@ class Config:
     max_upload_mb: int
     lockout_after: int
     lockout_minutes: int
+    cache_seconds: int
     stale_after_hours: int
     sources: dict[str, Source]
     modules: list[Module]
@@ -272,6 +273,7 @@ def load(path: Path) -> Config:
         max_upload_mb=int(top.get("max_upload_mb", 50)),
         lockout_after=int(top.get("lockout_after", 5)),
         lockout_minutes=int(top.get("lockout_minutes", 15)),
+        cache_seconds=int(top.get("cache_seconds", 15)),          # listings and small reads over a slow mount; 0 = off
         stale_after_hours=int(top.get("stale_after_hours", 24)),
         sources=sources,
         modules=modules,

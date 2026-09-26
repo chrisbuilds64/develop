@@ -122,6 +122,7 @@ class Actions:
 
         feed = values.get(action.stdin, "") if action.stdin else None
         r = subprocess.run(argv, capture_output=True, text=True, env=env, timeout=120, input=feed)
+        Access.forget()                                   # the tool changed the data; nothing cached is trusted
         out = (r.stdout + ("\n" + r.stderr if r.stderr else "")).strip()
         self._audit.record(role.id, action.tool, name, "act", ok=r.returncode == 0,
                            reason=None if r.returncode == 0 else out[-300:])
