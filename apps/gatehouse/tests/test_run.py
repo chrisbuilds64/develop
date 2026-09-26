@@ -590,3 +590,45 @@ prompt = "Report contradictions only."
 
     with pytest.raises(synthesize.SynthesisUnavailable, match="nichts zurückgegeben"):
         synthesize.read_back(_recording_registry([], reply="   "), pack, run)
+
+
+# --- mounted under a prefix: every redirect and link must carry it ----------------------
+
+def test_mounted_under_a_prefix_links_and_redirects_carry_it(tmp_path):
+    """A host mounts Gatehouse under /m/gatehouse/app; nothing may point at the root."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    inst = tmp_path / "inst"
+    cfg = tmp_path / "gatehouse.toml"
+    cfg.write_text(f'''
+[pack]
+path = "{PACK}"
+[instance]
+path = "{inst}"
+[model]
+default = "none"
+[model.tasks]
+[model.profiles.none]
+adapter = "echo"
+destination = "none"
+local = true
+[server]
+host = "127.0.0.1"
+port = 8100
+''', encoding="utf-8")
+    from gatehouse.api import create_app_from_path
+    host = FastAPI()
+    host.mount("/m/gatehouse/app", create_app_from_path(cfg))
+    c = TestClient(host, follow_redirects=False)
+
+    r = c.post("/m/gatehouse/app/start", data={"client": "Northwind"})
+    assert r.status_code == 303 and r.headers["location"].startswith("/m/gatehouse/app/block/")
+
+    page = c.get(r.headers["location"]).text
+    import re
+    targets = re.findall(r'(?:href|action)="(/[^"]*)"', page)
+    assert targets and all(t.startswith("/m/gatehouse/app") for t in targets), targets
+
+    block = r.headers["location"].rsplit("/", 1)[-1]
+    r = c.post(f"/m/gatehouse/app/block/{block}/close")
+    assert r.status_code == 303 and r.headers["location"].startswith("/m/gatehouse/app/")
