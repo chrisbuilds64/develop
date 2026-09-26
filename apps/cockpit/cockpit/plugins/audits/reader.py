@@ -9,7 +9,7 @@ from __future__ import annotations
 import datetime as dt
 import re
 
-from . import now_iso, today
+from cockpit.plugins._shared import now_iso, today
 
 NAME = re.compile(r"^(\d{4}-\d{2}-\d{2})_(security|documentation)-audit\.md$")
 CADENCE_DAYS = 14

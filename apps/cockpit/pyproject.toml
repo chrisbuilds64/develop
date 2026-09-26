@@ -30,7 +30,7 @@ cockpit = "cockpit.__main__:main"
 include = ["cockpit*"]
 
 [tool.setuptools.package-data]
-cockpit = ["schemas/*.json", "templates/*.html", "static/*"]
+cockpit = ["schemas/*.json", "templates/*.html", "static/*", "locales/*.json", "plugins/*/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

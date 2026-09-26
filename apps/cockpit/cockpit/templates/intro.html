@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ config.name }}</title>
+<link rel="stylesheet" href="/static/cockpit.css">
+</head>
+<body class="intro-body">
+<div class="intro" id="intro">
+  <svg class="intro-svg" viewBox="0 0 480 300" role="img" aria-label="{{ config.name }}">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#4caf50"/>
+      </linearGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+
+    <!-- the floor: a faint grid, drawn in -->
+    <g class="grid" stroke="var(--line)" stroke-width="0.6">
+      {% for i in range(0, 481, 40) %}<line x1="{{ i }}" y1="0" x2="{{ i }}" y2="300"/>{% endfor %}
+      {% for j in range(0, 301, 40) %}<line x1="0" y1="{{ j }}" x2="480" y2="{{ j }}"/>{% endfor %}
+    </g>
+
+    <!-- five sources: files, tools, people — arriving one by one -->
+    <g class="nodes" fill="var(--surface)" stroke="url(#g)" stroke-width="1.6">
+      <rect class="n n1" x="40"  y="60"  width="70" height="34" rx="6"/>
+      <rect class="n n2" x="40"  y="133" width="70" height="34" rx="6"/>
+      <rect class="n n3" x="40"  y="206" width="70" height="34" rx="6"/>
+      <rect class="n n4" x="370" y="96"  width="70" height="34" rx="6"/>
+      <rect class="n n5" x="370" y="170" width="70" height="34" rx="6"/>
+    </g>
+    <g class="labels" fill="var(--ink-2)" font-family="ui-monospace, Menlo, monospace" font-size="9">
+      <text class="n n1" x="75" y="81" text-anchor="middle">todo.json</text>
+      <text class="n n2" x="75" y="154" text-anchor="middle">audits/</text>
+      <text class="n n3" x="75" y="227" text-anchor="middle">run.json</text>
+      <text class="n n4" x="405" y="117" text-anchor="middle">plugin</text>
+      <text class="n n5" x="405" y="191" text-anchor="middle">plugin</text>
+    </g>
+
+    <!-- the lines: everything flows through one gate -->
+    <g class="lines" fill="none" stroke="url(#g)" stroke-width="1.8" stroke-linecap="round">
+      <path class="l l1" d="M110 77  C 170 77, 180 150, 210 150"/>
+      <path class="l l2" d="M110 150 C 160 150, 170 150, 210 150"/>
+      <path class="l l3" d="M110 223 C 170 223, 180 150, 210 150"/>
+      <path class="l l4" d="M370 113 C 320 113, 300 150, 270 150"/>
+      <path class="l l5" d="M370 187 C 320 187, 300 150, 270 150"/>
+    </g>
+
+    <!-- the gate: one place everything passes, and a record of it -->
+    <g class="gate" filter="url(#glow)">
+      <circle cx="240" cy="150" r="30" fill="var(--surface)" stroke="url(#g)" stroke-width="2.2"/>
+      <path class="check" d="M226 151 l9 9 l19 -20" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- the name -->
+    <text class="title" x="240" y="262" text-anchor="middle" fill="var(--ink)"
+          font-family="ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="700" letter-spacing="-0.5">{{ config.name }}</text>
+    <text class="tag" x="240" y="284" text-anchor="middle" fill="var(--ink-2)"
+          font-family="ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif" font-size="11">{{ t('app.tagline') }}</text>
+  </svg>
+  <a class="skip" href="/login">{{ t('app.login') }} →</a>
+</div>
+<script>
+  // Four seconds, then the sign-in. A click skips it. Once seen, the cookie skips it next time.
+  const go = () => { document.cookie = "intro=1; max-age=2592000; path=/; samesite=lax"; location.replace("/login"); };
+  setTimeout(go, 4200);
+  document.getElementById("intro").addEventListener("click", e => { if (e.target.tagName !== "A") go(); });
+</script>
+</body>
+</html>

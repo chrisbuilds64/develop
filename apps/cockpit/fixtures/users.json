@@ -1,0 +1,18 @@
+{
+  "users": {
+    "alex": {
+      "role": "operator",
+      "context": "home/alex/context",
+      "display": "Alex Rivera",
+      "salt": "3/2CRgjGDX33YIEuxeX4Ig==",
+      "hash": "vR2IHHEDuyVwQWKZZw1E4iU+S5dRD8WTM0dJkM/EhM0="
+    },
+    "sam": {
+      "role": "guest",
+      "context": "home/sam/context",
+      "display": "Sam Okafor",
+      "salt": "lAjZEn15Whlw0OxLnlk5cQ==",
+      "hash": "7qlzAtz1gTIM0FXO1U4ZQHGwE6rl3ZIKfWthkfhkyH0="
+    }
+  }
+}

@@ -1,0 +1,278 @@
+{
+  "$schema": "./todo.schema.json",
+  "schemaVersion": 1,
+  "meta": {
+    "title": "Work list",
+    "updated": "2026-09-26",
+    "defaultAssignee": "me"
+  },
+  "lov": {
+    "clusters": [
+      {
+        "id": "product",
+        "label": "Product",
+        "order": 1,
+        "prefix": "PRD"
+      },
+      {
+        "id": "ops",
+        "label": "Operations",
+        "order": 2,
+        "prefix": "OPS"
+      },
+      {
+        "id": "sales",
+        "label": "Sales",
+        "order": 3,
+        "prefix": "SLS"
+      }
+    ],
+    "statuses": [
+      {
+        "id": "next",
+        "label": "Next",
+        "order": 1
+      },
+      {
+        "id": "doing",
+        "label": "Doing",
+        "order": 2
+      },
+      {
+        "id": "waiting",
+        "label": "Waiting",
+        "order": 3
+      },
+      {
+        "id": "backlog",
+        "label": "Backlog",
+        "order": 4
+      },
+      {
+        "id": "done",
+        "label": "Done",
+        "order": 5,
+        "terminal": true
+      }
+    ],
+    "priorities": [
+      {
+        "id": "high",
+        "label": "high",
+        "rank": 3
+      },
+      {
+        "id": "medium",
+        "label": "medium",
+        "rank": 2
+      },
+      {
+        "id": "low",
+        "label": "low",
+        "rank": 1
+      }
+    ],
+    "people": [
+      {
+        "id": "me",
+        "name": "Alex Rivera",
+        "kind": "human"
+      },
+      {
+        "id": "vendor",
+        "name": "Vendor",
+        "kind": "external"
+      }
+    ],
+    "sourceKinds": [
+      {
+        "id": "session",
+        "label": "Session"
+      },
+      {
+        "id": "audit",
+        "label": "Audit"
+      },
+      {
+        "id": "decision",
+        "label": "Decision"
+      },
+      {
+        "id": "other",
+        "label": "Other"
+      }
+    ]
+  },
+  "todos": [
+    {
+      "id": "PRD-01",
+      "title": "Ship the onboarding rewrite",
+      "cluster": "product",
+      "status": "doing",
+      "priority": "high",
+      "assignee": "me",
+      "due": "2026-09-29",
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "PRD-02",
+      "title": "Migrate the pricing page",
+      "cluster": "product",
+      "status": "next",
+      "priority": "high",
+      "assignee": "me",
+      "due": "2026-10-02",
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "PRD-03",
+      "title": "Retire the legacy export",
+      "cluster": "product",
+      "status": "backlog",
+      "priority": "medium",
+      "assignee": "me",
+      "due": null,
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "OPS-01",
+      "title": "Rotate the API keys",
+      "cluster": "ops",
+      "status": "next",
+      "priority": "high",
+      "assignee": "me",
+      "due": "2026-09-24",
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "OPS-02",
+      "title": "Restore test after the backup change",
+      "cluster": "ops",
+      "status": "waiting",
+      "priority": "high",
+      "assignee": "vendor",
+      "due": null,
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      },
+      "blockedBy": [
+        "OPS-03"
+      ]
+    },
+    {
+      "id": "OPS-03",
+      "title": "Book the off-site backup",
+      "cluster": "ops",
+      "status": "doing",
+      "priority": "high",
+      "assignee": "me",
+      "due": null,
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "OPS-04",
+      "title": "Document the deploy runbook",
+      "cluster": "ops",
+      "status": "backlog",
+      "priority": "low",
+      "assignee": "me",
+      "due": null,
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "SLS-01",
+      "title": "Send the proposal to Northwind",
+      "cluster": "sales",
+      "status": "done",
+      "priority": "high",
+      "assignee": "me",
+      "due": null,
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      },
+      "closed": "2026-09-24"
+    },
+    {
+      "id": "SLS-02",
+      "title": "Prepare the Q4 demo",
+      "cluster": "sales",
+      "status": "next",
+      "priority": "medium",
+      "assignee": "me",
+      "due": "2026-10-08",
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "SLS-03",
+      "title": "Follow up with the pilot customer",
+      "cluster": "sales",
+      "status": "waiting",
+      "priority": "medium",
+      "assignee": "vendor",
+      "due": null,
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      }
+    },
+    {
+      "id": "SLS-04",
+      "title": "Draft the case study",
+      "cluster": "sales",
+      "status": "done",
+      "priority": "medium",
+      "assignee": "me",
+      "due": null,
+      "created": "2026-09-06",
+      "updated": "2026-09-25",
+      "source": {
+        "kind": "session",
+        "ref": "demo"
+      },
+      "closed": "2026-09-21"
+    }
+  ]
+}

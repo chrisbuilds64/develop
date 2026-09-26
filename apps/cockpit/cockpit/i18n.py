@@ -27,6 +27,14 @@ class I18n:
         if PRIMARY not in self._tables:
             raise RuntimeError(f"locales/{PRIMARY}.json is missing — it is the fallback for everything")
 
+    def merge(self, locales_dir: Path) -> None:
+        """Add a plugin's strings. The cockpit's own keys win on conflict."""
+        for f in sorted(Path(locales_dir).glob("*.json")):
+            extra = json.loads(f.read_text(encoding="utf-8"))
+            table = self._tables.setdefault(f.stem, {})
+            for k, v in extra.items():
+                table.setdefault(k, v)
+
     def languages(self) -> list[tuple[str, str]]:
         """(code, display name) for every language file present."""
         return [(code, t.get("_name", code)) for code, t in self._tables.items()]

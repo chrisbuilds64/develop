@@ -14,11 +14,15 @@ F = Path(__file__).resolve().parent
 today = dt.date.today()
 iso = lambda d: d.isoformat()
 
-for d in ("worklist", "flow", "audits", "context-loop", "gatehouse-instance"):
-    shutil.rmtree(F / d, ignore_errors=True)
+for d in ("worklist", "flow", "audits", "context-loop", "gatehouse-instance", "home", "plugins", "users.json", ".demo-secret"):
+    p = F / d
+    if p.is_symlink() or p.is_file():
+        p.unlink()
+    elif p.is_dir():
+        shutil.rmtree(p)
 
 # --- work list ----------------------------------------------------------------
-wl = F / "worklist"; wl.mkdir()
+wl = F / "home" / "alex" / "context"; wl.mkdir(parents=True)
 lov = {
     "clusters":   [{"id": "product", "label": "Product", "order": 1, "prefix": "PRD"},
                    {"id": "ops", "label": "Operations", "order": 2, "prefix": "OPS"},
@@ -119,5 +123,31 @@ with (gh / "audit.jsonl").open("w", encoding="utf-8") as fh:
         fh.write(json.dumps({"at": now, "event": "model_call", "task": "followup", "destination": "no model attached",
                              "adapter": "echo", "local": True, "egress": False}) + "\n")
 
+# --- a second user with a thinner context, and the decision log for both -------------
+sam = F / "home" / "sam" / "context"; sam.mkdir(parents=True)
+shutil.copy(wl / "todo.json", sam / "todo.json"); shutil.copy(wl / "todo.schema.json", sam / "todo.schema.json")
+for who, entries in (("alex", [
+        (today - dt.timedelta(days=40), "Ship the onboarding rewrite before the pricing page", "Onboarding drives the trial; pricing can wait two weeks.", "Doing both in parallel"),
+        (today - dt.timedelta(days=12), "Off-site backup goes to a European provider", "Data residency is a contract term with two customers.", "The cheapest US bucket"),
+        (today - dt.timedelta(days=3),  "Every vendor login gets its own key", "A shared key cannot be revoked for one party.", "One key, rotated monthly"),
+    ]), ("sam", [
+        (today - dt.timedelta(days=5), "Case study goes out without customer logos", "Two of three customers asked for anonymity.", "Waiting for all three approvals"),
+    ])):
+    body = "# Decisions\n\n*One entry per decision, newest at the bottom, never edited afterwards.*\n\n---\n"
+    for d, what, why, instead in entries:
+        body += f"\n## {iso(d)} — {what}\n**Why:** {why}\n**Instead of:** {instead}\n"
+    (F / "home" / who / "context" / "decisions.md").write_text(body, encoding="utf-8")
+
+# --- users: password "demo" for both -------------------------------------------------
+sys.path.insert(0, str(F.parent))
+from cockpit.users import Users                              # noqa: E402
+u = Users(F / "users.json", F / ".demo-secret")
+u.add("alex", "demo", "operator", "home/alex/context", "Alex Rivera")
+u.add("sam", "demo", "guest", "home/sam/context", "Sam Okafor")
+
+# --- the Gatehouse plugin, linked from its repo --------------------------------------
+from cockpit.plugins import add                              # noqa: E402
+add(F.parent.parent / "gatehouse", F / "plugins", link=True)
+
 (F / "demo-audit.jsonl").unlink(missing_ok=True)
-print("fixtures rebuilt")
+print("fixtures rebuilt: users alex (operator) and sam (guest), password demo")

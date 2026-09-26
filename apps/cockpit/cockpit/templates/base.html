@@ -26,6 +26,13 @@
         {% endfor %}
       </select>
     </label>
+    {% if user %}
+    <span class="who" title="{{ t('app.context') }}: {{ user.context }}">
+      <span class="avatar">{{ user.display[:2]|upper }}</span>
+      <span>{{ user.display }} · {{ user.role }}</span>
+      <a href="/logout">{{ t('app.logout') }}</a>
+    </span>
+    {% endif %}
     {% if roles %}
     <label>{{ t('app.role') }}
       <select onchange="location.href='/set?role='+this.value">

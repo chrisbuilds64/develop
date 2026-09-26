@@ -30,10 +30,11 @@ class Outcome:
 
 
 class Actions:
-    def __init__(self, config: Config, access: Access, audit: AuditLog):
+    def __init__(self, config: Config, access: Access, audit: AuditLog, plugins: dict | None = None):
         self._config = config
         self._access = access
         self._audit = audit
+        self._plugins = plugins or {}
 
     def find(self, module: Module, action_id: str) -> Action | None:
         return next((a for a in module.actions if a.id == action_id), None)
@@ -45,8 +46,18 @@ class Actions:
                                reason=f"role '{role.id}' may not run '{name}'")
             raise Denied(f"role '{role.id}' may not run '{name}'")
 
-        # The script must be released like any file: same source rules, same log line.
-        script = self._access.resolve(action.tool, action.command, role)
+        if action.tool == "plugin":
+            # The plugin's own tool: installed code, inside the plugin directory only.
+            plugin = self._plugins.get(module.plugin)
+            if plugin is None:
+                raise Denied(f"plugin '{module.plugin}' is not installed")
+            script = (plugin.path / action.command).resolve()
+            if not script.is_relative_to(plugin.path) or not script.is_file():
+                raise Denied(f"'{action.command}' is not inside plugin '{module.plugin}'")
+            self._audit.record(role.id, f"plugin:{module.plugin}", action.command, "read")
+        else:
+            # A released script: same source rules as any file, same log line.
+            script = self._access.resolve(action.tool, action.command, role)
 
         values = {}
         for f in action.fields:
@@ -74,7 +85,7 @@ class Actions:
         env = dict(os.environ)
         data_src = self._access.source(action.data) if action.data else None
         if data_src:
-            env["CONTEXT_LOOP_DIR"] = str(data_src.path.expanduser())
+            env["COCKPIT_DATA_DIR"] = env["CONTEXT_LOOP_DIR"] = str(data_src.path.expanduser())
 
         r = subprocess.run(argv, capture_output=True, text=True, env=env, timeout=30)
         out = (r.stdout + ("\n" + r.stderr if r.stderr else "")).strip()

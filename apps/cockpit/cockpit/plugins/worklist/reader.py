@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from . import mtime_iso, today
+from cockpit.plugins._shared import mtime_iso, today
 
 
 def read(access, role, module, config) -> dict:

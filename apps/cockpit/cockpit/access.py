@@ -36,9 +36,23 @@ def _released(src: Source, name: str) -> bool:
 
 
 class Access:
-    def __init__(self, config: Config, audit: AuditLog):
-        self._sources = config.sources
+    def __init__(self, config: Config, audit: AuditLog, variables: dict | None = None):
+        """`variables` fills placeholders in source paths — `{user.context}` for the signed-in user."""
         self._audit = audit
+        self._vars = variables or {}
+        self._config = config
+        self._sources = {sid: self._bind(src) for sid, src in config.sources.items()}
+
+    def _bind(self, src: Source) -> Source:
+        text = str(src.path)
+        if "{" not in text:
+            return src
+        for k, v in self._vars.items():
+            text = text.replace("{" + k + "}", str(v))
+        if "{" in text:
+            return src          # unresolved placeholder: resolve() will report the path as missing
+        import dataclasses
+        return dataclasses.replace(src, path=self._config.bind_path(Path(text)))
 
     # ------------------------------------------------------------------ core
     def resolve(self, source_id: str, name: str, role: Role) -> Path:

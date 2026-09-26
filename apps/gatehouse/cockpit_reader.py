@@ -10,7 +10,15 @@ from __future__ import annotations
 
 import json
 
-from . import mtime_iso, now_iso
+import datetime as dt
+
+
+def mtime_iso(path):
+    return dt.datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(timespec="seconds")
+
+
+def now_iso():
+    return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def read(access, role, module, config) -> dict:

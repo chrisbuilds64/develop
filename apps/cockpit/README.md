@@ -114,7 +114,27 @@ table of findings in their current state, each linking to the audit that carries
 contract for every module (`schemas/detail.schema.json`); a new module gets the full view
 without a new template.
 
+## Users
+
+```bash
+cockpit user add alex --role operator --context ~/loops/alex/context
+cockpit user list
+```
+
+A user has a role and a **context directory** — their Context Loop folder. A source may say
+`path = "{user.context}"`, and for the signed-in user it resolves to their folder: one cockpit,
+several people, each on their own state, no database. With users on file, sign-in is required;
+the first visit plays a short intro, then the sign-in. Passwords are PBKDF2 hashes in
+`users.json`, sessions are HMAC-signed cookies over a secret file (mode 600). Elementary by
+design: no reset, no lockout — the place for those is marked.
+
 ## Plugins
+
+```bash
+cockpit plugin list
+cockpit plugin add ../gatehouse --link     # --link symlinks, for development
+cockpit plugin remove gatehouse
+```
 
 The cockpit is the surface; **plugins** bring the mechanisms. A plugin is a directory with a
 `plugin.json` (`cockpit/schemas/plugin.schema.json`) that declares a reader — the card and the
@@ -123,6 +143,14 @@ working view — and optionally actions and a **whole web application** mounted 
 interview, the artifacts, the reading and the audit are all reachable from its card. The one
 requirement for an app to be mountable is that it builds its links from
 `request.scope["root_path"]`.
+
+Bundled plugins live in `cockpit/plugins/`; installed ones next to the configuration in
+`plugins/`, and an installed one shadows a bundled one of the same id. A module names its
+plugin and nothing else — reader, app and locales come from the manifest.
+
+**The example plugin is `decisions`**: three files. `plugin.json` declares it, `reader.py`
+turns the Context Loop decision log into a card and a table, `decide.py` is the tool an
+action runs to record a decision — into the signed-in user's context. Copy it to start your own.
 
 A customer's own tool is attached the same way: manifest, reader, released sources. Nothing in
 the core changes for a new plugin — that is the test for whether the boundary holds.

@@ -63,15 +63,13 @@ class Action:
 @dataclass(frozen=True)
 class Module:
     id: str
-    reader: str
+    plugin: str                      # the plugin id; reader, app and locales come from its manifest
     sources: tuple[str, ...]
     maturity: str
     label: str | None = None
     enabled: bool = True
     actions: tuple[Action, ...] = ()
-    app: str | None = None           # "package.module:factory" — a web app to mount under /m/<id>/app
-    app_path: Path | None = None     # where that package lives, added to sys.path
-    app_config: Path | None = None   # handed to the factory
+    app_config: Path | None = None   # handed to the plugin's app factory, if it has one
 
 
 @dataclass(frozen=True)
@@ -100,17 +98,26 @@ class Config:
     default_role: str
     role_switch: bool
     audit_path: Path
+    users_path: Path
+    secret_path: Path
+    plugins_dir: Path
+    login_required: bool
     stale_after_hours: int
     sources: dict[str, Source]
     modules: list[Module]
     roles: dict[str, Role]
     base_dir: Path = field(default_factory=Path.cwd)
+    def bind_path(self, p: Path) -> Path:
+        p = Path(p).expanduser()
+        return p if p.is_absolute() else (self.base_dir / p)
 
     def role(self, role_id: str | None = None) -> Role:
         return self.roles[role_id or self.default_role]
 
 
 def _path(value: str, base: Path) -> Path:
+    if "{" in value:
+        return Path(value)          # a placeholder: bound per user later, relative to base then
     p = Path(value).expanduser()
     return p if p.is_absolute() else (base / p)
 
@@ -175,8 +182,8 @@ def load(path: Path) -> Config:
         actions = []
         for j, a in enumerate(m.get("action", []), 1):
             aw = f"{where} ('{mid}') [[module.action]] Nr. {j}"
-            tool = _need(a, "tool", aw)
-            if tool not in sources:
+            tool = a.get("tool", "plugin")
+            if tool != "plugin" and tool not in sources:
                 raise ConfigError(f"{aw}: tool source '{tool}' is not defined")
             data = a.get("data")
             if data and data not in sources:
@@ -194,14 +201,12 @@ def load(path: Path) -> Config:
             ))
         modules.append(Module(
             id=mid,
-            reader=_need(m, "reader", where),
+            plugin=m.get("plugin", mid),
             sources=needs,
-            maturity=_choice(_need(m, "maturity", where), MATURITY, where, "maturity"),
+            maturity=_choice(m.get("maturity", "running"), MATURITY, where, "maturity"),
             label=m.get("label"),
             enabled=bool(m.get("enabled", True)),
             actions=tuple(actions),
-            app=m.get("app"),
-            app_path=_path(m["app_path"], base) if m.get("app_path") else None,
             app_config=_path(m["app_config"], base) if m.get("app_config") else None,
         ))
 
@@ -239,6 +244,11 @@ def load(path: Path) -> Config:
         # Turn it on for a demo on your own machine, never on a shared one.
         role_switch=bool(top.get("role_switch", False)),
         audit_path=_path(top.get("audit", "cockpit-audit.jsonl"), base),
+        users_path=_path(top.get("users", "users.json"), base),
+        secret_path=_path(top.get("secret", ".cockpit-secret"), base),
+        plugins_dir=_path(top.get("plugins", "plugins"), base),
+        # With users on file, sign-in is required unless the config says otherwise.
+        login_required=bool(top.get("login_required", (base / top.get("users", "users.json")).exists())),
         stale_after_hours=int(top.get("stale_after_hours", 24)),
         sources=sources,
         modules=modules,

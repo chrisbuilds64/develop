@@ -22,11 +22,21 @@ from .registry import build_cards
 HERE = Path(__file__).parent
 
 
-def render(config: Config, lang: str | None = None, role_id: str | None = None) -> str:
+def render(config: Config, lang: str | None = None, role_id: str | None = None, user: str | None = None) -> str:
+    from .registry import plugins_for
+    from .users import Users
     i18n = I18n(HERE / "locales")
+    for plugin in plugins_for(config).values():
+        if plugin.locales and plugin.locales.is_dir():
+            i18n.merge(plugin.locales)
     lang = i18n.pick(lang, config.locale)
-    role = config.role(role_id)
-    access = Access(config, AuditLog(config.audit_path))
+    variables, role = {}, config.role(role_id)
+    if user:
+        u = Users(config.users_path, config.secret_path).get(user, config.base_dir)
+        if u is None:
+            raise SystemExit(f"no such user: {user}")
+        variables, role = u.as_vars(), config.roles.get(u.role, role)
+    access = Access(config, AuditLog(config.audit_path), variables)
     cards = build_cards(config, access, role)
 
     env = Environment(loader=FileSystemLoader(HERE / "templates"),
@@ -35,13 +45,13 @@ def render(config: Config, lang: str | None = None, role_id: str | None = None) 
     return tpl.render(
         config=config, lang=lang, languages=i18n.languages(), role=role, roles=[],
         t=lambda key, **kw: i18n.t(lang, key, **kw), version=__version__,
-        export=True, inline_css=(HERE / "static" / "cockpit.css").read_text(encoding="utf-8"),
+        export=True, user=None, inline_css=(HERE / "static" / "cockpit.css").read_text(encoding="utf-8"),
         cards=cards, modules_by_id={m.id: m for m in config.modules},
         now=dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
     )
 
 
-def write(config: Config, out: Path, lang: str | None = None, role_id: str | None = None) -> Path:
+def write(config: Config, out: Path, lang: str | None = None, role_id: str | None = None, user: str | None = None) -> Path:
     out = Path(out)
-    out.write_text(render(config, lang, role_id), encoding="utf-8")
+    out.write_text(render(config, lang, role_id, user), encoding="utf-8")
     return out

@@ -1,18 +1,35 @@
 # Demo: everything below points into fixtures/. Nothing on this machine is read.
+# Two users: alex (operator) and sam (guest). Password for both: demo
 [cockpit]
 name = "Control Room"
 locale = "en"
 bind = "127.0.0.1:8200"
 default_role = "operator"
-role_switch = true
 audit = "demo-audit.jsonl"
+users = "users.json"
+secret = ".demo-secret"
+plugins = "plugins"
 stale_after_hours = 24
+
+# --- Sources: {user.context} is the signed-in user's Context Loop folder -------------
+[[source]]
+id = "context"
+label = "Your context"
+path = "{user.context}"
+sensitivity = "internal"
 
 [[source]]
 id = "worklist"
 label = "Work list"
-path = "worklist"
-include = ["todo.json"]
+path = "{user.context}"
+include = ["todo.json", "todo.schema.json"]
+sensitivity = "internal"
+
+[[source]]
+id = "tools"
+label = "Tools"
+path = "tools"
+include = ["todo.py", "todo_validate.py"]
 sensitivity = "internal"
 
 [[source]]
@@ -41,16 +58,10 @@ path = "gatehouse-instance"
 include = ["run.json", "audit.jsonl"]
 sensitivity = "confidential"
 
-[[source]]
-id = "tools"
-label = "Tools"
-path = "tools"
-include = ["todo.py", "todo_validate.py"]
-sensitivity = "internal"
-
+# --- Modules: each names a plugin; reader and app come from its manifest -------------
 [[module]]
 id = "worklist"
-reader = "cockpit.readers.worklist"
+plugin = "worklist"
 sources = ["worklist"]
 maturity = "running"
 
@@ -113,32 +124,57 @@ args = ["set", "{id}", "--status", "{status}"]
   options = ["next", "doing", "waiting", "backlog", "done"]
 
 [[module]]
+id = "decisions"
+plugin = "decisions"
+sources = ["context"]
+maturity = "running"
+
+[[module.action]]
+id = "record"
+label = "decisions.record"
+tool = "plugin"
+command = "decide.py"
+data = "context"
+args = ["{what}", "--why", "{why}", "--instead", "{instead}"]
+  [[module.action.field]]
+  name = "what"
+  label = "field.what"
+  required = true
+  [[module.action.field]]
+  name = "why"
+  label = "field.why"
+  type = "textarea"
+  required = true
+  [[module.action.field]]
+  name = "instead"
+  label = "field.instead"
+
+[[module]]
 id = "pipeline"
-reader = "cockpit.readers.pipeline"
+plugin = "pipeline"
 sources = ["pipeline"]
 maturity = "running"
 
 [[module]]
 id = "audits"
-reader = "cockpit.readers.audits"
+plugin = "audits"
 sources = ["audits"]
 maturity = "running"
 
 [[module]]
 id = "contextloop"
-reader = "cockpit.readers.contextloop"
+plugin = "contextloop"
 sources = ["contextloop"]
 maturity = "running"
 
 [[module]]
 id = "gatehouse"
-reader = "cockpit.readers.gatehouse"
+plugin = "gatehouse"
 sources = ["elicitation"]
 maturity = "running"
-app = "gatehouse.api:create_app_from_path"
-app_path = "../../gatehouse"
 app_config = "gatehouse/gatehouse.toml"
 
+# --- Roles ---------------------------------------------------------------------------
 [[role]]
 id = "operator"
 modules = ["*"]
@@ -147,5 +183,6 @@ actions = ["*"]
 
 [[role]]
 id = "guest"
-modules = ["worklist", "pipeline", "contextloop"]
-max_sensitivity = "public"
+modules = ["worklist", "decisions", "pipeline", "contextloop"]
+max_sensitivity = "internal"
+actions = ["decisions.record"]

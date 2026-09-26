@@ -1,43 +1,55 @@
-# Cockpit — Konfiguration
+# Cockpit — configuration
 #
-# Drei Segmente, in dieser Reihenfolge gelesen:
-#   [[source]]  was das Cockpit überhaupt sehen darf   (nichts, was hier nicht steht)
-#   [[module]]  was angezeigt wird, und aus welchen Quellen
-#   [[role]]    wer welche Module öffnen und bis zu welcher Stufe lesen darf
+# Three segments, read in this order:
+#   [[source]]  what the cockpit may see at all         (nothing that is not listed here)
+#   [[module]]  what is shown, from which plugin, from which sources
+#   [[role]]    who may open which modules, read up to which sensitivity, run which actions
 #
-# Pfade dürfen mit ~ beginnen. Relative Pfade gelten ab dem Ordner dieser Datei.
-# Das Cockpit schreibt nichts, was einem Werkzeug gehört; es liest, und jeder
-# Zugriff — auch ein abgelehnter — landet in der Protokolldatei.
-
+# Paths may start with ~. Relative paths are taken from the folder of this file.
+# `{user.context}` in a source path is the signed-in user's Context Loop folder.
+# Users: `cockpit user add <name> --role <role> --context <dir>`. With users on file,
+# sign-in is required. Plugins: `cockpit plugin list | add <path> [--link] | remove <id>`.
 [cockpit]
 name = "Leitstand"
 locale = "de"
 bind = "127.0.0.1:8200"
 default_role = "operator"
 audit = "cockpit-audit.jsonl"
-stale_after_hours = 24          # ältere Angaben werden nicht mehr gezeigt
+users = "users.json"
+secret = ".cockpit-secret"
+plugins = "plugins"
+stale_after_hours = 24
 
-# --- Quellen -----------------------------------------------------------------
-# sensitivity: public < internal < confidential. Eine Rolle sieht bis zu ihrer Stufe.
-# include:     Freigabeliste. Fehlt sie, gilt der ganze Ordner als freigegeben —
-#              in dieser Beispieldatei absichtlich nirgends genutzt.
+# --- Sources: {user.context} is the signed-in user's Context Loop folder -------------
+[[source]]
+id = "context"
+label = "Your context"
+path = "{user.context}"
+sensitivity = "internal"
 
 [[source]]
 id = "worklist"
-label = "Arbeitsliste"
-path = "~/ChrisBuilds64/control/context"
+label = "Work list"
+path = "{user.context}"
 include = ["todo.json", "todo.schema.json"]
 sensitivity = "internal"
 
 [[source]]
+id = "tools"
+label = "Tools"
+path = "~/ChrisBuilds64/control/scripts"
+include = ["todo.py", "todo_validate.py"]
+sensitivity = "internal"
+
+[[source]]
 id = "pipeline"
-label = "Content-Pipeline"
+label = "Content pipeline"
 path = "~/ChrisBuilds64/content/flow"
 sensitivity = "internal"
 
 [[source]]
 id = "audits"
-label = "Prüfläufe"
+label = "Audits"
 path = "~/ChrisBuilds64/control/audits"
 sensitivity = "internal"
 
@@ -50,59 +62,136 @@ sensitivity = "public"
 
 [[source]]
 id = "elicitation"
-label = "Kanon-Erhebung"
+label = "Canon elicitation"
 path = "~/ChrisBuilds64/develop/apps/gatehouse/instances/demo"
 include = ["run.json", "audit.jsonl"]
 sensitivity = "confidential"
 
-# --- Module ------------------------------------------------------------------
-# maturity: running | draft | planned | assumption — wird auf der Karte angezeigt.
-# Ein Modul, dessen Quelle die Rolle nicht sehen darf, verschwindet nicht:
-# es erscheint als Karte "nicht freigegeben".
-
+# --- Modules: each names a plugin; reader and app come from its manifest -------------
 [[module]]
 id = "worklist"
-label = "Arbeitsliste"
-reader = "cockpit.readers.worklist"
+plugin = "worklist"
 sources = ["worklist"]
 maturity = "running"
 
+[[module.action]]
+id = "add"
+label = "worklist.add"
+tool = "tools"
+command = "todo.py"
+data = "worklist"
+args = ["add", "{title}", "--cluster", "{cluster}", "--prio", "{prio}", "--due", "{due}", "--source-kind", "decision", "--source-ref", "Cockpit"]
+  [[module.action.field]]
+  name = "title"
+  label = "field.title"
+  required = true
+  [[module.action.field]]
+  name = "cluster"
+  label = "field.cluster"
+  type = "select"
+  required = true
+  options = ["content", "context-loop", "events", "infra", "brand", "system", "books", "dsgvo", "hardware"]
+  [[module.action.field]]
+  name = "prio"
+  label = "field.prio"
+  type = "select"
+  options = ["high", "medium", "low"]
+  [[module.action.field]]
+  name = "due"
+  label = "field.due"
+  type = "date"
+
+[[module.action]]
+id = "done"
+label = "worklist.done"
+tool = "tools"
+command = "todo.py"
+data = "worklist"
+args = ["done", "{id}"]
+  [[module.action.field]]
+  name = "id"
+  label = "field.id"
+  required = true
+  placeholder = "PRD-01"
+
+[[module.action]]
+id = "move"
+label = "worklist.move"
+tool = "tools"
+command = "todo.py"
+data = "worklist"
+args = ["set", "{id}", "--status", "{status}"]
+  [[module.action.field]]
+  name = "id"
+  label = "field.id"
+  required = true
+  [[module.action.field]]
+  name = "status"
+  label = "field.status"
+  type = "select"
+  required = true
+  options = ["next", "doing", "waiting", "backlog", "done"]
+
+[[module]]
+id = "decisions"
+plugin = "decisions"
+sources = ["context"]
+maturity = "running"
+
+[[module.action]]
+id = "record"
+label = "decisions.record"
+tool = "plugin"
+command = "decide.py"
+data = "context"
+args = ["{what}", "--why", "{why}", "--instead", "{instead}"]
+  [[module.action.field]]
+  name = "what"
+  label = "field.what"
+  required = true
+  [[module.action.field]]
+  name = "why"
+  label = "field.why"
+  type = "textarea"
+  required = true
+  [[module.action.field]]
+  name = "instead"
+  label = "field.instead"
+
 [[module]]
 id = "pipeline"
-label = "Content-Pipeline"
-reader = "cockpit.readers.pipeline"
+plugin = "pipeline"
 sources = ["pipeline"]
 maturity = "running"
 
 [[module]]
 id = "audits"
-label = "Prüfläufe"
-reader = "cockpit.readers.audits"
+plugin = "audits"
 sources = ["audits"]
 maturity = "running"
 
 [[module]]
 id = "contextloop"
-label = "Context Loop"
-reader = "cockpit.readers.contextloop"
+plugin = "contextloop"
 sources = ["contextloop"]
 maturity = "running"
 
 [[module]]
 id = "gatehouse"
-label = "Kanon-Erhebung"
-reader = "cockpit.readers.gatehouse"
+plugin = "gatehouse"
 sources = ["elicitation"]
 maturity = "running"
+app_config = "~/ChrisBuilds64/develop/apps/gatehouse/gatehouse.toml"
 
-# --- Rollen ------------------------------------------------------------------
-
+# --- Roles ---------------------------------------------------------------------------
 [[role]]
 id = "operator"
 modules = ["*"]
 max_sensitivity = "confidential"
+actions = ["*"]
 
 [[role]]
 id = "guest"
-modules = ["worklist", "pipeline", "contextloop"]
-max_sensitivity = "public"
+modules = ["worklist", "decisions", "pipeline", "contextloop"]
+max_sensitivity = "internal"
+actions = ["decisions.record"]

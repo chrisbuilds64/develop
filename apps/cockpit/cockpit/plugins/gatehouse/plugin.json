@@ -1,0 +1,11 @@
+{
+  "id": "gatehouse",
+  "name": "Canon elicitation",
+  "version": "0.1.0",
+  "description": "How far the interview is and where the answers went. The application itself is the Gatehouse plugin in develop/apps/gatehouse — install it with `cockpit plugin add ../gatehouse --link` to get the workspace.",
+  "reader": "reader.py",
+  "needs": [
+    "elicitation"
+  ],
+  "maturity": "running"
+}

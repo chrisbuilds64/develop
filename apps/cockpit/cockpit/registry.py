@@ -19,6 +19,24 @@ import importlib
 from .access import Access, Denied, Missing
 from .config import Config, Role
 from .panel import Card, evaluate
+from .plugins import PluginError, app_of, discover, reader_of
+
+_PLUGINS: dict = {}
+
+
+def plugins_for(config: Config) -> dict:
+    """The plugins this configuration can use — discovered once per process."""
+    key = str(config.plugins_dir)
+    if key not in _PLUGINS:
+        _PLUGINS[key] = discover(config.plugins_dir)
+    return _PLUGINS[key]
+
+
+def reader_for(module, config: Config):
+    plugin = plugins_for(config).get(module.plugin)
+    if plugin is None:
+        raise PluginError(f"plugin '{module.plugin}' is not installed")
+    return reader_of(plugin)
 
 
 def build_cards(config: Config, access: Access, role: Role) -> list[Card]:
@@ -30,9 +48,9 @@ def build_cards(config: Config, access: Access, role: Role) -> list[Card]:
             cards.append(Card(module.id, None, "denied", f"role '{role.id}' may not open '{module.id}'"))
             continue
         try:
-            reader = importlib.import_module(module.reader)
-        except ImportError as exc:
-            cards.append(Card(module.id, None, "error", f"reader '{module.reader}' not found: {exc}"))
+            reader = reader_for(module, config)
+        except (PluginError, ImportError, SyntaxError) as exc:
+            cards.append(Card(module.id, None, "error", str(exc)))
             continue
         try:
             panel = reader.read(access, role, module, config)
@@ -51,10 +69,6 @@ def build_cards(config: Config, access: Access, role: Role) -> list[Card]:
     return cards
 
 
-def reader_for(module):
-    return importlib.import_module(module.reader)
-
-
 def card_for(config: Config, access: Access, role: Role, module_id: str) -> Card | None:
     for card in build_cards(config, access, role):
         if card.module_id == module_id:
@@ -63,24 +77,19 @@ def card_for(config: Config, access: Access, role: Role, module_id: str) -> Card
 
 
 def mount_apps(shell, config: Config) -> list[tuple[str, str]]:
-    """Mount every module's app under /m/<id>/app. Returns (module, error) for those that failed.
+    """Mount every module whose plugin brings a web app under /m/<id>/app.
 
-    A plugin that brings its own web app — Gatehouse is the first — runs inside
-    the cockpit's process and under its URL. The app must build its links from
-    the mount prefix (`request.scope["root_path"]`); that is the one thing it
-    has to do to be mountable.
+    The app runs inside the cockpit's process and URL. The one thing it has to
+    do to be mountable: build its links from `request.scope["root_path"]`.
     """
-    import sys
     failures = []
+    plugins = plugins_for(config)
     for module in config.modules:
-        if not module.enabled or not module.app:
+        plugin = plugins.get(module.plugin)
+        if not module.enabled or plugin is None or not plugin.app:
             continue
         try:
-            if module.app_path and str(module.app_path) not in sys.path:
-                sys.path.insert(0, str(module.app_path))
-            mod_name, _, factory_name = module.app.partition(":")
-            factory = getattr(importlib.import_module(mod_name), factory_name)
-            app = factory(module.app_config) if module.app_config else factory()
+            app = app_of(plugin, module.app_config)
             shell.mount(f"/m/{module.id}/app", app, name=f"app-{module.id}")
         except Exception as exc:
             failures.append((module.id, f"{type(exc).__name__}: {exc}"))

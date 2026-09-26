@@ -1,0 +1,16 @@
+{
+  "id": "worklist",
+  "name": "Work list",
+  "version": "0.1.0",
+  "description": "Open items from a Context Loop todo.json — what is due, who holds it, what is blocked. Actions run todo.py.",
+  "reader": "reader.py",
+  "needs": [
+    "worklist"
+  ],
+  "maturity": "running",
+  "actions": [
+    "add",
+    "done",
+    "move"
+  ]
+}

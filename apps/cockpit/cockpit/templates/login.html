@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ config.name }} · {{ t('app.login') }}</title>
+<link rel="stylesheet" href="/static/cockpit.css">
+</head>
+<body class="login-body">
+<main class="login">
+  <div class="login-card">
+    <div class="login-mark">
+      <svg viewBox="0 0 60 60" width="44" height="44" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#4caf50"/></linearGradient></defs>
+        <circle cx="30" cy="30" r="26" fill="none" stroke="url(#lg)" stroke-width="2.4"/>
+        <path d="M18 31 l8 8 l16 -18" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>{{ config.name }}</h1>
+    <p class="tag">{{ t('app.tagline') }}</p>
+
+    <form method="post" action="/login" class="login-form" autocomplete="on">
+      <label><span>{{ t('app.username') }}</span><input type="text" name="name" autofocus required autocapitalize="off" spellcheck="false"></label>
+      <label><span>{{ t('app.password') }}</span><input type="password" name="password" required></label>
+      {% if failed %}<p class="login-error">{{ t('app.login_failed') }}</p>{% endif %}
+      <button type="submit">{{ t('app.login') }} →</button>
+    </form>
+
+    <div class="login-foot">
+      <span>
+        {% for code, name in languages %}<a href="/set?lang={{ code }}" {% if code == lang %}class="on"{% endif %}>{{ name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+      </span>
+      <span class="dim">v{{ version }}</span>
+    </div>
+  </div>
+</main>
+</body>
+</html>

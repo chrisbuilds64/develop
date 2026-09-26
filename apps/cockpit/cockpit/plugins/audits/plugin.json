@@ -1,0 +1,11 @@
+{
+  "id": "audits",
+  "name": "Audits",
+  "version": "0.1.0",
+  "description": "When each kind of audit last ran, when the next is due, and every finding in its current state.",
+  "reader": "reader.py",
+  "needs": [
+    "audits"
+  ],
+  "maturity": "running"
+}

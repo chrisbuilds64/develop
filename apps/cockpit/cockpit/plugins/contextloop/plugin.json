@@ -1,0 +1,11 @@
+{
+  "id": "contextloop",
+  "name": "Context Loop",
+  "version": "0.1.0",
+  "description": "The package as it is on disk: version and procedures, each readable.",
+  "reader": "reader.py",
+  "needs": [
+    "contextloop"
+  ],
+  "maturity": "running"
+}

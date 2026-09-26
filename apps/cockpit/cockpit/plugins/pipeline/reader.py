@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from . import now_iso
+from cockpit.plugins._shared import now_iso
 
 STAGE = re.compile(r"^(\d{2})-(.+)$")
 

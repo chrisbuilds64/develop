@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import now_iso
+from cockpit.plugins._shared import now_iso
 
 
 def read(access, role, module, config) -> dict:

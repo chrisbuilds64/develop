@@ -3,13 +3,15 @@
   "name": "Canon elicitation",
   "version": "0.4.0",
   "description": "Runs the questions a canon pack defines, on client hardware, and writes the answers into a directory the client owns. Every model call is recorded before it is sent.",
-  "reader": "cockpit.readers.gatehouse",
+  "reader": "cockpit_reader.py",
   "app": {
     "factory": "gatehouse.api:create_app_from_path",
     "path": ".",
     "config": "gatehouse.toml",
     "mounts_under_prefix": true
   },
-  "needs": ["elicitation"],
+  "needs": [
+    "elicitation"
+  ],
   "maturity": "running"
 }

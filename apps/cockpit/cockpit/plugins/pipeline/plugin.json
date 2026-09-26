@@ -1,0 +1,11 @@
+{
+  "id": "pipeline",
+  "name": "PressRoom · Content pipeline",
+  "version": "0.1.0",
+  "description": "Folders are stages, subfolders are pieces. The board by stage, every piece with its meta.",
+  "reader": "reader.py",
+  "needs": [
+    "pipeline"
+  ],
+  "maturity": "running"
+}
