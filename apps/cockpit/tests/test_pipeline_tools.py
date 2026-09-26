@@ -44,7 +44,7 @@ def test_review_append_writes_numbered_entries_by_the_schema(tmp_path):
     root = make(tmp_path)
     (root / "review.schema.json").write_text(json.dumps({
         "required": ["id", "date", "author", "status", "title", "text"], "additionalProperties": False,
-        "properties": {"id": {"pattern": "^REV-\d{3}$"}, "date": {}, "author": {"enum": ["Chris", "Akhil"]}, "for": {"enum": ["Chris", "Akhil", "—"]},
+        "properties": {"id": {"pattern": "^REV-\d{3}$"}, "date": {}, "author": {"enum": ["Chris", "Akhil"]}, "for": {"enum": ["Chris", "Akhil"]},
                        "status": {"enum": ["info", "open", "resolved", "approved"]}, "stage": {}, "title": {}, "resolves": {"pattern": "^REV-\d{3}$"}, "text": {}}}))
     rv = root / "30-review-human" / "POD-01" / "review.md"
     rv.write_text("# Review\n\nOriginal line.\n", encoding="utf-8")

@@ -37,10 +37,9 @@
       "type": "string",
       "enum": [
         "Alex",
-        "Sam",
-        "—"
+        "Sam"
       ],
-      "description": "Who is asked to act. '—' when the entry is a record and asks nothing of anyone."
+      "description": "Who is asked to act. Absent when the entry is a record and asks nothing of anyone (the file shows '—')."
     },
     "status": {
       "type": "string",
