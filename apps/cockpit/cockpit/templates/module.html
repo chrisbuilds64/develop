@@ -25,6 +25,7 @@
 
     {% set allowed = [] %}
     {% for a in module.actions if a.scope == 'module' and role.may_act(module.id ~ '.' ~ a.id) %}{% set _ = allowed.append(a) %}{% endfor %}
+    <div class="col-right">
     {% if allowed or outcome %}
     <section class="actions">
       <h3>{{ t('app.actions') }}</h3>
@@ -64,6 +65,7 @@
     {% if aside %}
     <div class="aside-blocks">{% for b in aside %}{{ block(b) }}{% endfor %}</div>
     {% endif %}
+    </div>
   </div>
 
   {% for b in blocks if b.place != 'actions' %}{{ block(b) }}{% endfor %}

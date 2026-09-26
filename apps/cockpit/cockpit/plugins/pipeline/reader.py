@@ -16,6 +16,74 @@ VIDEOS = (".mp4", ".mov", ".webm")
 TEXT = (".md", ".txt", ".json")
 
 
+# The cover: every piece gets one, drawn from its meta — colour by track, glyph by type,
+# the number large, the series as a band. Deterministic: the same meta is the same cover,
+# today and in a year. These defaults are overridden by cover.json at the pipeline root,
+# where the canon will keep them.
+COVER = {
+    "track": {"deep-tech": "#2f6fed", "provocative": "#e0a52a", "business": "#2fa36b", "weekend-notes": "#8a5cf6"},
+    "label": {"FN": "field note", "POD": "podcast", "SP": "short post", "WN": "weekend note"},
+    "fallback": "#5a6270",
+}
+GLYPH = {
+    "FN": '<path d="M9 8h10M9 13h10M9 18h6"/>',
+    "POD": '<rect x="11" y="4" width="6" height="11" rx="3"/><path d="M7 12a7 7 0 0 0 14 0M14 19v3"/>',
+    "SP": '<path d="M15 3 7 15h6l-1 7 8-12h-6z"/>',
+    "WN": '<path d="M5 20c0-8 4-14 14-15-1 10-6 14-14 15zM5 20c4-5 7-8 10-10"/>',
+}
+
+
+def _esc(s: str) -> str:
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def cover_svg(meta: dict, rules: dict | None = None, size: int = 96) -> str:
+    """One piece as a small poster: 3:4, colour, glyph, number, series band, two lines of title."""
+    r = {**COVER, **(rules or {})}
+    label = str(meta.get("label") or "")
+    colour = r["track"].get(str(meta.get("track") or ""), r["fallback"])
+    number = str(meta.get("number") or "")
+    series = str(meta.get("series") or "")
+    title = str(meta.get("title") or "")
+    words, lines, cur = title.split(), [], ""
+    for w in words:
+        if len(cur) + len(w) + 1 > 16 and cur:
+            lines.append(cur); cur = w
+        else:
+            cur = (cur + " " + w).strip()
+        if len(lines) == 2:
+            break
+    if cur and len(lines) < 2:
+        lines.append(cur)
+    if len(" ".join(lines)) < len(title) and lines:
+        lines[-1] = lines[-1][:14] + "…"
+    w, h = size, int(size * 4 / 3)
+    glyph = GLYPH.get(label, '<circle cx="14" cy="13" r="6"/>')
+    parts = [f'<svg class="cover" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" aria-label="{_esc(title)}">',
+             f'<rect width="{w}" height="{h}" rx="{size // 12}" fill="{colour}"/>',
+             f'<rect width="{w}" height="{h}" rx="{size // 12}" fill="url(#g{abs(hash(number + label)) % 9973})" opacity=".35"/>',
+             f'<defs><linearGradient id="g{abs(hash(number + label)) % 9973}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient></defs>',
+             f'<g transform="translate({size * 0.10} {size * 0.10}) scale({size / 96 * 0.9})" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".9">{glyph}</g>',
+             f'<text x="{w - size * 0.10}" y="{size * 0.30}" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="{size * 0.11}" fill="#fff" opacity=".85">{_esc(label)}</text>',
+             f'<text x="{size * 0.10}" y="{h * 0.56}" font-family="-apple-system, Inter, sans-serif" font-weight="800" font-size="{size * (0.30 if len(number) <= 3 else 0.22)}" fill="#fff">{_esc(number)}</text>']
+    for i, line in enumerate(lines):
+        parts.append(f'<text x="{size * 0.10}" y="{h * 0.70 + i * size * 0.13}" font-family="-apple-system, Inter, sans-serif" font-size="{size * 0.105}" fill="#fff" opacity=".92">{_esc(line)}</text>')
+    if series:
+        parts.append(f'<rect x="0" y="{h - size * 0.16}" width="{w}" height="{size * 0.16}" fill="#000" opacity=".28"/>')
+        parts.append(f'<text x="{size * 0.10}" y="{h - size * 0.05}" font-family="ui-monospace, Menlo, monospace" font-size="{size * 0.10}" fill="#fff">{_esc(series)}</text>')
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _cover_rules(access, role, src) -> dict | None:
+    try:
+        if "cover.json" in access.listdir(src, role):
+            return access.read_json(src, "cover.json", role)
+    except Exception:
+        pass
+    return None
+
+
 def _kind(name: str) -> str:
     n = name.lower()
     if n.endswith(IMAGES):
@@ -114,9 +182,11 @@ def _pieces(access, role, src, stage, facets=()):
             return {}
     with ThreadPoolExecutor(max_workers=8) as pool:
         metas = list(pool.map(meta_of, names))
+    rules = _cover_rules(access, role, src)
     out = []
     for name, meta in zip(names, metas):
         out.append({
+            "cover": cover_svg(meta, rules, 64) if meta else "",
             # label + number is the whole tag — three pieces can share number "SIM-01"
             "tag": " ".join(str(x) for x in (meta.get("label"), meta.get("number")) if x) or name.split("-", 1)[0],
             "title": meta.get("title") or name,
@@ -214,6 +284,8 @@ def document(access, role, module, config, ref) -> dict | None:
         for k, v in meta.items():
             parts_md.append(f"| `{k}` | {str(v)[:120].replace('|', '\\|')} |")
     out = {"title": meta.get("title", name), "body": "\n".join(parts_md)}
+    if meta:
+        out["cover"] = cover_svg(meta, _cover_rules(access, role, src), 160)
     if tiles:
         out["files"] = tiles
     return out

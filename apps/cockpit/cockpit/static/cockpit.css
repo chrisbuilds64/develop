@@ -321,6 +321,16 @@ input[type=file] { font-size: 13px; }
 .kfilters button { align-self: end; font-size: 12px; padding: 5px 10px; }
 .kcard[hidden] { display: none; }
 
-/* blocks that belong beside the card, under the action forms: second grid column */
-.aside-blocks { grid-column: 2; min-width: 0; }
+/* the right column: action forms, then the blocks that belong next to them */
+.col-right { min-width: 0; }
+.aside-blocks { margin-top: 18px; }
 .aside-blocks .block { margin-top: 0; }
+
+/* covers: a piece's poster, drawn from its meta — on the board card and at the top of its page */
+.kcard.has-cover { display: flex; gap: 10px; align-items: flex-start; }
+.kcover { flex: 0 0 auto; display: block; line-height: 0; }
+.kcover svg { width: 56px; height: auto; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.4); display: block; }
+.kbody { min-width: 0; flex: 1; }
+.doc-head { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 8px; }
+.doc-cover svg { width: 120px; height: auto; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.45); display: block; }
+.kcol[data-tone="warn"] { border-color: var(--warn); }

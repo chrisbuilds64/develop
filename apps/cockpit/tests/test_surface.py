@@ -130,3 +130,13 @@ def test_board_filters_come_from_the_schema_and_cards_carry_their_values(client,
     page = client.get("/m/pipeline").text
     assert 'data-filter="label"' in page and 'data-filter="track"' in page and 'data-filter="status"' not in page
     assert 'data-f-label="' in page
+
+
+def test_every_piece_with_a_meta_gets_a_cover_drawn_from_it(client, world):
+    piece = world / "flow" / "30-review-human" / "piece-30-01"
+    (piece / "meta.json").write_text(json.dumps({"label": "POD", "number": "SIM-01", "title": "The Model Cannot Verify Itself", "track": "deep-tech", "series": "SIM"}))
+    sign_in(client, "sam")
+    board = client.get("/m/pipeline").text
+    assert '<svg class="cover"' in board and 'fill="#2f6fed"' in board and ">SIM-01<" in board
+    page = client.get("/m/pipeline/doc/30-review-human/piece-30-01").text
+    assert 'class="doc-cover"' in page and 'aria-label="The Model Cannot Verify Itself"' in page

@@ -2,8 +2,13 @@
 {% block main %}
 <div class="module-page">
   <a class="back" href="/m/{{ module.id }}">← {{ t(module.id ~ '.title') }}</a>
-  <h2>{{ doc.title }}</h2>
-  <p class="stamp">{{ module.id }} · {{ doc.ref }}{% if doc.proposal %} · <span class="badge tone-warn">{{ t('doc.has_proposal') }}</span>{% endif %}</p>
+  <div class="doc-head">
+    {% if doc.cover %}<div class="doc-cover">{{ doc.cover|safe }}</div>{% endif %}
+    <div>
+      <h2>{{ doc.title }}</h2>
+      <p class="stamp">{{ module.id }} · {{ doc.ref }}{% if doc.proposal %} · <span class="badge tone-warn">{{ t('doc.has_proposal') }}</span>{% endif %}</p>
+    </div>
+  </div>
 
   {% set allowed = [] %}
   {% for a in module.actions if a.scope == 'document' and role.may_act(module.id ~ '.' ~ a.id) %}{% set _ = allowed.append(a) %}{% endfor %}

@@ -72,4 +72,6 @@ def document_for(reader, access, role: Role, module: Module, config: Config, ref
         out["proposal"] = {"html": render_md(prop.strip()), "provenance": provenance}
     if doc.get("files"):
         out["files"] = doc["files"]
+    if doc.get("cover"):
+        out["cover"] = doc["cover"]
     return out

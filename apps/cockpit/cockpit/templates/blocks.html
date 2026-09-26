@@ -29,10 +29,13 @@
     <div class="kcol" data-tone="{{ col.tone or '' }}">
       <h4>{{ t(col.label) if '.' in (col.label|string) else col.label }} <span data-count>{{ col.cards|length }}</span></h4>
       {% for k in col.cards %}
-      <article class="kcard"{% for fk, fv in (k.facets or {}).items() %} data-f-{{ fk }}="{{ fv }}"{% endfor %}>
-        {% if k.tag %}<div class="ktag">{{ k.tag }}</div>{% endif %}
-        <div class="ktitle">{% if k.href %}<a href="{{ k.href }}">{{ k.title }}</a>{% else %}{{ k.title }}{% endif %}</div>
-        {% if k.meta %}<div class="kmeta">{% for m in k.meta %}<span>{{ m }}</span>{% endfor %}</div>{% endif %}
+      <article class="kcard{% if k.cover %} has-cover{% endif %}"{% for fk, fv in (k.facets or {}).items() %} data-f-{{ fk }}="{{ fv }}"{% endfor %}>
+        {% if k.cover %}<a class="kcover" href="{{ k.href }}">{{ k.cover|safe }}</a>{% endif %}
+        <div class="kbody">
+          {% if k.tag %}<div class="ktag">{{ k.tag }}</div>{% endif %}
+          <div class="ktitle">{% if k.href %}<a href="{{ k.href }}">{{ k.title }}</a>{% else %}{{ k.title }}{% endif %}</div>
+          {% if k.meta %}<div class="kmeta">{% for m in k.meta %}<span>{{ m }}</span>{% endfor %}</div>{% endif %}
+        </div>
       </article>
       {% endfor %}
     </div>
