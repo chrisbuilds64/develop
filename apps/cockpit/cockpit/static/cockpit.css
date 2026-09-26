@@ -334,3 +334,6 @@ input[type=file] { font-size: 13px; }
 .doc-head { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 8px; }
 .doc-cover svg { width: 120px; height: auto; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.45); display: block; }
 .kcol[data-tone="warn"] { border-color: var(--warn); }
+
+/* the hidden attribute wins over every display rule above */
+[hidden] { display: none !important; }

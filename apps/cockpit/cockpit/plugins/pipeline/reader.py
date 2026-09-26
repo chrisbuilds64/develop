@@ -271,7 +271,7 @@ def document(access, role, module, config, ref) -> dict | None:
     for f in files:
         p = access.resolve(src, f"{stage}/{name}/{f}", role)
         kind = _kind(f)
-        if kind in ("image", "video"):
+        if kind in ("image", "video", "pdf"):
             href = f"/m/{module.id}/file/{stage}/{name}/{f}"
         elif kind in ("data", "review", "text", "plain"):
             href = f"/m/{module.id}/doc/{stage}/{name}/{f}"

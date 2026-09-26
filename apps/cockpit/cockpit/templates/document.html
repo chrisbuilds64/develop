@@ -37,7 +37,7 @@
         </h3>
         <div class="tiles">
           {% for f in doc.files %}
-          <a class="tile tile-{{ f.kind }}" {% if f.href %}href="{{ f.href }}"{% if f.kind in ('image', 'video') %} target="_blank"{% endif %}{% endif %} title="{{ f.name }} · {{ f.size_kb }} KB">
+          <a class="tile tile-{{ f.kind }}" {% if f.href %}href="{{ f.href }}"{% if f.kind in ('image', 'video', 'pdf') %} target="_blank"{% endif %}{% endif %} title="{{ f.name }} · {{ f.size_kb }} KB">
             <span class="thumb">
               {% if f.kind == 'image' %}<img src="{{ f.href }}" alt="" loading="lazy">
               {% elif f.kind == 'video' %}<video preload="metadata" muted src="{{ f.href }}#t=0.5"></video><i class="play"></i>

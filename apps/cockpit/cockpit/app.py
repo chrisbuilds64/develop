@@ -316,7 +316,7 @@ def create_app(config: Config) -> FastAPI:
         if module is None or not c["role"].may_open(module_id) or not module.sources:
             return RedirectResponse("/", status_code=303)
         media, _ = mimetypes.guess_type(ref)
-        if not media or not media.startswith(("image/", "video/")):
+        if not media or not (media.startswith(("image/", "video/")) or media == "application/pdf"):
             return JSONResponse({"detail": "not a media file"}, status_code=404)
         try:
             path = c["_access"].resolve(module.sources[0], ref, c["role"])
