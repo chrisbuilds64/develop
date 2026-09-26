@@ -207,5 +207,14 @@
   "view.list": "List",
   "list.file": "file",
   "list.kind": "kind",
-  "list.size": "size"
+  "list.size": "size",
+  "pipeline.skill": "Run a skill on this piece",
+  "field.skill": "Skill",
+  "field.run_note": "Anything beyond the skill's default (optional)",
+  "block.runs": "Skill runs",
+  "run.when": "when",
+  "run.skill": "skill",
+  "run.container": "piece",
+  "run.by": "by",
+  "run.status": "status"
 }

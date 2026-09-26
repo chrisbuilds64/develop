@@ -135,13 +135,36 @@ def detail(access, role, module, config) -> dict:
             "tone": "warn" if num == 30 else "ok" if num >= 60 else "",
             "cards": _pieces(access, role, src, name, facets),
         })
-    return {"blocks": [
-        {"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters},
+    blocks = [{"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters}]
+    runs = _runs(access, role, src)
+    if runs:
+        blocks.append({"kind": "table", "title": "block.runs", "columns": ["run.when", "run.skill", "run.container", "run.by", "run.status"],
+                       "rows": [[r.get("created", "")[:16].replace("T", " "), "/" + r.get("skill", "?"),
+                                 {"text": r.get("container", ""), "href": f"/m/pipeline/doc/{r.get('container', '')}"},
+                                 r.get("requested_by", ""),
+                                 {"badge": r.get("status", "?"), "tone": {"done": "ok", "failed": "bad", "running": "warn"}.get(r.get("status"), "muted")}]
+                                for r in runs]})
+    return {"blocks": blocks + [
         {"kind": "links", "title": "block.tools", "items": [
             {"label": "tool.pressroom", "href": "pressroom://", "note": "drag & drop, macOS", "external": True},
             {"label": "tool.folder", "href": f"file://{access.source(src).path.expanduser()}", "external": True},
         ]},
     ]}
+
+
+def _runs(access, role, src, limit=12) -> list[dict]:
+    """The newest orders in _runs/ — the queue and its history, one file each."""
+    try:
+        names = [n for n in access.listdir(src, role, "_runs") if n.endswith(".json")]
+    except Exception:
+        return []
+    out = []
+    for n in sorted(names, reverse=True)[:limit]:
+        try:
+            out.append(access.read_json(src, f"_runs/{n}", role))
+        except Exception:
+            continue
+    return out
 
 
 def document(access, role, module, config, ref) -> dict | None:

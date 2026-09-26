@@ -302,6 +302,25 @@ data = "pipeline"
 scope = "document"
 args = ["{ref}"]
 
+[[module.action]]
+id = "skill"
+label = "pipeline.skill"
+tool = "plugin"
+command = "run_request.py"
+data = "pipeline"
+scope = "document"
+args = ["{ref}", "--skill", "{skill}", "--by", "{user}", "--note", "{note}"]
+  [[module.action.field]]
+  name = "skill"
+  label = "field.skill"
+  type = "select"
+  required = true
+  options_from = "run.schema.json:skill"
+  [[module.action.field]]
+  name = "note"
+  label = "field.run_note"
+  type = "textarea"
+
 [[module]]
 id = "audits"
 plugin = "audits"

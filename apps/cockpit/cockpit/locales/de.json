@@ -207,5 +207,14 @@
   "view.list": "Liste",
   "list.file": "Datei",
   "list.kind": "Art",
-  "list.size": "Größe"
+  "list.size": "Größe",
+  "pipeline.skill": "Skill auf diesem Vorgang starten",
+  "field.skill": "Skill",
+  "field.run_note": "Was über den Skill hinaus gewünscht ist (optional)",
+  "block.runs": "Skill-Läufe",
+  "run.when": "wann",
+  "run.skill": "Skill",
+  "run.container": "Vorgang",
+  "run.by": "von",
+  "run.status": "Status"
 }

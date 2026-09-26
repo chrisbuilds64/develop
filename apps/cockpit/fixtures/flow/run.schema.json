@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chrisbuilds64.com/schema/skill-run-1.json",
+  "title": "Skill run (one file in _runs/)",
+  "description": "A run is an order: a skill, a container, who asked. The cockpit writes it; a runner picks it up, executes the skill in a headless agent session, and writes the outcome back into the same file. The pipeline root is the queue — a runner that is off leaves the order waiting. Status moves queued → running → done | failed and never back.",
+  "type": "object",
+  "required": ["id", "skill", "container", "requested_by", "runner", "status", "created"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^\\d{8}-\\d{6}_[a-z-]+_[A-Za-z0-9-]+$",
+      "description": "<yyyymmdd-hhmmss>_<skill>_<container>, given by the tool."
+    },
+    "skill": {
+      "type": "string",
+      "enum": ["interpret", "canonical-review", "reflect", "asset"],
+      "description": "The skill to run, as the person would type it after the slash. The list is what this pipeline offers as a button."
+    },
+    "container": {
+      "type": "string",
+      "description": "stage/name of the piece the skill works on."
+    },
+    "note": {
+      "type": "string",
+      "description": "What the person wants beyond the skill's default — handed to the session verbatim."
+    },
+    "requested_by": {
+      "type": "string",
+      "description": "The signed-in person who pressed the button."
+    },
+    "runner": {
+      "type": "string",
+      "enum": ["claude-code", "api"],
+      "description": "Which kind of runner may take it: claude-code runs the real skill in a headless Claude Code session on the person's own machine and subscription; api is a model behind a key or an on-premise endpoint (not built yet)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["queued", "running", "done", "failed"]
+    },
+    "created": {"type": "string"},
+    "started": {"type": "string"},
+    "finished": {"type": "string"},
+    "taken_by": {
+      "type": "string",
+      "description": "The runner instance that claimed it, e.g. chris@Mac."
+    },
+    "session": {
+      "type": "string",
+      "description": "The agent session the run happened in — the thread a later run may continue."
+    },
+    "exit": {"type": "integer"},
+    "log": {
+      "type": "string",
+      "description": "Path of the run's transcript, relative to the pipeline root."
+    },
+    "result": {
+      "type": "string",
+      "description": "The session's closing words, as the runner saw them."
+    }
+  }
+}

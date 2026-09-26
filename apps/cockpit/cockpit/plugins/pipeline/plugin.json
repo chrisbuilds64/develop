@@ -1,8 +1,8 @@
 {
   "id": "pipeline",
   "name": "PressRoom · Content pipeline",
-  "version": "0.2.0",
-  "description": "Folders are stages, subfolders are pieces. The board by stage, every piece with its files and images. Actions: move a container (operator), append to its review, put a versioned asset into it — nothing is ever overwritten.",
+  "version": "0.3.0",
+  "description": "Folders are stages, subfolders are pieces. The board by stage, every piece with its files and images. Actions: move a container (operator), append to its review, put a versioned asset into it — nothing is ever overwritten. A skill button orders a run (run_request.py); runner.py on a person's machine executes it in a headless agent session.",
   "reader": "reader.py",
   "needs": [
     "pipeline"
@@ -12,6 +12,7 @@
     "move",
     "review_append",
     "upload",
-    "verify"
+    "verify",
+    "skill"
   ]
 }

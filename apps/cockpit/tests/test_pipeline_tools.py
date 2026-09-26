@@ -97,3 +97,33 @@ def test_verify_checks_meta_against_the_schema_and_walks_all(tmp_path):
     assert "40-asset-generation/POD-02: 1" in r.stdout and "meta.json: missing" in r.stdout and "finding(s)" in r.stdout
     (c / "meta.json").write_text(json.dumps({"label": "POD", "title": "ok"}))
     assert run(root, "verify.py", "POD-01").returncode == 0
+
+
+def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path):
+    root = make(tmp_path)
+    (root / "run.schema.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run.schema.json").read_text())
+    (root / "review.schema.json").write_text(json.dumps({"required": ["id"], "properties": {
+        "id": {}, "date": {}, "author": {"enum": ["Axel"]}, "for": {}, "status": {"enum": ["info"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
+    r = run(root, "run_request.py", "30-review-human/POD-01", "--skill", "interpret", "--by", "chris", "--note", "keep it short")
+    assert r.returncode == 0 and "queued" in r.stdout and "1 waiting" in r.stdout
+    assert run(root, "run_request.py", "POD-01", "--skill", "dance", "--by", "chris").returncode != 0
+    order = next((root / "_runs").glob("*.json"))
+    data = json.loads(order.read_text())
+    assert data["status"] == "queued" and data["skill"] == "interpret" and data["container"] == "30-review-human/POD-01" and data["note"] == "keep it short"
+
+    # a stand-in for claude: prints the prompt it got, as the json the real one prints
+    stub = tmp_path / "claude"
+    stub.write_text('#!/bin/sh\nprintf \'{"result": "changed script.v2; open: nothing", "session_id": "s-1"}\'\n')
+    stub.chmod(0o755)
+    r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "done" in r.stdout, r.stdout + r.stderr
+    data = json.loads(order.read_text())
+    assert data["status"] == "done" and data["exit"] == 0 and data["session"] == "s-1" and data["result"].startswith("changed script.v2")
+    assert (root / "_runs" / (order.stem + ".claim")).is_dir() and (root / "_runs" / (order.stem + ".log")).exists()
+    review = (root / "30-review-human" / "POD-01" / "review.md").read_text()
+    assert "## REV-001 — Run /interpret: done" in review and "changed script.v2" in review
+    # a second pass finds nothing queued
+    r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],
+                       capture_output=True, text=True)
+    assert "taking" not in r.stdout

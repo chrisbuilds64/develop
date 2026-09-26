@@ -71,6 +71,7 @@ shutil.copy(F / "tools" / "todo.schema.json", wl / "todo.schema.json")
 flow = F / "flow"
 flow.mkdir(parents=True, exist_ok=True)
 shutil.copy(Path(__file__).resolve().parent / "review.schema.json", flow / "review.schema.json")   # the review entry's shape, kept beside make.py
+shutil.copy(Path(__file__).resolve().parent / "run.schema.json", flow / "run.schema.json")         # the skill run's shape
 for stage, n in [("10-ideas", 4), ("20-produce", 1), ("30-review-human", 3), ("40-asset-generation", 2),
                  ("50-ready-to-publish", 1), ("60-published", 27), ("61-field-observation", 6),
                  ("70-reference-frames", 1)]:
