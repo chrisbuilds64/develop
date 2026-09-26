@@ -40,7 +40,7 @@ class Actions:
         return next((a for a in module.actions if a.id == action_id), None)
 
     def run(self, module: Module, action: Action, form: dict[str, str], role: Role,
-            ref: str | None = None) -> Outcome:
+            ref: str | None = None, user: str | None = None) -> Outcome:
         name = f"{module.id}.{action.id}"
         if not role.may_act(name):
             self._audit.record(role.id, action.tool, name, "act", ok=False,
@@ -60,13 +60,23 @@ class Actions:
             # A released script: same source rules as any file, same log line.
             script = self._access.resolve(action.tool, action.command, role)
 
-        values = {"ref": ref or ""}
+        values = {"ref": ref or "", "user": user or role.id}
         if action.scope == "document" and not ref:
             raise Denied("this action needs a document")
         for f in action.fields:
             v = (form.get(f.name) or "").strip()
             if f.required and not v:
                 raise Denied(f"field '{f.name}' is required")
+            if f.type == "file":
+                # The surface stored the upload and put its path here; the original name follows.
+                if v:
+                    orig = form.get(f.name + ".name", "")
+                    ext = orig.rsplit(".", 1)[-1].lower() if "." in orig else ""
+                    if f.accept and ext not in f.accept:
+                        raise Denied(f"'{orig}' is not an allowed file type — one of: {', '.join(f.accept)}")
+                    values[f.name + ".name"] = orig
+                values[f.name] = v
+                continue
             if f.options and v and v not in f.options:
                 raise Denied(f"'{v}' is not an allowed value for '{f.name}'")
             values[f.name] = v

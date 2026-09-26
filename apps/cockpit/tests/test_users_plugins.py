@@ -17,14 +17,14 @@ from cockpit.users import Users
 @pytest.fixture
 def users(tmp_path):
     u = Users(tmp_path / "users.json", tmp_path / ".secret")
-    u.add("alex", "demo", "operator", "home/alex/context", "Alex")
+    u.add("alex", "cockpit-demo", "operator", "home/alex/context", "Alex")
     return u
 
 
 def test_password_is_never_stored_and_wrong_ones_fail(users, tmp_path):
     raw = (tmp_path / "users.json").read_text()
-    assert "demo" not in raw
-    assert users.verify("alex", "demo") and not users.verify("alex", "Demo") and not users.verify("nobody", "demo")
+    assert "cockpit-demo" not in raw
+    assert users.verify("alex", "cockpit-demo") and not users.verify("alex", "Cockpit-demo") and not users.verify("nobody", "cockpit-demo")
 
 
 def test_a_session_token_is_signed_and_tampering_is_detected(users):
@@ -61,8 +61,8 @@ max_sensitivity = "internal"
 ''')
     config = load(cfg)
     users = Users(config.users_path, config.secret_path)
-    users.add("alex", "x", "operator", "home/alex/context")
-    users.add("sam", "x", "operator", "home/sam/context")
+    users.add("alex", "x-long-enough", "operator", "home/alex/context")
+    users.add("sam", "x-long-enough", "operator", "home/sam/context")
     audit = AuditLog(config.audit_path)
     for name in ("alex", "sam"):
         u = users.get(name, config.base_dir)

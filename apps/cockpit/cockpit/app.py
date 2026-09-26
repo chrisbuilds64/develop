@@ -15,11 +15,15 @@ from __future__ import annotations
 import datetime as dt
 import hmac
 import json
+import mimetypes
 import secrets
+import shutil
+import tempfile
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -38,7 +42,8 @@ HERE = Path(__file__).parent
 
 
 def create_app(config: Config) -> FastAPI:
-    app = FastAPI(title=config.name, version=__version__, docs_url="/docs", redoc_url=None)
+    # The API description is served by a route of our own, behind the same gate as the pages.
+    app = FastAPI(title=config.name, version=__version__, docs_url=None, redoc_url=None, openapi_url=None)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=HERE / "templates")
 
@@ -61,6 +66,13 @@ def create_app(config: Config) -> FastAPI:
     def csrf_ok(request: Request, form: dict) -> bool:
         cookie = request.cookies.get("csrf")
         return bool(cookie) and hmac.compare_digest(cookie, form.get("_csrf", ""))
+
+    def client_ip(request: Request) -> str:
+        # Behind the reverse proxy uvicorn rewrites request.client from X-Forwarded-For (--proxy-headers).
+        return request.client.host if request.client else "?"
+
+    def set_cookie(resp, key, value, **kw):
+        resp.set_cookie(key, value, secure=config.secure_cookies, **kw)
 
     def who(request: Request) -> User | None:
         name = users.redeem(request.cookies.get("session"))
@@ -107,23 +119,30 @@ def create_app(config: Config) -> FastAPI:
         if who(request):
             return RedirectResponse("/", status_code=303)
         c = ctx(request)
-        c["failed"] = bool(failed)
+        c["failed"], c["locked"] = bool(failed), failed == 2
         resp = templates.TemplateResponse(request, "login.html", c)
-        resp.set_cookie("intro", "1", samesite="lax", max_age=30 * 24 * 3600)
+        set_cookie(resp, "intro", "1", samesite="lax", max_age=30 * 24 * 3600)
         return resp
 
     @app.post("/login")
     async def login(request: Request):
         form = {k: str(v) for k, v in (await request.form()).items()}
         name, password = form.get("name", "").strip(), form.get("password", "")
+        ip = client_ip(request)
         if not csrf_ok(request, form):
             return RedirectResponse("/login?failed=1", status_code=303)
+        if (until := users.locked_until(name)):
+            audit.record(name or "?", "cockpit", "session", "login", ok=False,
+                         reason=f"locked for {int(until - time.time()) // 60 + 1} min", ip=ip)
+            return RedirectResponse("/login?failed=2", status_code=303)
         if users.verify(name, password):
-            audit.record(name, "cockpit", "session", "login")
+            users.clear_failures(name)
+            audit.record(name, "cockpit", "session", "login", ip=ip)
             resp = RedirectResponse("/", status_code=303)
-            resp.set_cookie("session", users.issue(name), httponly=True, samesite="lax")
+            set_cookie(resp, "session", users.issue(name), httponly=True, samesite="lax")
             return resp
-        audit.record(name or "?", "cockpit", "session", "login", ok=False, reason="bad credentials")
+        users.note_failure(name, config.lockout_after, config.lockout_minutes)
+        audit.record(name or "?", "cockpit", "session", "login", ok=False, reason="bad credentials", ip=ip)
         return RedirectResponse("/login?failed=1", status_code=303)
 
     @app.get("/logout")
@@ -179,6 +198,36 @@ def create_app(config: Config) -> FastAPI:
             return RedirectResponse("/", status_code=303)
         return module_page(request, c, module)
 
+    async def read_form(request: Request, action=None) -> tuple[dict, list[Path]]:
+        """Form values as strings. A file field becomes a temp path plus '<name>.name' with its original name.
+
+        Size is enforced while reading, so an oversized upload is refused before
+        it is written in full. The temp files are removed by the caller.
+        """
+        limit = config.max_upload_mb * 1024 * 1024
+        form, temps = {}, []
+        for k, v in (await request.form()).items():
+            if hasattr(v, "filename"):                     # starlette UploadFile
+                if not v.filename:
+                    form[k] = ""
+                    continue
+                fd, tmp = tempfile.mkstemp(prefix="cockpit-upload-", dir=None)
+                size = 0
+                with open(fd, "wb") as out:
+                    while chunk := await v.read(1024 * 1024):
+                        size += len(chunk)
+                        if size > limit:
+                            out.close()
+                            Path(tmp).unlink(missing_ok=True)
+                            raise Denied(f"'{v.filename}' is larger than {config.max_upload_mb} MB")
+                        out.write(chunk)
+                temps.append(Path(tmp))
+                form[k] = tmp
+                form[k + ".name"] = Path(v.filename).name
+            else:
+                form[k] = str(v)
+        return form, temps
+
     @app.post("/m/{module_id}/a/{action_id}", response_class=HTMLResponse)
     async def act(request: Request, module_id: str, action_id: str):
         if (r := gate(request)):
@@ -188,13 +237,17 @@ def create_app(config: Config) -> FastAPI:
         action = c["_actions"].find(module, action_id) if module else None
         if module is None or action is None:
             return RedirectResponse("/", status_code=303)
-        form = {k: str(v) for k, v in (await request.form()).items()}
+        temps: list[Path] = []
         try:
+            form, temps = await read_form(request)
             if not csrf_ok(request, form):
                 raise Denied("the form token did not match — reload the page and try again")
-            outcome = c["_actions"].run(module, action, form, c["role"])
+            outcome = c["_actions"].run(module, action, form, c["role"], user=c["user"].name if c["user"] else None)
         except Denied as exc:
             outcome = type("O", (), {"ok": False, "output": str(exc), "argv": []})()
+        finally:
+            for t in temps:
+                t.unlink(missing_ok=True)
         return module_page(request, c, module, outcome, action)
 
     @app.get("/m/{module_id}/doc/{ref:path}", response_class=HTMLResponse)
@@ -225,13 +278,18 @@ def create_app(config: Config) -> FastAPI:
         action = c["_actions"].find(module, action_id) if module else None
         if module is None or action is None or action.scope != "document":
             return RedirectResponse("/", status_code=303)
-        form = {k: str(v) for k, v in (await request.form()).items()}
+        temps: list[Path] = []
         try:
+            form, temps = await read_form(request)
             if not csrf_ok(request, form):
                 raise Denied("the form token did not match — reload the page and try again")
-            outcome = c["_actions"].run(module, action, form, c["role"], ref=ref)
+            outcome = c["_actions"].run(module, action, form, c["role"], ref=ref,
+                                        user=c["user"].name if c["user"] else None)
         except Denied as exc:
             outcome = type("O", (), {"ok": False, "output": str(exc), "argv": []})()
+        finally:
+            for t in temps:
+                t.unlink(missing_ok=True)
         try:
             doc = document_for(reader_for(module, config), c["_access"], c["role"], module, config, ref)
         except Denied as exc:
@@ -239,6 +297,30 @@ def create_app(config: Config) -> FastAPI:
         c["module"], c["doc"] = module, doc or {"title": ref, "html": "", "ref": ref}
         c["outcome"], c["ran"] = outcome, action
         return templates.TemplateResponse(request, "document.html", c)
+
+    @app.get("/m/{module_id}/file/{ref:path}")
+    def file(request: Request, module_id: str, ref: str):
+        """An image or a video out of a released source — through access.resolve, like every read.
+
+        Only media types are served; a text file has its document route, and
+        anything else is not for the browser. The response is served inline
+        with the type the extension says, never sniffed.
+        """
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        module = find_module(module_id)
+        if module is None or not c["role"].may_open(module_id) or not module.sources:
+            return RedirectResponse("/", status_code=303)
+        media, _ = mimetypes.guess_type(ref)
+        if not media or not media.startswith(("image/", "video/")):
+            return JSONResponse({"detail": "not a media file"}, status_code=404)
+        try:
+            path = c["_access"].resolve(module.sources[0], ref, c["role"])
+        except Denied as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=404)
+        return FileResponse(path, media_type=media, headers={"Content-Disposition": "inline",
+                                                             "X-Content-Type-Options": "nosniff"})
 
     # ---------------------------------------------------------------- setup
     def setup_page(request: Request, c: dict, outcome=None):
@@ -279,9 +361,9 @@ def create_app(config: Config) -> FastAPI:
         back = request.headers.get("referer", "/")
         resp = RedirectResponse(back, status_code=303)
         if lang and i18n.has(lang):
-            resp.set_cookie("lang", lang, samesite="lax", max_age=365 * 24 * 3600)
+            set_cookie(resp, "lang", lang, samesite="lax", max_age=365 * 24 * 3600)
         if role and config.role_switch and role in config.roles and who(request) is None:
-            resp.set_cookie("role", role, samesite="lax")
+            set_cookie(resp, "role", role, samesite="lax")
         return resp
 
     @app.get("/api/panels")
@@ -292,6 +374,19 @@ def create_app(config: Config) -> FastAPI:
         return JSONResponse([{"module": card.module_id, "verdict": card.verdict,
                               "reason": card.reason, "panel": card.panel}
                              for card in build_cards(config, c["_access"], c["role"])])
+
+    @app.get("/openapi.json")
+    def openapi_json(request: Request):
+        if config.login_required and who(request) is None:
+            return JSONResponse({"detail": "sign in first"}, status_code=401)
+        return JSONResponse(app.openapi())
+
+    @app.get("/docs", response_class=HTMLResponse)
+    def docs(request: Request):
+        if (r := gate(request)):
+            return r
+        from fastapi.openapi.docs import get_swagger_ui_html
+        return get_swagger_ui_html(openapi_url="/openapi.json", title=f"{config.name} — API")
 
     # The contracts, once, in the same document that describes the routes.
     def openapi():
@@ -312,7 +407,7 @@ def create_app(config: Config) -> FastAPI:
         request.state.csrf = token
         response = await call_next(request)
         if "csrf" not in request.cookies and response.headers.get("content-type", "").startswith("text/html"):
-            response.set_cookie("csrf", token, samesite="strict", httponly=False)
+            response.set_cookie("csrf", token, samesite="strict", httponly=False, secure=config.secure_cookies)
         return response
 
     # Mounted plugin apps sit behind the same gate and the same role check as the pages.

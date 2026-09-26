@@ -47,7 +47,11 @@ class Users:
     def save(self) -> None:
         self._path.write_text(json.dumps(self._data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    MIN_PASSWORD = 10
+
     def add(self, name: str, password: str, role: str, context: str, display: str = "") -> None:
+        if len(password) < self.MIN_PASSWORD:
+            raise ValueError(f"a password has at least {self.MIN_PASSWORD} characters")
         salt = secrets.token_bytes(16)
         digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 200_000)
         self._data["users"][name] = {
@@ -77,6 +81,30 @@ class Users:
             return False
         digest = hashlib.pbkdf2_hmac("sha256", password.encode(), base64.b64decode(u["salt"]), 200_000)
         return hmac.compare_digest(digest, base64.b64decode(u["hash"]))
+
+    # -------------------------------------------------------------- lockout
+    _fails: dict[str, list[float]] = {}
+    _locked: dict[str, float] = {}
+
+    def locked_until(self, name: str) -> float | None:
+        until = self._locked.get(name)
+        if until and until > time.time():
+            return until
+        self._locked.pop(name, None)
+        return None
+
+    def note_failure(self, name: str, after: int, minutes: int) -> None:
+        """Count failures per name within the window; lock when the count is reached."""
+        now = time.time()
+        window = [t for t in self._fails.get(name, []) if now - t < minutes * 60] + [now]
+        self._fails[name] = window
+        if len(window) >= after:
+            self._locked[name] = now + minutes * 60
+            self._fails[name] = []
+
+    def clear_failures(self, name: str) -> None:
+        self._fails.pop(name, None)
+        self._locked.pop(name, None)
 
     # ------------------------------------------------------------- sessions
     def _secret(self) -> bytes:

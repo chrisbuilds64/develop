@@ -84,6 +84,14 @@ Field values become **arguments, never a shell string** — an injection attempt
 harmless argument. An empty optional field drops its flag. A role must be granted the action
 by name (`actions = ["worklist.add"]`) or `*`; every run is recorded with its outcome.
 
+A field of `type = "file"` is an upload. The cockpit stores it in a temporary file, refuses
+it above `max_upload_mb` (default 50) or outside the field's `accept` list, and hands the tool
+the path as `{file}` and the original name as `{file.name}`. The tool decides where the file
+goes and what it is called — the pipeline's `asset_put.py` writes `<kind>.vN.<ext>` into the
+piece, next version each time, and never overwrites. `{user}` is the signed-in name, for a
+`--by`. Images and video inside a released source are served at `/m/<module>/file/<path>`,
+through the same access check as every read; a document may list them and the page shows them.
+
 ## Figures
 
 A panel may carry one **figure** — typed data the surface draws as SVG: `bar` (segments),
@@ -125,8 +133,14 @@ A user has a role and a **context directory** — their Context Loop folder. A s
 `path = "{user.context}"`, and for the signed-in user it resolves to their folder: one cockpit,
 several people, each on their own state, no database. With users on file, sign-in is required;
 the first visit plays a short intro, then the sign-in. Passwords are PBKDF2 hashes in
-`users.json`, sessions are HMAC-signed cookies over a secret file (mode 600). Elementary by
-design: no reset, no lockout — the place for those is marked.
+`users.json`, sessions are HMAC-signed cookies over a secret file (mode 600). A password has
+ten characters or more. After `lockout_after` failed attempts (default 5) a name is locked
+for `lockout_minutes` (default 15); each attempt is an audit line with the client's address.
+Elementary by design: no reset, no e-mail.
+
+Before the cockpit faces the internet: `secure_cookies = true` (behind TLS), `login_required
+= true` written down rather than inferred, and `uvicorn --proxy-headers` so the address in
+the audit is the client's, not the proxy's. `/docs` and `/openapi.json` sit behind the sign-in.
 
 ## Plugins
 

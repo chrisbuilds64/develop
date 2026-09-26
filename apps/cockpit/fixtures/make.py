@@ -151,12 +151,12 @@ for rel, typ, purpose, body in (
     p = canon / rel; p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(f"```\npath:        canon/{rel}\ntype:        {typ}\npurpose:     {purpose}\nmaintained:  the owner\nupdated:     {iso(today - dt.timedelta(days=30))}\n```\n\n{body}", encoding="utf-8")
 
-# --- users: password "demo" for both -------------------------------------------------
+# --- users: password "cockpit-demo" for both -------------------------------------------------
 sys.path.insert(0, str(F.parent))
 from cockpit.users import Users                              # noqa: E402
 u = Users(F / "users.json", F / ".demo-secret")
-u.add("alex", "demo", "operator", "home/alex/context", "Alex Rivera")
-u.add("sam", "demo", "guest", "home/sam/context", "Sam Okafor")
+u.add("alex", "cockpit-demo", "operator", "home/alex/context", "Alex Rivera")
+u.add("sam", "cockpit-demo", "guest", "home/sam/context", "Sam Okafor")
 
 # --- the Gatehouse plugin, linked from its repo --------------------------------------
 from cockpit.plugins import add                              # noqa: E402

@@ -25,7 +25,7 @@
 
     {% set allowed = [] %}
     {% for a in module.actions if a.scope == 'module' and role.may_act(module.id ~ '.' ~ a.id) %}{% set _ = allowed.append(a) %}{% endfor %}
-    {% if allowed %}
+    {% if allowed or outcome %}
     <section class="actions">
       <h3>{{ t('app.actions') }}</h3>
       {% if outcome %}
@@ -36,7 +36,8 @@
       </div>
       {% endif %}
       {% for a in allowed %}
-      <form class="action" method="post" action="/m/{{ module.id }}/a/{{ a.id }}">
+      {% set has_file = a.fields|selectattr('type', 'equalto', 'file')|list %}
+      <form class="action" method="post" action="/m/{{ module.id }}/a/{{ a.id }}"{% if has_file %} enctype="multipart/form-data"{% endif %}>
         <input type="hidden" name="_csrf" value="{{ csrf }}">
         <h4>{{ t(a.label) }}</h4>
         {% for f in a.fields %}

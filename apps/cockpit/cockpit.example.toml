@@ -19,6 +19,11 @@ users = "users.json"
 secret = ".cockpit-secret"
 plugins = "plugins"
 stale_after_hours = 24
+# login_required = true     # inferred from users.json existing; write it down before going public
+# secure_cookies = true     # cookies only over TLS — set behind the reverse proxy
+# max_upload_mb = 50        # a file field larger than this is refused before it is written in full
+# lockout_after = 5         # failed sign-ins per name before the name is locked …
+# lockout_minutes = 15      # … for this long
 
 # --- Sources: {user.context} is the signed-in user's Context Loop folder -------------
 [[source]]

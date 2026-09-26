@@ -45,7 +45,8 @@ class Source:
 class Field:
     name: str
     label: str
-    type: str = "text"               # text | select | textarea | date
+    type: str = "text"               # text | select | textarea | date | file
+    accept: tuple[str, ...] = ()     # file: allowed extensions, e.g. ("png", "jpg")
     required: bool = False
     options: tuple[str, ...] = ()
     placeholder: str = ""
@@ -106,6 +107,10 @@ class Config:
     secret_path: Path
     plugins_dir: Path
     login_required: bool
+    secure_cookies: bool
+    max_upload_mb: int
+    lockout_after: int
+    lockout_minutes: int
     stale_after_hours: int
     sources: dict[str, Source]
     modules: list[Module]
@@ -197,9 +202,9 @@ def load(path: Path) -> Config:
                 raise ConfigError(f"{aw}: data source '{data}' is mode = \"read\" — an action that writes needs mode = \"read-write\"")
             fields = tuple(Field(
                 name=_need(f, "name", aw), label=f.get("label", f["name"]),
-                type=_choice(f.get("type", "text"), ("text", "select", "textarea", "date"), aw, "type"),
+                type=_choice(f.get("type", "text"), ("text", "select", "textarea", "date", "file"), aw, "type"),
                 required=bool(f.get("required", False)), options=tuple(f.get("options", [])),
-                placeholder=f.get("placeholder", ""),
+                placeholder=f.get("placeholder", ""), accept=tuple(x.lower().lstrip(".") for x in f.get("accept", [])),
             ) for f in a.get("field", []))
             actions.append(Action(
                 id=_need(a, "id", aw), label=a.get("label", a["id"]), tool=tool,
@@ -258,6 +263,10 @@ def load(path: Path) -> Config:
         plugins_dir=_path(top.get("plugins", "plugins"), base),
         # With users on file, sign-in is required unless the config says otherwise.
         login_required=bool(top.get("login_required", (base / top.get("users", "users.json")).exists())),
+        secure_cookies=bool(top.get("secure_cookies", False)),      # true behind TLS
+        max_upload_mb=int(top.get("max_upload_mb", 50)),
+        lockout_after=int(top.get("lockout_after", 5)),
+        lockout_minutes=int(top.get("lockout_minutes", 15)),
         stale_after_hours=int(top.get("stale_after_hours", 24)),
         sources=sources,
         modules=modules,

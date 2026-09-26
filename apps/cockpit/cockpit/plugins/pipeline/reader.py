@@ -1,14 +1,19 @@
 """Content pipeline: folders are stages, subfolders are pieces.
 
-A live directory scan, so `as_of` is now — the numbers are as fresh as the
-disk. Stage names follow the `NN-name` convention; anything else is ignored.
+A live directory scan. `as_of` is the time the pipeline last moved — the
+newest modification under the stage folders, two levels down — so the card
+says how old the *content* is, not how old the reading is. Stage names follow
+the `NN-name` convention; anything else is ignored.
 """
 
 from __future__ import annotations
 
+import datetime as dt
 import re
 
-from cockpit.plugins._shared import now_iso
+IMAGES = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+VIDEOS = (".mp4", ".mov", ".webm")
+TEXT = (".md", ".txt", ".json")
 
 STAGE = re.compile(r"^(\d{2})-(.+)$")
 
@@ -35,7 +40,7 @@ def read(access, role, module, config) -> dict:
     return {
         "title": "pipeline.title",
         "subtitle": "pipeline.subtitle",
-        "as_of": now_iso(),
+        "as_of": dt.datetime.fromtimestamp(access.newest(src, role)).astimezone().isoformat(timespec="seconds"),
         "state": "attention" if review >= 8 else "ok",
         "headline": {"value": in_flight, "unit": "pipeline.in_flight"},
         "lines": [
@@ -119,12 +124,24 @@ def document(access, role, module, config, ref) -> dict | None:
     if meta.get("subtitle"):
         parts_md += [f"*{meta['subtitle']}*", ""]
     parts_md += [f"`{stage}` · `{name}`", "", "| file | size | |", "|---|---|---|"]
+    media = []
     for f in files:
         p = access.resolve(src, f"{stage}/{name}/{f}", role)
-        link = f"[open](/m/{module.id}/doc/{stage}/{name}/{f})" if f.endswith((".md", ".txt", ".json")) else ""
+        low = f.lower()
+        if low.endswith(TEXT):
+            link = f"[open](/m/{module.id}/doc/{stage}/{name}/{f})"
+        elif low.endswith(IMAGES + VIDEOS):
+            link = f"[view](/m/{module.id}/file/{stage}/{name}/{f})"
+            media.append({"name": f, "kind": "video" if low.endswith(VIDEOS) else "image",
+                          "href": f"/m/{module.id}/file/{stage}/{name}/{f}", "size_kb": max(1, p.stat().st_size // 1024)})
+        else:
+            link = ""
         parts_md.append(f"| `{f}` | {max(1, p.stat().st_size // 1024)} KB | {link} |")
     if meta:
         parts_md += ["", "## meta.json", "", "| field | value |", "|---|---|"]
         for k, v in meta.items():
             parts_md.append(f"| `{k}` | {str(v)[:120].replace('|', '\\|')} |")
-    return {"title": meta.get("title", name), "body": "\n".join(parts_md)}
+    out = {"title": meta.get("title", name), "body": "\n".join(parts_md)}
+    if media:
+        out["files"] = media
+    return out

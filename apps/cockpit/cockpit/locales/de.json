@@ -183,5 +183,14 @@
   "canon.discard": "Vorschlag verwerfen",
   "field.body": "Text",
   "field.ask": "Was soll sich ändern, und warum",
-  "gatehouse.started": "begonnen"
+  "gatehouse.started": "begonnen",
+  "doc.media": "Bilder und Video",
+  "doc.upload_hint": "bis {mb} MB — wird als neue Version abgelegt, nichts wird überschrieben",
+  "pipeline.review_append": "Zum Review ergänzen",
+  "pipeline.upload": "Datei in diesen Vorgang legen",
+  "pipeline.verify": "Vorgang prüfen",
+  "field.note": "Deine Anmerkung",
+  "field.kind": "Was ist es",
+  "field.file": "Datei",
+  "login.locked": "Zu viele Versuche — dieser Name ist eine Weile gesperrt."
 }

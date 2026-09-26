@@ -19,7 +19,7 @@ class AuditLog:
         self.path = Path(path)
 
     def record(self, role: str, source: str, name: str, action: str,
-               ok: bool = True, reason: str | None = None) -> None:
+               ok: bool = True, reason: str | None = None, ip: str | None = None) -> None:
         entry = {
             "ts": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "role": role,
@@ -30,6 +30,8 @@ class AuditLog:
         }
         if reason:
             entry["reason"] = reason
+        if ip:
+            entry["ip"] = ip
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(entry, ensure_ascii=False) + "\n")

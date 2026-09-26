@@ -1,5 +1,5 @@
 # Demo: everything below points into fixtures/. Nothing on this machine is read.
-# Two users: alex (operator) and sam (guest). Password for both: demo
+# Two users: alex (operator) and sam (guest). Password for both: cockpit-demo
 [cockpit]
 name = "Cockpit"
 locale = "en"
@@ -38,6 +38,7 @@ sensitivity = "internal"
 id = "pipeline"
 label = "Content pipeline"
 path = "flow"
+mode = "read-write"                   # move, review_append and asset_put write here; the cockpit never does
 sensitivity = "internal"
 
 [[source]]
@@ -217,6 +218,70 @@ plugin = "pipeline"
 sources = ["pipeline"]
 maturity = "running"
 
+[[module.action]]
+id = "move"
+label = "pipeline.move"
+tool = "plugin"
+command = "move.py"
+data = "pipeline"
+args = ["{container}", "{stage}"]
+  [[module.action.field]]
+  name = "container"
+  label = "field.container"
+  required = true
+  placeholder = "piece-30-01"
+  [[module.action.field]]
+  name = "stage"
+  label = "field.stage"
+  type = "select"
+  required = true
+  options = ["10-ideas", "20-produce", "30-review-human", "40-asset-generation", "50-ready-to-publish", "60-published", "61-field-observation", "70-reference-frames"]
+
+[[module.action]]
+id = "review_append"
+label = "pipeline.review_append"
+tool = "plugin"
+command = "review_append.py"
+data = "pipeline"
+scope = "document"
+stdin = "note"
+args = ["{ref}", "--by", "{user}"]
+  [[module.action.field]]
+  name = "note"
+  label = "field.note"
+  type = "textarea"
+  required = true
+
+[[module.action]]
+id = "upload"
+label = "pipeline.upload"
+tool = "plugin"
+command = "asset_put.py"
+data = "pipeline"
+scope = "document"
+args = ["{ref}", "{kind}", "{file}", "--name", "{file.name}", "--by", "{user}"]
+  [[module.action.field]]
+  name = "kind"
+  label = "field.kind"
+  type = "select"
+  required = true
+  options = ["linkedin-image", "substack-image", "header-16x9", "header-4x5", "thumbnail", "poster-4x5", "teaser-reel", "screen-segment", "image"]
+  [[module.action.field]]
+  name = "file"
+  label = "field.file"
+  type = "file"
+  required = true
+  accept = ["png", "jpg", "jpeg", "mp4", "mov"]
+
+[[module.action]]
+id = "verify"
+label = "pipeline.verify"
+tool = "plugin"
+command = "verify.py"
+data = "pipeline"
+scope = "document"
+args = ["{ref}"]
+
 [[module]]
 id = "audits"
 plugin = "audits"
@@ -247,4 +312,4 @@ actions = ["*"]
 id = "guest"
 modules = ["worklist", "decisions", "canon", "pipeline", "contextloop"]
 max_sensitivity = "internal"
-actions = ["decisions.record"]
+actions = ["decisions.record", "pipeline.review_append", "pipeline.upload", "pipeline.verify"]

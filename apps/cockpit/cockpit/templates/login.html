@@ -23,7 +23,7 @@
         <input type="hidden" name="_csrf" value="{{ csrf }}">
       <label><span>{{ t('app.username') }}</span><input type="text" name="name" autofocus required autocapitalize="off" spellcheck="false"></label>
       <label><span>{{ t('app.password') }}</span><input type="password" name="password" required></label>
-      {% if failed %}<p class="login-error">{{ t('app.login_failed') }}</p>{% endif %}
+      {% if locked %}<p class="login-error">{{ t('login.locked') }}</p>{% elif failed %}<p class="login-error">{{ t('app.login_failed') }}</p>{% endif %}
       <button type="submit">{{ t('app.login') }} →</button>
     </form>
 

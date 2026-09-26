@@ -25,13 +25,28 @@
       <h3 style="font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-2); margin:22px 0 8px">{{ t('doc.current') }}</h3>
       {% endif %}
       <div class="doc doc-page">{{ doc.html|safe }}</div>
+      {% if doc.files %}
+      <section class="block media">
+        <h3>{{ t('doc.media') }}</h3>
+        <div class="media-grid">
+          {% for f in doc.files %}
+          <figure>
+            {% if f.kind == 'video' %}<video controls preload="metadata" src="{{ f.href }}"></video>
+            {% else %}<a href="{{ f.href }}" target="_blank"><img src="{{ f.href }}" alt="{{ f.name }}" loading="lazy"></a>{% endif %}
+            <figcaption><code>{{ f.name }}</code> · {{ f.size_kb }} KB</figcaption>
+          </figure>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
     </div>
 
     {% if allowed %}
     <section class="actions">
       <h3>{{ t('app.actions') }}</h3>
       {% for a in allowed if not (a.id in ('accept', 'discard') and not doc.proposal) %}
-      <form class="action" method="post" action="/m/{{ module.id }}/doc/{{ doc.ref }}/a/{{ a.id }}">
+      {% set has_file = a.fields|selectattr('type', 'equalto', 'file')|list %}
+      <form class="action" method="post" action="/m/{{ module.id }}/doc/{{ doc.ref }}/a/{{ a.id }}"{% if has_file %} enctype="multipart/form-data"{% endif %}>
         <input type="hidden" name="_csrf" value="{{ csrf }}">
         <h4>{{ t(a.label) }}</h4>
         {% for f in a.fields %}
@@ -41,6 +56,9 @@
           <textarea name="{{ f.name }}" rows="{{ 18 if f.name == 'body' else 4 }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}>{% if f.name == 'body' %}{{ doc.raw }}{% endif %}</textarea>
           {% elif f.type == 'select' %}
           <select name="{{ f.name }}">{% for o in f.options %}<option>{{ o }}</option>{% endfor %}</select>
+          {% elif f.type == 'file' %}
+          <input type="file" name="{{ f.name }}"{% if f.accept %} accept=".{{ f.accept|join(',.') }}"{% endif %} {% if f.required %}required{% endif %}>
+          <small class="dim">{{ t('doc.upload_hint', mb=config.max_upload_mb) }}</small>
           {% else %}
           <input type="text" name="{{ f.name }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}>
           {% endif %}

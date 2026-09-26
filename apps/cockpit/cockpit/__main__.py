@@ -167,7 +167,10 @@ def cmd_user(args):
             sys.exit(f"role '{args.role}' is not defined in the configuration")
         pw = args.password or getpass.getpass(f"password for {args.name}: ")
         context = args.context or f"home/{args.name}/context"
-        users.add(args.name, pw, args.role, context, args.display or "")
+        try:
+            users.add(args.name, pw, args.role, context, args.display or "")
+        except ValueError as exc:
+            sys.exit(str(exc))
         ctx_dir = config.bind_path(Path(context))
         ctx_dir.mkdir(parents=True, exist_ok=True)
         print(f"user {args.name}: role {args.role}, context {ctx_dir}")

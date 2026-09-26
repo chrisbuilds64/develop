@@ -183,5 +183,14 @@
   "canon.discard": "Discard the proposal",
   "field.body": "Text",
   "field.ask": "What should change, and why",
-  "gatehouse.started": "started"
+  "gatehouse.started": "started",
+  "doc.media": "Images and video",
+  "doc.upload_hint": "up to {mb} MB — stored as a new version, nothing is overwritten",
+  "pipeline.review_append": "Add to the review",
+  "pipeline.upload": "Put a file into this piece",
+  "pipeline.verify": "Check this piece",
+  "field.note": "Your note",
+  "field.kind": "What is it",
+  "field.file": "File",
+  "login.locked": "Too many attempts — this name is locked for a while."
 }

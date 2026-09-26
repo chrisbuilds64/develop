@@ -87,6 +87,41 @@ class Access:
         return target
 
     # --------------------------------------------------------------- helpers
+    def newest(self, source_id: str, role: Role, subdir: str = ".", depth: int = 2) -> float:
+        """The latest modification time under a released directory, `depth` levels down.
+
+        Directory mtimes change when entries come and go, file mtimes when
+        content does — together they say when the data last moved. One audit
+        line for the whole walk: it is a read of the listing, not of files.
+        """
+        src = self._sources.get(source_id)
+        if src is None or not role.may_see(src.sensitivity):
+            raise self._deny(role, source_id, subdir, f"role '{role.id}' may not read '{source_id}'")
+        try:
+            root = src.path.resolve(strict=True)
+            where = (root / subdir).resolve(strict=True)
+        except FileNotFoundError:
+            raise self._deny(role, source_id, subdir, f"'{subdir}' does not exist in '{source_id}'", Missing)
+        if not where.is_relative_to(root):
+            raise self._deny(role, source_id, subdir, f"'{subdir}' escapes '{source_id}'")
+        latest = where.stat().st_mtime
+        frontier = [where]
+        for _ in range(depth):
+            nxt = []
+            for d in frontier:
+                for p in d.iterdir():
+                    if p.name.startswith("."):
+                        continue
+                    try:
+                        latest = max(latest, p.stat().st_mtime)
+                    except OSError:
+                        continue
+                    if p.is_dir():
+                        nxt.append(p)
+            frontier = nxt
+        self._audit.record(role.id, source_id, subdir, "stat")
+        return latest
+
     def read_text(self, source_id: str, name: str, role: Role) -> str:
         return self.resolve(source_id, name, role).read_text(encoding="utf-8")
 

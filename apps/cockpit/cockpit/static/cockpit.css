@@ -293,3 +293,10 @@ tr:last-child td { border-bottom: 0; }
 .doc-two { grid-template-columns: minmax(320px, 1fr) minmax(300px, 420px); }
 .doc.proposal { border-left: 3px solid var(--warn); }
 .action textarea[name="body"] { font-family: var(--mono); font-size: 12px; line-height: 1.45; }
+
+/* media in a document: images and small videos out of the pipeline */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.media-grid figure { margin: 0; }
+.media-grid img, .media-grid video { width: 100%; border-radius: 8px; border: 1px solid var(--line); background: var(--bg-2, #111); display: block; }
+.media-grid figcaption { font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+input[type=file] { font-size: 13px; }
