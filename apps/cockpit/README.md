@@ -114,6 +114,15 @@ and keys on the same id; with `people = "pipeline:people.json"` in `[cockpit]` t
 comes from the list, and `cockpit check` names a login that has no person. Add a person there
 first, then everywhere else.
 
+## Calendar
+
+The pipeline page shows the weeks around today with every piece that has a `publishDate` —
+**planned** while it stands before `60-published`, **published** from there on. The rhythm is
+`calendar.json` at the pipeline root: `slots` (weekdays), `one_per_day`, `max_gap_days`; the
+block marks the slots, lists the next free ones and the gaps longer than tolerated. The
+**schedule** action (`schedule.py <container> <date>`) puts a piece on a day: it refuses a day
+another piece holds and a piece already published, and only notes a day outside the slots.
+
 ## Runs
 
 The pipeline's **skill** action does not run anything. It writes an order into `_runs/` at the
