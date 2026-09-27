@@ -24,6 +24,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import review_entries  # noqa: E402
+try:
+    from cockpit.schema import check as schema_check
+except ImportError:                                   # run by hand from the source tree, outside the cockpit's interpreter
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    from cockpit.schema import check as schema_check
 
 STAGE = re.compile(r"^\d{2}-")
 VERSIONED = re.compile(r"^[a-z0-9-]+\.v\d+\.[a-z0-9]+$")
@@ -34,7 +39,7 @@ HEADING = re.compile(r"^##\s+(\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?)", re.M)
 
 
 def check_meta(folder: Path, schema: dict | None) -> list[str]:
-    """meta.json against the schema — the three checks that matter, without a library."""
+    """meta.json against the schema — the cockpit's one checker, prefixed with the file name."""
     m = folder / "meta.json"
     if not m.exists():
         return ["meta.json: missing — the container has no identity"]
@@ -42,22 +47,7 @@ def check_meta(folder: Path, schema: dict | None) -> list[str]:
         d = json.loads(m.read_text(encoding="utf-8"))
     except Exception as exc:
         return [f"meta.json: not valid JSON ({exc})"]
-    if not schema:
-        return []
-    out = []
-    props = schema.get("properties", {})
-    for k in schema.get("required", []):
-        if k not in d:
-            out.append(f"meta.json: required field '{k}' is missing")
-    for k, v in d.items():
-        if k not in props:
-            if schema.get("additionalProperties") is False:
-                out.append(f"meta.json: field '{k}' is not in the schema")
-            continue
-        allowed = props[k].get("enum")
-        if allowed and v not in allowed:
-            out.append(f"meta.json: {k} = {v!r} is not one of {allowed}")
-    return out
+    return ["meta.json: " + x for x in schema_check(d, schema)]
 
 
 def check(root: Path, stage: str, name: str, schema: dict | None) -> list[str]:

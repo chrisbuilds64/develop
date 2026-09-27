@@ -19,7 +19,7 @@ import markdown
 
 from .access import Denied
 from .config import Config, Module, Role
-from .panel import _check
+from .schema import check
 
 SCHEMA_PATH = Path(__file__).parent / "schemas" / "detail.schema.json"
 _MD = markdown.Markdown(extensions=["tables", "fenced_code", "sane_lists"])
@@ -41,7 +41,7 @@ def blocks_for(reader, access, role: Role, module: Module, config: Config) -> li
     except Exception as exc:  # a broken reader is a block, not a crash
         return [{"kind": "document", "html": f"<p class='hint'>{type(exc).__name__}: {exc}</p>"}]
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    problems = _check(detail, schema, schema)
+    problems = check(detail, schema)
     if problems:
         return [{"kind": "document", "html": "<p class='hint'>detail does not match the contract:<br>"
                                              + "<br>".join(problems) + "</p>"}]

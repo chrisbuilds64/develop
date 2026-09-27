@@ -26,7 +26,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..panel import _check
+from ..schema import check
 
 HERE = Path(__file__).parent
 SCHEMA_PATH = HERE.parent / "schemas" / "plugin.schema.json"
@@ -66,7 +66,7 @@ class Plugin:
 
 def validate(manifest: dict) -> list[str]:
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    return _check(manifest, schema, schema)
+    return check(manifest, schema)
 
 
 def load_manifest(path: Path) -> dict:

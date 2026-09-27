@@ -16,6 +16,13 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+import sys
+
+try:
+    from cockpit.schema import check as schema_check
+except ImportError:                                   # run by hand from the source tree, outside the cockpit's interpreter
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    from cockpit.schema import check as schema_check
 
 HEAD = re.compile(r"^## (REV-\d{3}) — (.+?)\s*$", re.M)
 ATTR = re.compile(r"\*\*([A-Za-z]+):\*\*\s*([^·\n]+?)(?=\s*·\s*\*\*|\s*$)", re.M)
@@ -59,25 +66,8 @@ def canonical(value: str, allowed: list[str]) -> str | None:
 
 
 def check(entry: dict, schema: dict | None) -> list[str]:
-    """The three checks that matter, without a library: required, value lists, unknown fields."""
-    if not schema:
-        return []
-    out = []
-    props = schema.get("properties", {})
-    for k in schema.get("required", []):
-        if not entry.get(k):
-            out.append(f"{entry.get('id', '?')}: required field '{k}' is missing")
-    for k, v in entry.items():
-        if k not in props:
-            out.append(f"{entry.get('id', '?')}: field '{k}' is not in the schema")
-            continue
-        allowed = props[k].get("enum")
-        if allowed and v not in allowed:
-            out.append(f"{entry.get('id', '?')}: {k} = {v!r} is not one of {allowed}")
-        pat = props[k].get("pattern")
-        if pat and isinstance(v, str) and not re.match(pat, v):
-            out.append(f"{entry.get('id', '?')}: {k} = {v!r} does not match {pat}")
-    return out
+    """The cockpit's one checker, prefixed with the entry's id."""
+    return [f"{entry.get('id', '?')}: {x}" for x in schema_check(entry, schema)]
 
 
 def render(entry: dict) -> str:

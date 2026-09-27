@@ -18,6 +18,12 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    from cockpit.schema import check as schema_check
+except ImportError:                                   # run by hand from the source tree, outside the cockpit's interpreter
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    from cockpit.schema import check as schema_check
+
 STAGE = re.compile(r"^\d{2}-")
 
 
@@ -27,20 +33,7 @@ def load_schema(root: Path) -> dict | None:
 
 
 def check(run: dict, schema: dict | None) -> list[str]:
-    if not schema:
-        return []
-    out, props = [], schema.get("properties", {})
-    for k in schema.get("required", []):
-        if not run.get(k):
-            out.append(f"required field '{k}' is missing")
-    for k, v in run.items():
-        if k not in props:
-            out.append(f"field '{k}' is not in the schema")
-            continue
-        allowed = props[k].get("enum")
-        if allowed and v not in allowed:
-            out.append(f"{k} = {v!r} is not one of {allowed}")
-    return out
+    return schema_check(run, schema)
 
 
 def main(argv=None) -> int:

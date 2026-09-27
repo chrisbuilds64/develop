@@ -91,7 +91,7 @@ def test_verify_checks_meta_against_the_schema_and_walks_all(tmp_path):
     (c / "meta.json").write_text(json.dumps({"label": "EP", "track": "deep-tech", "mood": "x"}))
     r = run(root, "verify.py", "POD-01")
     assert r.returncode == 1
-    assert "required field 'title' is missing" in r.stdout and "label = 'EP' is not one of" in r.stdout and "'mood' is not in the schema" in r.stdout
+    assert "required field 'title' is missing" in r.stdout and "label = 'EP' is not one of" in r.stdout and "unknown field 'mood'" in r.stdout
     (root / "40-asset-generation" / "POD-02").mkdir()
     r = run(root, "verify.py", "--all")
     assert "40-asset-generation/POD-02: 1" in r.stdout and "meta.json: missing" in r.stdout and "finding(s)" in r.stdout
