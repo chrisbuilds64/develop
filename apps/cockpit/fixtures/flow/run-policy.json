@@ -1,18 +1,36 @@
 {
-  "$comment": "What a skill run may do, and who may order one. Read by run_request.py when an order is placed (orderable_by) and by runner.py when it executes (the rest). No policy at the pipeline root: nothing is ordered and nothing runs. `default` applies where a skill says nothing; a skill lists only what differs. Paths: {data} is the pipeline root, {container} the ordered container.",
+  "$comment": "What a skill run may do, and who may order one. Read by run_request.py when an order is placed (orderable_by) and by runner.py when it executes (the rest). No policy at the pipeline root: nothing is ordered and nothing runs. `default` applies where a skill says nothing; a skill lists only what differs. Paths: {data} is the pipeline root, {container} the ordered container. `agent` is the name (from people.json) the headless session works and signs as.",
   "default": {
-    "orderable_by": ["operator"],
+    "orderable_by": [
+      "operator"
+    ],
     "permission_mode": "acceptEdits",
-    "write": ["{container}"],
-    "tools": ["Bash(python3:*)", "Bash(ls:*)", "Bash(cat:*)"],
+    "write": [
+      "{container}"
+    ],
+    "tools": [
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)"
+    ],
     "web": false,
-    "timeout": 1800
+    "timeout": 1800,
+    "agent": "Claude"
   },
   "skills": {
     "interpret": {
       "$comment": "Produces the container's deliverables and may move it a stage — the whole pipeline root is writable; python3 for the production scripts; the web for the fact-checker.",
-      "write": ["{data}"],
-      "tools": ["Bash(python3:*)", "Bash(mv:*)", "Bash(mkdir:*)", "Bash(cp:*)", "Bash(ls:*)", "Bash(cat:*)"],
+      "write": [
+        "{data}"
+      ],
+      "tools": [
+        "Bash(python3:*)",
+        "Bash(mv:*)",
+        "Bash(mkdir:*)",
+        "Bash(cp:*)",
+        "Bash(ls:*)",
+        "Bash(cat:*)"
+      ],
       "web": true
     },
     "canonical-review": {
@@ -21,7 +39,9 @@
     },
     "reflect": {
       "$comment": "Turns an observation into a signal container in 05-operational-observations.",
-      "write": ["{data}"]
+      "write": [
+        "{data}"
+      ]
     },
     "asset": {
       "$comment": "Dormant since 2026-09-06 — visuals are made elsewhere. Nobody may order it until that changes.",

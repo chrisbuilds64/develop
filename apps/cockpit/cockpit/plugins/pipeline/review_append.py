@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from review_entries import canonical, check, load_schema, next_id, render  # noqa: E402
+from review_entries import canonical, check, load_people, load_schema, next_id, person, render  # noqa: E402
 
 STAGE = re.compile(r"^\d{2}-")
 
@@ -29,7 +29,7 @@ STAGE = re.compile(r"^\d{2}-")
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="review_append.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("container")
-    p.add_argument("--by", required=True, help="the author — matched to the schema's list, case does not matter")
+    p.add_argument("--by", required=True, help="the author — a person from people.json, by id or name, case does not matter")
     p.add_argument("--title", required=True)
     p.add_argument("--status", default="info")
     p.add_argument("--for", dest="for_", default="")
@@ -50,23 +50,29 @@ def main(argv=None) -> int:
     existing = target.read_text(encoding="utf-8") if target.exists() else ""
 
     schema = load_schema(root)
+    people = load_people(root)
+    if people is None:
+        sys.exit("no people.json at the pipeline root — nobody can sign a review entry")
     props = (schema or {}).get("properties", {})
+    author = person(a.by, people)
+    if not author:
+        sys.exit(f"'{a.by}' is not in people.json — add the person there first")
     entry = {
         "id": next_id(existing),
         "date": dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
-        "author": canonical(a.by, props.get("author", {}).get("enum", [])) or a.by.strip(),
+        "author": author,
         "status": canonical(a.status, props.get("status", {}).get("enum", [])) or a.status.strip(),
         "stage": here[0],
         "title": a.title.strip(),
         "text": text,
     }
     if a.for_.strip():
-        entry["for"] = canonical(a.for_, props.get("for", {}).get("enum", [])) or a.for_.strip()
+        entry["for"] = person(a.for_, people) or sys.exit(f"'{a.for_}' is not in people.json — one person, by id or name")
     if a.resolves.strip():
         entry["resolves"] = a.resolves.strip().upper()
         if not re.search(rf"^## {re.escape(entry['resolves'])} — ", existing, re.M):
             sys.exit(f"{entry['resolves']} is not an entry in this review.md")
-    problems = check(entry, schema)
+    problems = check(entry, schema, people)
     if problems:
         sys.exit("refused — " + "; ".join(problems))
 

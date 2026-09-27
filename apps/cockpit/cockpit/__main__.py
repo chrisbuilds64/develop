@@ -80,6 +80,22 @@ def cmd_check(args):
     identities = [(n, users.get(n, config.base_dir)) for n in users.names()] or [(None, None)]
     if identities[0][0]:
         print(f"users          OK      {', '.join(n for n, _ in identities)} — sign-in required")
+        if config.people:
+            import json
+            sid, file = config.people
+            path = config.sources[sid].path.expanduser() / file
+            known = {x["id"] for x in json.loads(path.read_text(encoding="utf-8")).get("people", [])} if path.exists() else None
+            if known is None:
+                print(f"people         MISSING {sid}:{file} — display names fall back to the login, tools refuse to sign")
+                failures += 1
+            else:
+                missing = [n for n, _ in identities if n not in known]
+                for n in missing:
+                    print(f"people         WARN    login '{n}' has no entry in {file}")
+                if not missing:
+                    print(f"people         OK      {sid}:{file} — {len(known)} listed, every login among them")
+        else:
+            print("people         none    no [cockpit] people = \"<source>:<file>\" — display names come from users.json")
     else:
         print(f"users          none    running as role '{config.default_role}'")
     for name, user in identities:

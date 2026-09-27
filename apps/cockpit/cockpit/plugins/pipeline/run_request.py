@@ -32,6 +32,11 @@ def load_schema(root: Path) -> dict | None:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
+def load_people(root: Path) -> list[dict] | None:
+    p = root / "people.json"
+    return json.loads(p.read_text(encoding="utf-8")).get("people", []) if p.exists() else None
+
+
 def load_policy(root: Path) -> dict | None:
     p = root / "run-policy.json"
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
@@ -71,11 +76,18 @@ def main(argv=None) -> int:
     if len(here) != 1:
         sys.exit(f"container '{name}' " + ("not found" if not here else "exists in more than one stage"))
 
+    people = load_people(root)
+    if people is None:
+        sys.exit("no people.json at the pipeline root — nobody can order a run")
+    who = next((x["id"] for x in people if a.by.strip().lower() in (x["id"].lower(), x["name"].lower())), None)
+    if not who:
+        sys.exit(f"'{a.by}' is not in people.json — add the person there first")
+
     now = dt.datetime.now().astimezone()
     run = {
         "id": f"{now.strftime('%Y%m%d-%H%M%S')}_{a.skill.strip()}_{name}",
         "skill": a.skill.strip(), "container": f"{here[0]}/{name}",
-        "requested_by": a.by.strip(), "runner": a.runner.strip(),
+        "requested_by": who, "runner": a.runner.strip(),
         "status": "queued", "created": now.isoformat(timespec="seconds"),
     }
     if a.note.strip():

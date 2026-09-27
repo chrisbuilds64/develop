@@ -16,6 +16,9 @@ def run(root, tool, *args, stdin=None):
 
 def make(tmp_path):
     (tmp_path / "30-review-human" / "POD-01").mkdir(parents=True)
+    (tmp_path / "people.json").write_text(json.dumps({"people": [
+        {"id": "chris", "name": "Chris", "kind": "human"}, {"id": "akhil", "name": "Akhil", "kind": "human"},
+        {"id": "claude", "name": "Claude", "kind": "agent"}]}))
     (tmp_path / "30-review-human" / "POD-01" / "meta.json").write_text('{"label": "POD", "title": "One"}')
     (tmp_path / "40-asset-generation").mkdir()
     (tmp_path / "up.png").write_bytes(b"\x89PNG fake")
@@ -68,7 +71,16 @@ def test_review_append_writes_numbered_entries_by_the_schema(tmp_path):
     assert "not one of" in run(root, "review_append.py", "POD-01", "--by", "akhil", "--title", "x", "--status", "maybe", stdin="t").stderr
     assert "not an entry" in run(root, "review_append.py", "POD-01", "--by", "akhil", "--title", "x", "--resolves", "REV-009", stdin="t").stderr
     assert run(root, "review_append.py", "POD-01", "--by", "akhil", "--title", "x", stdin="   ").returncode != 0
+    # refused: a person people.json does not know, two persons in For, and nobody at all without the file
+    assert "not in people.json" in run(root, "review_append.py", "POD-01", "--by", "nobody", "--title", "x", stdin="t").stderr
+    assert "one person" in run(root, "review_append.py", "POD-01", "--by", "akhil", "--for", "Chris, Akhil", "--title", "x", stdin="t").stderr
+    (root / "people.json").rename(root / "people.away")
+    assert "no people.json" in run(root, "review_append.py", "POD-01", "--by", "akhil", "--title", "x", stdin="t").stderr
+    (root / "people.away").rename(root / "people.json")
     assert rv.read_text(encoding="utf-8") == text                      # nothing refused left a trace
+    # verify sees an author the list does not know
+    rv.write_text(text.replace("**Author:** Chris", "**Author:** Someone"), encoding="utf-8")
+    assert "author = 'Someone' is not a name in people.json" in run(root, "verify.py", "POD-01").stdout
 
 
 def test_verify_finds_duplicates_and_bad_names(tmp_path):
@@ -104,12 +116,12 @@ def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path)
     (root / "run.schema.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run.schema.json").read_text())
     (root / "run-policy.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run-policy.json").read_text())
     (root / "review.schema.json").write_text(json.dumps({"required": ["id"], "properties": {
-        "id": {}, "date": {}, "author": {"enum": ["Axel"]}, "for": {}, "status": {"enum": ["info"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
+        "id": {}, "date": {}, "author": {}, "for": {}, "status": {"enum": ["info"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
     r = run(root, "run_request.py", "30-review-human/POD-01", "--skill", "interpret", "--by", "chris", "--role", "operator", "--note", "keep it short")
     assert r.returncode == 0 and "queued" in r.stdout and "1 waiting" in r.stdout
     assert run(root, "run_request.py", "POD-01", "--skill", "dance", "--by", "chris", "--role", "operator").returncode != 0
     # who may order what is the policy's word, not the form's
-    r = run(root, "run_request.py", "POD-01", "--skill", "interpret", "--by", "sam", "--role", "guest")
+    r = run(root, "run_request.py", "POD-01", "--skill", "interpret", "--by", "akhil", "--role", "guest")
     assert r.returncode != 0 and "may be ordered by operator, not guest" in r.stderr
     r = run(root, "run_request.py", "POD-01", "--skill", "asset", "--by", "chris", "--role", "operator")
     assert r.returncode != 0 and "not be ordered by anyone" in r.stderr
@@ -117,6 +129,8 @@ def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path)
     order = next((root / "_runs").glob("*.json"))
     data = json.loads(order.read_text())
     assert data["status"] == "queued" and data["skill"] == "interpret" and data["container"] == "30-review-human/POD-01" and data["note"] == "keep it short"
+    assert data["requested_by"] == "chris"
+    assert "not in people.json" in run(root, "run_request.py", "POD-01", "--skill", "interpret", "--by", "ghost", "--role", "operator").stderr
 
     # a stand-in for claude: prints the prompt it got, as the json the real one prints
     stub = tmp_path / "claude"
@@ -133,7 +147,7 @@ def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path)
     assert f"--add-dir {root}" in head and "--allowedTools Bash(python3:*),Bash(mv:*)" in head and "WebFetch,WebSearch" in head
     assert "--permission-mode acceptEdits" in head and "Bash(git:*)" not in head
     review = (root / "30-review-human" / "POD-01" / "review.md").read_text()
-    assert "## REV-001 — Run /interpret: done" in review and "changed script.v2" in review
+    assert "## REV-001 — Run /interpret: done" in review and "changed script.v2" in review and "**Author:** Claude" in review
     # without a policy the runner runs nothing, and says so
     (root / "run-policy.json").unlink()
     r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],

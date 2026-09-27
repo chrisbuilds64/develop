@@ -18,6 +18,9 @@ import shutil
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from review_entries import load_people, person  # noqa: E402
+
 STAGE = re.compile(r"^\d{2}-")
 KINDS = {
     "linkedin-image":  ("linkedin-image",  ("png", "jpg", "jpeg")),
@@ -53,6 +56,8 @@ def main(argv=None) -> int:
         sys.exit("the uploaded file is missing or empty")
 
     root = Path(os.environ.get("COCKPIT_DATA_DIR") or ".").resolve()
+    if a.by.strip():
+        a.by = person(a.by, load_people(root)) or sys.exit(f"'{a.by}' is not in people.json — add the person there first")
     name = a.container.strip().strip("/").split("/")[-1]  # "stage/name" from the surface, "name" from the shell
     if not name or name.startswith("."):
         sys.exit(f"'{name}' is not a container name")

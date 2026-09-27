@@ -103,6 +103,17 @@ piece, next version each time, and never overwrites. `{user}` is the signed-in n
 `--by`. Images and video inside a released source are served at `/m/<module>/file/<path>`,
 through the same access check as every read; a document may list them and the page shows them.
 
+## People
+
+**`people.json` at the pipeline root is the one list of persons and agent instances**: an id
+(the login name), a name, a kind (`human`, `agent`). Every tool that signs something resolves
+`--by` and `--for` against it — by id or name, case does not matter — and writes the name; an
+unknown person is refused, and without the file nobody can sign. `verify` checks the authors in
+every review against it. `users.json` keeps what only the login needs (password, role, context)
+and keys on the same id; with `people = "pipeline:people.json"` in `[cockpit]` the display name
+comes from the list, and `cockpit check` names a login that has no person. Add a person there
+first, then everywhere else.
+
 ## Runs
 
 The pipeline's **skill** action does not run anything. It writes an order into `_runs/` at the

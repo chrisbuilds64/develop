@@ -1,0 +1,20 @@
+{
+  "$comment": "The one list of persons and agent instances the pipeline knows. A tool resolves --by / --for against it (id or name, case does not matter) and writes the name; an unknown person is refused. users.json (login, role, context) keys on the id. Add a person here first, then everywhere else.",
+  "people": [
+    {
+      "id": "alex",
+      "name": "Alex",
+      "kind": "human"
+    },
+    {
+      "id": "sam",
+      "name": "Sam",
+      "kind": "human"
+    },
+    {
+      "id": "claude",
+      "name": "Claude",
+      "kind": "agent"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ bind = "127.0.0.1:8200"
 default_role = "operator"
 audit = "demo-audit.jsonl"
 users = "users.json"
+people = "pipeline:people.json"          # the one list of persons: display names here, --by/--for in the tools
 secret = ".demo-secret"
 plugins = "plugins"
 stale_after_hours = 24

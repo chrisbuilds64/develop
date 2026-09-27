@@ -26,20 +26,13 @@
     },
     "author": {
       "type": "string",
-      "enum": [
-        "Alex",
-        "Sam",
-        "Claude"
-      ],
-      "description": "Who wrote it — the signed-in person, or the agent instance. Set by the tool from the session."
+      "minLength": 1,
+      "description": "Who wrote it — a person or agent instance from people.json at the pipeline root, written as its name. The tool resolves the signed-in id; verify checks the name."
     },
     "for": {
       "type": "string",
-      "enum": [
-        "Alex",
-        "Sam"
-      ],
-      "description": "Who is asked to act. Absent when the entry is a record and asks nothing of anyone (the file shows '—')."
+      "minLength": 1,
+      "description": "Who is asked to act — one person from people.json, by name. Absent when the entry is a record and asks nothing of anyone (the file shows '—')."
     },
     "status": {
       "type": "string",

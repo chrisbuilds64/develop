@@ -3,14 +3,12 @@
     "alex": {
       "role": "operator",
       "context": "home/alex/context",
-      "display": "Alex Rivera",
       "salt": "JRdcvhMk2liDJDiv0gw4uw==",
       "hash": "jcr4iSZJPAPrH2HHQZk+kSyJX2DBaNOerQi+0gTXAiE="
     },
     "sam": {
       "role": "guest",
       "context": "home/sam/context",
-      "display": "Sam Okafor",
       "salt": "eP+UrpPBXRfa0SlympXasQ==",
       "hash": "ldd1Ckc9NbTBpABrWgU+RwfttG6I0lmojabSKg6GJJc="
     }

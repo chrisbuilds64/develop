@@ -55,7 +55,7 @@ def command_for(run: dict, rules: dict, args) -> list[str]:
     Every right the session gets is a line in run-policy.json — nothing here by default.
     """
     subst = {"{data}": str(args.data), "{container}": str(args.data / run["container"])}
-    cmd = [args.claude, "-p", prompt_for(run), "--output-format", "json",
+    cmd = [args.claude, "-p", prompt_for(run, rules.get("agent", "the agent")), "--output-format", "json",
            "--permission-mode", rules.get("permission_mode", "acceptEdits")]
     for w in rules.get("write", []):
         cmd += ["--add-dir", subst.get(w, w)]           # writable beyond the workspace: named, per skill
@@ -83,11 +83,12 @@ def take(queue: Path, me: str) -> tuple[Path, dict] | None:
     return None
 
 
-def prompt_for(run: dict) -> str:
-    head = ("You are Axel, in a PressRoom session started by a run order from the cockpit — no conversation, "
+def prompt_for(run: dict, agent: str) -> str:
+    head = (f"You are {agent}, in a PressRoom session started by a run order from the cockpit — no conversation, "
             f"one task. Work on the container `{run['container']}` and nothing else. Write review entries and "
-            "your closing summary in English: review.md is read by people who do not read German. When done, "
-            "say in five lines what you changed and what is open.\n\n")
+            "your closing summary in English: review.md is read by people who do not read German. A review "
+            "entry's For names one person from people.json, never two. When done, say in five lines what you "
+            "changed and what is open.\n\n")
     line = f"/{run['skill']} {run['container'].split('/')[-1]}"
     if run.get("note"):
         line += f"\n\n{run['note']}"
@@ -125,7 +126,7 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
     title = f"Run /{run['skill']}: {'done' if code == 0 else 'failed'}"
     body = (result.strip() or "(no output)")
     text = (body[:1800] + (" …" if len(body) > 1800 else "")) + f"\n\n*Run {run['id']}, transcript in `{run['log']}`.*"
-    subprocess.run([sys.executable, str(HERE / "review_append.py"), run["container"], "--by", "Axel", "--title", title,
+    subprocess.run([sys.executable, str(HERE / "review_append.py"), run["container"], "--by", rules.get("agent", "agent"), "--title", title,
                     "--status", "info"], input=text, capture_output=True, text=True, env=env)
 
 

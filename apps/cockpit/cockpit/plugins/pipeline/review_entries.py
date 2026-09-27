@@ -34,6 +34,21 @@ def load_schema(root: Path) -> dict | None:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
+def load_people(root: Path) -> list[dict] | None:
+    """The one list of persons and agent instances, `people.json` at the pipeline root."""
+    p = root / "people.json"
+    return json.loads(p.read_text(encoding="utf-8")).get("people", []) if p.exists() else None
+
+
+def person(value: str, people: list[dict] | None) -> str | None:
+    """The name of the person `value` names — by id or name, case does not matter — or None."""
+    v = (value or "").strip().lower()
+    for x in people or []:
+        if v in (x["id"].lower(), x["name"].lower()):
+            return x["name"]
+    return None
+
+
 def parse(text: str) -> list[dict]:
     """Every REV entry in a review.md, in file order. Older free-form blocks are not entries."""
     out = []
@@ -65,9 +80,14 @@ def canonical(value: str, allowed: list[str]) -> str | None:
     return None
 
 
-def check(entry: dict, schema: dict | None) -> list[str]:
-    """The cockpit's one checker, prefixed with the entry's id."""
-    return [f"{entry.get('id', '?')}: {x}" for x in schema_check(entry, schema)]
+def check(entry: dict, schema: dict | None, people: list[dict] | None = None) -> list[str]:
+    """The cockpit's one checker, prefixed with the entry's id; then the persons against people.json."""
+    out = [f"{entry.get('id', '?')}: {x}" for x in schema_check(entry, schema)]
+    if people is not None:
+        for key in ("author", "for"):
+            if entry.get(key) and person(entry[key], people) != entry[key]:
+                out.append(f"{entry.get('id', '?')}: {key} = {entry[key]!r} is not a name in people.json")
+    return out
 
 
 def render(entry: dict) -> str:

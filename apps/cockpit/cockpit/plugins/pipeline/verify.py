@@ -85,8 +85,9 @@ def check(root: Path, stage: str, name: str, schema: dict | None) -> list[str]:
         if len(ids) != len(set(ids)):
             findings.append("review.md: a REV number occurs twice")
         rschema = review_entries.load_schema(folder.parent.parent)
+        people = review_entries.load_people(folder.parent.parent)
         for e in entries:
-            findings += ["review.md: " + x for x in review_entries.check(e, rschema)]
+            findings += ["review.md: " + x for x in review_entries.check(e, rschema, people)]
             if e.get("resolves") and e["resolves"] not in ids:
                 findings.append(f"review.md: {e['id']} resolves {e['resolves']}, which is not in this file")
     return findings
@@ -115,7 +116,8 @@ def main(argv=None) -> int:
                     print(f"{stage}/{c}: {len(f)}")
                     for x in f:
                         print("  " + x)
-        print(f"{total} finding(s)" + ("" if schema else " — no meta.schema.json at the root, meta.json not checked"))
+        print(f"{total} finding(s)" + ("" if schema else " — no meta.schema.json at the root, meta.json not checked")
+              + ("" if (root / "people.json").exists() else " — no people.json at the root, authors not checked"))
         return 0 if not total else 1
 
     name = argv[0].strip().strip("/").split("/")[-1]      # "stage/name" from the surface, "name" from the shell

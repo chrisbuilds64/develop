@@ -12,6 +12,7 @@ machine, never for a shared one.
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
 import hmac
 import json
@@ -78,6 +79,14 @@ def create_app(config: Config) -> FastAPI:
         name = users.redeem(request.cookies.get("session"))
         return users.get(name, config.base_dir) if name else None
 
+    def person_name(access: Access, role, login: str) -> str | None:
+        """The name people.json gives the signed-in id, read through access like everything else."""
+        try:
+            people = access.read_json(config.people[0], config.people[1], role).get("people", [])
+            return next((x["name"] for x in people if x["id"] == login), None)
+        except Exception:
+            return None
+
     def ctx(request: Request) -> dict:
         lang = i18n.pick(request.cookies.get("lang"), config.locale)
         user = who(request)
@@ -89,6 +98,8 @@ def create_app(config: Config) -> FastAPI:
             role = config.role(role_id if role_id in config.roles else None)
             variables = {}
         access = Access(config, audit, variables)
+        if user and config.people:
+            user = dataclasses.replace(user, display=person_name(access, role, user.name) or user.display)
         return {
             "request": request, "config": config, "lang": lang, "languages": i18n.languages(),
             "user": user, "role": role,

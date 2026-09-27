@@ -120,6 +120,7 @@ class Config:
     lockout_minutes: int
     cache_seconds: int
     stale_after_hours: int
+    people: tuple[str, str] | None     # (source id, file): the one list of persons — display names, check of logins
     sources: dict[str, Source]
     modules: list[Module]
     roles: dict[str, Role]
@@ -305,6 +306,13 @@ def load(path: Path) -> Config:
     if not roles:
         raise ConfigError("no [[role]] defined — without a role nobody sees anything, the operator included")
 
+    people = None
+    if top.get("people"):
+        sid, _, file = str(top["people"]).partition(":")
+        if not file or sid not in sources:
+            raise ConfigError(f"[cockpit] people = '{top['people']}' — expected '<source id>:<file>' with a defined source")
+        people = (sid, file)
+
     default_role = top.get("default_role", next(iter(roles)))
     if default_role not in roles:
         raise ConfigError(f"[cockpit] default_role = '{default_role}' is not a defined role")
@@ -330,6 +338,7 @@ def load(path: Path) -> Config:
         lockout_minutes=int(top.get("lockout_minutes", 15)),
         cache_seconds=int(top.get("cache_seconds", 15)),          # listings and small reads over a slow mount; 0 = off
         stale_after_hours=int(top.get("stale_after_hours", 24)),
+        people=people,
         sources=sources,
         modules=modules,
         roles=roles,
