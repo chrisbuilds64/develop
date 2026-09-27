@@ -1,45 +1,53 @@
 /* Cockpit — the one stylesheet.
  *
- * Tokens first, components after. Dark is the primary appearance (the palette
- * comes from PressRoom: surface #0F0F0F, card #171717, accent #3B82F6, 10px
- * radii); light is derived from the same tokens. Nothing here is specific to a
- * module — a module gets a card, and a card looks like every other card.
+ * Tokens first, components after. Dark is the primary appearance: a blue-black
+ * ground (#030712) with slate surfaces, blue accent, 12px radii, Inter as the
+ * face — bundled, so the cockpit makes no request outside its own origin.
+ * Light is derived from the same tokens. Nothing here is specific to a module —
+ * a module gets a card, and a card looks like every other card.
  */
 
+@font-face {
+  font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url("/static/InterVariable.woff2") format("woff2");
+}
+
 :root {
-  --bg: #0f0f0f;
-  --surface: #171717;
-  --surface-2: #1f1f1f;
-  --line: #2a2a2a;
-  --ink: #ececec;
-  --ink-2: #a3a3a3;
-  --ink-3: #6b6b6b;
+  --bg: #030712;
+  --surface: #0b1220;
+  --surface-2: #111a2e;
+  --line: #1e293b;
+  --ink: #f1f5f9;
+  --ink-2: #94a3b8;
+  --ink-3: #64748b;
   --accent: #3b82f6;
+  --accent-soft: #60a5fa;
   --accent-ink: #ffffff;
-  --ok: #4caf50;
-  --warn: #ffb300;
-  --bad: #ff5722;
-  --radius: 10px;
-  --radius-s: 6px;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --radius: 12px;
+  --radius-s: 8px;
+  --pill: 999px;
   --gap: 16px;
-  --font: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font: "Inter", ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.35);
 }
 :root[data-theme="light"] {
-  --bg: #f5f5f3;
+  --bg: #f8fafc;
   --surface: #ffffff;
-  --surface-2: #f0f0ee;
-  --line: #e3e3df;
-  --ink: #161616;
-  --ink-2: #5c5c58;
-  --ink-3: #9a9a94;
-  --shadow: 0 1px 2px rgba(0,0,0,.06);
+  --surface-2: #f1f5f9;
+  --line: #e2e8f0;
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #94a3b8;
+  --shadow: 0 1px 2px rgba(15,23,42,.06);
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #f5f5f3; --surface: #ffffff; --surface-2: #f0f0ee; --line: #e3e3df;
-    --ink: #161616; --ink-2: #5c5c58; --ink-3: #9a9a94; --shadow: 0 1px 2px rgba(0,0,0,.06);
+    --bg: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9; --line: #e2e8f0;
+    --ink: #0f172a; --ink-2: #475569; --ink-3: #94a3b8; --shadow: 0 1px 2px rgba(15,23,42,.06);
   }
 }
 
@@ -62,12 +70,13 @@ h1, h2, h3 { margin: 0; font-weight: 650; letter-spacing: -.01em; }
   background: var(--surface); position: sticky; top: 0; z-index: 10;
 }
 .brand { display: flex; align-items: baseline; gap: 12px; }
-.brand h1 { font-size: 16px; }
+.brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
+.brand h1 em { font-style: normal; color: var(--accent-soft); }
 .brand .tag { color: var(--ink-3); font-size: 13px; }
 .controls { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
 .controls select, .controls button {
   font: inherit; color: var(--ink); background: var(--surface-2);
-  border: 1px solid var(--line); border-radius: var(--radius-s); padding: 5px 9px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--pill); padding: 5px 12px; cursor: pointer;
 }
 main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 .stamp { color: var(--ink-3); font-size: 12px; margin: 0 0 18px; }
@@ -81,8 +90,9 @@ main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 .card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 18px 20px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px;
-  position: relative; min-height: 220px;
+  position: relative; min-height: 220px; transition: border-color .15s ease;
 }
+.card:hover { border-color: var(--ink-3); }
 .card::before {
   content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px;
   border-radius: 3px; background: var(--ink-3);
@@ -122,12 +132,12 @@ main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 
 /* -------------------------------------------------------------- badges */
 .badge {
-  display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+  display: inline-block; padding: 3px 10px; border-radius: var(--pill); font-size: 11px;
   font-weight: 600; letter-spacing: .02em; white-space: nowrap;
   border: 1px solid var(--line); color: var(--ink-2); background: var(--surface-2);
 }
-.badge.running    { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
-.badge.draft      { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.badge.running    { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.badge.draft      { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
 .badge.planned    { color: var(--ink-2); }
 .badge.assumption { color: var(--ink-3); border-style: dashed; }
 .badge.state-ok        { color: var(--ok); }
@@ -182,8 +192,9 @@ pre.raw {
 }
 .action button {
   align-self: flex-start; font: inherit; font-weight: 600; color: var(--accent-ink);
-  background: var(--accent); border: 0; border-radius: var(--radius-s); padding: 8px 14px; cursor: pointer;
+  background: var(--accent); border: 0; border-radius: var(--pill); padding: 8px 16px; cursor: pointer;
 }
+.action button:hover { filter: brightness(1.1); }
 .outcome { border: 1px solid var(--line); border-left: 3px solid var(--ok); border-radius: var(--radius);
            background: var(--surface); padding: 12px 14px; margin-bottom: 14px; font-size: 13px; }
 .outcome.bad { border-left-color: var(--bad); }
@@ -193,7 +204,7 @@ pre.raw {
 
 /* -------------------------------------------------------------- blocks */
 .block { margin-top: 28px; }
-.block h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); margin: 0 0 12px; }
+.block h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin: 0 0 12px; }
 .kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 .kcol { flex: 0 0 240px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
         padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
@@ -201,9 +212,11 @@ pre.raw {
            display: flex; justify-content: space-between; }
 .kcol[data-tone="warn"] h4 { color: var(--warn); }
 .kcol[data-tone="ok"] h4 { color: var(--ok); }
-.kcard { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 10px; }
-.ktag { font: 600 10px var(--mono); color: var(--accent); letter-spacing: .03em; }
-.ktitle { font-size: 13px; margin: 2px 0 4px; line-height: 1.35; }
+.kcard { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px 12px; transition: border-color .15s ease; }
+.kcard:hover { border-color: var(--accent); }
+.ktag { display: inline-block; font: 700 10px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--accent-soft);
+        background: color-mix(in srgb, var(--accent) 16%, transparent); border-radius: var(--pill); padding: 2px 8px; margin-bottom: 4px; }
+.ktitle { font-size: 13px; font-weight: 600; margin: 2px 0 4px; line-height: 1.35; }
 .kmeta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; color: var(--ink-3); }
 .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
@@ -226,7 +239,7 @@ tr:last-child td { border-bottom: 0; }
 /* ---------------------------------------------------------------- apps */
 .applink { display: flex; align-items: center; gap: 14px; margin: 0 0 20px; }
 .button { display: inline-block; font-weight: 600; color: var(--accent-ink); background: var(--accent);
-          border-radius: var(--radius-s); padding: 9px 16px; }
+          border-radius: var(--pill); padding: 9px 18px; }
 .button:hover { text-decoration: none; filter: brightness(1.1); }
 
 /* ------------------------------------------------------------ intro */
@@ -367,7 +380,7 @@ h2.with-glyph { display: flex; align-items: center; gap: 10px; }
 
 /* the greeting */
 .hello { margin: 4px 0 22px; }
-.hello h2 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.hello h2 { font-size: 28px; font-weight: 800; letter-spacing: -.03em; }
 .hello-line { margin: 6px 0 4px; font-size: 15px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
 .hello .stamp { margin: 0; }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--ink-3); }
