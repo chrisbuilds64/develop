@@ -85,7 +85,7 @@ class Actions:
             # A released script: same source rules as any file, same log line.
             script = self._access.resolve(action.tool, action.command, role)
 
-        values = {"ref": ref or "", "user": user or role.id}
+        values = {"ref": ref or "", "user": user or role.id, "role": role.id}
         if action.scope == "document" and not ref:
             raise Denied("this action needs a document")
         for f in action.fields:

@@ -103,6 +103,21 @@ piece, next version each time, and never overwrites. `{user}` is the signed-in n
 `--by`. Images and video inside a released source are served at `/m/<module>/file/<path>`,
 through the same access check as every read; a document may list them and the page shows them.
 
+## Runs
+
+The pipeline's **skill** action does not run anything. It writes an order into `_runs/` at the
+pipeline root (`run_request.py`), and a **runner** on a person's machine picks it up and executes
+it in a headless agent session with that person's own subscription — the runner may be off, and
+the order waits. The transcript lands in `_runs/<id>.log`, the outcome in the order, a review
+entry in the container.
+
+**`run-policy.json` at the pipeline root says who may order what, and what a run may do.** Per
+skill: `orderable_by` (cockpit roles), `write` (paths the session may write — `{container}`,
+`{data}`), `tools`, `web`, `timeout`, `permission_mode`; `default` covers what a skill does not
+say. The order is refused at the click when the role is not listed; the runner reads the rest and
+carries no rights of its own. No policy file: nothing is ordered, nothing runs. Widening a right
+is a line in that file, never a flag on a command.
+
 ## Figures
 
 A panel may carry one **figure** — typed data the surface draws as SVG: `bar` (segments),

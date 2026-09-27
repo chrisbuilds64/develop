@@ -102,11 +102,18 @@ def test_verify_checks_meta_against_the_schema_and_walks_all(tmp_path):
 def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path):
     root = make(tmp_path)
     (root / "run.schema.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run.schema.json").read_text())
+    (root / "run-policy.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run-policy.json").read_text())
     (root / "review.schema.json").write_text(json.dumps({"required": ["id"], "properties": {
         "id": {}, "date": {}, "author": {"enum": ["Axel"]}, "for": {}, "status": {"enum": ["info"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
-    r = run(root, "run_request.py", "30-review-human/POD-01", "--skill", "interpret", "--by", "chris", "--note", "keep it short")
+    r = run(root, "run_request.py", "30-review-human/POD-01", "--skill", "interpret", "--by", "chris", "--role", "operator", "--note", "keep it short")
     assert r.returncode == 0 and "queued" in r.stdout and "1 waiting" in r.stdout
-    assert run(root, "run_request.py", "POD-01", "--skill", "dance", "--by", "chris").returncode != 0
+    assert run(root, "run_request.py", "POD-01", "--skill", "dance", "--by", "chris", "--role", "operator").returncode != 0
+    # who may order what is the policy's word, not the form's
+    r = run(root, "run_request.py", "POD-01", "--skill", "interpret", "--by", "sam", "--role", "guest")
+    assert r.returncode != 0 and "may be ordered by operator, not guest" in r.stderr
+    r = run(root, "run_request.py", "POD-01", "--skill", "asset", "--by", "chris", "--role", "operator")
+    assert r.returncode != 0 and "not be ordered by anyone" in r.stderr
+    assert len(list((root / "_runs").glob("*.json"))) == 1
     order = next((root / "_runs").glob("*.json"))
     data = json.loads(order.read_text())
     assert data["status"] == "queued" and data["skill"] == "interpret" and data["container"] == "30-review-human/POD-01" and data["note"] == "keep it short"
@@ -121,8 +128,18 @@ def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path)
     data = json.loads(order.read_text())
     assert data["status"] == "done" and data["exit"] == 0 and data["session"] == "s-1" and data["result"].startswith("changed script.v2")
     assert (root / "_runs" / (order.stem + ".claim")).is_dir() and (root / "_runs" / (order.stem + ".log")).exists()
+    # the session's rights are the policy's lines for this skill, nothing else
+    head = (root / "_runs" / (order.stem + ".log")).read_text().splitlines()[1]
+    assert f"--add-dir {root}" in head and "--allowedTools Bash(python3:*),Bash(mv:*)" in head and "WebFetch,WebSearch" in head
+    assert "--permission-mode acceptEdits" in head and "Bash(git:*)" not in head
     review = (root / "30-review-human" / "POD-01" / "review.md").read_text()
     assert "## REV-001 — Run /interpret: done" in review and "changed script.v2" in review
+    # without a policy the runner runs nothing, and says so
+    (root / "run-policy.json").unlink()
+    r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],
+                       capture_output=True, text=True)
+    assert r.returncode == 1 and "no run-policy.json" in r.stdout
+    (root / "run-policy.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run-policy.json").read_text())
     # a second pass finds nothing queued
     r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],
                        capture_output=True, text=True)

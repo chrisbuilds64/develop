@@ -3,6 +3,10 @@
 
     runner.py --workspace ~/work --data ~/mnt/pressroom/flow [--claude /path/to/claude] [--once] [--interval 10]
 
+What a run may do — where it may write, which tools, how long, the web or not —
+comes from `run-policy.json` at the pipeline root, per skill. The runner carries
+no rights of its own; without the policy it runs nothing.
+
 Kind `claude-code`: the skill runs as `claude -p "/<skill> <container>"` in the
 workspace — the same session type, the same skills and canon the person uses
 at the keyboard, started by a file instead of a prompt. It runs on the person's
@@ -30,6 +34,35 @@ KIND = "claude-code"
 
 def now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def load_policy(data: Path) -> dict | None:
+    p = data / "run-policy.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
+def policy_for(policy: dict, skill: str) -> dict:
+    """The skill's entry over the default — a skill lists only what differs."""
+    return {**policy.get("default", {}), **policy.get("skills", {}).get(skill, {})}
+
+
+WEB_TOOLS = ["WebFetch", "WebSearch"]
+
+
+def command_for(run: dict, rules: dict, args) -> list[str]:
+    """The headless session, shaped by the policy: what it may write, which tools, how long.
+
+    Every right the session gets is a line in run-policy.json — nothing here by default.
+    """
+    subst = {"{data}": str(args.data), "{container}": str(args.data / run["container"])}
+    cmd = [args.claude, "-p", prompt_for(run), "--output-format", "json",
+           "--permission-mode", rules.get("permission_mode", "acceptEdits")]
+    for w in rules.get("write", []):
+        cmd += ["--add-dir", subst.get(w, w)]           # writable beyond the workspace: named, per skill
+    tools = list(rules.get("tools", [])) + (WEB_TOOLS if rules.get("web") else [])
+    if tools:
+        cmd += ["--allowedTools", ",".join(tools)]
+    return cmd
 
 
 def take(queue: Path, me: str) -> tuple[Path, dict] | None:
@@ -61,22 +94,20 @@ def prompt_for(run: dict) -> str:
     return head + line
 
 
-def execute(f: Path, run: dict, args) -> None:
+def execute(f: Path, run: dict, rules: dict, args) -> None:
     queue = f.parent
     log = queue / (f.stem + ".log")
-    cmd = [args.claude, "-p", prompt_for(run), "--output-format", "json", "--permission-mode", args.permission_mode,
-           "--add-dir", str(args.data)]                    # the pressroom store is outside the workspace; Write/Edit need it named
-    if args.allowed_tools:
-        cmd += ["--allowedTools", args.allowed_tools]
+    cmd = command_for(run, rules, args)
+    timeout = int(rules.get("timeout", 1800))
     env = dict(os.environ, COCKPIT_DATA_DIR=str(args.data), CONTEXT_LOOP_DIR=str(args.data))
     with log.open("w", encoding="utf-8") as out:
         out.write(f"# {run['id']} — started {run['started']} by {run['taken_by']}\n$ {' '.join(cmd[:2])} … {' '.join(cmd[3:])}\n\n")
         out.flush()
         try:
-            r = subprocess.run(cmd, cwd=args.workspace, env=env, capture_output=True, text=True, timeout=args.timeout, stdin=subprocess.DEVNULL)
+            r = subprocess.run(cmd, cwd=args.workspace, env=env, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
             code, stdout, stderr = r.returncode, r.stdout, r.stderr
         except subprocess.TimeoutExpired as exc:
-            code, stdout, stderr = 124, (exc.stdout or ""), f"timed out after {args.timeout}s"
+            code, stdout, stderr = 124, (exc.stdout or ""), f"timed out after {timeout}s"
         result, session = "", ""
         try:
             data = json.loads(stdout)
@@ -103,9 +134,6 @@ def main(argv=None) -> int:
     p.add_argument("--workspace", required=True, help="where the skills and CLAUDE.md live — the session's cwd")
     p.add_argument("--data", required=True, help="the pipeline root with _runs/")
     p.add_argument("--claude", default=os.environ.get("CLAUDE_BIN", "claude"))
-    p.add_argument("--permission-mode", default="acceptEdits")
-    p.add_argument("--allowed-tools", default="Bash(python3:*),Bash(git:*),Bash(mv:*),Bash(mkdir:*),Bash(cp:*),Bash(ls:*),Bash(cat:*),WebFetch,WebSearch")
-    p.add_argument("--timeout", type=int, default=1800)
     p.add_argument("--interval", type=int, default=10)
     p.add_argument("--once", action="store_true", help="process what is queued, then exit")
     args = p.parse_args(argv)
@@ -115,12 +143,19 @@ def main(argv=None) -> int:
     me = f"{os.environ.get('USER', 'runner')}@{socket.gethostname().split('.')[0]}"
     print(f"runner {me} ({KIND}) — queue {queue}, workspace {args.workspace}, {platform.system()}")
     while True:
+        policy = load_policy(args.data)                   # re-read every round: a changed line applies to the next run
+        if policy is None:
+            print(f"{now()} no run-policy.json at {args.data} — nothing runs without a declared policy")
+            if args.once:
+                return 1
+            time.sleep(args.interval)
+            continue
         queue.mkdir(exist_ok=True)
         job = take(queue, me)
         if job:
             f, run = job
             print(f"{now()} taking {run['id']}")
-            execute(f, run, args)
+            execute(f, run, policy_for(policy, run["skill"]), args)
             print(f"{now()} {run['status']} {run['id']} (exit {run.get('exit')})")
             continue
         if args.once:

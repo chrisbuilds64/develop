@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Order a skill run on a container — the cockpit's button, the runner's job.
 
-    run_request.py <stage/container> --skill interpret --by chris [--runner claude-code] [--note "…"]
+    run_request.py <stage/container> --skill interpret --by chris --role operator [--runner claude-code] [--note "…"]
 
 Writes one file into _runs/ at the pipeline root, status queued, checked
 against run.schema.json before it is written. Nothing runs here: a runner on
@@ -32,6 +32,27 @@ def load_schema(root: Path) -> dict | None:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
+def load_policy(root: Path) -> dict | None:
+    p = root / "run-policy.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
+def policy_for(policy: dict, skill: str) -> dict:
+    """The skill's entry over the default — a skill lists only what differs."""
+    return {**policy.get("default", {}), **policy.get("skills", {}).get(skill, {})}
+
+
+def may_order(policy: dict | None, skill: str, role: str) -> str | None:
+    """None when the role may order this skill, otherwise the sentence that refuses."""
+    if policy is None:
+        return "no run-policy.json at the pipeline root — nothing is ordered without a declared policy"
+    allowed = policy_for(policy, skill).get("orderable_by", [])
+    if role not in allowed:
+        return (f"'{skill}' may be ordered by {', '.join(allowed)}, not {role}" if allowed
+                else f"'{skill}' may not be ordered by anyone right now")
+    return None
+
+
 def check(run: dict, schema: dict | None) -> list[str]:
     return schema_check(run, schema)
 
@@ -39,6 +60,7 @@ def check(run: dict, schema: dict | None) -> list[str]:
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="run_request.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("container"); p.add_argument("--skill", required=True); p.add_argument("--by", required=True)
+    p.add_argument("--role", required=True, help="the orderer's cockpit role — run-policy.json says which roles may order which skill")
     p.add_argument("--runner", default="claude-code"); p.add_argument("--note", default="")
     a = p.parse_args(argv)
 
@@ -61,6 +83,9 @@ def main(argv=None) -> int:
     problems = check(run, load_schema(root))
     if problems:
         sys.exit("refused — " + "; ".join(problems))
+    refusal = may_order(load_policy(root), run["skill"], a.role.strip())
+    if refusal:
+        sys.exit("refused — " + refusal)
 
     queue = root / "_runs"
     queue.mkdir(exist_ok=True)
