@@ -1,17 +1,106 @@
 {
   "id": "worklist",
   "name": "Work list",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open items from a Context Loop todo.json — what is due, who holds it, what is blocked. Actions run todo.py.",
   "reader": "reader.py",
   "needs": [
-    "worklist"
+    "worklist",
+    "tools"
   ],
   "maturity": "running",
   "actions": [
-    "add",
-    "done",
-    "move"
+    {
+      "id": "add",
+      "label": "worklist.add",
+      "tool": "tools",
+      "command": "todo.py",
+      "args": [
+        "add",
+        "{title}",
+        "--cluster",
+        "{cluster}",
+        "--prio",
+        "{prio}",
+        "--due",
+        "{due}",
+        "--source-kind",
+        "decision",
+        "--source-ref",
+        "Cockpit"
+      ],
+      "data": "worklist",
+      "field": [
+        {
+          "name": "title",
+          "label": "field.title",
+          "required": true
+        },
+        {
+          "name": "cluster",
+          "label": "field.cluster",
+          "type": "select",
+          "required": true,
+          "options_from": "todo.json:lov.clusters"
+        },
+        {
+          "name": "prio",
+          "label": "field.prio",
+          "type": "select",
+          "options_from": "todo.json:lov.priorities"
+        },
+        {
+          "name": "due",
+          "label": "field.due",
+          "type": "date"
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "label": "worklist.done",
+      "tool": "tools",
+      "command": "todo.py",
+      "args": [
+        "done",
+        "{id}"
+      ],
+      "data": "worklist",
+      "field": [
+        {
+          "name": "id",
+          "label": "field.id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "move",
+      "label": "worklist.move",
+      "tool": "tools",
+      "command": "todo.py",
+      "args": [
+        "set",
+        "{id}",
+        "--status",
+        "{status}"
+      ],
+      "data": "worklist",
+      "field": [
+        {
+          "name": "id",
+          "label": "field.id",
+          "required": true
+        },
+        {
+          "name": "status",
+          "label": "field.status",
+          "type": "select",
+          "required": true,
+          "options_from": "todo.json:lov.statuses"
+        }
+      ]
+    }
   ],
   "icon": "check",
   "accent": "#2fa36b"

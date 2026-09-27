@@ -63,22 +63,33 @@ switcher. Readers speak in keys, never in sentences, so no code is touched.
 
 ## Actions
 
-A card that only shows is a dashboard. A module may declare **actions**: forms that run the
+A card that only shows is a dashboard. A plugin may bring **actions**: forms that run the
 tool owning the data — `todo.py add`, `todo.py done` — through the tool's own command. The
 cockpit never writes the file; it runs the program that does, and that program validates.
 
-```toml
-[[module.action]]
-id = "add"
-label = "worklist.add"
-tool = "tools"            # a source; the script must be released from it like any file
-command = "todo.py"
-data = "worklist"         # the source the tool works on
-args = ["add", "{title}", "--cluster", "{cluster}", "--due", "{due}"]
-  [[module.action.field]]
-  name = "title"
-  required = true
+Actions are defined **once, in the plugin's `plugin.json`**, never in an instance's
+configuration:
+
+```json
+"needs": ["worklist", "tools"],
+"actions": [
+  {"id": "add", "label": "worklist.add",
+   "tool": "tools", "command": "todo.py", "data": "worklist",
+   "args": ["add", "{title}", "--cluster", "{cluster}", "--due", "{due}"],
+   "field": [{"name": "title", "required": true},
+             {"name": "cluster", "type": "select", "options_from": "todo.json:lov.clusters"}]}
+]
 ```
+
+`tool` is `"plugin"` (the script sits in the plugin directory) or a name from `needs` (a released
+script of the customer's); `data` is the name from `needs` the tool works on. The instance maps
+`needs` onto its own sources by position (`sources = ["worklist", "tools"]`) and that is all it
+has to say. An action is offered only where everything it needs is released — the tool's source,
+and the data source `read-write`; otherwise it is **withheld**, and `cockpit check` says which and
+why. An instance that opens a source for reading gets the reader, not the buttons.
+
+An instance may keep a subset (`actions = ["move", "verify"]` on the module) and may add actions
+of its own as `[[module.action]]` with the same fields; it cannot redefine one the plugin brings.
 
 Field values become **arguments, never a shell string** — an injection attempt arrives as one
 harmless argument. An empty optional field drops its flag. A role must be granted the action
@@ -152,7 +163,7 @@ cockpit plugin remove gatehouse
 
 The cockpit is the surface; **plugins** bring the mechanisms. A plugin is a directory with a
 `plugin.json` (`cockpit/schemas/plugin.schema.json`) that declares a reader — the card and the
-working view — and optionally actions and a **whole web application** mounted under
+working view — its actions, and optionally a **whole web application** mounted under
 `/m/<id>/app`, running inside the cockpit's process and URL. Gatehouse is the first: the
 interview, the artifacts, the reading and the audit are all reachable from its card. The one
 requirement for an app to be mountable is that it builds its links from
@@ -160,7 +171,7 @@ requirement for an app to be mountable is that it builds its links from
 
 Bundled plugins live in `cockpit/plugins/`; installed ones next to the configuration in
 `plugins/`, and an installed one shadows a bundled one of the same id. A module names its
-plugin and nothing else — reader, app and locales come from the manifest.
+plugin and the sources it releases — reader, app, locales and actions come from the manifest.
 
 **The example plugin is `decisions`**: three files. `plugin.json` declares it, `reader.py`
 turns the Context Loop decision log into a card and a table, `decide.py` is the tool an

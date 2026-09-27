@@ -1,7 +1,7 @@
 {
   "id": "canon",
   "name": "Canon",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The rulebook as it is on disk: every document with its header block, by layer, readable — and editable. A person edits the text, or asks a model; the model writes a proposal beside the document, never the document. Accept or discard is a person's click.",
   "reader": "reader.py",
   "needs": [
@@ -9,10 +9,72 @@
   ],
   "maturity": "running",
   "actions": [
-    "edit",
-    "ask",
-    "accept",
-    "discard"
+    {
+      "id": "edit",
+      "label": "canon.edit",
+      "tool": "plugin",
+      "command": "canon_edit.py",
+      "args": [
+        "write",
+        "{ref}"
+      ],
+      "data": "canon",
+      "scope": "document",
+      "stdin": "body",
+      "field": [
+        {
+          "name": "body",
+          "label": "field.body",
+          "type": "textarea",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "ask",
+      "label": "canon.ask",
+      "tool": "plugin",
+      "command": "canon_ask.py",
+      "args": [
+        "{ref}",
+        "--ask",
+        "{ask}"
+      ],
+      "data": "canon",
+      "scope": "document",
+      "field": [
+        {
+          "name": "ask",
+          "label": "field.ask",
+          "type": "textarea",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "accept",
+      "label": "canon.accept",
+      "tool": "plugin",
+      "command": "canon_edit.py",
+      "args": [
+        "accept",
+        "{ref}"
+      ],
+      "data": "canon",
+      "scope": "document"
+    },
+    {
+      "id": "discard",
+      "label": "canon.discard",
+      "tool": "plugin",
+      "command": "canon_edit.py",
+      "args": [
+        "discard",
+        "{ref}"
+      ],
+      "data": "canon",
+      "scope": "document"
+    }
   ],
   "icon": "book",
   "accent": "#8a5cf6"

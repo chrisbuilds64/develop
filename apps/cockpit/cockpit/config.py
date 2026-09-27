@@ -8,6 +8,11 @@ granted — the two mistakes this file exists to make impossible.
 Sources, modules and roles are the three segments. A module names the sources
 it needs; a role names the modules it may open and the highest sensitivity it
 may read. Deny is the default at every step.
+
+Actions belong to plugins. A module inherits its plugin's actions, mapped onto
+the sources the instance released (`needs` → `sources`, by position). The
+instance may keep a subset (`actions = [...]`) and add its own `[[module.action]]`;
+it cannot redefine one the plugin brings.
 """
 
 from __future__ import annotations
@@ -75,6 +80,7 @@ class Module:
     label: str | None = None
     enabled: bool = True
     actions: tuple[Action, ...] = ()
+    withheld: tuple[tuple[str, str], ...] = ()   # plugin actions not offered here, with the reason
     app_config: Path | None = None   # handed to the plugin's app factory, if it has one
 
 
@@ -145,6 +151,35 @@ def _choice(value: str, allowed: tuple[str, ...], where: str, key: str) -> str:
     return value
 
 
+def _action(a: dict, aw: str, sources: dict[str, Source]) -> Action:
+    """One action table → Action. `tool` is "plugin" or a source id; `data` a read-write source id."""
+    tool = a.get("tool", "plugin")
+    if tool != "plugin" and tool not in sources:
+        raise ConfigError(f"{aw}: tool source '{tool}' is not defined")
+    data = a.get("data")
+    if data and data not in sources:
+        raise ConfigError(f"{aw}: data source '{data}' is not defined")
+    if data and sources[data].mode != "read-write":
+        raise ConfigError(f"{aw}: data source '{data}' is mode = \"read\" — an action that writes needs mode = \"read-write\"")
+    fields = tuple(Field(
+        name=_need(f, "name", aw), label=f.get("label", f["name"]),
+        type=_choice(f.get("type", "text"), ("text", "select", "textarea", "date", "file"), aw, "type"),
+        required=bool(f.get("required", False)), options=tuple(f.get("options", [])),
+        placeholder=f.get("placeholder", ""), accept=tuple(x.lower().lstrip(".") for x in f.get("accept", [])),
+        options_from=str(f.get("options_from", "")),
+    ) for f in a.get("field", []))
+    for f in fields:
+        if f.options_from and (":" not in f.options_from or not data):
+            raise ConfigError(f"{aw}: field '{f.name}': options_from is '<file>:<path>' and needs a data source")
+    return Action(
+        id=_need(a, "id", aw), label=a.get("label", a["id"]), tool=tool,
+        command=_need(a, "command", aw), args=tuple(a.get("args", [])),
+        fields=fields, data=data,
+        scope=_choice(a.get("scope", "module"), ("module", "document"), aw, "scope"),
+        stdin=a.get("stdin"),
+    )
+
+
 def load(path: Path) -> Config:
     path = Path(path)
     if not path.is_file():
@@ -179,6 +214,8 @@ def load(path: Path) -> Config:
         )
 
     # --- modules ----------------------------------------------------------
+    from .plugins import discover                 # here, not at the top: plugins import the panel checker
+    plugins = discover(_path(top.get("plugins", "plugins"), base))
     modules: list[Module] = []
     seen: set[str] = set()
     for i, m in enumerate(raw.get("module", []), 1):
@@ -191,34 +228,51 @@ def load(path: Path) -> Config:
         for sid in needs:
             if sid not in sources:
                 raise ConfigError(f"{where} ('{mid}'): source '{sid}' is not defined")
-        actions = []
+        # Actions: the plugin's first, mapped onto this module's sources by position
+        # of `needs`; then the instance's own additions. Same id twice is a mistake.
+        actions: list[Action] = []
+        withheld: list[tuple[str, str]] = []
+        only = m.get("actions")
+        if only is not None and not isinstance(only, list):
+            raise ConfigError(f"{where} ('{mid}'): actions = [...] lists the plugin actions to keep")
+        plugin = plugins.get(m.get("plugin", mid))
+        if plugin is not None:
+            needs = list(plugin.manifest.get("needs", []))
+            bound = dict(zip(needs, list(m.get("sources", []))))
+            for a in plugin.manifest.get("actions", []):
+                aw = f"{where} ('{mid}') plugin '{plugin.id}' action '{a.get('id', '?')}'"
+                a = dict(a)
+                if only is not None and a["id"] not in only:
+                    continue
+                # Offered only when everything it needs is released: the tool's source, and
+                # the data source in read-write. Otherwise withheld — an instance that opens a
+                # source for reading gets the reader, not the buttons. `cockpit check` says which.
+                reason = None
+                for key in ("tool", "data"):
+                    name = a.get(key)
+                    if name and name != "plugin":
+                        if name not in bound:
+                            reason = f"needs source '{name}' (position {needs.index(name) + 1} in sources)"
+                            break
+                        a[key] = bound[name]
+                        if key == "data" and sources[bound[name]].mode != "read-write":
+                            reason = f"source '{bound[name]}' is released read-only"
+                            break
+                if reason:
+                    withheld.append((a["id"], reason))
+                    continue
+                actions.append(_action(a, aw, sources))
+            if only is not None:
+                known = {a.get("id") for a in plugin.manifest.get("actions", [])}
+                for x in only:
+                    if x not in known:
+                        raise ConfigError(f"{where} ('{mid}'): actions = [...] names '{x}', which plugin '{plugin.id}' does not define")
         for j, a in enumerate(m.get("action", []), 1):
             aw = f"{where} ('{mid}') [[module.action]] Nr. {j}"
-            tool = a.get("tool", "plugin")
-            if tool != "plugin" and tool not in sources:
-                raise ConfigError(f"{aw}: tool source '{tool}' is not defined")
-            data = a.get("data")
-            if data and data not in sources:
-                raise ConfigError(f"{aw}: data source '{data}' is not defined")
-            if data and sources[data].mode != "read-write":
-                raise ConfigError(f"{aw}: data source '{data}' is mode = \"read\" — an action that writes needs mode = \"read-write\"")
-            fields = tuple(Field(
-                name=_need(f, "name", aw), label=f.get("label", f["name"]),
-                type=_choice(f.get("type", "text"), ("text", "select", "textarea", "date", "file"), aw, "type"),
-                required=bool(f.get("required", False)), options=tuple(f.get("options", [])),
-                placeholder=f.get("placeholder", ""), accept=tuple(x.lower().lstrip(".") for x in f.get("accept", [])),
-                options_from=str(f.get("options_from", "")),
-            ) for f in a.get("field", []))
-            for f in fields:
-                if f.options_from and (":" not in f.options_from or not data):
-                    raise ConfigError(f"{aw}: field '{f.name}': options_from is '<schema>.json:<property>' and needs a data source")
-            actions.append(Action(
-                id=_need(a, "id", aw), label=a.get("label", a["id"]), tool=tool,
-                command=_need(a, "command", aw), args=tuple(a.get("args", [])),
-                fields=fields, data=data,
-                scope=_choice(a.get("scope", "module"), ("module", "document"), aw, "scope"),
-                stdin=a.get("stdin"),
-            ))
+            act = _action(a, aw, sources)
+            if any(x.id == act.id for x in actions):
+                raise ConfigError(f"{aw}: id '{act.id}' is defined by the plugin — an instance adds actions, it does not redefine them")
+            actions.append(act)
         modules.append(Module(
             id=mid,
             plugin=m.get("plugin", mid),
@@ -227,6 +281,7 @@ def load(path: Path) -> Config:
             label=m.get("label"),
             enabled=bool(m.get("enabled", True)),
             actions=tuple(actions),
+            withheld=tuple(withheld),
             app_config=_path(m["app_config"], base) if m.get("app_config") else None,
         ))
 

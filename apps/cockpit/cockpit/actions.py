@@ -43,15 +43,21 @@ class Actions:
         """A select's values: from the config, or from a schema in the action's data source.
 
         `options_from = "review.schema.json:status"` reads that file through the
-        access layer and takes the property's value list. The surface shows what
-        the schema allows and the run refuses what it does not — the same list.
+        access layer and takes the property's value list; `"todo.json:lov.clusters"`
+        takes the ids of a list in the data itself. The surface shows what the data
+        allows and the run refuses what it does not — the same list.
         """
         if not field.options_from:
             return field.options
-        file, _, prop = field.options_from.partition(":")
+        file, _, path = field.options_from.partition(":")
         try:
-            schema = self._access.read_json(action.data, file, role)
-            return tuple(str(v) for v in schema["properties"][prop]["enum"])
+            node = self._access.read_json(action.data, file, role)
+            for seg in path.split("."):
+                # A schema keeps its properties one level down; the data does not. Try both.
+                node = node[seg] if seg in node else node["properties"][seg]
+            if isinstance(node, dict):
+                return tuple(str(v) for v in node["enum"])
+            return tuple(str(v["id"]) if isinstance(v, dict) else str(v) for v in node)
         except Exception:
             return ()
 

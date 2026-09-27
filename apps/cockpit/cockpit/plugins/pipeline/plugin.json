@@ -1,7 +1,7 @@
 {
   "id": "pipeline",
   "name": "PressRoom · Content pipeline",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Folders are stages, subfolders are pieces. The board by stage, every piece with its files and images. Actions: move a container (operator), append to its review, put a versioned asset into it — nothing is ever overwritten. A skill button orders a run (run_request.py); runner.py on a person's machine executes it in a headless agent session.",
   "reader": "reader.py",
   "needs": [
@@ -9,11 +9,192 @@
   ],
   "maturity": "running",
   "actions": [
-    "move",
-    "review_append",
-    "upload",
-    "verify",
-    "skill"
+    {
+      "id": "move",
+      "label": "pipeline.move",
+      "tool": "plugin",
+      "command": "move.py",
+      "args": [
+        "{container}",
+        "{stage}"
+      ],
+      "data": "pipeline",
+      "field": [
+        {
+          "name": "container",
+          "label": "field.container",
+          "required": true,
+          "placeholder": "the container's folder name"
+        },
+        {
+          "name": "stage",
+          "label": "field.stage",
+          "type": "select",
+          "required": true,
+          "options": [
+            "00-archive",
+            "05-operational-observations",
+            "10-ideas",
+            "15-interpretation",
+            "20-produce",
+            "30-review-human",
+            "40-asset-generation",
+            "50-ready-to-publish",
+            "55-scheduled",
+            "60-published",
+            "61-field-observation",
+            "65-canonical-review",
+            "66-reviewed",
+            "70-reference-frames"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "review_append",
+      "label": "pipeline.review_append",
+      "tool": "plugin",
+      "command": "review_append.py",
+      "args": [
+        "{ref}",
+        "--by",
+        "{user}",
+        "--title",
+        "{title}",
+        "--status",
+        "{status}",
+        "--for",
+        "{for}",
+        "--resolves",
+        "{resolves}"
+      ],
+      "data": "pipeline",
+      "scope": "document",
+      "stdin": "text",
+      "field": [
+        {
+          "name": "title",
+          "label": "field.title",
+          "required": true,
+          "placeholder": "one line: what this is about"
+        },
+        {
+          "name": "status",
+          "label": "field.status",
+          "type": "select",
+          "required": true,
+          "options_from": "review.schema.json:status"
+        },
+        {
+          "name": "for",
+          "label": "field.for",
+          "type": "select",
+          "options_from": "review.schema.json:for"
+        },
+        {
+          "name": "resolves",
+          "label": "field.resolves",
+          "placeholder": "REV-002"
+        },
+        {
+          "name": "text",
+          "label": "field.text",
+          "type": "textarea",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "upload",
+      "label": "pipeline.upload",
+      "tool": "plugin",
+      "command": "asset_put.py",
+      "args": [
+        "{ref}",
+        "{kind}",
+        "{file}",
+        "--name",
+        "{file.name}",
+        "--by",
+        "{user}"
+      ],
+      "data": "pipeline",
+      "scope": "document",
+      "field": [
+        {
+          "name": "kind",
+          "label": "field.kind",
+          "type": "select",
+          "required": true,
+          "options": [
+            "linkedin-image",
+            "substack-image",
+            "header-16x9",
+            "header-4x5",
+            "thumbnail",
+            "poster-4x5",
+            "teaser-reel",
+            "screen-segment",
+            "image"
+          ]
+        },
+        {
+          "name": "file",
+          "label": "field.file",
+          "type": "file",
+          "required": true,
+          "accept": [
+            "png",
+            "jpg",
+            "jpeg",
+            "mp4",
+            "mov"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "verify",
+      "label": "pipeline.verify",
+      "tool": "plugin",
+      "command": "verify.py",
+      "args": [
+        "{ref}"
+      ],
+      "data": "pipeline",
+      "scope": "document"
+    },
+    {
+      "id": "skill",
+      "label": "pipeline.skill",
+      "tool": "plugin",
+      "command": "run_request.py",
+      "args": [
+        "{ref}",
+        "--skill",
+        "{skill}",
+        "--by",
+        "{user}",
+        "--note",
+        "{note}"
+      ],
+      "data": "pipeline",
+      "scope": "document",
+      "field": [
+        {
+          "name": "skill",
+          "label": "field.skill",
+          "type": "select",
+          "required": true,
+          "options_from": "run.schema.json:skill"
+        },
+        {
+          "name": "note",
+          "label": "field.run_note",
+          "type": "textarea"
+        }
+      ]
+    }
   ],
   "icon": "film",
   "accent": "#3b82f6"

@@ -1,14 +1,44 @@
 {
   "id": "decisions",
   "name": "Decisions",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The decision log of a Context Loop workspace — one entry per decision, newest at the bottom, never edited afterwards. The example plugin: a reader, a working view, one action, three files.",
   "reader": "reader.py",
   "needs": [
     "context"
   ],
   "actions": [
-    "record"
+    {
+      "id": "record",
+      "label": "decisions.record",
+      "tool": "plugin",
+      "command": "decide.py",
+      "args": [
+        "{what}",
+        "--why",
+        "{why}",
+        "--instead",
+        "{instead}"
+      ],
+      "data": "context",
+      "field": [
+        {
+          "name": "what",
+          "label": "field.what",
+          "required": true
+        },
+        {
+          "name": "why",
+          "label": "field.why",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "name": "instead",
+          "label": "field.instead"
+        }
+      ]
+    }
   ],
   "maturity": "running",
   "icon": "gavel",

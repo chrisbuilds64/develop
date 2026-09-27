@@ -78,66 +78,8 @@ sensitivity = "confidential"
 [[module]]
 id = "worklist"
 plugin = "worklist"
-sources = ["worklist"]
+sources = ["worklist", "tools"]     # the plugin's needs, in order: the list, then the released todo.py
 maturity = "running"
-
-[[module.action]]
-id = "add"
-label = "worklist.add"
-tool = "tools"
-command = "todo.py"
-data = "worklist"
-args = ["add", "{title}", "--cluster", "{cluster}", "--prio", "{prio}", "--due", "{due}", "--source-kind", "decision", "--source-ref", "Cockpit"]
-  [[module.action.field]]
-  name = "title"
-  label = "field.title"
-  required = true
-  [[module.action.field]]
-  name = "cluster"
-  label = "field.cluster"
-  type = "select"
-  required = true
-  options = ["content", "context-loop", "events", "infra", "brand", "system", "books", "dsgvo", "hardware"]
-  [[module.action.field]]
-  name = "prio"
-  label = "field.prio"
-  type = "select"
-  options = ["high", "medium", "low"]
-  [[module.action.field]]
-  name = "due"
-  label = "field.due"
-  type = "date"
-
-[[module.action]]
-id = "done"
-label = "worklist.done"
-tool = "tools"
-command = "todo.py"
-data = "worklist"
-args = ["done", "{id}"]
-  [[module.action.field]]
-  name = "id"
-  label = "field.id"
-  required = true
-  placeholder = "PRD-01"
-
-[[module.action]]
-id = "move"
-label = "worklist.move"
-tool = "tools"
-command = "todo.py"
-data = "worklist"
-args = ["set", "{id}", "--status", "{status}"]
-  [[module.action.field]]
-  name = "id"
-  label = "field.id"
-  required = true
-  [[module.action.field]]
-  name = "status"
-  label = "field.status"
-  type = "select"
-  required = true
-  options = ["next", "doing", "waiting", "backlog", "done"]
 
 [[module]]
 id = "decisions"
@@ -145,31 +87,21 @@ plugin = "decisions"
 sources = ["context"]
 maturity = "running"
 
-[[module.action]]
-id = "record"
-label = "decisions.record"
-tool = "plugin"
-command = "decide.py"
-data = "context"
-args = ["{what}", "--why", "{why}", "--instead", "{instead}"]
-  [[module.action.field]]
-  name = "what"
-  label = "field.what"
-  required = true
-  [[module.action.field]]
-  name = "why"
-  label = "field.why"
-  type = "textarea"
-  required = true
-  [[module.action.field]]
-  name = "instead"
-  label = "field.instead"
-
 [[module]]
 id = "pipeline"
 plugin = "pipeline"
 sources = ["pipeline"]
 maturity = "running"
+# Actions come with the plugin (see its plugin.json). Released read-only above, so none are
+# offered here; set mode = "read-write" on the source to get move, review_append, upload, verify,
+# skill — or keep a subset:   actions = ["review_append", "verify"]
+# An instance may add its own:
+#   [[module.action]]
+#   id = "notify"
+#   tool = "tools"            # a released script of yours
+#   command = "notify.py"
+#   args = ["{ref}"]
+#   scope = "document"
 
 [[module]]
 id = "audits"

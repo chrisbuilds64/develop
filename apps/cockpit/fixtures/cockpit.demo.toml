@@ -72,66 +72,8 @@ sensitivity = "confidential"
 [[module]]
 id = "worklist"
 plugin = "worklist"
-sources = ["worklist"]
+sources = ["worklist", "tools"]     # the plugin's needs, in order: the list, then the released todo.py
 maturity = "running"
-
-[[module.action]]
-id = "add"
-label = "worklist.add"
-tool = "tools"
-command = "todo.py"
-data = "worklist"
-args = ["add", "{title}", "--cluster", "{cluster}", "--prio", "{prio}", "--due", "{due}", "--source-kind", "decision", "--source-ref", "Cockpit"]
-  [[module.action.field]]
-  name = "title"
-  label = "field.title"
-  required = true
-  [[module.action.field]]
-  name = "cluster"
-  label = "field.cluster"
-  type = "select"
-  required = true
-  options = ["product", "ops", "sales"]
-  [[module.action.field]]
-  name = "prio"
-  label = "field.prio"
-  type = "select"
-  options = ["high", "medium", "low"]
-  [[module.action.field]]
-  name = "due"
-  label = "field.due"
-  type = "date"
-
-[[module.action]]
-id = "done"
-label = "worklist.done"
-tool = "tools"
-command = "todo.py"
-data = "worklist"
-args = ["done", "{id}"]
-  [[module.action.field]]
-  name = "id"
-  label = "field.id"
-  required = true
-  placeholder = "PRD-01"
-
-[[module.action]]
-id = "move"
-label = "worklist.move"
-tool = "tools"
-command = "todo.py"
-data = "worklist"
-args = ["set", "{id}", "--status", "{status}"]
-  [[module.action.field]]
-  name = "id"
-  label = "field.id"
-  required = true
-  [[module.action.field]]
-  name = "status"
-  label = "field.status"
-  type = "select"
-  required = true
-  options = ["next", "doing", "waiting", "backlog", "done"]
 
 [[module]]
 id = "decisions"
@@ -139,187 +81,17 @@ plugin = "decisions"
 sources = ["context"]
 maturity = "running"
 
-[[module.action]]
-id = "record"
-label = "decisions.record"
-tool = "plugin"
-command = "decide.py"
-data = "context"
-args = ["{what}", "--why", "{why}", "--instead", "{instead}"]
-  [[module.action.field]]
-  name = "what"
-  label = "field.what"
-  required = true
-  [[module.action.field]]
-  name = "why"
-  label = "field.why"
-  type = "textarea"
-  required = true
-  [[module.action.field]]
-  name = "instead"
-  label = "field.instead"
-
 [[module]]
 id = "canon"
 plugin = "canon"
 sources = ["canon"]
 maturity = "running"
 
-[[module.action]]
-id = "edit"
-label = "canon.edit"
-tool = "plugin"
-command = "canon_edit.py"
-data = "canon"
-scope = "document"
-stdin = "body"
-args = ["write", "{ref}"]
-  [[module.action.field]]
-  name = "body"
-  label = "field.body"
-  type = "textarea"
-  required = true
-
-[[module.action]]
-id = "ask"
-label = "canon.ask"
-tool = "plugin"
-command = "canon_ask.py"
-data = "canon"
-scope = "document"
-args = ["{ref}", "--ask", "{ask}"]
-  [[module.action.field]]
-  name = "ask"
-  label = "field.ask"
-  type = "textarea"
-  required = true
-
-[[module.action]]
-id = "accept"
-label = "canon.accept"
-tool = "plugin"
-command = "canon_edit.py"
-data = "canon"
-scope = "document"
-args = ["accept", "{ref}"]
-
-[[module.action]]
-id = "discard"
-label = "canon.discard"
-tool = "plugin"
-command = "canon_edit.py"
-data = "canon"
-scope = "document"
-args = ["discard", "{ref}"]
-
 [[module]]
 id = "pipeline"
 plugin = "pipeline"
 sources = ["pipeline"]
 maturity = "running"
-
-[[module.action]]
-id = "move"
-label = "pipeline.move"
-tool = "plugin"
-command = "move.py"
-data = "pipeline"
-args = ["{container}", "{stage}"]
-  [[module.action.field]]
-  name = "container"
-  label = "field.container"
-  required = true
-  placeholder = "piece-30-01"
-  [[module.action.field]]
-  name = "stage"
-  label = "field.stage"
-  type = "select"
-  required = true
-  options = ["10-ideas", "20-produce", "30-review-human", "40-asset-generation", "50-ready-to-publish", "60-published", "61-field-observation", "70-reference-frames"]
-
-[[module.action]]
-id = "review_append"
-label = "pipeline.review_append"
-tool = "plugin"
-command = "review_append.py"
-data = "pipeline"
-scope = "document"
-stdin = "text"
-args = ["{ref}", "--by", "{user}", "--title", "{title}", "--status", "{status}", "--for", "{for}", "--resolves", "{resolves}"]
-  [[module.action.field]]
-  name = "title"
-  label = "field.title"
-  required = true
-  placeholder = "one line: what this is about"
-  [[module.action.field]]
-  name = "status"
-  label = "field.status"
-  type = "select"
-  required = true
-  options_from = "review.schema.json:status"      # the value list lives in the data, not here
-  [[module.action.field]]
-  name = "for"
-  label = "field.for"
-  type = "select"
-  options_from = "review.schema.json:for"
-  [[module.action.field]]
-  name = "resolves"
-  label = "field.resolves"
-  placeholder = "REV-002"
-  [[module.action.field]]
-  name = "text"
-  label = "field.text"
-  type = "textarea"
-  required = true
-
-[[module.action]]
-id = "upload"
-label = "pipeline.upload"
-tool = "plugin"
-command = "asset_put.py"
-data = "pipeline"
-scope = "document"
-args = ["{ref}", "{kind}", "{file}", "--name", "{file.name}", "--by", "{user}"]
-  [[module.action.field]]
-  name = "kind"
-  label = "field.kind"
-  type = "select"
-  required = true
-  options = ["linkedin-image", "substack-image", "header-16x9", "header-4x5", "thumbnail", "poster-4x5", "teaser-reel", "screen-segment", "image"]
-  [[module.action.field]]
-  name = "file"
-  label = "field.file"
-  type = "file"
-  required = true
-  accept = ["png", "jpg", "jpeg", "mp4", "mov"]
-
-[[module.action]]
-id = "verify"
-label = "pipeline.verify"
-tool = "plugin"
-command = "verify.py"
-data = "pipeline"
-scope = "document"
-args = ["{ref}"]
-
-[[module.action]]
-id = "skill"
-label = "pipeline.skill"
-tool = "plugin"
-command = "run_request.py"
-data = "pipeline"
-scope = "document"
-args = ["{ref}", "--skill", "{skill}", "--by", "{user}", "--note", "{note}"]
-  [[module.action.field]]
-  name = "skill"
-  label = "field.skill"
-  type = "select"
-  required = true
-  options_from = "run.schema.json:skill"
-  [[module.action.field]]
-  name = "note"
-  label = "field.run_note"
-  type = "textarea"
 
 [[module]]
 id = "audits"

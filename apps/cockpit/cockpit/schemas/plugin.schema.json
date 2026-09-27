@@ -2,7 +2,7 @@
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "https://chrisbuilds64.com/schema/cockpit-plugin-1.json",
  "title": "Plugin",
- "description": "What a plugin declares about itself in its plugin.json. The cockpit is the surface; plugins bring the mechanisms — a reader for the card and the working view, optional actions, optionally a whole web application mounted under /m/<id>/app. A customer's own tool is attached the same way: a manifest, a reader, and the sources it needs released in cockpit.toml. A plugin runs inside the cockpit's process with the cockpit's rights: the access layer governs readers that go through it, it cannot stop code that does not. Install plugins you have read.",
+ "description": "What a plugin declares about itself in its plugin.json. The cockpit is the surface; plugins bring the mechanisms — a reader for the card and the working view, its actions (defined here, released per instance), optionally a whole web application mounted under /m/<id>/app. A customer's own tool is attached the same way: a manifest, a reader, and the sources it needs released in cockpit.toml. A plugin runs inside the cockpit's process with the cockpit's rights: the access layer governs readers that go through it, it cannot stop code that does not. Install plugins you have read.",
  "type": "object",
  "required": [
   "id",
@@ -59,16 +59,16 @@
   },
   "needs": {
    "type": "array",
-   "description": "Source ids the reader expects, in the order the module's `sources` should list them.",
+   "description": "Source names the plugin works with, in the order the module's `sources` should list them. An action's `tool` and `data` refer to these names; the instance maps them to its own source ids by position.",
    "items": {
     "type": "string"
    }
   },
   "actions": {
    "type": "array",
-   "description": "Action ids the plugin's tool supports; the cockpit config maps forms onto them.",
+   "description": "The plugin's actions: forms that run the tool owning the data. Defined here once; an instance releases the sources, may restrict to a subset (`actions = [...]` on the module) and may add its own actions in cockpit.toml, but never redefines these.",
    "items": {
-    "type": "string"
+    "$ref": "#/$defs/action"
    }
   },
   "locales": {
@@ -101,6 +101,107 @@
    "type": "string",
    "pattern": "^#[0-9a-fA-F]{6}$",
    "description": "The plugin's colour, used for its glyph. State colours stay the state's."
+  }
+ },
+ "$defs": {
+  "action": {
+   "type": "object",
+   "required": [
+    "id",
+    "command"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "label": {
+     "type": "string",
+     "description": "A locale key or a literal."
+    },
+    "tool": {
+     "type": "string",
+     "description": "\"plugin\" (the script sits in the plugin directory) or a name from `needs` (a released script of the customer's)."
+    },
+    "command": {
+     "type": "string",
+     "description": "The script, relative to the plugin directory or inside the tool source."
+    },
+    "args": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "argv template; \"{field}\" is substituted, an empty optional value drops its flag."
+    },
+    "data": {
+     "type": "string",
+     "description": "A name from `needs`: the source the tool works on (COCKPIT_DATA_DIR). Must be released read-write."
+    },
+    "scope": {
+     "enum": [
+      "module",
+      "document"
+     ]
+    },
+    "stdin": {
+     "type": "string",
+     "description": "Name of a field whose value goes to the tool on stdin."
+    },
+    "field": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/field"
+     }
+    }
+   }
+  },
+  "field": {
+   "type": "object",
+   "required": [
+    "name"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "label": {
+     "type": "string"
+    },
+    "type": {
+     "enum": [
+      "text",
+      "select",
+      "textarea",
+      "date",
+      "file"
+     ]
+    },
+    "accept": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "required": {
+     "type": "boolean"
+    },
+    "options": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "options_from": {
+     "type": "string",
+     "description": "\"<file>:<path>\" inside the action's data source — a schema property's enum (\"review.schema.json:status\") or a list in the data itself (\"todo.json:lov.clusters\", ids of the entries). The value list lives in the data, not here."
+    },
+    "placeholder": {
+     "type": "string"
+    }
+   }
   }
  }
 }

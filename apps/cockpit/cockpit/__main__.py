@@ -71,7 +71,10 @@ def cmd_check(args):
     for m in config.modules:
         p = plugins.get(m.plugin)
         print(f"plugin         {'OK     ' if p else 'MISSING'} {m.plugin:14} for module '{m.id}'"
-              + (f" — {p.version}, {'bundled' if p.bundled else 'installed'}" if p else ""))
+              + (f" — {p.version}, {'bundled' if p.bundled else 'installed'}" if p else "")
+              + (f"; actions: {', '.join(a.id for a in m.actions)}" if m.actions else ""))
+        for aid, why in m.withheld:
+            print(f"               withheld {m.id}.{aid} — {why}")
         failures += 0 if p else 1
     users = Users(config.users_path, config.secret_path)
     identities = [(n, users.get(n, config.base_dir)) for n in users.names()] or [(None, None)]

@@ -55,7 +55,7 @@ path = "{tmp_path}"
 [[module]]
 id = "m"
 plugin = "worklist"
-sources = ["data"]
+sources = ["data", "tools"]
   [[module.action]]
   id = "x"
   tool = "tools"

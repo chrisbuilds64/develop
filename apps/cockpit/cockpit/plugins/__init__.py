@@ -10,7 +10,9 @@ id shadows a bundled one.
 `cockpit plugin add <path>` copies a plugin directory into the installed set
 after checking its manifest; `--link` symlinks it instead, for development.
 A module in the configuration names a plugin by id and nothing else — reader,
-app and locales come from the manifest.
+app, locales and **actions** come from the manifest. The instance releases the
+sources the plugin `needs`, may restrict the actions to a subset and may add
+actions of its own; it never redefines the plugin's.
 """
 
 from __future__ import annotations
@@ -75,10 +77,37 @@ def load_manifest(path: Path) -> dict:
         manifest = json.loads(mf.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise PluginError(f"{mf}: not valid JSON: {exc}") from exc
-    problems = validate(manifest)
+    problems = validate(manifest) + _check_actions(manifest, Path(path))
     if problems:
         raise PluginError(f"{mf}: " + "; ".join(problems))
     return manifest
+
+
+def _check_actions(manifest: dict, path: Path) -> list[str]:
+    """What the schema cannot say: an action's tool and data must be names from `needs`,
+    and a script the plugin brings must exist inside the plugin directory."""
+    out: list[str] = []
+    needs = list(manifest.get("needs", []))
+    seen: set[str] = set()
+    for a in manifest.get("actions", []):
+        aid = a.get("id", "?")
+        if aid in seen:
+            out.append(f"action '{aid}' appears twice")
+        seen.add(aid)
+        tool = a.get("tool", "plugin")
+        if tool == "plugin":
+            script = (path / a.get("command", "")).resolve()
+            if not script.is_relative_to(path.resolve()) or not script.is_file():
+                out.append(f"action '{aid}': command '{a.get('command')}' is not a file inside the plugin")
+        elif tool not in needs:
+            out.append(f"action '{aid}': tool '{tool}' is not in needs {needs}")
+        data = a.get("data")
+        if data and data not in needs:
+            out.append(f"action '{aid}': data '{data}' is not in needs {needs}")
+        for f in a.get("field", []):
+            if f.get("options_from") and ":" not in f["options_from"]:
+                out.append(f"action '{aid}', field '{f.get('name')}': options_from is '<file>:<path>'")
+    return out
 
 
 def discover(installed_dir: Path | None) -> dict[str, Plugin]:
