@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The runner: takes queued skill runs from _runs/ and executes them in a headless agent session.
 
-    runner.py --workspace ~/work --data ~/fundus/flow [--claude /path/to/claude] [--once] [--interval 10]
+    runner.py --workspace ~/work --data ~/mnt/pressroom/flow [--claude /path/to/claude] [--once] [--interval 10]
 
 Kind `claude-code`: the skill runs as `claude -p "/<skill> <container>"` in the
 workspace — the same session type, the same skills and canon the person uses
@@ -65,7 +65,7 @@ def execute(f: Path, run: dict, args) -> None:
     queue = f.parent
     log = queue / (f.stem + ".log")
     cmd = [args.claude, "-p", prompt_for(run), "--output-format", "json", "--permission-mode", args.permission_mode,
-           "--add-dir", str(args.data)]                    # the fundus is outside the workspace; Write/Edit need it named
+           "--add-dir", str(args.data)]                    # the pressroom store is outside the workspace; Write/Edit need it named
     if args.allowed_tools:
         cmd += ["--allowedTools", args.allowed_tools]
     env = dict(os.environ, COCKPIT_DATA_DIR=str(args.data), CONTEXT_LOOP_DIR=str(args.data))
