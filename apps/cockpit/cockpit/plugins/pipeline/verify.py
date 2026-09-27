@@ -38,6 +38,59 @@ FIXED = {"meta.json", "review.md", "validation.md", "source.md", "interpretation
 HEADING = re.compile(r"^##\s+(\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?)", re.M)
 
 
+def load_series(root: Path) -> dict[str, dict]:
+    """label → head, from series/<LABEL>/series.json. A series without a folder here does not exist."""
+    out = {}
+    d = root / "series"
+    if not d.is_dir():
+        return out
+    for f in sorted(d.iterdir()):
+        if f.is_dir() and (f / "series.json").is_file():
+            try:
+                out[f.name] = json.loads((f / "series.json").read_text(encoding="utf-8"))
+            except Exception:
+                out[f.name] = {"_broken": True}
+    return out
+
+
+def folders_for(root: Path, ref: str, stages: list[str]) -> list[str]:
+    """Every stage/name whose folder name starts with the ref (SP-SIM-01-…), across all stages."""
+    return [f"{s}/{p.name}" for s in stages for p in sorted((root / s).iterdir())
+            if p.is_dir() and (p.name == ref or p.name.startswith(ref + "-"))]
+
+
+def check_series(root: Path, label: str, stages: list[str], schema: dict | None, people: list[dict] | None) -> list[str]:
+    """The head against its schema, its persons against people.json, its refs against the folders."""
+    folder = root / "series" / label
+    try:
+        head = json.loads((folder / "series.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [f"series.json: not valid JSON ({exc})"]
+    out = ["series.json: " + x for x in schema_check(head, schema)]
+    if head.get("label") and head["label"] != label:
+        out.append(f"series.json: label = {head['label']!r} but the folder is series/{label} — the name wins")
+    if people is not None:
+        ids = {x["id"] for x in people}
+        for key in ("editor",):
+            if head.get(key) and head[key] not in ids:
+                out.append(f"series.json: {key} = {head[key]!r} is not an id in people.json")
+        for who in head.get("sourced_by", []):
+            if who not in ids:
+                out.append(f"series.json: sourced_by {who!r} is not an id in people.json")
+    seen = set()
+    for piece in head.get("pieces", []):
+        ref = piece.get("ref", "")
+        if ref in seen:
+            out.append(f"series.json: {ref} is listed twice")
+        seen.add(ref)
+        if ref and f"-{label}-" not in f"-{ref}-":
+            out.append(f"series.json: {ref} does not carry the series label {label}")
+        hits = folders_for(root, ref, stages)
+        if len(hits) > 1:
+            out.append(f"series.json: {ref} matches more than one folder: {', '.join(hits)}")
+    return out
+
+
 def check_meta(folder: Path, schema: dict | None) -> list[str]:
     """meta.json against the schema — the cockpit's one checker, prefixed with the file name."""
     m = folder / "meta.json"
@@ -50,9 +103,29 @@ def check_meta(folder: Path, schema: dict | None) -> list[str]:
     return ["meta.json: " + x for x in schema_check(d, schema)]
 
 
+def check_relation(folder: Path, root: Path) -> list[str]:
+    """A container that names a series: the series has a head, and the head lists this piece."""
+    m = folder / "meta.json"
+    try:
+        d = json.loads(m.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    label = d.get("series")
+    if not label:
+        return []
+    heads = load_series(root)
+    if label not in heads:
+        return [f"meta.json: series = {label!r} has no head — there is no series/{label}/series.json"]
+    ref = f"{d.get('label', '')}-{d.get('number', '')}"
+    listed = {p.get("ref") for p in heads[label].get("pieces", [])}
+    if ref not in listed:
+        return [f"meta.json: {ref} is not listed in series/{label}/series.json — the head decides the order"]
+    return []
+
+
 def check(root: Path, stage: str, name: str, schema: dict | None) -> list[str]:
     folder = root / stage / name
-    findings = check_meta(folder, schema)
+    findings = check_meta(folder, schema) + check_relation(folder, root)
     files = [f for f in sorted(folder.iterdir()) if f.is_file() and not f.name.startswith(".")]
     for f in files:
         n = f.name.lower()
@@ -98,6 +171,11 @@ def load_schema(root: Path) -> dict | None:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
+def load_series_schema(root: Path) -> dict | None:
+    p = root / "series.schema.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if len(argv) != 1:
@@ -108,6 +186,14 @@ def main(argv=None) -> int:
 
     if argv[0] == "--all":
         total = 0
+        sschema, people = load_series_schema(root), review_entries.load_people(root)
+        for label in load_series(root):
+            f = check_series(root, label, stages, sschema, people)
+            if f:
+                total += len(f)
+                print(f"series/{label}: {len(f)}")
+                for x in f:
+                    print("  " + x)
         for stage in stages:
             for c in sorted(p.name for p in (root / stage).iterdir() if p.is_dir() and not p.name.startswith(("_", "."))):
                 f = check(root, stage, c, schema)
@@ -120,7 +206,17 @@ def main(argv=None) -> int:
               + ("" if (root / "people.json").exists() else " — no people.json at the root, authors not checked"))
         return 0 if not total else 1
 
-    name = argv[0].strip().strip("/").split("/")[-1]      # "stage/name" from the surface, "name" from the shell
+    target = argv[0].strip().strip("/")
+    if target.startswith("series/"):
+        label = target.split("/")[1]
+        if not (root / "series" / label / "series.json").is_file():
+            sys.exit(f"series '{label}' has no head")
+        findings = check_series(root, label, stages, load_series_schema(root), review_entries.load_people(root))
+        print(f"series/{label}: " + ("clean" if not findings else f"{len(findings)} finding(s)"))
+        for x in findings:
+            print("  " + x)
+        return 0 if not findings else 1
+    name = target.split("/")[-1]      # "stage/name" from the surface, "name" from the shell
     here = [s for s in stages if (root / s / name).is_dir()]
     if len(here) != 1:
         sys.exit(f"container '{name}' " + ("not found" if not here else "exists in more than one stage"))

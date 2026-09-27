@@ -3,7 +3,7 @@ path:        canon/software/review.md
 type:        rule · domain software
 purpose:     How a change reaches production.
 maintained:  the owner
-updated:     2026-08-27
+updated:     2026-08-28
 ```
 
 # Review before merge

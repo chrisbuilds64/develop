@@ -40,13 +40,21 @@ def main(argv=None) -> int:
         sys.exit("nothing to append")
 
     root = Path(os.environ.get("COCKPIT_DATA_DIR") or ".").resolve()
-    name = a.container.strip().strip("/").split("/")[-1]  # "stage/name" from the surface, "name" from the shell
-    if not name or name.startswith("."):
-        sys.exit(f"'{name}' is not a container name")
-    here = [s for s in sorted(p.name for p in root.iterdir() if p.is_dir() and STAGE.match(p.name)) if (root / s / name).is_dir()]
-    if len(here) != 1:
-        sys.exit(f"container '{name}' " + ("not found" if not here else f"exists in more than one stage: {', '.join(here)}"))
-    target = root / here[0] / name / "review.md"
+    target_ref = a.container.strip().strip("/")
+    if target_ref.startswith("series/"):                  # a series has a review too: series/<LABEL>
+        name = target_ref.split("/")[1]
+        if not (root / "series" / name / "series.json").is_file():
+            sys.exit(f"series '{name}' has no head")
+        here = ["series"]
+        target = root / "series" / name / "review.md"
+    else:
+        name = target_ref.split("/")[-1]  # "stage/name" from the surface, "name" from the shell
+        if not name or name.startswith("."):
+            sys.exit(f"'{name}' is not a container name")
+        here = [s for s in sorted(p.name for p in root.iterdir() if p.is_dir() and STAGE.match(p.name)) if (root / s / name).is_dir()]
+        if len(here) != 1:
+            sys.exit(f"container '{name}' " + ("not found" if not here else f"exists in more than one stage: {', '.join(here)}"))
+        target = root / here[0] / name / "review.md"
     existing = target.read_text(encoding="utf-8") if target.exists() else ""
 
     schema = load_schema(root)

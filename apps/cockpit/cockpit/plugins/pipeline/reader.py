@@ -160,9 +160,80 @@ def _filters(access, role, src) -> list[dict]:
         return []
     out = []
     for name, prop in schema.get("properties", {}).items():
-        if isinstance(prop, dict) and prop.get("enum") and not prop.get("deprecated"):
+        if not isinstance(prop, dict) or prop.get("deprecated"):
+            continue
+        if prop.get("enum"):
             out.append({"name": name, "label": name, "values": [str(v) for v in prop["enum"]]})
+        elif prop.get("x-ref") == "series":
+            # the value list is the set of series heads — a series without a folder does not exist
+            out.append({"name": name, "label": name, "values": sorted(_series_heads(access, role, src))})
     return out
+
+
+def _series_heads(access, role, src) -> dict[str, dict]:
+    """label → head, from series/<LABEL>/series.json at the pipeline root."""
+    try:
+        labels = [n for n in access.listdir(src, role, "series") if not n.startswith(".")]
+    except Exception:
+        return {}
+    out = {}
+    for label in labels:
+        try:
+            out[label] = access.read_json(src, f"series/{label}/series.json", role)
+        except Exception:
+            continue
+    return out
+
+
+def _folder_index(access, role, src) -> dict[str, str]:
+    """name → stage for every piece folder, one listing per stage."""
+    idx = {}
+    for stage in access.listdir(src, role):
+        if not STAGE.match(stage):
+            continue
+        for name in access.listdir(src, role, stage):
+            if not name.startswith("_"):
+                idx[name] = stage
+    return idx
+
+
+def _resolve_ref(ref: str, index: dict[str, str]) -> tuple[str, str] | None:
+    """SP-SIM-01 → (stage, folder) — the folder whose name starts with the ref."""
+    for name, stage in index.items():
+        if name == ref or name.startswith(ref + "-"):
+            return stage, name
+    return None
+
+
+def _series_rows(access, role, src, people: dict[str, str]) -> list[dict]:
+    """Every series with where its pieces stand — the block above the board."""
+    heads = _series_heads(access, role, src)
+    if not heads:
+        return []
+    index = _folder_index(access, role, src)
+    rows = []
+    for label, head in sorted(heads.items()):
+        by = {}
+        planned = 0
+        for piece in head.get("pieces", []):
+            hit = _resolve_ref(piece.get("ref", ""), index)
+            if hit:
+                key = hit[0].split("-", 1)[1].replace("-", " ")
+                by[key] = by.get(key, 0) + 1
+            else:
+                planned += 1
+        progress = " · ".join(f"{n} {k}" for k, n in by.items()) + (f" · {planned} planned" if planned else "")
+        rows.append([{"text": label, "href": f"/m/pipeline/doc/series/{label}"}, head.get("title", label),
+                     {"badge": head.get("status", "?"), "tone": {"running": "ok", "planned": "muted", "complete": "muted", "dormant": "warn"}.get(head.get("status"), "muted")},
+                     people.get(head.get("editor", ""), head.get("editor", "")), progress or "—"])
+    return rows
+
+
+def _people(access, role, src) -> dict[str, str]:
+    try:
+        return {x["id"]: x["name"] for x in access.read_json(src, "people.json", role).get("people", [])}
+    except Exception:
+        return {}
 
 
 def _pieces(access, role, src, stage, facets=()):
@@ -214,7 +285,13 @@ def detail(access, role, module, config) -> dict:
             # The archive holds collections, not pieces: shown as a count, opened on demand.
             "collapsed": num == 0,
         })
-    blocks = [{"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters}]
+    blocks = []
+    series_rows = _series_rows(access, role, src, _people(access, role, src))
+    if series_rows:
+        blocks.append({"kind": "table", "title": "block.series",
+                       "columns": ["series.label", "series.title", "series.status", "series.editor", "series.progress"],
+                       "rows": series_rows})
+    blocks.append({"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters})
     runs = _runs(access, role, src)
     if runs:
         blocks.append({"kind": "table", "title": "block.runs", "place": "actions", "columns": ["run.when", "run.skill", "run.container", "run.by", "run.status"],
@@ -250,8 +327,10 @@ def document(access, role, module, config, ref) -> dict | None:
     """stage/name → the piece: meta and its files as links. stage/name/file → that file."""
     src = module.sources[0]
     parts = ref.split("/")
+    if parts[0] == "series" and len(parts) == 2:
+        return _series_page(access, role, module, src, parts[1])
     if len(parts) == 3:
-        stage, name, fname = parts
+        stage, name, fname = parts                       # stage/name/file — or series/<LABEL>/file
         if not fname.endswith((".md", ".txt", ".json")):
             return None
         body = access.read_text(src, ref, role)
@@ -269,6 +348,8 @@ def document(access, role, module, config, ref) -> dict | None:
     if meta.get("subtitle"):
         parts_md += [f"*{meta['subtitle']}*", ""]
     parts_md += [f"`{stage}` · `{name}`"]
+    if meta.get("series"):
+        parts_md += ["", f"Series: [{meta['series']}](/m/{module.id}/doc/series/{meta['series']}) · {meta.get('label', '')}-{meta.get('number', '')}"]
     tiles = []
     for f in files:
         p = access.resolve(src, f"{stage}/{name}/{f}", role)
@@ -288,6 +369,56 @@ def document(access, role, module, config, ref) -> dict | None:
     out = {"title": meta.get("title", name), "body": "\n".join(parts_md)}
     if meta:
         out["cover"] = cover_svg(meta, _cover_rules(access, role, src), 160)
+    if tiles:
+        out["files"] = tiles
+    return out
+
+
+def _series_page(access, role, module, src, label: str) -> dict | None:
+    """series/<LABEL>: the head, then the pieces in the head's order with where each one stands, then the construct."""
+    folder = f"series/{label}"
+    try:
+        files = access.listdir(src, role, folder)
+    except Exception:
+        return None
+    head = access.read_json(src, f"{folder}/series.json", role) if "series.json" in files else {}
+    people = _people(access, role, src)
+    index = _folder_index(access, role, src)
+    md = [f"# {head.get('title', label)}", ""]
+    if head.get("spine"):
+        md += [f"*{head['spine']}*", ""]
+    line = [f"`{label}`", f"status **{head.get('status', '?')}**"]
+    if head.get("editor"):
+        line.append(f"editor {people.get(head['editor'], head['editor'])}")
+    if head.get("sourced_by"):
+        line.append("sourced by " + ", ".join(people.get(x, x) for x in head["sourced_by"]))
+    md += [" · ".join(line), "", "## Pieces, in order of appearance", "", "| # | piece | role | title | stage |", "|---|---|---|---|---|"]
+    for i, piece in enumerate(head.get("pieces", []), 1):
+        ref = piece.get("ref", "")
+        hit = _resolve_ref(ref, index)
+        if hit:
+            stage, name = hit
+            try:
+                meta = access.read_json(src, f"{stage}/{name}/meta.json", role)
+            except Exception:
+                meta = {}
+            title = meta.get("title") or meta.get("working_title") or name
+            md.append(f"| {i} | [{ref}](/m/{module.id}/doc/{stage}/{name}) | {piece.get('role', '')} | {title} | `{stage}` |")
+        else:
+            md.append(f"| {i} | {ref} | {piece.get('role', '')} | — | *planned, no container yet* |")
+    if head.get("related"):
+        md += ["", "Related: " + ", ".join(f"[{x}](/m/{module.id}/doc/series/{x})" for x in head["related"])]
+    if "construct.md" in files:
+        md += ["", "---", "", access.read_text(src, f"{folder}/construct.md", role)]
+    tiles = []
+    for f in files:
+        p = access.resolve(src, f"{folder}/{f}", role)
+        kind = _kind(f)
+        href = f"/m/{module.id}/doc/{folder}/{f}" if kind in ("data", "review", "text", "plain") else (f"/m/{module.id}/file/{folder}/{f}" if kind in ("image", "video", "pdf") else "")
+        tiles.append({"name": f, "kind": kind, "href": href, "size_kb": max(1, p.stat().st_size // 1024),
+                      "version": (VERSION.search(f).group(1) if VERSION.search(f) else "")})
+    out = {"title": head.get("title", label), "body": "\n".join(md),
+           "cover": cover_svg({"label": label, "series": label, "title": head.get("title", label), "track": ""}, _cover_rules(access, role, src), 160)}
     if tiles:
         out["files"] = tiles
     return out

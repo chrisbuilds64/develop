@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Container meta (demo)",
+  "type": "object",
+  "required": [
+    "label",
+    "title"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "label": {
+      "enum": [
+        "FN",
+        "POD",
+        "SP",
+        "WN"
+      ]
+    },
+    "number": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "track": {
+      "enum": [
+        "deep-tech",
+        "provocative",
+        "business"
+      ]
+    },
+    "series": {
+      "type": "string",
+      "x-ref": "series",
+      "description": "The series label \u2014 valid when series/<LABEL>/series.json exists."
+    },
+    "publishDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # Elicitation — Northwind Manufacturing
 
 **Pack:** example 0.1
-**Started:** 2026-09-26T20:42:57+02:00
+**Started:** 2026-09-27T14:52:17+02:00
 
 Markers: `[AS-IS]` what is, `[PROPOSED]` what someone suggests, `[OPEN]` unresolved. An unmarked draft is a claim, not a record.
 

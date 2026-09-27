@@ -223,5 +223,11 @@
   "home.evening": "Good evening{name}",
   "home.attention": "{n} need your attention: {list}.",
   "home.blocked": "{n} blocked: {list}.",
-  "home.all_good": "Everything is on track."
+  "home.all_good": "Everything is on track.",
+  "block.series": "Series",
+  "series.label": "series",
+  "series.title": "title",
+  "series.status": "status",
+  "series.editor": "editor",
+  "series.progress": "where the pieces stand"
 }

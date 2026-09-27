@@ -74,11 +74,31 @@ shutil.copy(Path(__file__).resolve().parent / "review.schema.json", flow / "revi
 shutil.copy(Path(__file__).resolve().parent / "run.schema.json", flow / "run.schema.json")         # the skill run's shape
 shutil.copy(Path(__file__).resolve().parent / "run-policy.json", flow / "run-policy.json")         # who may order a run, and what a run may do
 shutil.copy(Path(__file__).resolve().parent / "people.json", flow / "people.json")                 # the one list of persons and agent instances
+shutil.copy(Path(__file__).resolve().parent / "series.schema.json", flow / "series.schema.json")     # the series head's shape
+(flow / "meta.schema.json").write_text(json.dumps({                                                # a small container schema: value lists become the board's filters
+    "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Container meta (demo)", "type": "object",
+    "required": ["label", "title"], "additionalProperties": False,
+    "properties": {"label": {"enum": ["FN", "POD", "SP", "WN"]}, "number": {"type": "string"}, "slug": {"type": "string"},
+                   "title": {"type": "string"}, "track": {"enum": ["deep-tech", "provocative", "business"]},
+                   "series": {"type": "string", "x-ref": "series", "description": "The series label — valid when series/<LABEL>/series.json exists."},
+                   "publishDate": {"type": ["string", "null"]}}}, indent=2) + "\n")
 for stage, n in [("10-ideas", 4), ("20-produce", 1), ("30-review-human", 3), ("40-asset-generation", 2),
                  ("50-ready-to-publish", 1), ("60-published", 27), ("61-field-observation", 6),
                  ("70-reference-frames", 1)]:
     for i in range(n):
         (flow / stage / f"piece-{stage[:2]}-{i + 1:02d}").mkdir(parents=True)
+# a series: the head clamps three pieces, one of them still planned
+for stage, name, label, number, title in [("60-published", "FN-ARC-01-the-first-arc", "FN", "ARC-01", "The First Arc"),
+                                          ("30-review-human", "POD-ARC-02-the-arc-spoken", "POD", "ARC-02", "The Arc, Spoken")]:
+    d = flow / stage / name; d.mkdir(parents=True)
+    (d / "meta.json").write_text(json.dumps({"label": label, "series": "ARC", "number": number, "slug": name.lower(), "title": title, "track": "deep-tech"}, indent=2) + "\n")
+sd = flow / "series" / "ARC"; sd.mkdir(parents=True)
+(sd / "series.json").write_text(json.dumps({
+    "label": "ARC", "title": "The Arc", "spine": "One idea, told three ways, in an order that builds.",
+    "status": "running", "editor": "alex", "sourced_by": ["alex", "sam"], "created": iso(today - dt.timedelta(days=10)),
+    "pieces": [{"ref": "FN-ARC-01", "role": "the finding"}, {"ref": "POD-ARC-02", "role": "the finding, spoken"},
+               {"ref": "SP-ARC-03", "role": "the hook, last"}]}, indent=2) + "\n")
+(sd / "construct.md").write_text("# The Arc — construct\n\nWhy these three, in this order.\n")
 
 # --- audits -------------------------------------------------------------------
 au = F / "audits"; au.mkdir()

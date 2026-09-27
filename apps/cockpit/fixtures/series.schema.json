@@ -1,0 +1,95 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://chrisbuilds64.com/schema/series-1.json",
+ "title": "Series (the head that clamps its pieces)",
+ "description": "A series is an item of its own: a folder series/<LABEL>/ at the pipeline root with this head as series.json, the prose as construct.md and an append-only review.md. It does not move through the stages; it has its own status. The head carries the order of appearance — pieces[] — and a piece may exist here before it has a container: that is a planned piece. A container says which series it belongs to (meta.json: series); the head says where the piece stands in the sequence. verify checks both directions. A series that has no folder here does not exist.",
+ "type": "object",
+ "required": [
+  "label",
+  "title",
+  "spine",
+  "status",
+  "editor",
+  "pieces"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "label": {
+   "type": "string",
+   "pattern": "^[A-Z]{2,4}$",
+   "description": "The clamp: in the folder name (series/<LABEL>), in every piece's folder name and in its meta.json. Equal to the folder name; the name wins on conflict."
+  },
+  "title": {
+   "type": "string",
+   "minLength": 1
+  },
+  "spine": {
+   "type": "string",
+   "minLength": 1,
+   "description": "The thesis in one sentence. What every piece serves; shown on the card."
+  },
+  "status": {
+   "enum": [
+    "planned",
+    "running",
+    "complete",
+    "dormant"
+   ]
+  },
+  "editor": {
+   "type": "string",
+   "description": "Who answers for the series — an id from people.json."
+  },
+  "sourced_by": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "description": "Who feeds the material — ids from people.json."
+  },
+  "created": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "pieces": {
+   "type": "array",
+   "description": "The order of appearance. Each ref is <LABEL>-<SERIES>-<NN>, e.g. SP-SIM-01 — label plus series number, because three pieces may share SIM-01. A ref without a container is a planned piece.",
+   "items": {
+    "$ref": "#/$defs/piece"
+   }
+  },
+  "related": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "description": "Neighbouring series, by label."
+  },
+  "canon": {
+   "type": "string",
+   "description": "Path of the series' own canon file (visual language and semantics under the brand), once it exists."
+  }
+ },
+ "$defs": {
+  "piece": {
+   "type": "object",
+   "required": [
+    "ref"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "ref": {
+     "type": "string",
+     "pattern": "^[A-Z]{2,4}-[A-Z]{2,4}-\\d{2}$"
+    },
+    "role": {
+     "type": "string",
+     "description": "What this piece carries for the series — one line."
+    },
+    "note": {
+     "type": "string"
+    }
+   }
+  }
+ }
+}

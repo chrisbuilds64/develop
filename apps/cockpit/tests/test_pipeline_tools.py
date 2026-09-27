@@ -158,3 +158,36 @@ def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path)
     r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],
                        capture_output=True, text=True)
     assert "taking" not in r.stdout
+
+
+def test_series_head_clamps_its_pieces_both_ways(tmp_path):
+    root = make(tmp_path)
+    (root / "series.schema.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "series.schema.json").read_text())
+    (root / "meta.schema.json").write_text(json.dumps({"properties": {"label": {}, "title": {}, "series": {"type": "string", "x-ref": "series"}, "number": {}}}))
+    c = root / "30-review-human" / "POD-01"
+    (c / "meta.json").write_text(json.dumps({"label": "POD", "title": "One", "series": "ARC", "number": "ARC-01"}))
+    # no head yet: the piece claims a series that does not exist
+    assert "has no head" in run(root, "verify.py", "POD-01").stdout
+    sd = root / "series" / "ARC"; sd.mkdir(parents=True)
+    head = {"label": "ARC", "title": "The Arc", "spine": "One idea, three ways.", "status": "running", "editor": "chris",
+            "sourced_by": ["akhil"], "pieces": [{"ref": "FN-ARC-01", "role": "the finding"}, {"ref": "SP-ARC-02", "role": "the hook"}]}
+    (sd / "series.json").write_text(json.dumps(head))
+    # head exists but does not list this piece; the head's second piece is planned (no folder), which is fine
+    r = run(root, "verify.py", "POD-01")
+    assert "POD-ARC-01 is not listed in series/ARC/series.json" in r.stdout
+    assert run(root, "verify.py", "series/ARC").returncode == 0
+    head["pieces"].insert(0, {"ref": "POD-ARC-01", "role": "spoken"})
+    (sd / "series.json").write_text(json.dumps(head))
+    assert run(root, "verify.py", "POD-01").returncode == 0
+    # the head is checked too: a stranger as editor, a ref from another series, a folder name that disagrees
+    head["editor"] = "ghost"; head["pieces"].append({"ref": "FN-XYZ-09"})
+    (sd / "series.json").write_text(json.dumps(head))
+    out = run(root, "verify.py", "series/ARC").stdout
+    assert "editor = 'ghost' is not an id in people.json" in out and "FN-XYZ-09 does not carry the series label ARC" in out
+    r = run(root, "verify.py", "--all")
+    assert "series/ARC:" in r.stdout
+    # a series carries a review of its own
+    (root / "review.schema.json").write_text(json.dumps({"required": ["id"], "properties": {"id": {}, "date": {}, "author": {}, "for": {}, "status": {"enum": ["info", "open"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
+    r = run(root, "review_append.py", "series/ARC", "--by", "chris", "--title", "Order settled", "--status", "info", stdin="SP last.")
+    assert r.returncode == 0 and "REV-001 appended to series/ARC/review.md" in r.stdout
+    assert "**Stage:** series" in (sd / "review.md").read_text()

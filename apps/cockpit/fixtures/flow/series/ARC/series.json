@@ -1,0 +1,26 @@
+{
+  "label": "ARC",
+  "title": "The Arc",
+  "spine": "One idea, told three ways, in an order that builds.",
+  "status": "running",
+  "editor": "alex",
+  "sourced_by": [
+    "alex",
+    "sam"
+  ],
+  "created": "2026-09-17",
+  "pieces": [
+    {
+      "ref": "FN-ARC-01",
+      "role": "the finding"
+    },
+    {
+      "ref": "POD-ARC-02",
+      "role": "the finding, spoken"
+    },
+    {
+      "ref": "SP-ARC-03",
+      "role": "the hook, last"
+    }
+  ]
+}

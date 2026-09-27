@@ -149,3 +149,15 @@ def test_the_overview_greets_the_person_and_the_rail_lists_only_their_modules(cl
     rail = page.split('<nav class="rail"')[1].split("</nav>")[0]
     assert 'href="/m/pipeline"' in rail and 'href="/m/audits"' not in rail       # sam may not open audits
     assert 'class="card-glyph"' in page and 'href="/setup"' not in rail
+
+
+def test_the_series_block_and_page_show_where_the_pieces_stand(client, world):
+    sign_in(client, "sam")
+    board = client.get("/m/pipeline").text
+    assert "/m/pipeline/doc/series/ARC" in board and "1 published · 1 review human · 1 planned" in board
+    assert '<option>ARC</option>' in board                                  # the series filter's values come from the heads
+    page = client.get("/m/pipeline/doc/series/ARC").text
+    assert "One idea, told three ways" in page and "planned, no container yet" in page
+    assert "/m/pipeline/doc/30-review-human/POD-ARC-02-the-arc-spoken" in page and "Why these three" in page
+    piece = client.get("/m/pipeline/doc/60-published/FN-ARC-01-the-first-arc").text
+    assert "/m/pipeline/doc/series/ARC" in piece
