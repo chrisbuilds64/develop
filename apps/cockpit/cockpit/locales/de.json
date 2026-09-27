@@ -229,5 +229,14 @@
   "series.title": "Titel",
   "series.status": "Status",
   "series.editor": "Redaktion",
-  "series.progress": "Stand der Stücke"
+  "series.progress": "Stand der Stücke",
+  "pipeline.schedule": "Termin für dieses Stück setzen",
+  "field.date": "Erscheinungstermin",
+  "block.calendar": "Kalender",
+  "calendar.free": "nächste freie Slots",
+  "calendar.gaps": "Lücken",
+  "calendar.none": "keine",
+  "calendar.planned": "geplant",
+  "calendar.published": "erschienen",
+  "calendar.today": "heute"
 }

@@ -191,3 +191,22 @@ def test_series_head_clamps_its_pieces_both_ways(tmp_path):
     r = run(root, "review_append.py", "series/ARC", "--by", "chris", "--title", "Order settled", "--status", "info", stdin="SP last.")
     assert r.returncode == 0 and "REV-001 appended to series/ARC/review.md" in r.stdout
     assert "**Stage:** series" in (sd / "review.md").read_text()
+
+
+def test_schedule_puts_a_piece_on_a_day_within_the_rhythm(tmp_path):
+    root = make(tmp_path)
+    (root / "calendar.json").write_text(json.dumps({"slots": ["Mon", "Thu"], "one_per_day": True, "max_gap_days": 4}))
+    (root / "60-published" / "SP-001-out").mkdir(parents=True)
+    (root / "60-published" / "SP-001-out" / "meta.json").write_text(json.dumps({"label": "SP", "title": "Out", "publishDate": "2026-10-01"}))
+    r = run(root, "schedule.py", "30-review-human/POD-01", "2026-10-05")
+    assert r.returncode == 0 and "POD-01 planned for 2026-10-05 (Mon)" in r.stdout and "not a slot" not in r.stdout
+    assert json.loads((root / "30-review-human" / "POD-01" / "meta.json").read_text())["publishDate"] == "2026-10-05"
+    r = run(root, "schedule.py", "POD-01", "2026-10-06")                       # a Tuesday: allowed, noted
+    assert r.returncode == 0 and "was 2026-10-05" in r.stdout and "Tue is not a slot" in r.stdout
+    assert "one piece per day" in run(root, "schedule.py", "POD-01", "2026-10-01").stderr     # SP-001 holds it
+    assert "record now, not a plan" in run(root, "schedule.py", "SP-001-out", "2026-10-09").stderr
+    assert "not a date" in run(root, "schedule.py", "POD-01", "next thursday").stderr
+    # verify sees two pieces on one day
+    (root / "40-asset-generation" / "POD-02").mkdir()
+    (root / "40-asset-generation" / "POD-02" / "meta.json").write_text(json.dumps({"label": "POD", "title": "Two", "publishDate": "2026-10-06"}))
+    assert "calendar: 2026-10-06 has 2 pieces" in run(root, "verify.py", "--all").stdout

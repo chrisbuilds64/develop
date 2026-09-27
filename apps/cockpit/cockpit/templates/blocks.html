@@ -66,6 +66,27 @@
   </script>
   {% endif %}
 
+  {% elif b.kind == 'calendar' %}
+  <div class="cal">
+    {% for week in b.weeks %}
+    <div class="cal-week">
+      {% for d in week %}
+      <div class="cal-day{% if d.slot %} slot{% endif %}{% if d.today %} today{% endif %}{% if d.pieces %} busy{% endif %}">
+        <div class="cal-date"><span>{{ d.date[8:] }}</span><span class="cal-wd">{{ d.weekday }}{% if d.date[8:] == '01' %} · {{ d.date[5:7] }}{% endif %}</span></div>
+        {% for k in d.pieces %}
+        <a class="cal-piece {{ k.state }}" href="{{ k.href }}" title="{{ k.title }}"><span class="ktag">{{ k.tag }}</span><span class="cal-title">{{ k.title }}</span></a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <div class="cal-foot">
+      <span><b>{{ t('calendar.free') }}</b> {% if b.free %}{{ b.free|join(' · ') }}{% else %}{{ t('calendar.none') }}{% endif %}</span>
+      <span><b>{{ t('calendar.gaps') }}</b> {% if b.gaps %}{% for g in b.gaps %}{{ g['from'] }} → {{ g.to }} ({{ g.days }}d){% if not loop.last %} · {% endif %}{% endfor %}{% else %}{{ t('calendar.none') }}{% endif %}</span>
+      <span class="cal-legend"><i class="planned"></i>{{ t('calendar.planned') }} <i class="published"></i>{{ t('calendar.published') }} <i class="slot"></i>{{ b.slots|join('/') }}</span>
+    </div>
+  </div>
+
   {% elif b.kind == 'table' %}
   <div class="tablewrap"><table>
     <thead><tr>{% for h in b.columns %}<th>{{ t(h) if '.' in (h|string) else h }}</th>{% endfor %}</tr></thead>

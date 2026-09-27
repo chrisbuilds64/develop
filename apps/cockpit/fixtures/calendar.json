@@ -1,0 +1,10 @@
+{
+  "$comment": "The publishing rhythm as data, read by the calendar and by schedule.py. The reasoning stays in publishing-schedule.md. slots: weekdays a piece normally goes out (Mon..Sun); one_per_day: two pieces on one day are refused; max_gap_days: a longer stretch without a piece is shown as a gap.",
+  "slots": [
+    "Mon",
+    "Thu"
+  ],
+  "time": "07:30",
+  "one_per_day": true,
+  "max_gap_days": 4
+}

@@ -35,3 +35,9 @@ def test_types_patterns_and_lengths_hold_in_nested_documents():
 
 def test_no_schema_means_nothing_to_say():
     assert check({"anything": 1}, None) == []
+
+
+def test_a_deprecated_field_that_is_still_there_is_named():
+    schema = {"type": "object", "properties": {"old": {"type": "string", "deprecated": True, "description": "use new"}, "new": {"type": "string"}}}
+    assert check({"old": "x"}, schema) == ["field 'old' is deprecated — use new"]
+    assert check({"new": "x"}, schema) == []

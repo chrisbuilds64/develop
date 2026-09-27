@@ -161,3 +161,12 @@ def test_the_series_block_and_page_show_where_the_pieces_stand(client, world):
     assert "/m/pipeline/doc/30-review-human/POD-ARC-02-the-arc-spoken" in page and "Why these three" in page
     piece = client.get("/m/pipeline/doc/60-published/FN-ARC-01-the-first-arc").text
     assert "/m/pipeline/doc/series/ARC" in piece
+
+
+def test_the_calendar_shows_dated_pieces_free_slots_and_gaps(client, world):
+    sign_in(client, "sam")
+    board = client.get("/m/pipeline").text
+    assert 'class="cal"' in board and "cal-piece planned" in board and "cal-piece published" in board
+    assert "The Arc, Spoken" in board and "next free slots" in board and "gaps" in board
+    page = client.get("/m/pipeline/doc/series/ARC").text
+    assert "| date |" in page or "date" in page

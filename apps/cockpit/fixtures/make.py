@@ -75,6 +75,7 @@ shutil.copy(Path(__file__).resolve().parent / "run.schema.json", flow / "run.sch
 shutil.copy(Path(__file__).resolve().parent / "run-policy.json", flow / "run-policy.json")         # who may order a run, and what a run may do
 shutil.copy(Path(__file__).resolve().parent / "people.json", flow / "people.json")                 # the one list of persons and agent instances
 shutil.copy(Path(__file__).resolve().parent / "series.schema.json", flow / "series.schema.json")     # the series head's shape
+shutil.copy(Path(__file__).resolve().parent / "calendar.json", flow / "calendar.json")                # the publishing rhythm as data
 (flow / "meta.schema.json").write_text(json.dumps({                                                # a small container schema: value lists become the board's filters
     "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Container meta (demo)", "type": "object",
     "required": ["label", "title"], "additionalProperties": False,
@@ -91,7 +92,12 @@ for stage, n in [("10-ideas", 4), ("20-produce", 1), ("30-review-human", 3), ("4
 for stage, name, label, number, title in [("60-published", "FN-ARC-01-the-first-arc", "FN", "ARC-01", "The First Arc"),
                                           ("30-review-human", "POD-ARC-02-the-arc-spoken", "POD", "ARC-02", "The Arc, Spoken")]:
     d = flow / stage / name; d.mkdir(parents=True)
-    (d / "meta.json").write_text(json.dumps({"label": label, "series": "ARC", "number": number, "slug": name.lower(), "title": title, "track": "deep-tech"}, indent=2) + "\n")
+    when = iso(today - dt.timedelta(days=3)) if stage.startswith("60") else iso(today + dt.timedelta(days=(3 - today.weekday()) % 7 or 7))   # published last week; planned for the next Thursday
+    (d / "meta.json").write_text(json.dumps({"label": label, "series": "ARC", "number": number, "slug": name.lower(), "title": title, "track": "deep-tech", "publishDate": when}, indent=2) + "\n")
+for stage, name, label, number, title, days in [("60-published", "SP-014-the-short-one", "SP", "014", "The Short One", -10),
+                                                ("30-review-human", "FN-041-the-long-one", "FN", "041", "The Long One", 14)]:
+    d = flow / stage / name; d.mkdir(parents=True)
+    (d / "meta.json").write_text(json.dumps({"label": label, "number": number, "slug": name.lower(), "title": title, "track": "business", "publishDate": iso(today + dt.timedelta(days=days))}, indent=2) + "\n")
 sd = flow / "series" / "ARC"; sd.mkdir(parents=True)
 (sd / "series.json").write_text(json.dumps({
     "label": "ARC", "title": "The Arc", "spine": "One idea, told three ways, in an order that builds.",

@@ -264,8 +264,55 @@ def _pieces(access, role, src, stage, facets=()):
             "meta": [m for m in (meta.get("show"), meta.get("track"), meta.get("publishDate")) if m],
             "href": f"/m/pipeline/doc/{stage}/{name}",
             "facets": {f: str(meta[f]) for f in facets if meta.get(f) is not None},
+            "date": str(meta.get("publishDate") or "")[:10],
+            "published": int(STAGE.match(stage).group(1)) >= 60,
         })
     return out
+
+
+def _calendar(access, role, src, columns, weeks_back=2, weeks_ahead=6) -> dict | None:
+    """The weeks around today with every dated piece on its day; free slots and gaps below.
+
+    Built from the board's cards, so it costs no extra read. Dates come from publishDate:
+    planned before 60-published, published from there on. The rhythm — slots, one per day,
+    the longest tolerable gap — is calendar.json at the pipeline root.
+    """
+    try:
+        cal = access.read_json(src, "calendar.json", role) if "calendar.json" in access.listdir(src, role) else {}
+    except Exception:
+        cal = {}
+    slots = [s[:3].title() for s in cal.get("slots", [])]
+    max_gap = int(cal.get("max_gap_days", 0) or 0)
+    today = dt.date.today()
+    start = today - dt.timedelta(days=today.weekday() + 7 * weeks_back)
+    by_day: dict[str, list] = {}
+    for col in columns:
+        for k in col["cards"]:
+            if k.get("date"):
+                by_day.setdefault(k["date"], []).append({"tag": k["tag"], "title": k["title"], "href": k["href"],
+                                                         "state": "published" if k["published"] else "planned"})
+    weeks, free = [], []
+    for w in range(weeks_back + weeks_ahead):
+        row = []
+        for i in range(7):
+            day = start + dt.timedelta(days=7 * w + i)
+            iso = day.isoformat()
+            wd = day.strftime("%a")
+            is_slot = wd in slots
+            if is_slot and day >= today and iso not in by_day and len(free) < 4:
+                free.append(iso)
+            row.append({"date": iso, "weekday": wd, "slot": is_slot, "today": day == today, "pieces": by_day.get(iso, [])})
+        weeks.append(row)
+    gaps = []
+    if max_gap:
+        dated = sorted(d for d in by_day if start.isoformat() <= d)
+        dated = [dt.date.fromisoformat(d) for d in dated]
+        for a, b in zip(dated, dated[1:]):
+            if (b - a).days > max_gap:
+                gaps.append({"from": a.isoformat(), "to": b.isoformat(), "days": (b - a).days})
+        if dated and (today - dated[-1]).days > max_gap and all(d < today for d in dated):
+            gaps.append({"from": dated[-1].isoformat(), "to": today.isoformat(), "days": (today - dated[-1]).days})
+    return {"kind": "calendar", "title": "block.calendar", "weeks": weeks, "free": free, "gaps": gaps, "slots": slots}
 
 
 def detail(access, role, module, config) -> dict:
@@ -291,6 +338,7 @@ def detail(access, role, module, config) -> dict:
         blocks.append({"kind": "table", "title": "block.series",
                        "columns": ["series.label", "series.title", "series.status", "series.editor", "series.progress"],
                        "rows": series_rows})
+    blocks.append(_calendar(access, role, src, columns))
     blocks.append({"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters})
     runs = _runs(access, role, src)
     if runs:
@@ -392,7 +440,7 @@ def _series_page(access, role, module, src, label: str) -> dict | None:
         line.append(f"editor {people.get(head['editor'], head['editor'])}")
     if head.get("sourced_by"):
         line.append("sourced by " + ", ".join(people.get(x, x) for x in head["sourced_by"]))
-    md += [" · ".join(line), "", "## Pieces, in order of appearance", "", "| # | piece | role | title | stage |", "|---|---|---|---|---|"]
+    md += [" · ".join(line), "", "## Pieces, in order of appearance", "", "| # | piece | role | title | stage | date |", "|---|---|---|---|---|---|"]
     for i, piece in enumerate(head.get("pieces", []), 1):
         ref = piece.get("ref", "")
         hit = _resolve_ref(ref, index)
@@ -403,9 +451,9 @@ def _series_page(access, role, module, src, label: str) -> dict | None:
             except Exception:
                 meta = {}
             title = meta.get("title") or meta.get("working_title") or name
-            md.append(f"| {i} | [{ref}](/m/{module.id}/doc/{stage}/{name}) | {piece.get('role', '')} | {title} | `{stage}` |")
+            md.append(f"| {i} | [{ref}](/m/{module.id}/doc/{stage}/{name}) | {piece.get('role', '')} | {title} | `{stage}` | {str(meta.get('publishDate') or '')[:10] or '—'} |")
         else:
-            md.append(f"| {i} | {ref} | {piece.get('role', '')} | — | *planned, no container yet* |")
+            md.append(f"| {i} | {ref} | {piece.get('role', '')} | — | *planned, no container yet* | — |")
     if head.get("related"):
         md += ["", "Related: " + ", ".join(f"[{x}](/m/{module.id}/doc/series/{x})" for x in head["related"])]
     if "construct.md" in files:

@@ -229,5 +229,14 @@
   "series.title": "title",
   "series.status": "status",
   "series.editor": "editor",
-  "series.progress": "where the pieces stand"
+  "series.progress": "where the pieces stand",
+  "pipeline.schedule": "Put this piece on a day",
+  "field.date": "publish date",
+  "block.calendar": "Calendar",
+  "calendar.free": "next free slots",
+  "calendar.gaps": "gaps",
+  "calendar.none": "none",
+  "calendar.planned": "planned",
+  "calendar.published": "published",
+  "calendar.today": "today"
 }

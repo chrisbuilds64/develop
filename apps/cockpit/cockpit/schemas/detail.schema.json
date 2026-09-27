@@ -23,7 +23,8 @@
        "kanban",
        "table",
        "document",
-       "links"
+       "links",
+       "calendar"
       ]
      },
      "title": {
@@ -102,6 +103,21 @@
        "actions"
       ],
       "description": "Where the block sits on the module page: main (default, below the card) or actions (in the column beside the card, under the action forms) — for what belongs next to the buttons, such as the runs they start."
+     },
+     "weeks": {
+      "description": "calendar: rows of seven days. A day is {date, weekday, slot, today, pieces[]}; a piece is {tag, title, href, state} with state planned|published.",
+      "type": "array"
+     },
+     "free": {
+      "description": "calendar: the next free slots, as dates.",
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "gaps": {
+      "description": "calendar: stretches without a piece longer than max_gap_days — {from, to, days}.",
+      "type": "array"
      }
     }
    }

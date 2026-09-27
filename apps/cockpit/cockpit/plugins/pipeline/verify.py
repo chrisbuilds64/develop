@@ -202,6 +202,22 @@ def main(argv=None) -> int:
                     print(f"{stage}/{c}: {len(f)}")
                     for x in f:
                         print("  " + x)
+        # across containers: two pieces on one day, when calendar.json says one per day
+        cal = json.loads((root / "calendar.json").read_text(encoding="utf-8")) if (root / "calendar.json").exists() else {}
+        if cal.get("one_per_day", True):
+            by_day: dict[str, list[str]] = {}
+            for stage in stages:
+                for c in sorted(p for p in (root / stage).iterdir() if p.is_dir() and (p / "meta.json").is_file()):
+                    try:
+                        d = json.loads((c / "meta.json").read_text(encoding="utf-8")).get("publishDate")
+                    except Exception:
+                        continue
+                    if d:
+                        by_day.setdefault(str(d)[:10], []).append(f"{stage}/{c.name}")
+            for day, names in sorted(by_day.items()):
+                if len(names) > 1:
+                    total += 1
+                    print(f"calendar: {day} has {len(names)} pieces — {', '.join(names)}")
         print(f"{total} finding(s)" + ("" if schema else " — no meta.schema.json at the root, meta.json not checked")
               + ("" if (root / "people.json").exists() else " — no people.json at the root, authors not checked"))
         return 0 if not total else 1

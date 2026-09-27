@@ -9,6 +9,7 @@ is checked against its schema here, with the same rules and the same words:
 - a field the schema does not define is refused (when the schema says
   `additionalProperties: false`)
 - types, patterns and lengths hold, in nested objects and arrays too
+- a field the schema marks `deprecated` is still there
 
 It covers the JSON Schema subset this project uses and needs no library. One
 checker, so a rule holds everywhere or nowhere; before it, four copies had
@@ -83,4 +84,6 @@ def _walk(node, schema: dict, root: dict, path: str, out: list[str]) -> None:
                     out.append(f"{_at(path)}unknown field '{key}' — define it in the schema first")
         for key, val in node.items():
             if key in props:
+                if props[key].get("deprecated"):
+                    out.append(f"{_at(path)}field '{key}' is deprecated — " + (props[key].get("description") or "remove it"))
                 _walk(val, props[key], root, f"{path}.{key}" if path else key, out)
