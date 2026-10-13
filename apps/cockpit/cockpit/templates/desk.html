@@ -40,19 +40,19 @@
     </div>
   </div>
 
-  {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+  {% if flash %}<div class="flash {{ '' if flash_ok else 'bad' }}">{{ flash }}</div>{% endif %}
   {% if desk.error %}<div class="flash bad">{{ desk.error }}</div>{% endif %}
 
   {% set idea = module.actions|selectattr('id', 'equalto', 'idea')|list %}
   {% if idea and role.may_act(module.id ~ '.idea') %}
   {% set a = idea[0] %}
-  <details class="newidea" {% if not desk.groups %}open{% endif %}>
+  <details class="newidea" {% if not desk.groups or (flash and not flash_ok) %}open{% endif %}>
     <summary><span class="plus">+</span> {{ t('desk.new_piece') }}</summary>
     <form class="action" method="post" action="/m/{{ module.id }}/a/idea" enctype="multipart/form-data">
       <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
       <div class="row">
         <label><span>{{ t('desk.field.format') }}</span>
-          <select name="label" required>
+          <select name="label" required data-format>
             {% for o in (options[a.id]['label'] if options and a.id in options else []) %}<option value="{{ o }}">{{ desk.vocab.labels[o] if desk.vocab.labels and o in desk.vocab.labels else o }}</option>{% endfor %}
           </select></label>
         <label><span>{{ t('field.title') }}</span><input type="text" name="title" required placeholder="{{ t('desk.ph.title') }}"></label>
@@ -68,6 +68,23 @@
       <label><span>{{ t('field.idea_text') }}</span><textarea name="text" rows="4" placeholder="{{ t('desk.ph.text') }}"></textarea></label>
       <button type="submit">{{ t('desk.act.keep') }}</button>
     </form>
+    <script>
+      // What a piece may begin with depends on what it becomes: a podcast has a script, a post has a draft.
+      (function () {
+        var fmt = document.querySelector("[data-format]"), kind = document.querySelector("[data-kind]");
+        if (!fmt || !kind) return;
+        var allowed = { POD: ["idea", "script", "transcript", "notes"], SP: ["idea", "draft", "notes"] };
+        function apply() {
+          var ok = allowed[fmt.value] || ["idea", "draft", "transcript", "notes"], first = null;
+          Array.prototype.forEach.call(kind.options, function (o) {
+            o.hidden = ok.indexOf(o.value) < 0; o.disabled = o.hidden;
+            if (!o.hidden && first === null) first = o.value;
+          });
+          if (kind.selectedOptions[0] && kind.selectedOptions[0].hidden) kind.value = first;
+        }
+        fmt.addEventListener("change", apply); apply();
+      })();
+    </script>
   </details>
   {% endif %}
 

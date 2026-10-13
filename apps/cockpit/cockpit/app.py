@@ -192,7 +192,7 @@ def create_app(config: Config) -> FastAPI:
         c["cards"] = build_cards(config, c["_access"], c["role"])
         return templates.TemplateResponse(request, "grid.html", c)
 
-    def desk_page(request: Request, c: dict, module, flash=None):
+    def desk_page(request: Request, c: dict, module, flash=None, flash_ok=True):
         """The creator's start page: pieces by what is next. Only a plugin that offers `desk` has one."""
         reader = reader_for(module, config)
         fn = getattr(reader, "desk", None)
@@ -204,7 +204,7 @@ def create_app(config: Config) -> FastAPI:
             desk = {"groups": [], "error": str(exc)}
         except Exception as exc:
             desk = {"groups": [], "error": f"{type(exc).__name__}: {exc}"}
-        c["module"], c["desk"], c["flash"] = module, desk, flash
+        c["module"], c["desk"], c["flash"], c["flash_ok"] = module, desk, flash, flash_ok
         c["plugin"] = plugins_for(config).get(module.plugin)
         c["options"] = c["_actions"].options_for(module, c["role"])
         return templates.TemplateResponse(request, "desk.html", c)
@@ -254,7 +254,7 @@ def create_app(config: Config) -> FastAPI:
         module = find_module(module_id)
         if module is None or not c["role"].may_open(module_id):
             return RedirectResponse("/", status_code=303)
-        if c["view"] == "desk" and (r := desk_page(request, c, module, flash=request.query_params.get("msg"))):
+        if c["view"] == "desk" and (r := desk_page(request, c, module, flash=request.query_params.get("msg"), flash_ok=request.query_params.get("ok") != "0")):
             return r
         return module_page(request, c, module)
 
@@ -303,9 +303,10 @@ def create_app(config: Config) -> FastAPI:
             if not csrf_ok(request, form):
                 raise Denied("the form token did not match — reload the page and try again")
             outcome = c["_actions"].run(module, action, form, c["role"], user=c["user"].name if c["user"] else None)
-            if (back := back_to(form)):
-                return RedirectResponse(back + ("&" if "?" in back else "?") + "ok=" + ("1" if outcome.ok else "0")
-                                        + "&msg=" + quote(outcome.output.strip()[-200:]), status_code=303)
+            if (back := back_to(form)) and outcome.ok:
+                return RedirectResponse(back + ("&" if "?" in back else "?") + "ok=1&msg=" + quote(outcome.output.strip()[-200:]), status_code=303)
+            if back and c["view"] == "desk" and (r := desk_page(request, c, module, flash=outcome.output.strip()[-300:], flash_ok=False)):
+                return r                                      # refused: the page the form sits on, the form open, the reason in red
         except Denied as exc:
             outcome = type("O", (), {"ok": False, "output": str(exc), "argv": []})()
         finally:

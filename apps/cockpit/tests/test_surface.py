@@ -254,3 +254,12 @@ def test_material_is_brought_in_through_the_desk_and_gets_a_derive_button(client
     assert "Script" in page and 'data-record-toggle' in page and "origin" in page and 'a/ask"' in page
     r = client.post("/m/pipeline/doc/10-ideas/POD-xxx-night-shift/a/ask", data={"title": "Derive the rest", "text": "Please.", "_csrf": client.cookies["csrf"]})
     assert r.status_code == 200 and "REV-001 appended for Claude, /derive queued" in r.text
+
+
+def test_a_refused_intake_comes_back_on_the_desk_in_red_with_the_form_open(client, world):
+    (world / "flow" / "10-ideas").mkdir(exist_ok=True)
+    sign_in(client, "alex", view="desk")
+    r = client.post("/m/pipeline/a/idea", data={"label": "SP", "title": "Wrong start", "series": "", "kind": "script", "text": "x",
+                                                "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 200 and 'class="flash bad"' in r.text and "not a way to begin a SP" in r.text
+    assert '<details class="newidea" open>' in r.text and 'data-format' in r.text
