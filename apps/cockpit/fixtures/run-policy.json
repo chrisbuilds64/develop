@@ -49,6 +49,22 @@
     "asset": {
       "$comment": "Dormant since 2026-09-06 — visuals are made elsewhere. Nobody may order it until that changes.",
       "orderable_by": []
+    },
+    "derive": {
+      "$comment": "Derives the remaining deliverables from a human-written primary artifact; never rewrites it. Same rights as interpret.",
+      "write": [
+        "{data}"
+      ],
+      "tools": [
+        "Bash(python3:*)",
+        "Bash(mv:*)",
+        "Bash(mkdir:*)",
+        "Bash(cp:*)",
+        "Bash(ls:*)",
+        "Bash(cat:*)"
+      ],
+      "web": true,
+      "model": "claude-opus-5-5"
     }
   }
 }

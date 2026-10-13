@@ -47,8 +47,8 @@
   {% if idea and role.may_act(module.id ~ '.idea') %}
   {% set a = idea[0] %}
   <details class="newidea" {% if not desk.groups %}open{% endif %}>
-    <summary><span class="plus">+</span> {{ t('desk.new_idea') }}</summary>
-    <form class="action" method="post" action="/m/{{ module.id }}/a/idea">
+    <summary><span class="plus">+</span> {{ t('desk.new_piece') }}</summary>
+    <form class="action" method="post" action="/m/{{ module.id }}/a/idea" enctype="multipart/form-data">
       <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
       <div class="row">
         <label><span>{{ t('desk.field.format') }}</span>
@@ -58,7 +58,14 @@
         <label><span>{{ t('field.title') }}</span><input type="text" name="title" required placeholder="{{ t('desk.ph.title') }}"></label>
         <label><span>{{ t('field.series_opt') }}</span><input type="text" name="series" placeholder="SIM, GH, RT, STP"></label>
       </div>
-      <label><span>{{ t('field.idea_text') }}</span><textarea name="text" rows="4" required placeholder="{{ t('desk.ph.text') }}"></textarea></label>
+      <div class="row">
+        <label><span>{{ t('field.kind_of_start') }}</span>
+          <select name="kind" required data-kind>
+            {% for o in (options[a.id]['kind'] if options and a.id in options else ['idea', 'script', 'draft', 'transcript', 'notes']) %}<option value="{{ o }}">{{ t('desk.kind.' ~ o) }}</option>{% endfor %}
+          </select></label>
+        <label><span>{{ t('field.material_file') }}</span><input type="file" name="file" accept=".md,.txt"></label>
+      </div>
+      <label><span>{{ t('field.idea_text') }}</span><textarea name="text" rows="4" placeholder="{{ t('desk.ph.text') }}"></textarea></label>
       <button type="submit">{{ t('desk.act.keep') }}</button>
     </form>
   </details>

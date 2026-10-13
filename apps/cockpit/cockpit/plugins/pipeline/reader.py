@@ -9,6 +9,7 @@ the `NN-name` convention; anything else is ignored.
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 
 IMAGES = (".png", ".jpg", ".jpeg", ".gif", ".webp")
@@ -536,8 +537,13 @@ def _series_page(access, role, module, src, label: str) -> dict | None:
 GROUP_OF_STAGE = {0: "archive", 5: "ideas", 10: "ideas", 15: "working", 20: "working", 30: "you",
                   40: "akhil", 50: "you", 55: "planned"}          # 60 and up: out
 GROUPS = ("you", "working", "akhil", "planned", "ideas", "out")
-SKILL_STAGES = {"interpret": ("10-ideas",), "canonical-review": ("60-published", "61-field-observation", "65-canonical-review"),
+SKILL_STAGES = {"interpret": ("10-ideas",), "derive": ("10-ideas",), "canonical-review": ("60-published", "61-field-observation", "65-canonical-review"),
                 "reflect": ("05-operational-observations",)}
+PRIMARY_FILES = ("script.md", "substack.md", "linkedin-post.txt")   # what a piece that begins with finished material holds
+
+
+def _has_primary(files) -> bool:
+    return any(f == n or (f.startswith(n.rsplit(".", 1)[0] + ".v") and f.endswith("." + n.rsplit(".", 1)[1])) for f in files for n in PRIMARY_FILES)
 
 
 def _vocab(access, role, src, lang: str) -> dict:
@@ -580,7 +586,7 @@ def _open_for(entries: list[dict], viewer: str | None) -> list[dict]:
             and (not viewer or (e.get("for") or "").lower() == viewer.lower())]
 
 
-def _state(stage: str, run: dict | None, open_for_me: list[dict], has_image: bool, vocab: dict) -> dict:
+def _state(stage: str, run: dict | None, open_for_me: list[dict], has_image: bool, vocab: dict, has_primary: bool = False) -> dict:
     """The rule from the concept, §7: the first that applies wins. Returns group, state key and the one action."""
     num = int(STAGE.match(stage).group(1))
     if run and run.get("status") == "running":
@@ -594,6 +600,8 @@ def _state(stage: str, run: dict | None, open_for_me: list[dict], has_image: boo
         return {"group": "out", "state": "desk.state.out", "action": None}
     group = GROUP_OF_STAGE.get(num, "ideas")
     action = None
+    if stage == "10-ideas" and has_primary:
+        return {"group": group, "state": "desk.state.material", "action": {"kind": "form", "label": "desk.act.derive", "action": "derive", "fields": {}}}
     if stage == "10-ideas":
         action = {"kind": "form", "label": "desk.act.interpret", "action": "interpret", "fields": {}}
     elif num in (15, 20) and not run:
@@ -636,7 +644,7 @@ def desk(access, role, module, config, viewer: str | None = None, lang: str = "e
         run = runs.get(f"{stage}/{name}")
         entries = _review_of(access, role, src, stage, name) if "review.md" in files and num < 60 else []
         open_me = _open_for(entries, viewer)
-        st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab)
+        st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab, _has_primary(files))
         href = f"/m/{module.id}/doc/{stage}/{name}"
         if st["action"] and st["action"].get("kind") == "link" and st["action"].get("href") is None:
             st["action"]["href"] = href
@@ -680,7 +688,7 @@ def piece(access, role, module, config, ref: str, viewer: str | None = None, lan
     run = runs_all[-1] if runs_all else None
     entries = _review_of(access, role, src, stage, name) if "review.md" in files else []
     open_me = _open_for(entries, viewer)
-    st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab)
+    st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab, _has_primary(files))
     if st["action"] and st["action"].get("kind") == "link" and st["action"].get("href") in (None, "#notes"):
         st["action"] = None                                   # on the page itself, reading and answering are right here
     tiles = []
@@ -718,7 +726,17 @@ def piece(access, role, module, config, ref: str, viewer: str | None = None, lan
         "runs": [{"skill": r.get("skill"), "status": r.get("status"), "cost": r.get("cost_usd"), "when": r.get("created", "")[:16].replace("T", " "), "log": r.get("log", "")}
                  for r in runs_all[-6:]][::-1],
         "subtitle": meta.get("subtitle") or "", "origin": meta.get("origin") or "",
+        "meta": [{"key": k, "value": (", ".join(str(x) for x in v) if isinstance(v, list) else json.dumps(v, ensure_ascii=False) if isinstance(v, dict) else str(v))}
+                 for k, v in meta.items() if v not in (None, "", [], {})],
+        "agent": next((x.get("name") for x in (_people_list(access, role, src)) if x.get("kind") == "agent"), "Axel"),
     }
+
+
+def _people_list(access, role, src) -> list[dict]:
+    try:
+        return access.read_json(src, "people.json", role).get("people", [])
+    except Exception:
+        return []
 
 
 def _all_runs(access, role, src) -> list[dict]:

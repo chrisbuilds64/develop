@@ -191,7 +191,7 @@ def test_an_idea_is_entered_on_the_board_and_interpreted_from_its_page(client, w
     sign_in(client, "alex")
     board = client.get("/m/pipeline").text
     assert 'action="/m/pipeline/a/idea"' in board and "loose-note.md" in board
-    r = client.post("/m/pipeline/a/idea", data={"label": "FN", "title": "A fresh idea", "series": "",
+    r = client.post("/m/pipeline/a/idea", data={"label": "FN", "title": "A fresh idea", "series": "", "kind": "idea",
                                                 "text": "Where it comes from and why anyone cares.", "_csrf": client.cookies["csrf"]})
     assert r.status_code == 200 and "created 10-ideas/FN-xxx-a-fresh-idea" in r.text
     assert (world / "flow" / "10-ideas" / "FN-xxx-a-fresh-idea" / "source.md").exists()
@@ -240,3 +240,17 @@ def test_the_desk_groups_pieces_by_what_is_next_and_the_piece_page_speaks_in_wor
     assert 'class="kanban"' in ws and 'href="/set?view=desk"' in ws        # and the way back is on the page
     client.get("/set?view=desk")
     assert "Waiting for you" in client.get("/m/pipeline").text or "Ideas" in client.get("/m/pipeline").text
+
+
+def test_material_is_brought_in_through_the_desk_and_gets_a_derive_button(client, world):
+    (world / "flow" / "10-ideas").mkdir(exist_ok=True)
+    sign_in(client, "alex", view="desk")
+    r = client.post("/m/pipeline/a/idea", data={"label": "POD", "title": "Night shift", "series": "", "kind": "script", "text": "The whole script.",
+                                                "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 303 and "script%20in%20script.md" in r.headers["location"]
+    desk = client.get("/m/pipeline").text
+    assert "Derive the rest" in desk and "material is here" in desk and 'a/derive"' in desk
+    page = client.get("/m/pipeline/doc/10-ideas/POD-xxx-night-shift").text
+    assert "Script" in page and 'data-record-toggle' in page and "origin" in page and 'a/ask"' in page
+    r = client.post("/m/pipeline/doc/10-ideas/POD-xxx-night-shift/a/ask", data={"title": "Derive the rest", "text": "Please.", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 200 and "REV-001 appended for Claude, /derive queued" in r.text

@@ -302,5 +302,22 @@
   "desk.helper.interpret": "Work out",
   "desk.helper.canonical-review": "Canonical review",
   "desk.helper.reflect": "Record an observation",
-  "desk.helper.asset": "Make a visual"
+  "desk.helper.asset": "Make a visual",
+  "field.kind_of_start": "What do you have",
+  "field.material_file": "File (.md, .txt)",
+  "pipeline.derive": "Derive the rest",
+  "pipeline.ask": "Ask Axel",
+  "desk.state.material": "material is here, the rest is missing",
+  "desk.act.derive": "Derive the rest",
+  "desk.helper.derive": "Derive the rest",
+  "desk.record": "Record",
+  "desk.ask": "Ask the agent",
+  "desk.ask_hint": "Writes a note to the agent and places the order with the same words.",
+  "desk.act.ask_send": "Place the order",
+  "desk.new_piece": "New piece",
+  "desk.kind.idea": "Just the idea",
+  "desk.kind.script": "Finished script (podcast)",
+  "desk.kind.draft": "Finished draft (the piece's text)",
+  "desk.kind.transcript": "Transcript",
+  "desk.kind.notes": "Notes"
 }

@@ -1,7 +1,7 @@
 {
   "id": "pipeline",
   "name": "PressRoom · Content pipeline",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Folders are stages, subfolders are pieces; series/<LABEL>/ holds a series head that clamps its pieces and carries their order. The page starts with the ideas: anyone enters one (idea_new.py writes the seed container into 10-ideas) and starts its interpretation with one button (run_request.py --skill interpret). Below: the board by stage, every piece with its files and images; series and calendar folded. Actions: move a container, append to its review, put a versioned asset into it — nothing is ever overwritten. runner.py on a person's machine executes ordered runs in a headless agent session.",
   "reader": "reader.py",
   "needs": [
@@ -22,7 +22,13 @@
         "--by",
         "{user}",
         "--series",
-        "{series}"
+        "{series}",
+        "--kind",
+        "{kind}",
+        "--file",
+        "{file}",
+        "--name",
+        "{file.name}"
       ],
       "data": "pipeline",
       "scope": "module",
@@ -47,11 +53,32 @@
           "placeholder": "SIM, GH, RT — only an existing series"
         },
         {
+          "name": "kind",
+          "label": "field.kind_of_start",
+          "type": "select",
+          "required": true,
+          "options": [
+            "idea",
+            "script",
+            "draft",
+            "transcript",
+            "notes"
+          ]
+        },
+        {
           "name": "text",
           "label": "field.idea_text",
           "type": "textarea",
-          "required": true,
-          "placeholder": "what the piece is about, where it comes from, why anyone would care"
+          "placeholder": "the idea in a few lines — or the finished text, pasted"
+        },
+        {
+          "name": "file",
+          "label": "field.material_file",
+          "type": "file",
+          "accept": [
+            "md",
+            "txt"
+          ]
         }
       ]
     },
@@ -81,6 +108,67 @@
           "name": "note",
           "label": "field.run_note",
           "type": "textarea"
+        }
+      ]
+    },
+    {
+      "id": "derive",
+      "label": "pipeline.derive",
+      "tool": "plugin",
+      "command": "run_request.py",
+      "args": [
+        "{ref}",
+        "--skill",
+        "derive",
+        "--by",
+        "{user}",
+        "--role",
+        "{role}",
+        "--note",
+        "{note}"
+      ],
+      "data": "pipeline",
+      "scope": "document",
+      "stages": [
+        "10-ideas"
+      ],
+      "field": [
+        {
+          "name": "note",
+          "label": "field.run_note",
+          "type": "textarea"
+        }
+      ]
+    },
+    {
+      "id": "ask",
+      "label": "pipeline.ask",
+      "tool": "plugin",
+      "command": "ask_agent.py",
+      "args": [
+        "{ref}",
+        "--by",
+        "{user}",
+        "--role",
+        "{role}",
+        "--title",
+        "{title}"
+      ],
+      "data": "pipeline",
+      "scope": "document",
+      "stdin": "text",
+      "field": [
+        {
+          "name": "title",
+          "label": "field.title",
+          "required": true,
+          "placeholder": "one line: what the agent should do"
+        },
+        {
+          "name": "text",
+          "label": "field.text",
+          "type": "textarea",
+          "required": true
         }
       ]
     },

@@ -247,3 +247,39 @@ def test_idea_new_writes_a_seed_container_and_refuses_what_the_pipeline_does_not
     r = run(root, "idea_new.py", "--label", "SP", "--title", "Slot one", "--by", "chris", "--series", "sim", "--text", "inline text")
     assert r.returncode == 0 and "10-ideas/SP-SIM-xx-slot-one" in r.stdout
     assert json.loads((root / "10-ideas" / "SP-SIM-xx-slot-one" / "meta.json").read_text())["series"] == "SIM"
+
+
+def test_a_piece_may_begin_with_finished_material_and_the_agent_can_be_asked(tmp_path):
+    root = make(tmp_path)
+    (root / "10-ideas").mkdir()
+    (root / "meta.schema.json").write_text(json.dumps({
+        "required": ["label", "slug", "title"], "additionalProperties": False,
+        "properties": {"label": {"enum": ["FN", "POD", "SP", "WN"]}, "slug": {}, "title": {}, "working_title": {},
+                       "created": {}, "origin": {}, "seed": {"type": "boolean"}, "series": {}}}))
+    script = root / "akhil-script.md"; script.write_text("# Night shift\n\nThe script, as Akhil wrote it.\n", encoding="utf-8")
+    r = run(root, "idea_new.py", "--label", "POD", "--title", "Night shift", "--by", "akhil", "--kind", "script", "--file", str(script), "--name", "Akhil Script.MD")
+    assert r.returncode == 0 and "script in script.md" in r.stdout
+    c = root / "10-ideas" / "POD-xxx-night-shift"
+    assert (c / "script.md").read_text(encoding="utf-8").startswith("# Night shift") and "Begins with:** script" in (c / "source.md").read_text(encoding="utf-8")
+    assert "script by Akhil" in json.loads((c / "meta.json").read_text())["origin"]
+    # a draft lands under the label's primary name; a script is not a way to begin an essay; a non-text upload is refused
+    assert "linkedin-post.txt" in run(root, "idea_new.py", "--label", "SP", "--title", "Short", "--by", "chris", "--kind", "draft", "--text", "The post.").stdout
+    assert "not a way to begin" in run(root, "idea_new.py", "--label", "FN", "--title", "Essay", "--by", "chris", "--kind", "script", "--text", "x").stderr
+    (root / "x.docx").write_bytes(b"PK")
+    assert "not a text file" in run(root, "idea_new.py", "--label", "FN", "--title", "Essay", "--by", "chris", "--kind", "draft", "--file", str(root / "x.docx"), "--name", "x.docx").stderr
+    assert "no script given" in run(root, "idea_new.py", "--label", "POD", "--title", "Empty", "--by", "chris", "--kind", "script", "--text", "").stderr
+
+    # asking the agent: one review entry for it, one order with the same words — /derive, because the piece begins with a script
+    (root / "run.schema.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run.schema.json").read_text())
+    (root / "run-policy.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run-policy.json").read_text())
+    (root / "review.schema.json").write_text(json.dumps({"required": ["id"], "properties": {
+        "id": {}, "date": {}, "author": {}, "for": {}, "status": {"enum": ["info", "open", "resolved", "approved"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
+    r = run(root, "ask_agent.py", "10-ideas/POD-xxx-night-shift", "--by", "akhil", "--role", "operator", "--title", "Derive the rest", stdin="Teleprompter and show notes, please.")
+    assert r.returncode == 0 and r.stdout.startswith("REV-001 appended for Claude, /derive queued"), r.stdout + r.stderr
+    assert "**For:** Claude · **Status:** open" in (c / "review.md").read_text(encoding="utf-8")
+    order = json.loads(next((root / "_runs").glob("*_derive_POD-xxx-night-shift.json")).read_text())
+    assert order["skill"] == "derive" and order["note"].startswith("REV-001 — Derive the rest: Teleprompter")
+    # on a piece in review the ask is an /interpret order
+    r = run(root, "ask_agent.py", "30-review-human/POD-01", "--by", "chris", "--role", "operator", "--title", "Tighten the opener", stdin="Cut the first paragraph.")
+    assert r.returncode == 0 and "/interpret queued" in r.stdout
+    assert "say what the agent should do" in run(root, "ask_agent.py", "POD-01", "--by", "chris", "--role", "operator", "--title", "x", stdin=" ").stderr

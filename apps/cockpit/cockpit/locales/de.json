@@ -302,5 +302,22 @@
   "desk.helper.interpret": "Ausarbeiten",
   "desk.helper.canonical-review": "Kanonische Prüfung",
   "desk.helper.reflect": "Beobachtung festhalten",
-  "desk.helper.asset": "Bild erzeugen"
+  "desk.helper.asset": "Bild erzeugen",
+  "field.kind_of_start": "Was hast du schon",
+  "field.material_file": "Datei (.md, .txt)",
+  "pipeline.derive": "Rest erzeugen lassen",
+  "pipeline.ask": "Axel bitten",
+  "desk.state.material": "Material liegt vor, der Rest fehlt",
+  "desk.act.derive": "Rest erzeugen",
+  "desk.helper.derive": "Rest erzeugen",
+  "desk.record": "Steckbrief",
+  "desk.ask": "Den Agenten bitten",
+  "desk.ask_hint": "Schreibt eine Anmerkung an den Agenten und gibt ihm den Auftrag mit denselben Worten.",
+  "desk.act.ask_send": "Auftrag geben",
+  "desk.new_piece": "Neues Stück",
+  "desk.kind.idea": "Nur die Idee",
+  "desk.kind.script": "Fertiges Skript (Podcast)",
+  "desk.kind.draft": "Fertiger Entwurf (Text des Stücks)",
+  "desk.kind.transcript": "Transkript",
+  "desk.kind.notes": "Notizen"
 }

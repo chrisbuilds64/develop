@@ -24,6 +24,7 @@
       "type": "string",
       "enum": [
         "interpret",
+        "derive",
         "canonical-review",
         "reflect",
         "asset"

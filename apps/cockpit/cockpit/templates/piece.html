@@ -16,7 +16,8 @@
       <h2>{{ piece.title }}</h2>
       {% if piece.subtitle %}<p class="psub">{{ piece.subtitle }}</p>{% endif %}
       <p class="pstate"><span class="badge tone-{{ 'warn' if piece.group == 'you' else 'ok' if piece.group == 'out' else 'muted' }}">{{ t(piece.state, n=piece.open_for_me|length) if '.' in piece.state else piece.state }}</span>
-        {% if piece.date %}<span class="dim">· {{ piece.date }}</span>{% endif %}</p>
+        {% if piece.date %}<span class="dim">· {{ piece.date }}</span>{% endif %}
+        {% if piece.meta %}<button type="button" class="button ghost small" data-record-toggle>{{ t('desk.record') }}</button>{% endif %}</p>
     </div>
     <div class="pact">
       {% set a = piece.action %}
@@ -40,6 +41,19 @@
       {% endif %}
     </div>
   </header>
+
+  {% if piece.meta %}
+  <section class="precord" hidden data-record>
+    <h3>{{ t('desk.record') }} <span class="dim">· meta.json</span></h3>
+    <dl class="kv">{% for m in piece.meta %}<dt>{{ m.key }}</dt><dd>{{ m.value }}</dd>{% endfor %}</dl>
+  </section>
+  <script>
+    (function () {
+      var b = document.querySelector("[data-record-toggle]"), r = document.querySelector("[data-record]");
+      if (b && r) b.addEventListener("click", function () { r.hidden = !r.hidden; });
+    })();
+  </script>
+  {% endif %}
 
   <div class="pgrid">
     <section class="pfiles">
@@ -104,6 +118,16 @@
         {% endif %}
       </article>
       {% endfor %}
+      {% if role.may_act(module.id ~ '.ask') and piece.stage != '60-published' %}
+      <form class="action nask" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/ask">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <h4>{{ t('desk.ask') }} <span class="dim">· {{ piece.agent }}</span></h4>
+        <p class="hint">{{ t('desk.ask_hint') }}</p>
+        <label><span>{{ t('field.title') }}</span><input type="text" name="title" required placeholder="{{ t('desk.ph.note_title') }}"></label>
+        <textarea name="text" rows="3" required></textarea>
+        <button type="submit">{{ t('desk.act.ask_send') }}</button>
+      </form>
+      {% endif %}
       {% if role.may_act(module.id ~ '.review_append') %}
       <form class="action nnew" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/review_append">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="status" value="open">

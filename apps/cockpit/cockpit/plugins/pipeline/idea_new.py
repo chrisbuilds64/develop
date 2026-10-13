@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Enter an idea — the first container of a piece, in 10-ideas.
 
-    idea_new.py --label FN --title "Working title" --by chris [--series SIM] [--text "…"]
+    idea_new.py --label FN --title "Working title" --by chris [--series SIM] [--kind idea|script|draft|transcript|notes]
+                [--text "…"] [--file /path/to/upload --name original.md]
 
-The idea text comes on stdin when --text is absent. Writes one folder into
-10-ideas at the pipeline root (COCKPIT_DATA_DIR): meta.json as a seed (checked
-against meta.schema.json before anything is written) and source.md with the
-text. Nothing else. No number yet — `xxx` stands where the number will go;
-the interpretation gives the piece its number (or its place in the series).
+What a piece begins with is `--kind`: an idea (the default, a few lines), a finished script
+(POD), a finished draft (FN, WN, SP), a transcript, or notes. The text comes on stdin, as
+--text, or as an uploaded file (.md or .txt). Writes one folder into 10-ideas at the pipeline
+root (COCKPIT_DATA_DIR): meta.json as a seed (checked against meta.schema.json before anything
+is written), source.md as the intake note, and — for script, draft, transcript, notes — the
+material under its canonical name (script.md, substack.md or linkedin-post.txt, transcript.md,
+notes.md). Nothing else. No number yet — `xxx` stands where the number will go; the
+interpretation or derivation gives the piece its number (or its place in the series).
 
 Refuses: a label the schema does not list, a person people.json does not know,
 a series without a head in series/<LABEL>/, an empty text, a folder of that
@@ -30,6 +34,11 @@ except ImportError:                                   # run by hand from the sou
 
 STAGE = re.compile(r"^\d{2}-")
 IDEAS = "10-ideas"
+KINDS = ("idea", "script", "draft", "transcript", "notes")
+# where finished material lands, by kind and label — the primary artifact /interpret would have written
+PRIMARY = {"script": {"POD": "script.md"},
+           "draft": {"FN": "substack.md", "WN": "substack.md", "SP": "linkedin-post.txt", "POD": "script.md"},
+           "transcript": {"*": "transcript.md"}, "notes": {"*": "notes.md"}}
 UMLAUTS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss", "Ä": "ae", "Ö": "oe", "Ü": "ue"})
 
 
@@ -52,12 +61,25 @@ def main(argv=None) -> int:
     p.add_argument("--title", required=True, help="the working title")
     p.add_argument("--by", required=True, help="who enters it — id or name from people.json")
     p.add_argument("--series", default="", help="series label, only if series/<LABEL>/series.json exists")
-    p.add_argument("--text", default=None, help="the idea; read from stdin when absent")
+    p.add_argument("--kind", default="idea", choices=KINDS, help="what the piece begins with")
+    p.add_argument("--text", default=None, help="the text; read from stdin when absent and no --file is given")
+    p.add_argument("--file", default=None, help="an uploaded .md or .txt file with the material")
+    p.add_argument("--name", default="", help="the uploaded file's original name (for the type check and the record)")
     a = p.parse_args(argv)
 
     root = Path(os.environ.get("COCKPIT_DATA_DIR") or ".").resolve()
-    label, title, series = a.label.strip().upper(), " ".join(a.title.split()), a.series.strip().upper()
-    text = (a.text if a.text is not None else sys.stdin.read()).strip()
+    label, title, series, kind = a.label.strip().upper(), " ".join(a.title.split()), a.series.strip().upper(), a.kind
+    material_name = (a.name or (Path(a.file).name if a.file else "")).strip()
+    if a.file:
+        ext = material_name.rsplit(".", 1)[-1].lower() if "." in material_name else ""
+        if ext not in ("md", "txt"):
+            sys.exit(f"'{material_name or a.file}' is not a text file — .md or .txt")
+        try:
+            text = Path(a.file).read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeDecodeError) as exc:
+            sys.exit(f"cannot read the upload: {exc}")
+    else:
+        text = (a.text if a.text is not None else ("" if sys.stdin.isatty() else sys.stdin.read())).strip()
 
     if not (root / IDEAS).is_dir():
         sys.exit(f"no {IDEAS}/ at the pipeline root — this is not a pipeline")
@@ -68,7 +90,10 @@ def main(argv=None) -> int:
     if not title:
         sys.exit("the title is empty")
     if not text:
-        sys.exit("the idea text is empty — a title alone is not an idea")
+        sys.exit("the text is empty — a title alone is not an idea" if kind == "idea" else f"no {kind} given — paste it or upload the file")
+    primary = (PRIMARY.get(kind) or {}).get(label) or (PRIMARY.get(kind) or {}).get("*")
+    if kind != "idea" and not primary:
+        sys.exit(f"a {kind} is not a way to begin a {label} — one of: idea, " + ", ".join(k for k in KINDS[1:] if (PRIMARY[k].get(label) or PRIMARY[k].get("*"))))
 
     people = load_json(root, "people.json")
     if people is None:
@@ -90,9 +115,11 @@ def main(argv=None) -> int:
         sys.exit(f"{folder} already exists in {', '.join(taken)} — nothing overwritten")
 
     today = dt.date.today().isoformat()
+    origin = (f"entered by {who['name']} in the cockpit" if kind == "idea"
+              else f"{kind} by {who['name']}, brought in through the cockpit" + (f" as {material_name}" if material_name else ""))
     meta = {
         "label": label, "slug": folder, "title": title, "working_title": title,
-        "created": today, "origin": f"entered by {who['name']} in the cockpit", "seed": True,
+        "created": today, "origin": origin, "seed": True,
     }
     if series:
         meta["series"] = series
@@ -102,13 +129,19 @@ def main(argv=None) -> int:
 
     head = [f"# Source — {title}", "",
             f"**Created:** {today} · **By:** {who['name']} · **Format:** {label}"
-            + (f" · **Series:** `{series}` — construct: `series/{series}/construct.md`" if series else ""),
-            "", "## Core Concept", "", text, ""]
+            + (f" · **Series:** `{series}` — construct: `series/{series}/construct.md`" if series else "")
+            + (f" · **Begins with:** {kind} (`{primary}`)" if kind != "idea" else ""), ""]
+    if kind == "idea":
+        head += ["## Core Concept", "", text, ""]
+    else:
+        head += [f"The {kind} is the author's and sits in `{primary}`. It is not rewritten; derived files come from it (`/derive`).", ""]
     target = root / IDEAS / folder
     target.mkdir()
     (target / "source.md").write_text("\n".join(head), encoding="utf-8")
+    if kind != "idea":
+        (target / primary).write_text(text + "\n", encoding="utf-8")
     (target / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"created {IDEAS}/{folder} — {label} by {who['name']}")
+    print(f"created {IDEAS}/{folder} — {label} by {who['name']}" + (f", {kind} in {primary}" if kind != "idea" else ""))
     return 0
 
 
