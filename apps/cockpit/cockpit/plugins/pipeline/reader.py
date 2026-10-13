@@ -619,37 +619,45 @@ def desk(access, role, module, config, viewer: str | None = None, lang: str = "e
     runs = _last_run_by_container(access, role, src)
     groups: dict[str, list] = {g: [] for g in GROUPS}
     stages = sorted(n for n in access.listdir(src, role) if STAGE.match(n))
-    for stage in stages:
+    todo = [(stage, name) for stage in stages if int(STAGE.match(stage).group(1)) > 0
+            for name in sorted(n for n in access.listdir(src, role, stage) if not n.startswith(("_", ".")))]
+
+    def card_of(item):
+        """One piece → its card, or None. Runs in a thread: over a mount every read is a round trip."""
+        stage, name = item
         num = int(STAGE.match(stage).group(1))
-        if num == 0:
-            continue
-        for name in sorted(n for n in access.listdir(src, role, stage) if not n.startswith(("_", "."))):
-            if not access.resolve(src, f"{stage}/{name}", role).is_dir():
-                continue
-            try:
-                meta = access.read_json(src, f"{stage}/{name}/meta.json", role)
-            except Exception:
-                meta = {}
-            files = access.listdir(src, role, f"{stage}/{name}")
-            run = runs.get(f"{stage}/{name}")
-            entries = _review_of(access, role, src, stage, name) if "review.md" in files and num < 60 else []
-            open_me = _open_for(entries, viewer)
-            st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab)
-            href = f"/m/{module.id}/doc/{stage}/{name}"
-            if st["action"] and st["action"].get("kind") == "link" and st["action"].get("href") is None:
-                st["action"]["href"] = href
-            if st["action"] and st["action"].get("href") == "#notes":
-                st["action"]["href"] = href + "#notes"
-            card = {
-                "ref": f"{stage}/{name}", "href": href, "title": meta.get("title") or meta.get("working_title") or name,
-                "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])),
-                "series": meta.get("series") or "", "date": str(meta.get("publishDate") or "")[:10],
-                "created": str(meta.get("created") or "")[:10],
-                "cover": cover_svg(meta, rules, 56) if meta else "", "state": st["state"], "n": st.get("n", 0),
-                "action": st["action"], "run": {"status": run.get("status"), "cost": run.get("cost_usd")} if run else None,
-                "group": st["group"],
-            }
-            groups[st["group"]].append(card)
+        if not access.resolve(src, f"{stage}/{name}", role).is_dir():
+            return None
+        try:
+            meta = access.read_json(src, f"{stage}/{name}/meta.json", role)
+        except Exception:
+            meta = {}
+        files = access.listdir(src, role, f"{stage}/{name}")
+        run = runs.get(f"{stage}/{name}")
+        entries = _review_of(access, role, src, stage, name) if "review.md" in files and num < 60 else []
+        open_me = _open_for(entries, viewer)
+        st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab)
+        href = f"/m/{module.id}/doc/{stage}/{name}"
+        if st["action"] and st["action"].get("kind") == "link" and st["action"].get("href") is None:
+            st["action"]["href"] = href
+        if st["action"] and st["action"].get("href") == "#notes":
+            st["action"]["href"] = href + "#notes"
+        return {
+            "ref": f"{stage}/{name}", "href": href, "title": meta.get("title") or meta.get("working_title") or name,
+            "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])),
+            "series": meta.get("series") or "", "date": str(meta.get("publishDate") or "")[:10],
+            "created": str(meta.get("created") or "")[:10],
+            "cover": cover_svg(meta, rules, 56) if meta else "", "state": st["state"], "n": st.get("n", 0),
+            "action": st["action"], "run": {"status": run.get("status"), "cost": run.get("cost_usd")} if run else None,
+            "group": st["group"],
+        }
+
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        cards = list(pool.map(card_of, todo))
+    for card in cards:
+        if card:
+            groups[card["group"]].append(card)
     groups["planned"].sort(key=lambda c: c["date"])
     groups["out"].sort(key=lambda c: c["date"], reverse=True)
     groups["out"] = groups["out"][:12]

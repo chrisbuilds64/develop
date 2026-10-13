@@ -75,6 +75,13 @@ class Access:
         if Path(name).is_absolute():
             raise self._deny(role, source_id, name, "absolute paths are not allowed")
 
+        # Resolving walks every path component with an lstat; over a WebDAV mount each one is a
+        # round trip, and a page resolves a hundred names. The resolved path is kept like a read.
+        key = ("resolve", str(src.path), name)                # the bound path: a per-user source differs per user
+        hit = self._peek(key)
+        if hit is not None:
+            self._audit.record(role.id, source_id, name, "read")
+            return hit
         try:
             root = src.path.resolve(strict=True)
         except FileNotFoundError:
@@ -87,7 +94,7 @@ class Access:
             raise self._deny(role, source_id, name, f"'{name}' escapes '{source_id}'")
 
         self._audit.record(role.id, source_id, name, "read")
-        return target
+        return self._keep(key, target)
 
     # ----------------------------------------------------------------- cache
     # Over a network mount every listing and every small read is a round trip; a board with
@@ -168,7 +175,13 @@ class Access:
         return latest
 
     def read_text(self, source_id: str, name: str, role: Role) -> str:
-        return self.resolve(source_id, name, role).read_text(encoding="utf-8")
+        src = self._sources.get(source_id)
+        key = ("text", str(src.path) if src else source_id, name)
+        hit = self._peek(key)
+        if hit is not None:
+            self._permit(source_id, name, role, "read")
+            return hit
+        return self._keep(key, self.resolve(source_id, name, role).read_text(encoding="utf-8"))
 
     def read_json(self, source_id: str, name: str, role: Role):
         src = self._sources.get(source_id)
