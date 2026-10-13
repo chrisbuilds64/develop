@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "glyphs.html" import glyph %}
+{# The desk: the creator's start page. Pieces grouped by what is next for the person, one button each.
+   The machine's names stay in the workshop (module.html); here the vocabulary speaks. #}
+{% macro act(card) %}
+  {% set a = card.action %}
+  {% if a %}
+    {% if a.kind == 'link' %}
+      <a class="button small" href="{{ a.href }}">{{ t(a.label) }}</a>
+    {% elif a.module %}
+      <form method="post" action="/m/{{ module.id }}/a/{{ a.action }}" class="inline">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
+        <input type="hidden" name="container" value="{{ card.ref.split('/')[1] }}">
+        {% for k, v in a.fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+        <button class="button small">{{ t(a.label) }}</button>
+      </form>
+    {% elif a.action == 'schedule' %}
+      <form method="post" action="/m/{{ module.id }}/doc/{{ card.ref }}/a/schedule" class="inline">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
+        <input type="date" name="date" required><button class="button small">{{ t(a.label) }}</button>
+      </form>
+    {% else %}
+      <form method="post" action="/m/{{ module.id }}/doc/{{ card.ref }}/a/{{ a.action }}" class="inline">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
+        {% for k, v in a.fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+        <button class="button small">{{ t(a.label) }}</button>
+      </form>
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+{% block main %}
+<div class="desk">
+  <div class="desk-head">
+    <div>
+      <h2>{{ t('desk.title') }}</h2>
+      <p class="stamp">{{ t('desk.subtitle') }}</p>
+    </div>
+    <div class="desk-switch">
+      <a class="button ghost small" href="/set?view=werkstatt">{{ t('desk.workshop') }} →</a>
+    </div>
+  </div>
+
+  {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+  {% if desk.error %}<div class="flash bad">{{ desk.error }}</div>{% endif %}
+
+  {% set idea = module.actions|selectattr('id', 'equalto', 'idea')|list %}
+  {% if idea and role.may_act(module.id ~ '.idea') %}
+  {% set a = idea[0] %}
+  <details class="newidea" {% if not desk.groups %}open{% endif %}>
+    <summary><span class="plus">+</span> {{ t('desk.new_idea') }}</summary>
+    <form class="action" method="post" action="/m/{{ module.id }}/a/idea">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
+      <div class="row">
+        <label><span>{{ t('desk.field.format') }}</span>
+          <select name="label" required>
+            {% for o in (options[a.id]['label'] if options and a.id in options else []) %}<option value="{{ o }}">{{ desk.vocab.labels[o] if desk.vocab.labels and o in desk.vocab.labels else o }}</option>{% endfor %}
+          </select></label>
+        <label><span>{{ t('field.title') }}</span><input type="text" name="title" required placeholder="{{ t('desk.ph.title') }}"></label>
+        <label><span>{{ t('field.series_opt') }}</span><input type="text" name="series" placeholder="SIM, GH, RT, STP"></label>
+      </div>
+      <label><span>{{ t('field.idea_text') }}</span><textarea name="text" rows="4" required placeholder="{{ t('desk.ph.text') }}"></textarea></label>
+      <button type="submit">{{ t('desk.act.keep') }}</button>
+    </form>
+  </details>
+  {% endif %}
+
+  {% for g in desk.groups %}
+  <section class="dgroup dgroup-{{ g.id }}">
+    <h3>{{ t('desk.group.' ~ g.id) }} <span class="count">{{ g.cards|length }}</span></h3>
+    <div class="dcards">
+      {% for c in g.cards %}
+      <article class="dcard">
+        {% if c.cover %}<a class="dcover" href="{{ c.href }}">{{ c.cover|safe }}</a>{% endif %}
+        <div class="dbody">
+          <div class="dformat">{{ c.format }}{% if c.series %} · {{ c.series }}{% endif %}{% if c.date %} · {{ c.date }}{% endif %}</div>
+          <div class="dtitle"><a href="{{ c.href }}">{{ c.title }}</a></div>
+          <div class="dstate">{{ t(c.state, n=c.n) if '.' in c.state else c.state }}{% if c.run and c.run.status == 'running' %} · {{ t('desk.since') }}{% endif %}</div>
+        </div>
+        <div class="dact">{{ act(c) }}</div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  {% if not desk.groups %}<p class="hint">{{ t('desk.empty') }}</p>{% endif %}
+</div>
+{% endblock %}

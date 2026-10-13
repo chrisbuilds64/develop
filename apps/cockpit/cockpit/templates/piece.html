@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{# One piece, the creator's way: head with the one button, files in words, notes as a thread, helpers. #}
+{% block main %}
+<div class="desk piece">
+  <a class="back" href="/m/{{ module.id }}">← {{ t('desk.title') }}</a>
+  <span class="dim"> · <a href="/set?view=werkstatt">{{ t('desk.workshop') }}</a></span>
+
+  {% if flash %}<div class="flash {{ '' if flash_ok else 'bad' }}">{{ flash }}</div>{% endif %}
+  {% if outcome %}<div class="flash {{ '' if outcome.ok else 'bad' }}"><b>{{ t(ran.label) }}</b> — {{ outcome.output[-300:] }}</div>{% endif %}
+  {% if piece.error %}<div class="flash bad">{{ piece.error }}</div>{% endif %}
+
+  <header class="phead">
+    {% if piece.cover %}<div class="pcover">{{ piece.cover|safe }}</div>{% endif %}
+    <div class="ptext">
+      <div class="dformat">{{ piece.format }}{% if piece.series %} · {{ piece.series }}{% if piece.number %} {{ piece.number }}{% endif %}{% endif %}{% if piece.created %} · {{ t('idea.created') }} {{ piece.created }}{% endif %}</div>
+      <h2>{{ piece.title }}</h2>
+      {% if piece.subtitle %}<p class="psub">{{ piece.subtitle }}</p>{% endif %}
+      <p class="pstate"><span class="badge tone-{{ 'warn' if piece.group == 'you' else 'ok' if piece.group == 'out' else 'muted' }}">{{ t(piece.state, n=piece.open_for_me|length) if '.' in piece.state else piece.state }}</span>
+        {% if piece.date %}<span class="dim">· {{ piece.date }}</span>{% endif %}</p>
+    </div>
+    <div class="pact">
+      {% set a = piece.action %}
+      {% if a and a.kind == 'link' %}<a class="button" href="{{ a.href }}">{{ t(a.label) }}</a>
+      {% elif a and a.module %}
+        <form method="post" action="/m/{{ module.id }}/a/{{ a.action }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}/doc/{{ piece.ref }}">
+          <input type="hidden" name="container" value="{{ piece.name }}">{% for k, v in a.fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+          <button class="button">{{ t(a.label) }}</button></form>
+      {% elif a and a.action == 'schedule' %}
+        <form method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/schedule" class="inline"><input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="date" name="date" required><button class="button">{{ t(a.label) }}</button></form>
+      {% elif a %}
+        <form method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/{{ a.action }}"><input type="hidden" name="_csrf" value="{{ csrf }}">
+          {% for k, v in a.fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+          <button class="button">{{ t(a.label) }}</button></form>
+      {% endif %}
+      {% if piece.stage == '30-review-human' and role.may_act(module.id ~ '.review_append') %}
+        <form method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/review_append"><input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="title" value="{{ t('desk.note.approved') }}"><input type="hidden" name="status" value="approved"><input type="hidden" name="text" value="{{ t('desk.note.approved_text') }}">
+          <button class="button ok">{{ t('desk.act.approve') }}</button></form>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="pgrid">
+    <section class="pfiles">
+      <h3>{{ t('doc.files') }} <span class="dim">· {{ piece.files|length }}</span></h3>
+      <div class="tiles">
+        {% for f in piece.files %}
+        <a class="tile tile-{{ f.kind }}" {% if f.href %}href="{{ f.href }}"{% if f.kind in ('image', 'video', 'pdf') %} target="_blank"{% endif %}{% endif %} title="{{ f.name }} · {{ f.size_kb }} KB">
+          <span class="thumb">
+            {% if f.kind == 'image' %}<img src="{{ f.href }}" alt="" loading="lazy">
+            {% elif f.kind == 'video' %}<video preload="metadata" muted src="{{ f.href }}#t=0.5"></video><i class="play"></i>
+            {% elif f.kind == 'review' %}<svg viewBox="0 0 48 48"><path d="M10 8h28v24l-8 8H10z"/><path class="ln" d="M16 18h16M16 24h16M16 30h8"/><path d="M30 40v-8h8"/></svg>
+            {% elif f.kind == 'data' %}<svg viewBox="0 0 48 48"><path d="M16 8c-4 0-6 2-6 6v6c0 2-2 4-4 4 2 0 4 2 4 4v6c0 4 2 6 6 6M32 8c4 0 6 2 6 6v6c0 2 2 4 4 4-2 0-4 2-4 4v6c0 4-2 6-6 6"/></svg>
+            {% elif f.kind == 'pdf' %}<svg viewBox="0 0 48 48"><path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8"/><text x="24" y="34" text-anchor="middle">PDF</text></svg>
+            {% else %}<svg viewBox="0 0 48 48"><path d="M12 6h18l8 8v28H12z"/><path d="M30 6v8h8"/><path class="ln" d="M18 22h14M18 28h14M18 34h9"/></svg>{% endif %}
+          </span>
+          <span class="flabel">{{ f.label }}{% if f.version %} <span class="fver">{{ t('desk.version', n=f.version) }}</span>{% endif %}</span>
+          <span class="fmeta">{{ f.name }} · {{ f.size_kb }} KB</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% if role.may_act(module.id ~ '.upload') %}
+      {% set up = module.actions|selectattr('id', 'equalto', 'upload')|list %}
+      {% if up %}
+      <details class="pupload"><summary>{{ t('pipeline.upload') }}</summary>
+        <form class="action" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/upload" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <div class="row">
+            <label><span>{{ t('field.kind') }}</span><select name="kind">{% for o in (options['upload']['kind'] if options and 'upload' in options else []) %}<option>{{ o }}</option>{% endfor %}</select></label>
+            <label><span>{{ t('field.file') }}</span><input type="file" name="file" required></label>
+          </div>
+          <button type="submit">{{ t('pipeline.upload') }}</button>
+        </form>
+      </details>
+      {% endif %}
+      {% endif %}
+    </section>
+
+    <section class="pnotes" id="notes">
+      <h3>{{ t('desk.notes') }} <span class="dim">· {{ piece.notes|length }}</span></h3>
+      {% if not piece.notes %}<p class="hint">{{ t('desk.notes_empty') }}</p>{% endif %}
+      {% for e in piece.notes %}
+      <article class="note note-{{ e.status }}{% if e.mine and e.status == 'open' and not e.resolved %} note-forme{% endif %}{% if e.resolved %} note-done{% endif %}">
+        <div class="nhead"><b>{{ e.author }}</b>{% if e.for %} → {{ e.for }}{% endif %} <span class="dim">· {{ e.date }}</span>
+          <span class="badge tone-{{ 'warn' if e.status == 'open' and not e.resolved else 'ok' if e.status == 'approved' else 'muted' }}">{{ t('desk.status.' ~ e.status) }}{% if e.resolved %} · {{ t('desk.status.resolved') }}{% endif %}</span>
+          <span class="nid">{{ e.id }}{% if e.resolves %} ↩ {{ e.resolves }}{% endif %}</span></div>
+        <div class="ntitle">{{ e.title }}</div>
+        <div class="ntext">{{ e.text }}</div>
+        {% if e.status == 'open' and not e.resolved and role.may_act(module.id ~ '.review_append') %}
+        <details class="nreply"><summary>{{ t('desk.act.answer') }}</summary>
+          <form class="action" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/review_append">
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="resolves" value="{{ e.id }}">
+            <input type="hidden" name="title" value="Re: {{ e.title }}"><input type="hidden" name="status" value="resolved"><input type="hidden" name="for" value="{{ e.author }}">
+            <textarea name="text" rows="3" required placeholder="{{ t('desk.ph.answer') }}"></textarea>
+            <button type="submit">{{ t('desk.act.answer_send') }}</button>
+          </form>
+        </details>
+        <form class="inline" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/review_append">
+          <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="resolves" value="{{ e.id }}">
+          <input type="hidden" name="title" value="{{ t('desk.note.done') }}: {{ e.title }}"><input type="hidden" name="status" value="resolved"><input type="hidden" name="text" value="{{ t('desk.note.done_text') }}">
+          <button class="button ghost small">{{ t('desk.act.done') }}</button>
+        </form>
+        {% endif %}
+      </article>
+      {% endfor %}
+      {% if role.may_act(module.id ~ '.review_append') %}
+      <form class="action nnew" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/review_append">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="status" value="open">
+        <h4>{{ t('desk.note.write') }}</h4>
+        <div class="row">
+          <label><span>{{ t('field.title') }}</span><input type="text" name="title" required placeholder="{{ t('desk.ph.note_title') }}"></label>
+          <label><span>{{ t('field.for') }}</span><select name="for"><option value="">—</option>{% for o in (options['review_append']['for'] if options and 'review_append' in options else []) %}<option>{{ o }}</option>{% endfor %}</select></label>
+        </div>
+        <textarea name="text" rows="3" required></textarea>
+        <button type="submit">{{ t('desk.act.note_send') }}</button>
+      </form>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if piece.helpers %}
+  <section class="phelpers">
+    <h3>{{ t('desk.helpers') }}</h3>
+    <div class="helpers">
+      {% for h in piece.helpers %}
+      <div class="helper{% if not h.fits %} dim-helper{% endif %}">
+        <form method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/skill" class="inline">
+          <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="skill" value="{{ h.skill }}">
+          <button class="button ghost small">{{ t('desk.helper.' ~ h.skill) }}</button>
+        </form>
+        <span class="hlast">{% if h.last %}<span class="badge tone-{{ 'ok' if h.last.status == 'done' else 'bad' if h.last.status == 'failed' else 'warn' }}">{{ h.last.status }}</span> {{ h.last.when }}{% if h.last.cost is not none %} · {{ '%.2f'|format(h.last.cost) }} ${% endif %}{% if h.last.log %} · <a href="/m/{{ module.id }}/doc/{{ h.last.log }}">{{ t('desk.act.log') }}</a>{% endif %}{% else %}<span class="dim">{{ t('idea.none') }}</span>{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

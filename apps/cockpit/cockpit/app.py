@@ -16,6 +16,7 @@ import dataclasses
 import datetime as dt
 import hmac
 import json
+from urllib.parse import quote
 import mimetypes
 import secrets
 import shutil
@@ -63,6 +64,11 @@ def create_app(config: Config) -> FastAPI:
         renders, so the field in the form and the cookie on the response agree.
         """
         return getattr(request.state, "csrf", None) or request.cookies.get("csrf") or ""
+
+    def back_to(form: dict) -> str | None:
+        """A page inside the cockpit the form asks to return to — never an outside URL."""
+        b = (form.get("_back") or "").strip()
+        return b if b.startswith("/m/") and "://" not in b and not b.startswith("//") else None
 
     def csrf_ok(request: Request, form: dict) -> bool:
         cookie = request.cookies.get("csrf")
@@ -114,6 +120,7 @@ def create_app(config: Config) -> FastAPI:
             "_access": access,
             "_actions": Actions(config, access, audit, plugins_for(config)),
             "csrf": csrf_token(request),
+            "view": "werkstatt" if request.cookies.get("view") == "werkstatt" else "desk",
         }
 
     def gate(request: Request):
@@ -185,6 +192,41 @@ def create_app(config: Config) -> FastAPI:
         c["cards"] = build_cards(config, c["_access"], c["role"])
         return templates.TemplateResponse(request, "grid.html", c)
 
+    def desk_page(request: Request, c: dict, module, flash=None):
+        """The creator's start page: pieces by what is next. Only a plugin that offers `desk` has one."""
+        reader = reader_for(module, config)
+        fn = getattr(reader, "desk", None)
+        if fn is None:
+            return None
+        try:
+            desk = fn(c["_access"], c["role"], module, config, viewer=c["user"].display if c["user"] else None, lang=c["lang"])
+        except Denied as exc:
+            desk = {"groups": [], "error": str(exc)}
+        except Exception as exc:
+            desk = {"groups": [], "error": f"{type(exc).__name__}: {exc}"}
+        c["module"], c["desk"], c["flash"] = module, desk, flash
+        c["plugin"] = plugins_for(config).get(module.plugin)
+        c["options"] = c["_actions"].options_for(module, c["role"])
+        return templates.TemplateResponse(request, "desk.html", c)
+
+    def piece_page(request: Request, c: dict, module, ref: str, outcome=None, ran=None):
+        """One piece the creator's way. None when the plugin has no `piece` or the ref is not a piece."""
+        reader = reader_for(module, config)
+        fn = getattr(reader, "piece", None)
+        if fn is None:
+            return None
+        try:
+            piece = fn(c["_access"], c["role"], module, config, ref, viewer=c["user"].display if c["user"] else None, lang=c["lang"])
+        except Denied as exc:
+            piece = {"ref": ref, "title": ref, "error": str(exc), "files": [], "notes": [], "helpers": [], "runs": [], "open_for_me": []}
+        if piece is None:
+            return None
+        c["module"], c["piece"], c["outcome"], c["ran"] = module, piece, outcome, ran
+        c["options"] = c["_actions"].options_for(module, c["role"])
+        c["flash"] = request.query_params.get("msg")
+        c["flash_ok"] = request.query_params.get("ok") != "0"
+        return templates.TemplateResponse(request, "piece.html", c)
+
     def module_page(request: Request, c: dict, module, outcome=None, ran=None):
         card = card_for(config, c["_access"], c["role"], module.id)
         c["card_"], c["module"] = card, module
@@ -211,6 +253,8 @@ def create_app(config: Config) -> FastAPI:
         module = find_module(module_id)
         if module is None or not c["role"].may_open(module_id):
             return RedirectResponse("/", status_code=303)
+        if c["view"] == "desk" and (r := desk_page(request, c, module, flash=request.query_params.get("msg"))):
+            return r
         return module_page(request, c, module)
 
     async def read_form(request: Request, action=None) -> tuple[dict, list[Path]]:
@@ -258,6 +302,9 @@ def create_app(config: Config) -> FastAPI:
             if not csrf_ok(request, form):
                 raise Denied("the form token did not match — reload the page and try again")
             outcome = c["_actions"].run(module, action, form, c["role"], user=c["user"].name if c["user"] else None)
+            if (back := back_to(form)):
+                return RedirectResponse(back + ("&" if "?" in back else "?") + "ok=" + ("1" if outcome.ok else "0")
+                                        + "&msg=" + quote(outcome.output.strip()[-200:]), status_code=303)
         except Denied as exc:
             outcome = type("O", (), {"ok": False, "output": str(exc), "argv": []})()
         finally:
@@ -273,6 +320,8 @@ def create_app(config: Config) -> FastAPI:
         module = find_module(module_id)
         if module is None or not c["role"].may_open(module_id):
             return RedirectResponse("/", status_code=303)
+        if c["view"] == "desk" and (r := piece_page(request, c, module, ref)):
+            return r
         try:
             doc = document_for(reader_for(module, config), c["_access"], c["role"], module, config, ref)
         except Denied as exc:
@@ -306,6 +355,8 @@ def create_app(config: Config) -> FastAPI:
         finally:
             for t in temps:
                 t.unlink(missing_ok=True)
+        if c["view"] == "desk" and (r := piece_page(request, c, module, ref, outcome=outcome, ran=action)):
+            return r
         try:
             doc = document_for(reader_for(module, config), c["_access"], c["role"], module, config, ref)
         except Denied as exc:
@@ -374,13 +425,15 @@ def create_app(config: Config) -> FastAPI:
         return setup_page(request, c, type("O", (), {"ok": ok, "output": out})())
 
     @app.get("/set")
-    def set_prefs(request: Request, lang: str | None = None, role: str | None = None):
+    def set_prefs(request: Request, lang: str | None = None, role: str | None = None, view: str | None = None):
         back = request.headers.get("referer", "/")
         resp = RedirectResponse(back, status_code=303)
         if lang and i18n.has(lang):
             set_cookie(resp, "lang", lang, samesite="lax", max_age=365 * 24 * 3600)
         if role and config.role_switch and role in config.roles and who(request) is None:
             set_cookie(resp, "role", role, samesite="lax")
+        if view in ("desk", "werkstatt"):
+            set_cookie(resp, "view", view, samesite="lax", max_age=365 * 24 * 3600)
         return resp
 
     @app.get("/api/panels")

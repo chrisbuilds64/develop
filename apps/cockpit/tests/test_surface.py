@@ -30,9 +30,12 @@ def client(world):
     return TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
 
 
-def sign_in(client, name, password="cockpit-demo"):
+def sign_in(client, name, password="cockpit-demo", view="werkstatt"):
+    """Sign in and pick a view: the workshop (the technical page most tests look at) or the desk."""
     client.get("/login")                                   # sets the csrf cookie
-    return client.post("/login", data={"name": name, "password": password, "_csrf": client.cookies["csrf"]})
+    r = client.post("/login", data={"name": name, "password": password, "_csrf": client.cookies["csrf"]})
+    client.get(f"/set?view={view}")
+    return r
 
 
 def audit(world):
@@ -206,3 +209,33 @@ def test_an_idea_is_entered_on_the_board_and_interpreted_from_its_page(client, w
     orders = list((world / "flow" / "_runs").glob("*_interpret_FN-xxx-a-fresh-idea.json"))
     assert len(orders) == 1 and json.loads(orders[0].read_text())["status"] == "queued"
     assert "queued" in client.get("/m/pipeline").text                   # the board's ideas block shows the run
+
+
+# -------------------------------------------------------------------- desk
+
+def test_the_desk_groups_pieces_by_what_is_next_and_the_piece_page_speaks_in_words(client, world):
+    (world / "flow" / "10-ideas").mkdir(exist_ok=True)
+    sign_in(client, "alex", view="desk")
+    desk = client.get("/m/pipeline").text
+    assert "Waiting for you" in desk and "The Long One" in desk or "piece-30-01" in desk
+    assert 'action="/m/pipeline/a/idea"' in desk and "Workshop" in desk
+    # a piece in review: the page names its files in words, offers approve, and shows the notes thread
+    page = client.get("/m/pipeline/doc/30-review-human/FN-041-the-long-one").text
+    assert "Record" in page and "Approve" in page and 'id="notes"' in page and "Workshop" in page
+    r = client.post("/m/pipeline/doc/30-review-human/FN-041-the-long-one/a/review_append",
+                    data={"title": "Approved", "status": "approved", "text": "Approved.", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 200 and "REV-001 appended" in r.text
+    assert "## REV-001 — Approved" in (world / "flow" / "30-review-human" / "FN-041-the-long-one" / "review.md").read_text(encoding="utf-8")
+    page = client.get("/m/pipeline/doc/30-review-human/FN-041-the-long-one").text
+    assert "note-approved" in page and "Approved." in page
+    # a module action sent from the desk comes back to the desk with its message
+    r = client.post("/m/pipeline/a/move", data={"container": "FN-041-the-long-one", "stage": "40-asset-generation", "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 303 and r.headers["location"].startswith("/m/pipeline?ok=1&msg=moved")
+    assert (world / "flow" / "40-asset-generation" / "FN-041-the-long-one").is_dir()
+    assert "With Akhil" in client.get("/m/pipeline").text
+    # the workshop is one click away and is the page it always was
+    r = client.get("/set?view=werkstatt", headers={"referer": "/m/pipeline"})
+    assert r.status_code == 303
+    assert 'class="kanban"' in client.get("/m/pipeline").text
+    client.get("/set?view=desk")
+    assert "Waiting for you" in client.get("/m/pipeline").text or "Ideas" in client.get("/m/pipeline").text

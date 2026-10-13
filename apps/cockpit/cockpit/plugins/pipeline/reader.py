@@ -526,3 +526,202 @@ def _series_page(access, role, module, src, label: str) -> dict | None:
     if tiles:
         out["files"] = tiles
     return out
+
+
+# ======================================================================= the desk
+# The creator's view (concept: control/planning/2026-10-13_pressroom-bedienkonzept.md). The machine
+# keeps its names — stage folders, labels, file names — and vocabulary.json at the pipeline root says
+# what the desk calls them. A piece says what is next for the person and shows one button for it.
+
+GROUP_OF_STAGE = {0: "archive", 5: "ideas", 10: "ideas", 15: "working", 20: "working", 30: "you",
+                  40: "akhil", 50: "you", 55: "planned"}          # 60 and up: out
+GROUPS = ("you", "working", "akhil", "planned", "ideas", "out")
+SKILL_STAGES = {"interpret": ("10-ideas",), "canonical-review": ("60-published", "61-field-observation", "65-canonical-review"),
+                "reflect": ("05-operational-observations",)}
+
+
+def _vocab(access, role, src, lang: str) -> dict:
+    try:
+        v = access.read_json(src, "vocabulary.json", role) if "vocabulary.json" in access.listdir(src, role) else {}
+    except Exception:
+        v = {}
+    return v.get(lang) or v.get("en") or {}
+
+
+def _word(vocab: dict, kind: str, key: str, fallback: str | None = None) -> str:
+    return (vocab.get(kind) or {}).get(key) or (fallback if fallback is not None else key)
+
+
+def _file_word(vocab: dict, name: str) -> tuple[str, str]:
+    """('LinkedIn-Post', '2') for linkedin-post.v2.txt — the vocabulary speaks about the unversioned name."""
+    m = VERSION.search(name)
+    base = name.replace(m.group(0), ".", 1) if m else name
+    return _word(vocab, "files", base, base), (m.group(1) if m else "")
+
+
+def _review_of(access, role, src, stage: str, name: str) -> list[dict]:
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("review_entries", str(__import__("pathlib").Path(__file__).with_name("review_entries.py")))
+        mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+        return mod.parse(access.read_text(src, f"{stage}/{name}/review.md", role))
+    except Exception:
+        return []
+
+
+def _resolved_ids(entries: list[dict]) -> set[str]:
+    return {e["resolves"] for e in entries if e.get("resolves")}
+
+
+def _open_for(entries: list[dict], viewer: str | None) -> list[dict]:
+    """Open entries addressed to the viewer that no later entry resolves."""
+    done = _resolved_ids(entries)
+    return [e for e in entries if e.get("status") == "open" and e["id"] not in done
+            and (not viewer or (e.get("for") or "").lower() == viewer.lower())]
+
+
+def _state(stage: str, run: dict | None, open_for_me: list[dict], has_image: bool, vocab: dict) -> dict:
+    """The rule from the concept, §7: the first that applies wins. Returns group, state key and the one action."""
+    num = int(STAGE.match(stage).group(1))
+    if run and run.get("status") == "running":
+        return {"group": "working", "state": "desk.state.running", "action": None}
+    if run and run.get("status") == "failed" and num < 60:
+        return {"group": "you", "state": "desk.state.failed", "action": {"kind": "link", "label": "desk.act.log", "href": f"/m/pipeline/doc/{run.get('log', '')}"}}
+    if open_for_me:
+        return {"group": "you", "state": "desk.state.open_notes", "n": len(open_for_me),
+                "action": {"kind": "link", "label": "desk.act.answer", "href": "#notes"}}
+    if num >= 60:
+        return {"group": "out", "state": "desk.state.out", "action": None}
+    group = GROUP_OF_STAGE.get(num, "ideas")
+    action = None
+    if stage == "10-ideas":
+        action = {"kind": "form", "label": "desk.act.interpret", "action": "interpret", "fields": {}}
+    elif num in (15, 20) and not run:
+        action = {"kind": "form", "label": "desk.act.to_review", "action": "move", "module": True, "fields": {"stage": "30-review-human"}}
+    elif num == 20:
+        action = {"kind": "form", "label": "desk.act.to_review", "action": "move", "module": True, "fields": {"stage": "30-review-human"}}
+    elif num == 30:
+        action = {"kind": "link", "label": "desk.act.read", "href": None}
+    elif num == 40 and has_image:
+        action = {"kind": "form", "label": "desk.act.approve_image", "action": "move", "module": True, "fields": {"stage": "50-ready-to-publish"}}
+    elif num == 50:
+        action = {"kind": "form", "label": "desk.act.schedule", "action": "schedule", "fields": {"date": "?"}}
+    elif num == 55:
+        action = {"kind": "form", "label": "desk.act.published", "action": "move", "module": True, "fields": {"stage": "60-published"}}
+    return {"group": group, "state": f"desk.stage.{stage}" if False else _word(vocab, "stages", stage), "action": action}
+
+
+def desk(access, role, module, config, viewer: str | None = None, lang: str = "en") -> dict:
+    """Every piece in the pipeline, grouped by what is next for the person. The desk's start page."""
+    src = module.sources[0]
+    vocab = _vocab(access, role, src, lang)
+    rules = _cover_rules(access, role, src)
+    runs = _last_run_by_container(access, role, src)
+    groups: dict[str, list] = {g: [] for g in GROUPS}
+    stages = sorted(n for n in access.listdir(src, role) if STAGE.match(n))
+    for stage in stages:
+        num = int(STAGE.match(stage).group(1))
+        if num == 0:
+            continue
+        for name in sorted(n for n in access.listdir(src, role, stage) if not n.startswith(("_", "."))):
+            if not access.resolve(src, f"{stage}/{name}", role).is_dir():
+                continue
+            try:
+                meta = access.read_json(src, f"{stage}/{name}/meta.json", role)
+            except Exception:
+                meta = {}
+            files = access.listdir(src, role, f"{stage}/{name}")
+            run = runs.get(f"{stage}/{name}")
+            entries = _review_of(access, role, src, stage, name) if "review.md" in files and num < 60 else []
+            open_me = _open_for(entries, viewer)
+            st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab)
+            href = f"/m/{module.id}/doc/{stage}/{name}"
+            if st["action"] and st["action"].get("kind") == "link" and st["action"].get("href") is None:
+                st["action"]["href"] = href
+            if st["action"] and st["action"].get("href") == "#notes":
+                st["action"]["href"] = href + "#notes"
+            card = {
+                "ref": f"{stage}/{name}", "href": href, "title": meta.get("title") or meta.get("working_title") or name,
+                "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])),
+                "series": meta.get("series") or "", "date": str(meta.get("publishDate") or "")[:10],
+                "created": str(meta.get("created") or "")[:10],
+                "cover": cover_svg(meta, rules, 56) if meta else "", "state": st["state"], "n": st.get("n", 0),
+                "action": st["action"], "run": {"status": run.get("status"), "cost": run.get("cost_usd")} if run else None,
+                "group": st["group"],
+            }
+            groups[st["group"]].append(card)
+    groups["planned"].sort(key=lambda c: c["date"])
+    groups["out"].sort(key=lambda c: c["date"], reverse=True)
+    groups["out"] = groups["out"][:12]
+    return {"groups": [{"id": g, "cards": groups[g]} for g in GROUPS if groups[g]], "vocab": vocab}
+
+
+def piece(access, role, module, config, ref: str, viewer: str | None = None, lang: str = "en") -> dict | None:
+    """One piece, the creator's way: head with the one button, files in words, the notes as a thread, helpers."""
+    src = module.sources[0]
+    parts = ref.split("/")
+    if len(parts) != 2 or not STAGE.match(parts[0]):
+        return None
+    stage, name = parts
+    if not access.resolve(src, ref, role).is_dir():
+        return None
+    vocab = _vocab(access, role, src, lang)
+    files = access.listdir(src, role, ref)
+    meta = access.read_json(src, f"{ref}/meta.json", role) if "meta.json" in files else {}
+    runs_all = [r for r in _all_runs(access, role, src) if r.get("container") == ref]
+    run = runs_all[-1] if runs_all else None
+    entries = _review_of(access, role, src, stage, name) if "review.md" in files else []
+    open_me = _open_for(entries, viewer)
+    st = _state(stage, run, open_me, any(_kind(f) == "image" for f in files), vocab)
+    if st["action"] and st["action"].get("kind") == "link" and st["action"].get("href") in (None, "#notes"):
+        st["action"] = None                                   # on the page itself, reading and answering are right here
+    tiles = []
+    for f in sorted(files):
+        if f.startswith("."):
+            continue
+        p = access.resolve(src, f"{ref}/{f}", role)
+        kind = _kind(f)
+        href = (f"/m/{module.id}/file/{ref}/{f}" if kind in ("image", "video", "pdf")
+                else f"/m/{module.id}/doc/{ref}/{f}" if kind in ("data", "review", "text", "plain") else "")
+        label, version = _file_word(vocab, f)
+        tiles.append({"name": f, "label": label, "version": version, "kind": kind, "href": href, "size_kb": max(1, p.stat().st_size // 1024)})
+    resolved = _resolved_ids(entries)
+    thread = [{**e, "resolved": e["id"] in resolved, "mine": bool(viewer) and (e.get("for") or "").lower() == (viewer or "").lower()} for e in entries]
+    helpers = []
+    try:
+        policy = access.read_json(src, "run-policy.json", role)
+        skills = access.read_json(src, "run.schema.json", role)["properties"]["skill"]["enum"]
+    except Exception:
+        policy, skills = {}, []
+    for sk in skills:
+        rule = {**policy.get("default", {}), **policy.get("skills", {}).get(sk, {})}
+        if role.id not in rule.get("orderable_by", []):
+            continue
+        last = next((r for r in reversed(runs_all) if r.get("skill") == sk), None)
+        helpers.append({"skill": sk, "fits": stage in SKILL_STAGES.get(sk, (stage,)),
+                        "last": {"status": last.get("status"), "cost": last.get("cost_usd"), "when": last.get("created", "")[:16].replace("T", " "),
+                                 "log": last.get("log", "")} if last else None})
+    return {
+        "ref": ref, "stage": stage, "name": name, "title": meta.get("title") or meta.get("working_title") or name,
+        "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])), "series": meta.get("series") or "",
+        "number": str(meta.get("number") or ""), "date": str(meta.get("publishDate") or "")[:10], "created": str(meta.get("created") or "")[:10],
+        "state": st["state"], "group": st["group"], "action": st["action"], "cover": cover_svg(meta, _cover_rules(access, role, src), 120) if meta else "",
+        "files": tiles, "notes": thread, "open_for_me": [e["id"] for e in open_me], "helpers": helpers,
+        "runs": [{"skill": r.get("skill"), "status": r.get("status"), "cost": r.get("cost_usd"), "when": r.get("created", "")[:16].replace("T", " "), "log": r.get("log", "")}
+                 for r in runs_all[-6:]][::-1],
+        "subtitle": meta.get("subtitle") or "", "origin": meta.get("origin") or "",
+    }
+
+
+def _all_runs(access, role, src) -> list[dict]:
+    try:
+        names = sorted(n for n in access.listdir(src, role, "_runs") if n.endswith(".json"))
+    except Exception:
+        return []
+    out = []
+    for n in names:
+        try:
+            out.append(access.read_json(src, f"_runs/{n}", role))
+        except Exception:
+            continue
+    return out
