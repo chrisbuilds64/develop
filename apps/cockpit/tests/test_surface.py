@@ -236,6 +236,7 @@ def test_the_desk_groups_pieces_by_what_is_next_and_the_piece_page_speaks_in_wor
     # the workshop is one click away and is the page it always was
     r = client.get("/set?view=werkstatt", headers={"referer": "/m/pipeline"})
     assert r.status_code == 303
-    assert 'class="kanban"' in client.get("/m/pipeline").text
+    ws = client.get("/m/pipeline").text
+    assert 'class="kanban"' in ws and 'href="/set?view=desk"' in ws        # and the way back is on the page
     client.get("/set?view=desk")
     assert "Waiting for you" in client.get("/m/pipeline").text or "Ideas" in client.get("/m/pipeline").text

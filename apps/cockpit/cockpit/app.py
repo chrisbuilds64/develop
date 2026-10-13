@@ -234,6 +234,7 @@ def create_app(config: Config) -> FastAPI:
         c["outcome"], c["ran"] = outcome, ran
         c["options"] = c["_actions"].options_for(module, c["role"])
         c["plugin"] = plugins_for(config).get(module.plugin)
+        c["has_desk"] = getattr(reader_for(module, config), "desk", None) is not None
         try:
             c["blocks"] = (blocks_for(reader_for(module, config), c["_access"], c["role"], module, config)
                            if card and card.shown else [])
@@ -330,6 +331,7 @@ def create_app(config: Config) -> FastAPI:
             return RedirectResponse(f"/m/{module_id}", status_code=303)
         c["module"], c["doc"] = module, doc
         c["outcome"], c["ran"] = None, None
+        c["has_desk"] = getattr(reader_for(module, config), "piece", None) is not None
         c["options"] = c["_actions"].options_for(module, c["role"])
         return templates.TemplateResponse(request, "document.html", c)
 
