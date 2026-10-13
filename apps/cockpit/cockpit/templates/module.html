@@ -70,6 +70,21 @@
   </div>
 
   {% for b in blocks if b.place != 'actions' %}{{ block(b) }}{% endfor %}
+  <script>
+    // Folded blocks stay folded: one record per page in this browser, nothing is sent.
+    (function () {
+      var key = "cockpit.fold." + location.pathname, state = {};
+      try { state = JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) {}
+      document.querySelectorAll("details.fold[data-fold]").forEach(function (d) {
+        var id = d.dataset.fold;
+        if (id in state) d.open = !!state[id];
+        d.addEventListener("toggle", function () {
+          state[id] = d.open;
+          try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) {}
+        });
+      });
+    })();
+  </script>
 
   {% if raw %}
   <details class="rawbox"><summary>Panel · JSON</summary><pre class="raw">{{ raw }}</pre></details>

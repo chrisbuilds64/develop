@@ -205,6 +205,13 @@ pre.raw {
 /* -------------------------------------------------------------- blocks */
 .block { margin-top: 28px; }
 .block h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin: 0 0 12px; }
+/* a titled block folds: the heading is the handle, the state lives in the browser */
+.block details.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
+.block details.fold > summary::-webkit-details-marker { display: none; }
+.block details.fold > summary::before { content: "▸"; font-size: 11px; color: var(--ink-3); transition: transform .15s; }
+.block details.fold[open] > summary::before { transform: rotate(90deg); }
+.block details.fold > summary h3 { margin: 0; }
+.block details.fold:not([open]) > summary { margin-bottom: 0; }
 .kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 .kcol { flex: 0 0 240px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
         padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }

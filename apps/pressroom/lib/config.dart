@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 class Config {
   static const String projectRoot =
       '/Users/christianmoser/ChrisBuilds64';
-  static const String contentRoot = '$projectRoot/content';
+  static const String contentRoot = '$projectRoot/pressroom'; // Nextcloud sync copy since 2026-10-05 (was content/ until 2026-09-27)
   static const String contentFlowPath = '$contentRoot/flow';
-  static const String contentRulesPath = '$contentRoot/rules';
+  static const String contentRulesPath = '$projectRoot/canon/editorial'; // editorial rules live in the canon now
   static const String contentTemplatesPath = '$contentRoot/templates';
   static const String contentBoundariesPath =
       '$projectRoot/control/principles/CONTENT-BOUNDARIES.md';
