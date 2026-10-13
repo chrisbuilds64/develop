@@ -324,5 +324,6 @@
   "desk.matrix": "Artefakte je Stufe",
   "desk.artifact": "Artefakt",
   "desk.missing": "fällig, fehlt",
-  "desk.put_artifact": "Artefakt ablegen"
+  "desk.put_artifact": "Artefakt ablegen",
+  "desk.idea_optional": "(frei, wenn du Material hochlädst)"
 }

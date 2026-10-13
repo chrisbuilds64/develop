@@ -275,10 +275,10 @@ def test_a_piece_may_begin_with_finished_material_and_the_agent_can_be_asked(tmp
     (root / "review.schema.json").write_text(json.dumps({"required": ["id"], "properties": {
         "id": {}, "date": {}, "author": {}, "for": {}, "status": {"enum": ["info", "open", "resolved", "approved"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
     r = run(root, "ask_agent.py", "10-ideas/POD-xxx-night-shift", "--by", "akhil", "--role", "operator", "--title", "Derive the rest", stdin="Teleprompter and show notes, please.")
-    assert r.returncode == 0 and r.stdout.startswith("REV-001 appended for Claude, /derive queued"), r.stdout + r.stderr
+    assert r.returncode == 0 and r.stdout.startswith("REV-001 appended for Claude, /interpret queued"), r.stdout + r.stderr
     assert "**For:** Claude · **Status:** open" in (c / "review.md").read_text(encoding="utf-8")
-    order = json.loads(next((root / "_runs").glob("*_derive_POD-xxx-night-shift.json")).read_text())
-    assert order["skill"] == "derive" and order["note"].startswith("REV-001 — Derive the rest: Teleprompter")
+    order = json.loads(next((root / "_runs").glob("*_interpret_POD-xxx-night-shift.json")).read_text())
+    assert order["skill"] == "interpret" and order["note"].startswith("REV-001 — Derive the rest: Teleprompter")
     # on a piece in review the ask is an /interpret order
     r = run(root, "ask_agent.py", "30-review-human/POD-01", "--by", "chris", "--role", "operator", "--title", "Tighten the opener", stdin="Cut the first paragraph.")
     assert r.returncode == 0 and "/interpret queued" in r.stdout

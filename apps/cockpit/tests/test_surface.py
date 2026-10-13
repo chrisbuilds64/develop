@@ -191,7 +191,7 @@ def test_an_idea_is_entered_on_the_board_and_interpreted_from_its_page(client, w
     sign_in(client, "alex")
     board = client.get("/m/pipeline").text
     assert 'action="/m/pipeline/a/idea"' in board and "loose-note.md" in board
-    r = client.post("/m/pipeline/a/idea", data={"label": "FN", "title": "A fresh idea", "series": "", "kind": "idea",
+    r = client.post("/m/pipeline/a/idea", data={"label": "FN", "title": "A fresh idea", "series": "",
                                                 "text": "Where it comes from and why anyone cares.", "_csrf": client.cookies["csrf"]})
     assert r.status_code == 200 and "created 10-ideas/FN-xxx-a-fresh-idea" in r.text
     assert (world / "flow" / "10-ideas" / "FN-xxx-a-fresh-idea" / "source.md").exists()
@@ -245,23 +245,23 @@ def test_the_desk_groups_pieces_by_what_is_next_and_the_piece_page_speaks_in_wor
 def test_material_is_brought_in_through_the_desk_and_gets_a_derive_button(client, world):
     (world / "flow" / "10-ideas").mkdir(exist_ok=True)
     sign_in(client, "alex", view="desk")
-    r = client.post("/m/pipeline/a/idea", data={"label": "POD", "title": "Night shift", "series": "", "kind": "script", "text": "The whole script.",
-                                                "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]})
-    assert r.status_code == 303 and "script%20in%20script.md" in r.headers["location"]
+    r = client.post("/m/pipeline/a/idea", data={"label": "POD", "title": "Night shift", "series": "", "text": "", "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]},
+                    files={"a_script_md": ("night.md", b"# The whole script.\n", "text/markdown")})
+    assert r.status_code == 303 and "with%20script.md" in r.headers["location"], r.headers.get("location") or r.text[-300:]
     desk = client.get("/m/pipeline").text
-    assert "Derive the rest" in desk and "material is here" in desk and 'a/derive"' in desk
+    assert "Work it out" in desk and "material is here" in desk and 'a/derive"' not in desk
     page = client.get("/m/pipeline/doc/10-ideas/POD-xxx-night-shift").text
     assert "Script" in page and 'data-record-toggle' in page and "origin" in page and 'a/ask"' in page
     r = client.post("/m/pipeline/doc/10-ideas/POD-xxx-night-shift/a/ask", data={"title": "Derive the rest", "text": "Please.", "_csrf": client.cookies["csrf"]})
-    assert r.status_code == 200 and "REV-001 appended for Claude, /derive queued" in r.text
+    assert r.status_code == 200 and "REV-001 appended for Claude, /interpret queued" in r.text
 
 
 def test_a_refused_intake_comes_back_on_the_desk_in_red_with_the_form_open(client, world):
     (world / "flow" / "10-ideas").mkdir(exist_ok=True)
     sign_in(client, "alex", view="desk")
-    r = client.post("/m/pipeline/a/idea", data={"label": "SP", "title": "Wrong start", "series": "", "kind": "script", "text": "x",
+    r = client.post("/m/pipeline/a/idea", data={"label": "SP", "title": "Wrong start", "series": "", "text": "",
                                                 "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]})
-    assert r.status_code == 200 and 'class="flash bad"' in r.text and "not a way to begin a SP" in r.text
+    assert r.status_code == 200 and 'class="flash bad"' in r.text and "text is empty" in r.text
     assert '<details class="newidea" open>' in r.text and 'data-format' in r.text
 
 
@@ -270,12 +270,12 @@ def test_the_piece_page_shows_the_matrix_and_the_intake_offers_artifact_uploads(
     sign_in(client, "alex", view="desk")
     desk = client.get("/m/pipeline").text
     assert 'name="a_script_md"' in desk and 'data-artifact="teleprompter.txt"' in desk and "var intake = {" in desk
-    r = client.post("/m/pipeline/a/idea", data={"label": "POD", "title": "Matrix piece", "series": "", "kind": "idea", "text": "An idea.", "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]},
+    r = client.post("/m/pipeline/a/idea", data={"label": "POD", "title": "Matrix piece", "series": "", "text": "An idea.", "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]},
                     files={"a_script_md": ("Akhil.md", b"# Script\n", "text/markdown")})
     assert r.status_code == 303 and "with%20script.md" in r.headers["location"], r.headers.get("location") or r.text[-300:]
     page = client.get("/m/pipeline/doc/10-ideas/POD-xxx-matrix-piece").text
     assert 'class="matrix"' in page and "Teleprompter" in page and 'class="dot have"' in page and 'class="dot due"' not in page
-    assert "/interpret /derive" in page and "Derive the rest" in page                     # the helpers of the stage, the one button
+    assert "/interpret" in page and "Work it out" in page                                  # the helper of the stage, the one button
     # an artifact goes in by its name, through the same upload action
     r = client.post("/m/pipeline/doc/10-ideas/POD-xxx-matrix-piece/a/upload", data={"kind": "show-notes.txt", "_csrf": client.cookies["csrf"]},
                     files={"file": ("notes.txt", b"Show notes.\n", "text/plain")})

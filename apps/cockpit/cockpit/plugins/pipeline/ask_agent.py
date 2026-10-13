@@ -3,9 +3,8 @@
 
     ask_agent.py <stage/container> --by chris --role operator --title "…" [--skill interpret] < text
 
-The entry is the record (who asked what, when), the order is the work. The skill is the policy's
-agent's job on this piece: /derive when the piece begins with finished material in 10-ideas,
-/interpret otherwise — or the one named. Both halves go through the tools that own the files
+The entry is the record (who asked what, when), the order is the work. The skill is /interpret unless
+one is named: it reads the container and does what is missing. Both halves go through the tools that own the files
 (review_append.py, run_request.py); nothing is written here.
 
 Works in COCKPIT_DATA_DIR (the pipeline root).
@@ -20,7 +19,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 STAGE = re.compile(r"^\d{2}-")
-PRIMARY = ("script.md", "substack.md", "linkedin-post.txt")
 
 
 def main(argv=None) -> int:
@@ -40,10 +38,7 @@ def main(argv=None) -> int:
     stage = here[0]
     policy = json.loads((root / "run-policy.json").read_text(encoding="utf-8")) if (root / "run-policy.json").exists() else {}
     agent = policy.get("default", {}).get("agent", "Axel")
-    skill = a.skill.strip()
-    if not skill:
-        has_primary = any((root / stage / name / f).exists() or list((root / stage / name).glob(f.rsplit(".", 1)[0] + ".v*." + f.rsplit(".", 1)[1])) for f in PRIMARY)
-        skill = "derive" if stage == "10-ideas" and has_primary else "interpret"
+    skill = a.skill.strip() or "interpret"              # /interpret reads the container and does what is missing
     env = dict(os.environ, COCKPIT_DATA_DIR=str(root))
     r = subprocess.run([sys.executable, str(HERE / "review_append.py"), f"{stage}/{name}", "--by", a.by, "--title", a.title,
                         "--status", "open", "--for", agent], input=text, capture_output=True, text=True, env=env)

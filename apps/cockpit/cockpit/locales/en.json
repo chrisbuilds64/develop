@@ -324,5 +324,6 @@
   "desk.matrix": "Artifacts by stage",
   "desk.artifact": "Artifact",
   "desk.missing": "due, missing",
-  "desk.put_artifact": "Put an artifact"
+  "desk.put_artifact": "Put an artifact",
+  "desk.idea_optional": "(optional when you upload material)"
 }

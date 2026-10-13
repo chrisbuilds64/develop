@@ -58,13 +58,7 @@
         <label><span>{{ t('field.title') }}</span><input type="text" name="title" required placeholder="{{ t('desk.ph.title') }}"></label>
         <label><span>{{ t('field.series_opt') }}</span><input type="text" name="series" placeholder="SIM, GH, RT, STP"></label>
       </div>
-      <div class="row">
-        <label><span>{{ t('field.kind_of_start') }}</span>
-          <select name="kind" required data-kind>
-            {% for o in (options[a.id]['kind'] if options and a.id in options else ['idea', 'script', 'draft', 'transcript', 'notes']) %}<option value="{{ o }}">{{ t('desk.kind.' ~ o) }}</option>{% endfor %}
-          </select></label>
-      </div>
-      <label><span>{{ t('field.idea_text') }}</span><textarea name="text" rows="4" placeholder="{{ t('desk.ph.text') }}"></textarea></label>
+      <label><span>{{ t('field.idea_text') }} <small class="dim">{{ t('desk.idea_optional') }}</small></span><textarea name="text" rows="4" placeholder="{{ t('desk.ph.text') }}"></textarea></label>
       <fieldset class="artifacts" data-artifacts>
         <legend>{{ t('desk.artifacts_have') }}</legend>
         <div class="row">
@@ -78,17 +72,10 @@
     <script>
       // The format decides what a piece may begin with and which artifacts it collects (artifacts.json).
       (function () {
-        var fmt = document.querySelector("[data-format]"), kind = document.querySelector("[data-kind]");
-        if (!fmt || !kind) return;
-        var allowed = { POD: ["idea", "script", "transcript", "notes"], SP: ["idea", "draft", "notes"] };
+        var fmt = document.querySelector("[data-format]");
+        if (!fmt) return;
         var intake = {{ desk.intake|tojson }};
         function apply() {
-          var ok = allowed[fmt.value] || ["idea", "draft", "transcript", "notes"], first = null;
-          Array.prototype.forEach.call(kind.options, function (o) {
-            o.hidden = ok.indexOf(o.value) < 0; o.disabled = o.hidden;
-            if (!o.hidden && first === null) first = o.value;
-          });
-          if (kind.selectedOptions[0] && kind.selectedOptions[0].hidden) kind.value = first;
           var mine = intake[fmt.value] || [];
           document.querySelectorAll("[data-artifact]").forEach(function (l) {
             var on = mine.indexOf(l.dataset.artifact) >= 0; l.hidden = !on; if (!on) l.querySelector("input").value = "";

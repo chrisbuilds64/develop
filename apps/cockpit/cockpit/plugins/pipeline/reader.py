@@ -537,7 +537,7 @@ def _series_page(access, role, module, src, label: str) -> dict | None:
 GROUP_OF_STAGE = {0: "archive", 5: "ideas", 10: "ideas", 15: "working", 20: "working", 30: "you",
                   40: "akhil", 50: "you", 55: "planned"}          # 60 and up: out
 GROUPS = ("you", "working", "akhil", "planned", "ideas", "out")
-SKILL_STAGES = {"interpret": ("10-ideas",), "derive": ("10-ideas",), "canonical-review": ("60-published", "61-field-observation", "65-canonical-review"),
+SKILL_STAGES = {"interpret": ("10-ideas", "30-review-human"), "canonical-review": ("60-published", "61-field-observation", "65-canonical-review"),
                 "reflect": ("05-operational-observations",)}
 PRIMARY_FILES = ("script.md", "substack.md", "linkedin-post.txt")   # what a piece that begins with finished material holds
 
@@ -619,7 +619,7 @@ def _state(stage: str, run: dict | None, open_for_me: list[dict], has_image: boo
     group = GROUP_OF_STAGE.get(num, "ideas")
     action = None
     if stage == "10-ideas" and has_primary:
-        return {"group": group, "state": "desk.state.material", "action": {"kind": "form", "label": "desk.act.derive", "action": "derive", "fields": {}}}
+        return {"group": group, "state": "desk.state.material", "action": {"kind": "form", "label": "desk.act.interpret", "action": "interpret", "fields": {}}}
     if stage == "10-ideas":
         action = {"kind": "form", "label": "desk.act.interpret", "action": "interpret", "fields": {}}
     elif num in (15, 20) and not run:
