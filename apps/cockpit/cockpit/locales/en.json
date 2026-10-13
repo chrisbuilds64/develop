@@ -325,5 +325,6 @@
   "desk.artifact": "Artifact",
   "desk.missing": "due, missing",
   "desk.put_artifact": "Put an artifact",
-  "desk.idea_optional": "(optional when you upload material)"
+  "desk.idea_optional": "(optional when you upload material)",
+  "desk.ph.ask": "What should I do? The first line becomes the heading."
 }

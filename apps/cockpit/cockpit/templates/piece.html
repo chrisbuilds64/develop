@@ -146,8 +146,7 @@
         <input type="hidden" name="_csrf" value="{{ csrf }}">
         <h4>{{ t('desk.ask') }} <span class="dim">· {{ piece.agent }}</span></h4>
         <p class="hint">{{ t('desk.ask_hint') }}</p>
-        <label><span>{{ t('field.title') }}</span><input type="text" name="title" required placeholder="{{ t('desk.ph.note_title') }}"></label>
-        <textarea name="text" rows="3" required></textarea>
+        <textarea name="text" rows="3" required placeholder="{{ t('desk.ph.ask') }}"></textarea>
         <button type="submit">{{ t('desk.act.ask_send') }}</button>
       </form>
       {% endif %}

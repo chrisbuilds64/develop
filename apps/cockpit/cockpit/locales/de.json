@@ -325,5 +325,6 @@
   "desk.artifact": "Artefakt",
   "desk.missing": "fällig, fehlt",
   "desk.put_artifact": "Artefakt ablegen",
-  "desk.idea_optional": "(frei, wenn du Material hochlädst)"
+  "desk.idea_optional": "(frei, wenn du Material hochlädst)",
+  "desk.ph.ask": "Was soll ich tun? Die erste Zeile wird die Überschrift."
 }

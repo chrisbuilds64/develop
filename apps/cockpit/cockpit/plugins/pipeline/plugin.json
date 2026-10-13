@@ -213,25 +213,18 @@
         "--by",
         "{user}",
         "--role",
-        "{role}",
-        "--title",
-        "{title}"
+        "{role}"
       ],
       "data": "pipeline",
       "scope": "document",
       "stdin": "text",
       "field": [
         {
-          "name": "title",
-          "label": "field.title",
-          "required": true,
-          "placeholder": "one line: what the agent should do"
-        },
-        {
           "name": "text",
           "label": "field.text",
           "type": "textarea",
-          "required": true
+          "required": true,
+          "placeholder": "what the agent should do — the first line becomes the heading"
         }
       ]
     },

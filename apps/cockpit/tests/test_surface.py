@@ -252,8 +252,9 @@ def test_material_is_brought_in_through_the_desk_and_gets_a_derive_button(client
     assert "Work it out" in desk and "material is here" in desk and 'a/derive"' not in desk
     page = client.get("/m/pipeline/doc/10-ideas/POD-xxx-night-shift").text
     assert "Script" in page and 'data-record-toggle' in page and "origin" in page and 'a/ask"' in page
-    r = client.post("/m/pipeline/doc/10-ideas/POD-xxx-night-shift/a/ask", data={"title": "Derive the rest", "text": "Please.", "_csrf": client.cookies["csrf"]})
+    r = client.post("/m/pipeline/doc/10-ideas/POD-xxx-night-shift/a/ask", data={"text": "Derive the rest.\nTeleprompter and show notes.", "_csrf": client.cookies["csrf"]})
     assert r.status_code == 200 and "REV-001 appended for Claude, /interpret queued" in r.text
+    assert "## REV-001 — Derive the rest\n" in (world / "flow" / "10-ideas" / "POD-xxx-night-shift" / "review.md").read_text(encoding="utf-8")
 
 
 def test_a_refused_intake_comes_back_on_the_desk_in_red_with_the_form_open(client, world):

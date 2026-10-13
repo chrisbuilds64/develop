@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Ask the agent to work on a piece: one review entry addressed to it, and one run order with the same words.
 
-    ask_agent.py <stage/container> --by chris --role operator --title "…" [--skill interpret] < text
+    ask_agent.py <stage/container> --by chris --role operator [--title "…"] [--skill interpret] < text
+
+One field is enough: the first line of the text becomes the entry's heading when no --title is given.
 
 The entry is the record (who asked what, when), the order is the work. The skill is /interpret unless
 one is named: it reads the container and does what is missing. Both halves go through the tools that own the files
@@ -24,11 +26,14 @@ STAGE = re.compile(r"^\d{2}-")
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="ask_agent.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("container"); p.add_argument("--by", required=True); p.add_argument("--role", required=True)
-    p.add_argument("--title", required=True); p.add_argument("--skill", default="")
+    p.add_argument("--title", default="", help="the entry's heading; without it, the first line of the text"); p.add_argument("--skill", default="")
     a = p.parse_args(argv)
     text = sys.stdin.read().strip()
     if not text:
         sys.exit("say what the agent should do — the text is empty")
+    if not a.title.strip():
+        first = text.splitlines()[0].strip().rstrip(".:")
+        a.title = first if len(first) <= 80 else first[:77].rsplit(" ", 1)[0] + "…"
     root = Path(os.environ.get("COCKPIT_DATA_DIR") or ".").resolve()
     name = a.container.strip().strip("/").split("/")[-1]
     stages = sorted(x.name for x in root.iterdir() if x.is_dir() and STAGE.match(x.name))
