@@ -63,17 +63,25 @@
           <select name="kind" required data-kind>
             {% for o in (options[a.id]['kind'] if options and a.id in options else ['idea', 'script', 'draft', 'transcript', 'notes']) %}<option value="{{ o }}">{{ t('desk.kind.' ~ o) }}</option>{% endfor %}
           </select></label>
-        <label><span>{{ t('field.material_file') }}</span><input type="file" name="file" accept=".md,.txt"></label>
       </div>
       <label><span>{{ t('field.idea_text') }}</span><textarea name="text" rows="4" placeholder="{{ t('desk.ph.text') }}"></textarea></label>
+      <fieldset class="artifacts" data-artifacts>
+        <legend>{{ t('desk.artifacts_have') }}</legend>
+        <div class="row">
+        {% for f in a.fields if f.type == 'file' and f.name.startswith('a_') %}
+          <label data-artifact="{{ f.label }}"><span>{{ desk.vocab.files[f.label] if desk.vocab.files and f.label in desk.vocab.files else f.label }} <small class="dim">{{ f.label }}</small></span><input type="file" name="{{ f.name }}" accept=".{{ f.accept|join(',.') }}"></label>
+        {% endfor %}
+        </div>
+      </fieldset>
       <button type="submit">{{ t('desk.act.keep') }}</button>
     </form>
     <script>
-      // What a piece may begin with depends on what it becomes: a podcast has a script, a post has a draft.
+      // The format decides what a piece may begin with and which artifacts it collects (artifacts.json).
       (function () {
         var fmt = document.querySelector("[data-format]"), kind = document.querySelector("[data-kind]");
         if (!fmt || !kind) return;
         var allowed = { POD: ["idea", "script", "transcript", "notes"], SP: ["idea", "draft", "notes"] };
+        var intake = {{ desk.intake|tojson }};
         function apply() {
           var ok = allowed[fmt.value] || ["idea", "draft", "transcript", "notes"], first = null;
           Array.prototype.forEach.call(kind.options, function (o) {
@@ -81,6 +89,10 @@
             if (!o.hidden && first === null) first = o.value;
           });
           if (kind.selectedOptions[0] && kind.selectedOptions[0].hidden) kind.value = first;
+          var mine = intake[fmt.value] || [];
+          document.querySelectorAll("[data-artifact]").forEach(function (l) {
+            var on = mine.indexOf(l.dataset.artifact) >= 0; l.hidden = !on; if (!on) l.querySelector("input").value = "";
+          });
         }
         fmt.addEventListener("change", apply); apply();
       })();

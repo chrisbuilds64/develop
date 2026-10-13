@@ -319,5 +319,10 @@
   "desk.kind.script": "Fertiges Skript (Podcast)",
   "desk.kind.draft": "Fertiger Entwurf (Text des Stücks)",
   "desk.kind.transcript": "Transkript",
-  "desk.kind.notes": "Notizen"
+  "desk.kind.notes": "Notizen",
+  "desk.artifacts_have": "Was schon da ist, hochladen",
+  "desk.matrix": "Artefakte je Stufe",
+  "desk.artifact": "Artefakt",
+  "desk.missing": "fällig, fehlt",
+  "desk.put_artifact": "Artefakt ablegen"
 }

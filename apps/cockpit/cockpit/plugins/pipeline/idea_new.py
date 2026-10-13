@@ -65,6 +65,8 @@ def main(argv=None) -> int:
     p.add_argument("--text", default=None, help="the text; read from stdin when absent and no --file is given")
     p.add_argument("--file", default=None, help="an uploaded .md or .txt file with the material")
     p.add_argument("--name", default="", help="the uploaded file's original name (for the type check and the record)")
+    p.add_argument("--put", nargs=3, action="append", default=[], metavar=("ARTIFACT", "ORIGINAL-NAME", "TMPFILE"),
+                   help="an artifact that already exists, by its file name from artifacts.json; repeatable")
     a = p.parse_args(argv)
 
     root = Path(os.environ.get("COCKPIT_DATA_DIR") or ".").resolve()
@@ -89,8 +91,28 @@ def main(argv=None) -> int:
         sys.exit(f"label '{label}' is not one of: {', '.join(labels)}")
     if not title:
         sys.exit("the title is empty")
-    if not text:
+    puts = []
+    if a.put:
+        known = {}
+        art = load_json(root, "artifacts.json") or {}
+        for fmt, spec in art.get("formats", {}).items():
+            for x in spec.get("artifacts", []):
+                known.setdefault(x["file"] if isinstance(x, dict) else x, set()).add(fmt)
+        for artifact, orig, tmp in a.put:
+            if artifact not in known:
+                sys.exit(f"'{artifact}' is not an artifact artifacts.json knows")
+            if label not in known[artifact]:
+                sys.exit(f"'{artifact}' is not an artifact of a {label}")
+            ext_a = artifact.rsplit(".", 1)[-1]; ext_o = orig.rsplit(".", 1)[-1].lower() if "." in orig else ""
+            if ext_o not in (ext_a, "jpeg" if ext_a == "jpg" else ext_a):
+                sys.exit(f"'{orig}' does not fit {artifact} — expected .{ext_a}")
+            if not Path(tmp).is_file() or Path(tmp).stat().st_size == 0:
+                sys.exit(f"the upload for {artifact} is missing or empty")
+            puts.append((artifact, orig, Path(tmp)))
+    if not text and not puts:
         sys.exit("the text is empty — a title alone is not an idea" if kind == "idea" else f"no {kind} given — paste it or upload the file")
+    if not text and puts:
+        kind, text = "idea", f"Brought in with material: {', '.join(x[0] for x in puts)}."
     primary = (PRIMARY.get(kind) or {}).get(label) or (PRIMARY.get(kind) or {}).get("*")
     if kind != "idea" and not primary:
         sys.exit(f"a {kind} is not a way to begin a {label} — one of: idea, " + ", ".join(k for k in KINDS[1:] if (PRIMARY[k].get(label) or PRIMARY[k].get("*"))))
@@ -140,8 +162,15 @@ def main(argv=None) -> int:
     (target / "source.md").write_text("\n".join(head), encoding="utf-8")
     if kind != "idea":
         (target / primary).write_text(text + "\n", encoding="utf-8")
+    for artifact, orig, tmp in puts:
+        if (target / artifact).exists():
+            continue                                           # the pasted primary wins over an upload of the same name
+        (target / artifact).write_bytes(tmp.read_bytes())
+    if puts:
+        meta["origin"] += " — with " + ", ".join(x[0] for x in puts)
     (target / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"created {IDEAS}/{folder} — {label} by {who['name']}" + (f", {kind} in {primary}" if kind != "idea" else ""))
+    print(f"created {IDEAS}/{folder} — {label} by {who['name']}" + (f", {kind} in {primary}" if kind != "idea" else "")
+          + (f", with {', '.join(x[0] for x in puts)}" if puts else ""))
     return 0
 
 

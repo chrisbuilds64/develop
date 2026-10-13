@@ -283,3 +283,32 @@ def test_a_piece_may_begin_with_finished_material_and_the_agent_can_be_asked(tmp
     r = run(root, "ask_agent.py", "30-review-human/POD-01", "--by", "chris", "--role", "operator", "--title", "Tighten the opener", stdin="Cut the first paragraph.")
     assert r.returncode == 0 and "/interpret queued" in r.stdout
     assert "say what the agent should do" in run(root, "ask_agent.py", "POD-01", "--by", "chris", "--role", "operator", "--title", "x", stdin=" ").stderr
+
+
+def test_an_artifact_is_put_by_its_file_name_unversioned_first_then_v2(tmp_path):
+    root = make(tmp_path)
+    (root / "artifacts.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "flow" / "artifacts.json").read_text())
+    up = root / "up.md"; up.write_text("# Show notes\n", encoding="utf-8")
+    r1 = run(root, "asset_put.py", "POD-01", "show-notes.txt", str(up), "--name", "notes.md")
+    assert r1.returncode != 0 and "expected" in r1.stderr or "not allowed" in r1.stderr
+    up2 = root / "up.txt"; up2.write_text("Show notes.\n", encoding="utf-8")
+    r1 = run(root, "asset_put.py", "POD-01", "show-notes.txt", str(up2), "--name", "notes.txt", "--by", "akhil")
+    r2 = run(root, "asset_put.py", "POD-01", "show-notes.txt", str(up2), "--name", "again.txt")
+    assert r1.returncode == 0 and "/show-notes.txt" in r1.stdout and r2.returncode == 0 and "show-notes.v2.txt" in r2.stdout
+    assert "unknown kind" in run(root, "asset_put.py", "POD-01", "secret.txt", str(up2), "--name", "x.txt").stderr
+
+
+def test_the_intake_takes_artifacts_that_already_exist(tmp_path):
+    root = make(tmp_path)
+    (root / "10-ideas").mkdir()
+    (root / "artifacts.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "flow" / "artifacts.json").read_text())
+    (root / "meta.schema.json").write_text(json.dumps({"required": ["label", "slug", "title"], "additionalProperties": False, "properties": {
+        "label": {"enum": ["FN", "POD", "SP", "WN"]}, "slug": {}, "title": {}, "working_title": {}, "created": {}, "origin": {}, "seed": {"type": "boolean"}, "series": {}}}))
+    s = root / "s.md"; s.write_text("# Script\n", encoding="utf-8"); t = root / "t.txt"; t.write_text("Tele.\n", encoding="utf-8")
+    r = run(root, "idea_new.py", "--label", "POD", "--title", "With material", "--by", "akhil", "--put", "script.md", "Akhil.md", str(s), "--put", "teleprompter.txt", "tele.txt", str(t))
+    assert r.returncode == 0 and "with script.md, teleprompter.txt" in r.stdout, r.stdout + r.stderr
+    c = root / "10-ideas" / "POD-xxx-with-material"
+    assert (c / "script.md").read_text() == "# Script\n" and (c / "teleprompter.txt").exists() and "Brought in with material" in (c / "source.md").read_text()
+    assert "— with script.md, teleprompter.txt" in json.loads((c / "meta.json").read_text())["origin"]
+    assert "not an artifact of a SP" in run(root, "idea_new.py", "--label", "SP", "--title", "Nope", "--by", "akhil", "--put", "script.md", "a.md", str(s)).stderr
+    assert "does not fit" in run(root, "idea_new.py", "--label", "POD", "--title", "Nope", "--by", "akhil", "--put", "script.md", "a.txt", str(t)).stderr

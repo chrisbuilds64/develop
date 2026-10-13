@@ -108,18 +108,23 @@ class Actions:
             values[f.name] = v
 
         argv: list[str] = [sys.executable, str(script)]
+        literal: list[bool] = [True, True]
         for tpl in action.args:
-            # "{title}" → the value; an arg whose value is empty is dropped together
-            # with the flag before it, so optional fields do not produce "--due ''".
+            # "{title}" → the value; an arg whose value is empty is dropped together with the
+            # literals before it back to and including its flag ("--put", "script.md", "{file}"
+            # vanishes whole), so optional fields do not produce "--due ''". A substituted value
+            # in between stops the dropping: it belongs to an earlier, filled group.
             if tpl.startswith("{") and tpl.endswith("}"):
                 v = values.get(tpl[1:-1], "")
                 if v == "":
-                    if argv and argv[-1].startswith("--"):
-                        argv.pop()
+                    while len(argv) > 2 and literal[-1]:
+                        a = argv.pop(); literal.pop()
+                        if a.startswith("--"):
+                            break
                     continue
-                argv.append(v)
+                argv.append(v); literal.append(False)
             else:
-                argv.append(tpl)
+                argv.append(tpl); literal.append(True)
 
         env = dict(os.environ)
         data_src = self._access.source(action.data) if action.data else None

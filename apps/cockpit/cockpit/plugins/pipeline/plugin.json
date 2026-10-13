@@ -1,7 +1,7 @@
 {
   "id": "pipeline",
   "name": "PressRoom · Content pipeline",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Folders are stages, subfolders are pieces; series/<LABEL>/ holds a series head that clamps its pieces and carries their order. The page starts with the ideas: anyone enters one (idea_new.py writes the seed container into 10-ideas) and starts its interpretation with one button (run_request.py --skill interpret). Below: the board by stage, every piece with its files and images; series and calendar folded. Actions: move a container, append to its review, put a versioned asset into it — nothing is ever overwritten. runner.py on a person's machine executes ordered runs in a headless agent session.",
   "reader": "reader.py",
   "needs": [
@@ -28,7 +28,47 @@
         "--file",
         "{file}",
         "--name",
-        "{file.name}"
+        "{file.name}",
+        "--put",
+        "script.md",
+        "{a_script_md.name}",
+        "{a_script_md}",
+        "--put",
+        "teleprompter.txt",
+        "{a_teleprompter_txt.name}",
+        "{a_teleprompter_txt}",
+        "--put",
+        "show-notes.txt",
+        "{a_show_notes_txt.name}",
+        "{a_show_notes_txt}",
+        "--put",
+        "linkedin-post.txt",
+        "{a_linkedin_post_txt.name}",
+        "{a_linkedin_post_txt}",
+        "--put",
+        "first-comment.txt",
+        "{a_first_comment_txt.name}",
+        "{a_first_comment_txt}",
+        "--put",
+        "edit-instructions.txt",
+        "{a_edit_instructions_txt.name}",
+        "{a_edit_instructions_txt}",
+        "--put",
+        "reel-hooks.txt",
+        "{a_reel_hooks_txt.name}",
+        "{a_reel_hooks_txt}",
+        "--put",
+        "visual-brief.md",
+        "{a_visual_brief_md.name}",
+        "{a_visual_brief_md}",
+        "--put",
+        "substack.md",
+        "{a_substack_md.name}",
+        "{a_substack_md}",
+        "--put",
+        "substack.html",
+        "{a_substack_html.name}",
+        "{a_substack_html}"
       ],
       "data": "pipeline",
       "scope": "module",
@@ -72,12 +112,83 @@
           "placeholder": "the idea in a few lines — or the finished text, pasted"
         },
         {
-          "name": "file",
-          "label": "field.material_file",
+          "name": "a_script_md",
+          "label": "script.md",
           "type": "file",
           "accept": [
-            "md",
+            "md"
+          ]
+        },
+        {
+          "name": "a_teleprompter_txt",
+          "label": "teleprompter.txt",
+          "type": "file",
+          "accept": [
             "txt"
+          ]
+        },
+        {
+          "name": "a_show_notes_txt",
+          "label": "show-notes.txt",
+          "type": "file",
+          "accept": [
+            "txt"
+          ]
+        },
+        {
+          "name": "a_linkedin_post_txt",
+          "label": "linkedin-post.txt",
+          "type": "file",
+          "accept": [
+            "txt"
+          ]
+        },
+        {
+          "name": "a_first_comment_txt",
+          "label": "first-comment.txt",
+          "type": "file",
+          "accept": [
+            "txt"
+          ]
+        },
+        {
+          "name": "a_edit_instructions_txt",
+          "label": "edit-instructions.txt",
+          "type": "file",
+          "accept": [
+            "txt"
+          ]
+        },
+        {
+          "name": "a_reel_hooks_txt",
+          "label": "reel-hooks.txt",
+          "type": "file",
+          "accept": [
+            "txt"
+          ]
+        },
+        {
+          "name": "a_visual_brief_md",
+          "label": "visual-brief.md",
+          "type": "file",
+          "accept": [
+            "md"
+          ]
+        },
+        {
+          "name": "a_substack_md",
+          "label": "substack.md",
+          "type": "file",
+          "accept": [
+            "md"
+          ]
+        },
+        {
+          "name": "a_substack_html",
+          "label": "substack.html",
+          "type": "file",
+          "accept": [
+            "html"
           ]
         }
       ]
@@ -309,17 +420,7 @@
           "label": "field.kind",
           "type": "select",
           "required": true,
-          "options": [
-            "linkedin-image",
-            "substack-image",
-            "header-16x9",
-            "header-4x5",
-            "thumbnail",
-            "poster-4x5",
-            "teaser-reel",
-            "screen-segment",
-            "image"
-          ]
+          "options_from": "artifacts.json:kinds"
         },
         {
           "name": "file",
@@ -331,7 +432,10 @@
             "jpg",
             "jpeg",
             "mp4",
-            "mov"
+            "mov",
+            "md",
+            "txt",
+            "html"
           ]
         }
       ]

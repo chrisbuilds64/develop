@@ -484,3 +484,20 @@ form.inline input[type=date] { font: inherit; font-size: 13px; color: var(--ink)
 .precord h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin: 0 0 10px; }
 .precord .kv { font-size: 13px; } .precord .kv dt { font-family: var(--mono); font-size: 12px; } .precord .kv dd { word-break: break-word; }
 .nask { border-left: 3px solid var(--accent); }
+/* the matrix: artifacts down, stages across */
+.matrixwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.matrix { border-collapse: collapse; font-size: 12px; min-width: 100%; }
+.matrix th, .matrix td { padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; text-align: center; }
+.matrix th.mart, .matrix td.mart { text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.matrix th.mst { font-weight: 600; color: var(--ink-2); vertical-align: bottom; }
+.matrix th.mst span { writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; max-height: 110px; overflow: hidden; text-overflow: ellipsis; }
+.matrix th.mst small { display: block; color: var(--accent-soft); font-size: 10px; margin-top: 4px; }
+.matrix th.current, .matrix td.current { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.matrix tr.due td.mart b { color: var(--warn); }
+.matrix tr.later td { color: var(--ink-3); }
+.matrix .dot { font-size: 14px; text-decoration: none; }
+.matrix .dot.have { color: var(--ok); } .matrix .dot.due { color: var(--warn); } .matrix .dot.later, .matrix .dot.carry { color: var(--ink-3); }
+.matrix .dot sup { font-size: 9px; margin-left: 1px; }
+.artifacts { border: 1px dashed var(--line); border-radius: var(--radius-s); padding: 10px 12px; margin: 0; }
+.artifacts legend { font-size: 12px; color: var(--ink-2); padding: 0 6px; }
+.artifacts label small { margin-left: 4px; font-family: var(--mono); font-size: 10px; }

@@ -319,5 +319,10 @@
   "desk.kind.script": "Finished script (podcast)",
   "desk.kind.draft": "Finished draft (the piece's text)",
   "desk.kind.transcript": "Transcript",
-  "desk.kind.notes": "Notes"
+  "desk.kind.notes": "Notes",
+  "desk.artifacts_have": "Upload what already exists",
+  "desk.matrix": "Artifacts by stage",
+  "desk.artifact": "Artifact",
+  "desk.missing": "due, missing",
+  "desk.put_artifact": "Put an artifact"
 }

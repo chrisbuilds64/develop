@@ -57,9 +57,46 @@
 
   <div class="pgrid">
     <section class="pfiles">
-      <h3>{{ t('doc.files') }} <span class="dim">· {{ piece.files|length }}</span></h3>
-      <div class="tiles">
-        {% for f in piece.files %}
+      <h3>{{ t('desk.matrix') }} <span class="dim">· {{ piece.files|length }} {{ t('doc.files')|lower }}</span></h3>
+      {% set mx = piece.matrix %}
+      <div class="matrixwrap"><table class="matrix">
+        <thead><tr><th class="mart">{{ t('desk.artifact') }}</th>{% for st in mx.stages %}<th class="mst{% if st.current %} current{% endif %}" title="{{ st.id }}"><span>{{ st.word }}</span>{% if st.skills %}<small>{% for sk in st.skills %}/{{ sk }} {% endfor %}</small>{% endif %}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for r in mx.rows %}
+        <tr class="{% if r.present %}have{% elif r.due %}due{% else %}later{% endif %}">
+          <td class="mart"><b>{{ r.label }}</b> <small class="dim">{{ r.file }}{% if r.by %} · {{ r.by }}{% endif %}</small></td>
+          {% for st in mx.stages %}
+          <td class="mcell{% if st.current %} current{% endif %}">
+            {% if st.id == r.stage or (not r.stage and loop.first) %}
+              {% if r.present %}{% for v in r.present %}<a class="dot have" href="{{ v.href }}" title="{{ v.name }}">●{% if v.version %}<sup>{{ v.version }}</sup>{% endif %}</a>{% endfor %}
+              {% elif r.due %}<span class="dot due" title="{{ t('desk.missing') }}">○</span>
+              {% else %}<span class="dot later">·</span>{% endif %}
+            {% elif r.present and st.id > r.stage %}<span class="dot carry">—</span>{% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% if role.may_act(module.id ~ '.upload') %}
+      {% set missing = mx.rows|rejectattr('present')|list %}
+      {% if missing %}
+      <details class="pupload"><summary>{{ t('desk.put_artifact') }}</summary>
+        <form class="action" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/upload" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <div class="row">
+            <label><span>{{ t('desk.artifact') }}</span><select name="kind">{% for r in mx.rows %}<option value="{{ r.file }}">{{ r.label }} ({{ r.file }}){% if r.present %} · {{ t('desk.version', n=(r.present|length) + 1) }}{% endif %}</option>{% endfor %}</select></label>
+            <label><span>{{ t('field.file') }}</span><input type="file" name="file" required></label>
+          </div>
+          <button type="submit">{{ t('pipeline.upload') }}</button>
+        </form>
+      </details>
+      {% endif %}
+      {% endif %}
+      {% set shown = piece.files|selectattr('kind', 'in', ['image', 'video', 'pdf'])|list + mx.extra %}
+      {% if shown %}
+      <div class="tiles" style="margin-top:14px">
+        {% for f in shown|unique(attribute='name') %}
         <a class="tile tile-{{ f.kind }}" {% if f.href %}href="{{ f.href }}"{% if f.kind in ('image', 'video', 'pdf') %} target="_blank"{% endif %}{% endif %} title="{{ f.name }} · {{ f.size_kb }} KB">
           <span class="thumb">
             {% if f.kind == 'image' %}<img src="{{ f.href }}" alt="" loading="lazy">
@@ -74,20 +111,6 @@
         </a>
         {% endfor %}
       </div>
-      {% if role.may_act(module.id ~ '.upload') %}
-      {% set up = module.actions|selectattr('id', 'equalto', 'upload')|list %}
-      {% if up %}
-      <details class="pupload"><summary>{{ t('pipeline.upload') }}</summary>
-        <form class="action" method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/upload" enctype="multipart/form-data">
-          <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <div class="row">
-            <label><span>{{ t('field.kind') }}</span><select name="kind">{% for o in (options['upload']['kind'] if options and 'upload' in options else []) %}<option>{{ o }}</option>{% endfor %}</select></label>
-            <label><span>{{ t('field.file') }}</span><input type="file" name="file" required></label>
-          </div>
-          <button type="submit">{{ t('pipeline.upload') }}</button>
-        </form>
-      </details>
-      {% endif %}
       {% endif %}
     </section>
 

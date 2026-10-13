@@ -263,3 +263,20 @@ def test_a_refused_intake_comes_back_on_the_desk_in_red_with_the_form_open(clien
                                                 "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]})
     assert r.status_code == 200 and 'class="flash bad"' in r.text and "not a way to begin a SP" in r.text
     assert '<details class="newidea" open>' in r.text and 'data-format' in r.text
+
+
+def test_the_piece_page_shows_the_matrix_and_the_intake_offers_artifact_uploads(client, world):
+    (world / "flow" / "10-ideas").mkdir(exist_ok=True)
+    sign_in(client, "alex", view="desk")
+    desk = client.get("/m/pipeline").text
+    assert 'name="a_script_md"' in desk and 'data-artifact="teleprompter.txt"' in desk and "var intake = {" in desk
+    r = client.post("/m/pipeline/a/idea", data={"label": "POD", "title": "Matrix piece", "series": "", "kind": "idea", "text": "An idea.", "_back": "/m/pipeline", "_csrf": client.cookies["csrf"]},
+                    files={"a_script_md": ("Akhil.md", b"# Script\n", "text/markdown")})
+    assert r.status_code == 303 and "with%20script.md" in r.headers["location"], r.headers.get("location") or r.text[-300:]
+    page = client.get("/m/pipeline/doc/10-ideas/POD-xxx-matrix-piece").text
+    assert 'class="matrix"' in page and "Teleprompter" in page and 'class="dot have"' in page and 'class="dot due"' not in page
+    assert "/interpret /derive" in page and "Derive the rest" in page                     # the helpers of the stage, the one button
+    # an artifact goes in by its name, through the same upload action
+    r = client.post("/m/pipeline/doc/10-ideas/POD-xxx-matrix-piece/a/upload", data={"kind": "show-notes.txt", "_csrf": client.cookies["csrf"]},
+                    files={"file": ("notes.txt", b"Show notes.\n", "text/plain")})
+    assert r.status_code == 200 and "/show-notes.txt" in r.text and (world / "flow" / "10-ideas" / "POD-xxx-matrix-piece" / "show-notes.txt").exists()

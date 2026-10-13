@@ -546,6 +546,24 @@ def _has_primary(files) -> bool:
     return any(f == n or (f.startswith(n.rsplit(".", 1)[0] + ".v") and f.endswith("." + n.rsplit(".", 1)[1])) for f in files for n in PRIMARY_FILES)
 
 
+def _artifacts(access, role, src) -> dict:
+    """artifacts.json at the pipeline root: the matrix's rows (per format, with stage and maker) and the helpers per stage."""
+    try:
+        if "artifacts.json" not in access.listdir(src, role):
+            return {}
+        return access.read_json(src, "artifacts.json", role)
+    except Exception:
+        return {}
+
+
+def _rows_for(art: dict, label: str) -> list[dict]:
+    """Every artifact a piece of this format collects, common ones first, as dicts {file, stage, by}."""
+    def norm(x):
+        return x if isinstance(x, dict) else {"file": x, "stage": "", "by": ""}
+    fmt = art.get("formats", {}).get(label, {})
+    return [norm(x) for x in art.get("common", [])] + [norm(x) for x in fmt.get("artifacts", [])]
+
+
 def _vocab(access, role, src, lang: str) -> dict:
     try:
         v = access.read_json(src, "vocabulary.json", role) if "vocabulary.json" in access.listdir(src, role) else {}
@@ -669,7 +687,11 @@ def desk(access, role, module, config, viewer: str | None = None, lang: str = "e
     groups["planned"].sort(key=lambda c: c["date"])
     groups["out"].sort(key=lambda c: c["date"], reverse=True)
     groups["out"] = groups["out"][:12]
-    return {"groups": [{"id": g, "cards": groups[g]} for g in GROUPS if groups[g]], "vocab": vocab}
+    art = _artifacts(access, role, src)
+    intake = {label: [x["file"] if isinstance(x, dict) else x for x in spec.get("artifacts", [])
+                      if (x["file"] if isinstance(x, dict) else x).rsplit(".", 1)[-1] in ("md", "txt", "html")]
+              for label, spec in art.get("formats", {}).items()}
+    return {"groups": [{"id": g, "cards": groups[g]} for g in GROUPS if groups[g]], "vocab": vocab, "intake": intake}
 
 
 def piece(access, role, module, config, ref: str, viewer: str | None = None, lang: str = "en") -> dict | None:
@@ -701,6 +723,25 @@ def piece(access, role, module, config, ref: str, viewer: str | None = None, lan
                 else f"/m/{module.id}/doc/{ref}/{f}" if kind in ("data", "review", "text", "plain") else "")
         label, version = _file_word(vocab, f)
         tiles.append({"name": f, "label": label, "version": version, "kind": kind, "href": href, "size_kb": max(1, p.stat().st_size // 1024)})
+    # the matrix: rows are the format's artifacts, columns the stages; a cell says where an artifact is due and whether it is here
+    art = _artifacts(access, role, src)
+    label = str(meta.get("label") or name.split("-", 1)[0])
+    stages_all = sorted(n for n in access.listdir(src, role) if STAGE.match(n) and not n.startswith("00-"))
+    present = {}
+    for f in files:
+        m = VERSION.search(f)
+        base = f.replace(m.group(0), ".", 1) if m else f
+        present.setdefault(base, []).append({"name": f, "version": m.group(1) if m else "", "href": next((t["href"] for t in tiles if t["name"] == f), "")})
+    rows = []
+    for a in _rows_for(art, label):
+        have = present.get(a["file"], [])
+        rows.append({"file": a["file"], "label": _file_word(vocab, a["file"])[0], "stage": a.get("stage", ""), "by": a.get("by", ""),
+                     "present": sorted(have, key=lambda x: int(x["version"] or 0)), "due": (not have) and bool(a.get("stage")) and a["stage"] <= stage,
+                     "kind": _kind(a["file"])})
+    listed = {r["file"] for r in rows}
+    extra = [t for t in tiles if (t["name"].replace(VERSION.search(t["name"]).group(0), ".", 1) if VERSION.search(t["name"]) else t["name"]) not in listed]
+    matrix = {"stages": [{"id": st, "word": _word(vocab, "stages", st), "current": st == stage, "skills": art.get("skills", {}).get(st, [])} for st in stages_all],
+              "rows": rows, "extra": extra}
     resolved = _resolved_ids(entries)
     thread = [{**e, "resolved": e["id"] in resolved, "mine": bool(viewer) and (e.get("for") or "").lower() == (viewer or "").lower()} for e in entries]
     helpers = []
@@ -722,7 +763,7 @@ def piece(access, role, module, config, ref: str, viewer: str | None = None, lan
         "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])), "series": meta.get("series") or "",
         "number": str(meta.get("number") or ""), "date": str(meta.get("publishDate") or "")[:10], "created": str(meta.get("created") or "")[:10],
         "state": st["state"], "group": st["group"], "action": st["action"], "cover": cover_svg(meta, _cover_rules(access, role, src), 120) if meta else "",
-        "files": tiles, "notes": thread, "open_for_me": [e["id"] for e in open_me], "helpers": helpers,
+        "files": tiles, "matrix": matrix, "notes": thread, "open_for_me": [e["id"] for e in open_me], "helpers": helpers,
         "runs": [{"skill": r.get("skill"), "status": r.get("status"), "cost": r.get("cost_usd"), "when": r.get("created", "")[:16].replace("T", " "), "log": r.get("log", "")}
                  for r in runs_all[-6:]][::-1],
         "subtitle": meta.get("subtitle") or "", "origin": meta.get("origin") or "",

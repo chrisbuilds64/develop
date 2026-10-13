@@ -12,6 +12,7 @@ Works in COCKPIT_DATA_DIR (the pipeline root). The kinds are the deliverable
 names the production workflow already uses.
 """
 import argparse
+import json
 import os
 import re
 import shutil
@@ -34,6 +35,30 @@ KINDS = {
     "image":           ("image",           ("png", "jpg", "jpeg")),
 }
 VERSION = re.compile(r"\.v(\d+)\.")
+TEXT = ("md", "txt", "html")
+
+
+def artifact_kinds(root: Path) -> set[str]:
+    """Every artifact file name artifacts.json knows, across formats — an upload may name one of them as its kind."""
+    p = root / "artifacts.json"
+    if not p.exists():
+        return set()
+    d = json.loads(p.read_text(encoding="utf-8"))
+    out = set(d.get("kinds", []))
+    for f in list(d.get("formats", {}).values()) + [{"artifacts": d.get("common", [])}]:
+        out.update(a["file"] if isinstance(a, dict) else a for a in f.get("artifacts", []))
+    return out
+
+
+def kind_of(root: Path, kind: str) -> tuple[str, tuple[str, ...], bool]:
+    """(stem, allowed extensions, is_artifact). A kind is a known asset kind or an artifact's file name."""
+    if kind in KINDS:
+        return KINDS[kind] + (False,)
+    if "." in kind and kind in artifact_kinds(root):
+        stem, ext = kind.rsplit(".", 1)
+        allowed = ("jpg", "jpeg") if ext in ("jpg", "jpeg") else (ext,)
+        return stem, allowed, True
+    sys.exit(f"unknown kind '{kind}' — one of: {', '.join(KINDS)}, or an artifact's file name from artifacts.json")
 
 
 def main(argv=None) -> int:
@@ -43,9 +68,8 @@ def main(argv=None) -> int:
     p.add_argument("--by", default="")
     a = p.parse_args(argv)
 
-    if a.kind not in KINDS:
-        sys.exit(f"unknown kind '{a.kind}' — one of: {', '.join(KINDS)}")
-    stem, allowed = KINDS[a.kind]
+    root = Path(os.environ.get("COCKPIT_DATA_DIR") or ".").resolve()
+    stem, allowed, is_artifact = kind_of(root, a.kind)
     ext = a.name.rsplit(".", 1)[-1].lower() if "." in a.name else ""
     if ext == "jpeg":
         ext = "jpg"
@@ -71,7 +95,8 @@ def main(argv=None) -> int:
     used = [int(m.group(1)) for f in folder.iterdir() for m in [VERSION.search(f.name)] if m and f.name.startswith(stem + ".v")]
     unversioned = (folder / f"{stem}.{ext}").exists()
     n = max(used, default=1 if unversioned else 0) + 1
-    target = folder / f"{stem}.v{n}.{ext}"
+    # an artifact starts unversioned (the convention for deliverables); the first revision becomes .v2 beside it
+    target = folder / (f"{stem}.{ext}" if is_artifact and not used and not unversioned else f"{stem}.v{n}.{ext}")
     if target.exists():
         sys.exit(f"{target.name} already exists — refusing to overwrite")
     shutil.copyfile(src, target)
