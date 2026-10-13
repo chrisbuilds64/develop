@@ -54,6 +54,8 @@ id = "pipeline"
 label = "Content pipeline"
 path = "~/ChrisBuilds64/content/flow"
 sensitivity = "internal"
+# tools_path = "/srv/pressroom/flow"   # optional: the tools write here (a WebDAV mount of the same files) while
+                                        # the cockpit reads `path` from the disk — fast reads, every write through Nextcloud
 
 [[source]]
 id = "audits"

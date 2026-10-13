@@ -105,7 +105,8 @@ def cmd_check(args):
             if "{" in str(src.path):
                 print(f"source         VAR     {sid} → {src.path}  (resolves per user)")
             elif src.path.exists():
-                print(f"source         OK      {sid} → {src.path}" + (f"  [{name}]" if name else ""))
+                print(f"source         OK      {sid} → {src.path}" + (f"  [{name}]" if name else "")
+                      + (f"  (tools write to {src.tools_path})" if src.tools_path else ""))
             else:
                 print(f"source         MISSING {sid} → {src.path}" + (f"  [{name}]" if name else ""))
                 failures += 1

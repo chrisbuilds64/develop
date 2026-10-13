@@ -35,6 +35,11 @@ Three segments, read in this order:
 not see does not vanish — it shows as *not released*, so what exists stays visible and the
 release stays a decision.
 
+A source may name a second path, `tools_path`: the tools write there while the cockpit reads
+`path`. The case: the files sit on the same server as Nextcloud, the cockpit reads them from the
+disk in milliseconds, and every write goes through the WebDAV mount so Nextcloud sees it — a
+hundred reads over WebDAV take ten seconds, the same reads from the disk take ten milliseconds.
+
 ## The contract
 
 A module reports a **panel**: one state (`ok` · `attention` · `blocked`), one headline number,

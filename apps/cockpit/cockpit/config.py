@@ -44,6 +44,8 @@ class Source:
     mode: str = "read"
     include: tuple[str, ...] = ()
     sensitivity: str = "internal"
+    tools_path: Path | None = None   # where the tools write, when that differs from where the cockpit reads
+                                     # (read the disk, write through the post office — a WebDAV mount of the same files)
 
 
 @dataclass(frozen=True)
@@ -214,6 +216,7 @@ def load(path: Path) -> Config:
             mode=_choice(s.get("mode", "read"), MODES, where, "mode"),
             include=tuple(s.get("include", [])),
             sensitivity=_choice(s.get("sensitivity", "internal"), SENSITIVITY, where, "sensitivity"),
+            tools_path=_path(s["tools_path"], base) if s.get("tools_path") else None,
         )
 
     # --- modules ----------------------------------------------------------

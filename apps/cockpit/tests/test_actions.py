@@ -107,3 +107,46 @@ def test_a_script_not_released_from_its_source_does_not_run(world):
     role = replace(role, actions=("*",))
     with pytest.raises(Denied, match="not released"):
         actions.run(m, actions.find(m, "hidden"), {}, role)
+
+
+def test_tools_write_where_tools_path_says_while_the_cockpit_reads_path(tmp_path):
+    """Read the disk, write through the post office: COCKPIT_DATA_DIR is tools_path when it is set."""
+    tools = tmp_path / "tools"; tools.mkdir()
+    (tools / "where.py").write_text("import os\nprint(os.environ['COCKPIT_DATA_DIR'])\n", encoding="utf-8")
+    disk, mount = tmp_path / "disk", tmp_path / "mount"; disk.mkdir(); mount.mkdir()
+    cfg = tmp_path / "cockpit.toml"
+    cfg.write_text(f"""
+[cockpit]
+audit = "audit.jsonl"
+default_role = "operator"
+[[source]]
+id = "tools"
+path = "{tools}"
+include = ["where.py"]
+[[source]]
+id = "data"
+path = "{disk}"
+tools_path = "{mount}"
+mode = "read-write"
+[[module]]
+id = "m"
+reader = "x"
+sources = []
+  [[module.action]]
+  id = "where"
+  tool = "tools"
+  command = "where.py"
+  data = "data"
+[[role]]
+id = "operator"
+modules = ["*"]
+max_sensitivity = "internal"
+actions = ["*"]
+""", encoding="utf-8")
+    config = load(cfg)
+    assert config.sources["data"].tools_path == mount
+    audit = AuditLog(tmp_path / "audit.jsonl")
+    actions = Actions(config, Access(config, audit, {}), audit)
+    module = config.modules[0]
+    out = actions.run(module, actions.find(module, "where"), {}, config.roles["operator"])
+    assert out.ok and out.output.strip() == str(mount)

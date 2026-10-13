@@ -124,7 +124,7 @@ class Actions:
         env = dict(os.environ)
         data_src = self._access.source(action.data) if action.data else None
         if data_src:
-            env["COCKPIT_DATA_DIR"] = env["CONTEXT_LOOP_DIR"] = str(data_src.path.expanduser())
+            env["COCKPIT_DATA_DIR"] = env["CONTEXT_LOOP_DIR"] = str((data_src.tools_path or data_src.path).expanduser())
 
         feed = values.get(action.stdin, "") if action.stdin else None
         r = subprocess.run(argv, capture_output=True, text=True, env=env, timeout=120, input=feed)
