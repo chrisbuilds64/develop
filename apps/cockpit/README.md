@@ -114,6 +114,21 @@ and keys on the same id; with `people = "pipeline:people.json"` in `[cockpit]` t
 comes from the list, and `cockpit check` names a login that has no person. Add a person there
 first, then everywhere else.
 
+## Ideas
+
+A piece begins as an idea, and the pipeline page begins with them. The **idea** action
+(`idea_new.py --label FN --title … --by <person>`, the text on stdin) writes a seed container into
+`10-ideas`: `meta.json` with `"seed": true`, checked against `meta.schema.json` before anything
+is written, and `source.md` with the text. No number yet — `xxx` stands where the number will go
+(`FN-xxx-<slug>`; a series piece takes `<LABEL>-<SERIES>-xx-<slug>` and must name a series that
+has a head). The block lists every container in `10-ideas` with who entered it and the state of
+its newest run; a loose `.md` note dropped into the folder is listed too and opens as text.
+
+On an idea's page one button, **interpret**, orders the run (`run_request.py --skill interpret`).
+It is the first action declared with `stages: ["10-ideas"]` — a document action limited to the
+stage folders it names, so a button that belongs to one stage does not clutter the others.
+Series and calendar start folded on the page; the viewer's own fold state wins.
+
 ## Calendar
 
 The pipeline page shows the weeks around today with every piece that has a `publishDate` —

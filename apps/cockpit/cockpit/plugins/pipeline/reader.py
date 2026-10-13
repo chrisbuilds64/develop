@@ -332,21 +332,22 @@ def detail(access, role, module, config) -> dict:
             # The archive holds collections, not pieces: shown as a count, opened on demand.
             "collapsed": num == 0,
         })
-    blocks = []
+    blocks = [_ideas(access, role, src)]
     series_rows = _series_rows(access, role, src, _people(access, role, src))
     if series_rows:
-        blocks.append({"kind": "table", "title": "block.series",
+        blocks.append({"kind": "table", "title": "block.series", "open": False,
                        "columns": ["series.label", "series.title", "series.status", "series.editor", "series.progress"],
                        "rows": series_rows})
-    blocks.append(_calendar(access, role, src, columns))
+    blocks.append({**_calendar(access, role, src, columns), "open": False})
     blocks.append({"kind": "kanban", "title": "block.by_stage", "columns": columns, "filters": filters})
     runs = _runs(access, role, src)
     if runs:
-        blocks.append({"kind": "table", "title": "block.runs", "place": "actions", "columns": ["run.when", "run.skill", "run.container", "run.by", "run.status"],
+        blocks.append({"kind": "table", "title": "block.runs", "place": "actions", "columns": ["run.when", "run.skill", "run.container", "run.by", "run.status", "run.cost"],
                        "rows": [[r.get("created", "")[:16].replace("T", " "), "/" + r.get("skill", "?"),
                                  {"text": r.get("container", ""), "href": f"/m/pipeline/doc/{r.get('container', '')}"},
                                  r.get("requested_by", ""),
-                                 {"badge": r.get("status", "?"), "tone": {"done": "ok", "failed": "bad", "running": "warn"}.get(r.get("status"), "muted")}]
+                                 {"badge": r.get("status", "?"), "tone": {"done": "ok", "failed": "bad", "running": "warn"}.get(r.get("status"), "muted")},
+                                 (f"{r['cost_usd']:.2f} $" if isinstance(r.get("cost_usd"), (int, float)) else "")]
                                 for r in runs]})
     return {"blocks": blocks + [
         {"kind": "links", "title": "block.tools", "items": [
@@ -354,6 +355,57 @@ def detail(access, role, module, config) -> dict:
             {"label": "tool.folder", "href": f"file://{access.source(src).path.expanduser()}", "external": True},
         ]},
     ]}
+
+
+def _ideas(access, role, src) -> dict:
+    """The first block: every idea in 10-ideas — seed containers and loose notes — with its newest run.
+
+    This is where a piece begins. A container shows its tag, title, date and who entered it;
+    a loose .md file (a note someone dropped into the folder) is listed too, so nothing that
+    sits in 10-ideas is invisible. The last column says whether an interpretation was ordered
+    and how it went.
+    """
+    try:
+        names = [n for n in access.listdir(src, role, "10-ideas") if not n.startswith((".", "_"))]
+    except Exception:
+        return {"kind": "table", "title": "block.ideas", "columns": ["idea.piece", "idea.title", "idea.created", "idea.origin", "idea.run"], "rows": []}
+    last = _last_run_by_container(access, role, src)
+    rows = []
+    for name in sorted(names):
+        path = access.resolve(src, f"10-ideas/{name}", role)
+        href = f"/m/pipeline/doc/10-ideas/{name}"
+        if path.is_file():
+            if name.endswith(".md"):
+                rows.append([{"text": name, "href": href}, {"badge": "idea.file", "tone": "muted"}, "", "", ""])
+            continue
+        try:
+            meta = access.read_json(src, f"10-ideas/{name}/meta.json", role)
+        except Exception:
+            meta = {}
+        tag = " ".join(str(x) for x in (meta.get("label"), meta.get("number") or meta.get("series")) if x) or name.split("-", 1)[0]
+        run = last.get(f"10-ideas/{name}")
+        state = ({"badge": run.get("status", "?"), "tone": {"done": "ok", "failed": "bad", "running": "warn"}.get(run.get("status"), "muted")}
+                 if run else {"badge": "idea.none", "tone": "muted"})
+        rows.append([{"text": tag, "href": href}, meta.get("title") or meta.get("working_title") or name,
+                     str(meta.get("created") or "")[:10], str(meta.get("origin") or "")[:60], state])
+    return {"kind": "table", "title": "block.ideas", "columns": ["idea.piece", "idea.title", "idea.created", "idea.origin", "idea.run"], "rows": rows}
+
+
+def _last_run_by_container(access, role, src) -> dict[str, dict]:
+    """container → its newest order in _runs/. Ids sort by time, so the last one wins."""
+    out: dict[str, dict] = {}
+    try:
+        names = sorted(n for n in access.listdir(src, role, "_runs") if n.endswith(".json"))
+    except Exception:
+        return out
+    for n in names:
+        try:
+            run = access.read_json(src, f"_runs/{n}", role)
+        except Exception:
+            continue
+        if run.get("container"):
+            out[run["container"]] = run
+    return out
 
 
 def _runs(access, role, src, limit=12) -> list[dict]:
@@ -390,6 +442,10 @@ def document(access, role, module, config, ref) -> dict | None:
     if len(parts) != 2:
         return None
     stage, name = parts
+    if access.resolve(src, ref, role).is_file():
+        if not name.endswith(".md"):
+            return None
+        return {"title": name, "body": access.read_text(src, ref, role), "file": True}
     files = access.listdir(src, role, f"{stage}/{name}")
     meta = access.read_json(src, f"{stage}/{name}/meta.json", role) if "meta.json" in files else {}
     parts_md = [f"# {meta.get('title', name)}", ""]

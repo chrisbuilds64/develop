@@ -134,18 +134,22 @@ def test_run_request_queues_and_the_runner_executes_with_a_stub_claude(tmp_path)
 
     # a stand-in for claude: prints the prompt it got, as the json the real one prints
     stub = tmp_path / "claude"
-    stub.write_text('#!/bin/sh\nprintf \'{"result": "changed script.v2; open: nothing", "session_id": "s-1"}\'\n')
+    stub.write_text('#!/bin/sh\nprintf \'{"result": "changed script.v2; open: nothing", "session_id": "s-1", "total_cost_usd": 1.23456, "num_turns": 7, "duration_ms": 4500, '
+                    '"modelUsage": {"claude-haiku-4-5": {"costUSD": 0.01}, "claude-opus-5-5": {"costUSD": 1.2}}}\'\n')
     stub.chmod(0o755)
     r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],
                        capture_output=True, text=True)
     assert r.returncode == 0 and "done" in r.stdout, r.stdout + r.stderr
     data = json.loads(order.read_text())
     assert data["status"] == "done" and data["exit"] == 0 and data["session"] == "s-1" and data["result"].startswith("changed script.v2")
+    # the bill travels with the order: dollars, the model that did the work, turns, seconds
+    assert data["cost_usd"] == 1.2346 and data["model"] == "claude-opus-5-5" and data["turns"] == 7 and data["duration_s"] == 4.5
     assert (root / "_runs" / (order.stem + ".claim")).is_dir() and (root / "_runs" / (order.stem + ".log")).exists()
     # the session's rights are the policy's lines for this skill, nothing else
     head = (root / "_runs" / (order.stem + ".log")).read_text().splitlines()[1]
     assert f"--add-dir {root}" in head and "--allowedTools Bash(python3:*),Bash(mv:*)" in head and "WebFetch,WebSearch" in head
     assert "--permission-mode acceptEdits" in head and "Bash(git:*)" not in head
+    assert "--model claude-opus-5-5" in head                      # the policy's model for interpret
     review = (root / "30-review-human" / "POD-01" / "review.md").read_text()
     assert "## REV-001 — Run /interpret: done" in review and "changed script.v2" in review and "**Author:** Claude" in review
     # without a policy the runner runs nothing, and says so
@@ -210,3 +214,36 @@ def test_schedule_puts_a_piece_on_a_day_within_the_rhythm(tmp_path):
     (root / "40-asset-generation" / "POD-02").mkdir()
     (root / "40-asset-generation" / "POD-02" / "meta.json").write_text(json.dumps({"label": "POD", "title": "Two", "publishDate": "2026-10-06"}))
     assert "calendar: 2026-10-06 has 2 pieces" in run(root, "verify.py", "--all").stdout
+
+
+def test_idea_new_writes_a_seed_container_and_refuses_what_the_pipeline_does_not_know(tmp_path):
+    root = make(tmp_path)
+    (root / "10-ideas").mkdir()
+    (root / "meta.schema.json").write_text(json.dumps({
+        "required": ["label", "slug", "title"], "additionalProperties": False,
+        "properties": {"label": {"enum": ["FN", "POD", "SP", "WN"]}, "slug": {}, "title": {}, "working_title": {},
+                       "created": {"pattern": "^\\d{4}-\\d{2}-\\d{2}"}, "origin": {}, "seed": {"type": "boolean"}, "series": {}}}))
+    r = run(root, "idea_new.py", "--label", "fn", "--title", "  Über die   Grenze ", "--by", "Akhil", stdin="A process knows its limits.\n")
+    assert r.returncode == 0 and r.stdout.strip() == "created 10-ideas/FN-xxx-ueber-die-grenze — FN by Akhil"
+    folder = root / "10-ideas" / "FN-xxx-ueber-die-grenze"
+    meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
+    assert meta["label"] == "FN" and meta["slug"] == folder.name and meta["title"] == "Über die Grenze" and meta["seed"] is True
+    assert meta["origin"] == "entered by Akhil in the cockpit" and "series" not in meta
+    src = (folder / "source.md").read_text(encoding="utf-8")
+    assert src.startswith("# Source — Über die Grenze\n") and "## Core Concept\n\nA process knows its limits." in src
+    assert sorted(p.name for p in folder.iterdir()) == ["meta.json", "source.md"]
+
+    # refused: the same title twice, a label outside the list, a stranger, an empty text, a series without a head
+    assert "already exists" in run(root, "idea_new.py", "--label", "FN", "--title", "Über die Grenze", "--by", "akhil", stdin="x").stderr
+    assert "not one of" in run(root, "idea_new.py", "--label", "DAY", "--title", "Old", "--by", "akhil", stdin="x").stderr
+    assert "not in people.json" in run(root, "idea_new.py", "--label", "SP", "--title", "Who", "--by", "nobody", stdin="x").stderr
+    assert "text is empty" in run(root, "idea_new.py", "--label", "SP", "--title", "Empty", "--by", "akhil", stdin="  \n").stderr
+    assert "has no head" in run(root, "idea_new.py", "--label", "SP", "--title", "Ser", "--by", "akhil", "--series", "SIM", stdin="x").stderr
+    assert [p.name for p in (root / "10-ideas").iterdir()] == ["FN-xxx-ueber-die-grenze"]   # nothing refused left a trace
+
+    # a series piece carries the series and takes its place marker instead of xxx
+    (root / "series" / "SIM").mkdir(parents=True)
+    (root / "series" / "SIM" / "series.json").write_text('{"label": "SIM"}')
+    r = run(root, "idea_new.py", "--label", "SP", "--title", "Slot one", "--by", "chris", "--series", "sim", "--text", "inline text")
+    assert r.returncode == 0 and "10-ideas/SP-SIM-xx-slot-one" in r.stdout
+    assert json.loads((root / "10-ideas" / "SP-SIM-xx-slot-one" / "meta.json").read_text())["series"] == "SIM"

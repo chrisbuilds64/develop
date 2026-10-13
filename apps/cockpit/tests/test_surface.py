@@ -164,9 +164,45 @@ def test_the_series_block_and_page_show_where_the_pieces_stand(client, world):
 
 
 def test_the_calendar_shows_dated_pieces_free_slots_and_gaps(client, world):
+    # The calendar shows the weeks around today; the fixture's fixed dates drift out of that window,
+    # so the test dates its pieces relative to today (a planned one ahead, a published one behind).
+    import datetime as dt
+    today = dt.date.today()
+    for folder, delta in (("30-review-human/POD-ARC-02-the-arc-spoken", 3), ("60-published/FN-ARC-01-the-first-arc", -3)):
+        mp = world / "flow" / folder / "meta.json"
+        meta = json.loads(mp.read_text(encoding="utf-8")); meta["publishDate"] = (today + dt.timedelta(days=delta)).isoformat()
+        mp.write_text(json.dumps(meta, indent=2), encoding="utf-8")
     sign_in(client, "sam")
     board = client.get("/m/pipeline").text
     assert 'class="cal"' in board and "cal-piece planned" in board and "cal-piece published" in board
     assert "The Arc, Spoken" in board and "next free slots" in board and "gaps" in board
     page = client.get("/m/pipeline/doc/series/ARC").text
     assert "| date |" in page or "date" in page
+
+
+# ------------------------------------------------------------------- ideas
+
+def test_an_idea_is_entered_on_the_board_and_interpreted_from_its_page(client, world):
+    (world / "flow" / "10-ideas").mkdir(exist_ok=True)
+    (world / "flow" / "10-ideas" / "loose-note.md").write_text("# A note\n\nDropped into the folder.\n", encoding="utf-8")
+    sign_in(client, "alex")
+    board = client.get("/m/pipeline").text
+    assert 'action="/m/pipeline/a/idea"' in board and "loose-note.md" in board
+    r = client.post("/m/pipeline/a/idea", data={"label": "FN", "title": "A fresh idea", "series": "",
+                                                "text": "Where it comes from and why anyone cares.", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 200 and "created 10-ideas/FN-xxx-a-fresh-idea" in r.text
+    assert (world / "flow" / "10-ideas" / "FN-xxx-a-fresh-idea" / "source.md").exists()
+    assert "A fresh idea" in r.text and "idea.none" not in r.text and "no run yet" in r.text
+
+    # the idea page carries the one button; a piece in review does not, and a loose note has none
+    page = client.get("/m/pipeline/doc/10-ideas/FN-xxx-a-fresh-idea").text
+    assert 'a/interpret"' in page and "Start interpretation" in page
+    assert 'a/interpret"' not in client.get("/m/pipeline/doc/30-review-human/piece-30-01").text
+    note = client.get("/m/pipeline/doc/10-ideas/loose-note.md").text
+    assert "Dropped into the folder." in note and 'class="actions"' not in note
+
+    r = client.post("/m/pipeline/doc/10-ideas/FN-xxx-a-fresh-idea/a/interpret", data={"note": "", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 200 and "queued " in r.text and "_interpret_FN-xxx-a-fresh-idea" in r.text
+    orders = list((world / "flow" / "_runs").glob("*_interpret_FN-xxx-a-fresh-idea.json"))
+    assert len(orders) == 1 and json.loads(orders[0].read_text())["status"] == "queued"
+    assert "queued" in client.get("/m/pipeline").text                   # the board's ideas block shows the run

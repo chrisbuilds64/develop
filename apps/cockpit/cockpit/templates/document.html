@@ -11,7 +11,7 @@
   </div>
 
   {% set allowed = [] %}
-  {% for a in module.actions if a.scope == 'document' and role.may_act(module.id ~ '.' ~ a.id) %}{% set _ = allowed.append(a) %}{% endfor %}
+  {% for a in module.actions if a.scope == 'document' and role.may_act(module.id ~ '.' ~ a.id) and not doc.file and (not a.stages or doc.ref.split('/')[0] in a.stages) %}{% set _ = allowed.append(a) %}{% endfor %}
 
   {% if outcome %}
   <div class="outcome {{ 'ok' if outcome.ok else 'bad' }}">

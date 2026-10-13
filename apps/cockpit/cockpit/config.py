@@ -69,6 +69,7 @@ class Action:
     data: str | None = None          # a source id the tool works on (sets COCKPIT_DATA_DIR)
     scope: str = "module"            # "module": on the module page · "document": on a document page, with {ref}
     stdin: str | None = None         # name of a field whose value goes to the tool on stdin
+    stages: tuple[str, ...] = ()     # document: shown only on documents in these stage folders; empty = everywhere
 
 
 @dataclass(frozen=True)
@@ -178,6 +179,7 @@ def _action(a: dict, aw: str, sources: dict[str, Source]) -> Action:
         fields=fields, data=data,
         scope=_choice(a.get("scope", "module"), ("module", "document"), aw, "scope"),
         stdin=a.get("stdin"),
+        stages=tuple(a.get("stages", [])),
     )
 
 

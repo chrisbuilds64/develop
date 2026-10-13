@@ -238,5 +238,18 @@
   "calendar.none": "none",
   "calendar.planned": "planned",
   "calendar.published": "published",
-  "calendar.today": "today"
+  "calendar.today": "today",
+  "pipeline.idea": "New idea",
+  "field.idea_text": "The idea",
+  "field.series_opt": "Series (optional)",
+  "pipeline.interpret": "Start interpretation",
+  "block.ideas": "Ideas",
+  "idea.piece": "Piece",
+  "idea.title": "Working title",
+  "idea.created": "created",
+  "idea.origin": "Origin",
+  "idea.run": "Interpretation",
+  "idea.file": "Note (file)",
+  "idea.none": "no run yet",
+  "run.cost": "cost"
 }

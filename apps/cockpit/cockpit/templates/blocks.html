@@ -12,7 +12,7 @@
 {% macro block(b) %}
 <section class="block block-{{ b.kind }}">
   {# Every titled block folds; the open/closed state is kept per page in the browser (module.html). #}
-  {% if b.title %}<details class="fold" open data-fold="{{ b.title }}"><summary><h3>{{ t(b.title) if '.' in b.title else b.title }}</h3></summary>{% endif %}
+  {% if b.title %}<details class="fold"{% if b.open is not defined or b.open %} open{% endif %} data-fold="{{ b.title }}"><summary><h3>{{ t(b.title) if '.' in b.title else b.title }}</h3></summary>{% endif %}
 
   {% if b.kind == 'kanban' %}
   {% if b.filters %}

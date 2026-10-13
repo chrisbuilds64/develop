@@ -10,7 +10,7 @@ users = "users.json"
 people = "pipeline:people.json"          # the one list of persons: display names here, --by/--for in the tools
 secret = ".demo-secret"
 plugins = "plugins"
-stale_after_hours = 24
+stale_after_hours = 720   # a live directory scan is never stale (2026-10-07)
 
 # --- Sources: {user.context} is the signed-in user's Context Loop folder -------------
 [[source]]

@@ -49,6 +49,25 @@ def policy_for(policy: dict, skill: str) -> dict:
 WEB_TOOLS = ["WebFetch", "WebSearch"]
 
 
+def accounting(data: dict) -> dict:
+    """What the run cost, from Claude Code's JSON: dollars, the model that did the work, turns, seconds.
+
+    Every order carries its own bill from here on. Without this the number existed for a moment
+    on stdout and was gone; the one run of 2026-09-26 has no price for that reason.
+    """
+    out = {}
+    if isinstance(data.get("total_cost_usd"), (int, float)):
+        out["cost_usd"] = round(float(data["total_cost_usd"]), 4)
+    models = data.get("modelUsage") or {}
+    if isinstance(models, dict) and models:
+        out["model"] = max(models, key=lambda m: float((models[m] or {}).get("costUSD", 0) or 0))
+    if isinstance(data.get("num_turns"), int):
+        out["turns"] = data["num_turns"]
+    if isinstance(data.get("duration_ms"), (int, float)):
+        out["duration_s"] = round(float(data["duration_ms"]) / 1000, 1)
+    return out
+
+
 def command_for(run: dict, rules: dict, args) -> list[str]:
     """The headless session, shaped by the policy: what it may write, which tools, how long.
 
@@ -57,6 +76,8 @@ def command_for(run: dict, rules: dict, args) -> list[str]:
     subst = {"{data}": str(args.data), "{container}": str(args.data / run["container"])}
     cmd = [args.claude, "-p", prompt_for(run, rules.get("agent", "the agent")), "--output-format", "json",
            "--permission-mode", rules.get("permission_mode", "acceptEdits")]
+    if rules.get("model"):
+        cmd += ["--model", rules["model"]]                # the policy's choice per skill; without it, Claude Code's default
     for w in rules.get("write", []):
         cmd += ["--add-dir", subst.get(w, w)]           # writable beyond the workspace: named, per skill
     tools = list(rules.get("tools", [])) + (WEB_TOOLS if rules.get("web") else [])
@@ -109,10 +130,11 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
             code, stdout, stderr = r.returncode, r.stdout, r.stderr
         except subprocess.TimeoutExpired as exc:
             code, stdout, stderr = 124, (exc.stdout or ""), f"timed out after {timeout}s"
-        result, session = "", ""
+        result, session, spent = "", "", {}
         try:
             data = json.loads(stdout)
             result, session = str(data.get("result", "")), str(data.get("session_id", ""))
+            spent = accounting(data)
         except Exception:
             result = stdout.strip()[-1500:]
         out.write(result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
@@ -120,6 +142,7 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
                result=result.strip()[:4000])
     if session:
         run["session"] = session
+    run.update(spent)
     f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     # The record in the container: one review entry, info, in the runner's own words.

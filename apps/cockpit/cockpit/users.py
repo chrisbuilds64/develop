@@ -42,6 +42,10 @@ class Users:
         self._path = Path(path)
         self._secret_path = Path(secret_path)
         self._data = json.loads(self._path.read_text(encoding="utf-8")) if self._path.exists() else {"users": {}}
+        # Per instance, not per class: as class attributes these dicts were shared by every Users
+        # ever created in one process, so a lockout in one test world locked the name in the next.
+        self._fails: dict[str, list[float]] = {}
+        self._locked: dict[str, float] = {}
 
     # ---------------------------------------------------------------- store
     def save(self) -> None:
@@ -83,8 +87,6 @@ class Users:
         return hmac.compare_digest(digest, base64.b64decode(u["hash"]))
 
     # -------------------------------------------------------------- lockout
-    _fails: dict[str, list[float]] = {}
-    _locked: dict[str, float] = {}
 
     def locked_until(self, name: str) -> float | None:
         until = self._locked.get(name)

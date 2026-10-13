@@ -74,4 +74,6 @@ def document_for(reader, access, role: Role, module: Module, config: Config, ref
         out["files"] = doc["files"]
     if doc.get("cover"):
         out["cover"] = doc["cover"]
+    if doc.get("file"):
+        out["file"] = True                              # a loose file, not a container: shown, never acted on
     return out
