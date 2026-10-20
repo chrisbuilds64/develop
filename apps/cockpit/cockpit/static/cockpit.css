@@ -321,7 +321,7 @@ tr:last-child td { border-bottom: 0; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
 .tile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--surface); min-width: 0; }
 .tile:hover { border-color: var(--accent); }
-.tile .thumb { position: relative; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; background: var(--bg-2, #111); display: flex; align-items: center; justify-content: center; }
+.tile .thumb { position: relative; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; background: var(--surface-2); display: flex; align-items: center; justify-content: center; }
 .tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .tile svg { width: 46%; height: 46%; fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .tile svg .ln { stroke: var(--accent); }
@@ -477,7 +477,6 @@ input[type=date]::-webkit-calendar-picker-indicator { opacity: .7; cursor: point
 .pc-foot { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; align-self: start; margin-top: 2px; }
 .pc:not(:has(.pc-cover svg)) .pc-foot { grid-column: 1 / -1; }
 .pc-act { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
-.pc-act { display: flex; gap: 8px; align-items: center; }
 .pc-act .button { padding: 9px 18px; font-size: 14px; }
 .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-soft); vertical-align: 1px; animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
@@ -520,7 +519,6 @@ input[type=date]::-webkit-calendar-picker-indicator { opacity: .7; cursor: point
 .pgrid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); gap: 28px; align-items: start; }
 .pdraft h3, .pnotes h3, .pfiles h3, .phelpers h3, .precord h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
 .pfiles h3 .quiet { text-transform: none; letter-spacing: 0; font-weight: 500; margin-left: auto; }
-.precord { margin: 18px 0 0; }
 .prose { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px 32px; max-width: 72ch; font-size: 16px; line-height: 1.65; }
 .prose h1 { font-size: 24px; margin: 0 0 14px; letter-spacing: -.02em; } .prose h2 { font-size: 19px; margin: 24px 0 8px; } .prose h3 { font-size: 16px; margin: 20px 0 6px; }
 .prose p { margin: 0 0 14px; } .prose p:last-child { margin-bottom: 0; }
@@ -555,7 +553,7 @@ input[type=date]::-webkit-calendar-picker-indicator { opacity: .7; cursor: point
 .helper { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; font-size: 12px; color: var(--ink-2); }
 .helper.dim-helper { opacity: .55; }
 .phelpers { margin-top: 30px; }
-.precord { margin: -8px 0 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; }
+.precord { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; }
 .precord .kv { font-size: 13px; } .precord .kv dt { font-family: var(--mono); font-size: 12px; } .precord .kv dd { word-break: break-word; }
 /* the matrix: artifacts down, stages across */
 .matrixwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
