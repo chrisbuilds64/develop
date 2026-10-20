@@ -1,0 +1,13 @@
+{
+  "track": {
+    "standard": "#2f6fed",
+    "komplex": "#8a5cf6",
+    "eilig": "#d9534f"
+  },
+  "label": {
+    "KFZ": "Kfz-Schaden",
+    "HAUS": "Gebäudeschaden",
+    "HAFT": "Haftpflicht"
+  },
+  "fallback": "#5a6270"
+}

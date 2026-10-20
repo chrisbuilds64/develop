@@ -1,9 +1,10 @@
 {
   "label": "POD",
-  "series": "ARC",
   "number": "ARC-02",
-  "slug": "pod-arc-02-the-arc-spoken",
   "title": "The Arc, Spoken",
   "track": "deep-tech",
-  "publishDate": "2026-10-01"
+  "series": "ARC",
+  "publishDate": "2026-10-29",
+  "created": "2026-10-11",
+  "slug": "pod-arc-02-the-arc-spoken"
 }

@@ -20,6 +20,7 @@ people = "pipeline:people.json"          # the one list of persons: display name
 secret = ".cockpit-secret"
 plugins = "plugins"
 stale_after_hours = 24
+# home = "pipeline"          # the module the desk opens on after sign-in; without it, the overview
 # login_required = true     # inferred from users.json existing; write it down before going public
 # secure_cookies = true     # cookies only over TLS — set behind the reverse proxy
 # max_upload_mb = 50        # a file field larger than this is refused before it is written in full

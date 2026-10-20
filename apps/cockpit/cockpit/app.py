@@ -181,6 +181,9 @@ def create_app(config: Config) -> FastAPI:
         if (r := gate(request)):
             return r
         c = ctx(request)
+        # `home` in the config: the desk lands on that module; the workshop and the rail still reach the overview
+        if config.home and c["view"] == "desk" and find_module(config.home) and c["role"].may_open(config.home) and not request.query_params.get("all"):
+            return RedirectResponse(f"/m/{config.home}", status_code=303)
         c["cards"] = build_cards(config, c["_access"], c["role"])
         return templates.TemplateResponse(request, "index.html", c)
 
@@ -191,6 +194,16 @@ def create_app(config: Config) -> FastAPI:
         c = ctx(request)
         c["cards"] = build_cards(config, c["_access"], c["role"])
         return templates.TemplateResponse(request, "grid.html", c)
+
+    def _with_words(t, words: dict):
+        """The pipeline's vocabulary.json may say its own words for the desk's locale keys ("words": {key: text}).
+        A claims file calls a piece a case; the locale stays the fallback."""
+        if not words:
+            return t
+        def tt(key, **kw):
+            w = words.get(key)
+            return (w.format(**kw) if kw else w) if isinstance(w, str) else t(key, **kw)
+        return tt
 
     def desk_page(request: Request, c: dict, module, flash=None, flash_ok=True):
         """The creator's start page: pieces by what is next. Only a plugin that offers `desk` has one."""
@@ -205,6 +218,7 @@ def create_app(config: Config) -> FastAPI:
         except Exception as exc:
             desk = {"groups": [], "error": f"{type(exc).__name__}: {exc}"}
         c["module"], c["desk"], c["flash"], c["flash_ok"] = module, desk, flash, flash_ok
+        c["t"] = _with_words(c["t"], desk.get("words") or {})
         c["plugin"] = plugins_for(config).get(module.plugin)
         c["options"] = c["_actions"].options_for(module, c["role"])
         return templates.TemplateResponse(request, "desk.html", c)
@@ -221,7 +235,12 @@ def create_app(config: Config) -> FastAPI:
             piece = {"ref": ref, "title": ref, "error": str(exc), "files": [], "notes": [], "helpers": [], "runs": [], "open_for_me": []}
         if piece is None:
             return None
+        if piece.get("draft") and piece["draft"].get("text") is not None:
+            from .detail import render_md_safe
+            d = piece["draft"]
+            d["html"] = render_md_safe(d["text"]) if d.get("kind") == "md" else "<pre class='plain'>" + d["text"].replace("&", "&amp;").replace("<", "&lt;") + "</pre>"
         c["module"], c["piece"], c["outcome"], c["ran"] = module, piece, outcome, ran
+        c["t"] = _with_words(c["t"], (piece.get("words") or {}).get("ui") or {})
         c["options"] = c["_actions"].options_for(module, c["role"])
         c["flash"] = request.query_params.get("msg")
         c["flash_ok"] = request.query_params.get("ok") != "0"

@@ -123,6 +123,7 @@ class Config:
     lockout_minutes: int
     cache_seconds: int
     stale_after_hours: int
+    home: str | None                   # the module the desk opens on after sign-in; None = the overview
     people: tuple[str, str] | None     # (source id, file): the one list of persons — display names, check of logins
     sources: dict[str, Source]
     modules: list[Module]
@@ -343,6 +344,7 @@ def load(path: Path) -> Config:
         lockout_minutes=int(top.get("lockout_minutes", 15)),
         cache_seconds=int(top.get("cache_seconds", 15)),          # listings and small reads over a slow mount; 0 = off
         stale_after_hours=int(top.get("stale_after_hours", 24)),
+        home=(str(top["home"]) if top.get("home") else None),   # a module id: the desk lands there instead of the overview
         people=people,
         sources=sources,
         modules=modules,

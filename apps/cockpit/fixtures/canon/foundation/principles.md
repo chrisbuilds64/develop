@@ -3,7 +3,7 @@ path:        canon/foundation/principles.md
 type:        principles · canonical
 purpose:     The rules every domain follows.
 maintained:  the owner
-updated:     2026-08-28
+updated:     2026-09-20
 ```
 
 # Principles

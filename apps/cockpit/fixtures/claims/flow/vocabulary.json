@@ -1,0 +1,151 @@
+{
+  "de": {
+    "product": "Schadenakte",
+    "journey": {
+      "idea": "Eingang",
+      "work": "Aufbereitung",
+      "review": "Gutachten",
+      "visual": "Fotos",
+      "date": "Termin",
+      "out": "Abgeschlossen"
+    },
+    "words": {
+      "app.tagline": "Jeder Fall, vom Eingang bis zum Abschluss.",
+      "desk.lead.one": "Ein Fall wartet auf dich.",
+      "desk.lead.many": "{n} Fälle warten auf dich.",
+      "desk.lead.clear": "Kein Fall wartet auf dich.",
+      "desk.lead.sub": "Alle anderen laufen.",
+      "desk.new_piece": "Neuer Fall",
+      "desk.field.format": "Schadenart",
+      "desk.ph.title": "Kurzbezeichnung, z. B. Auffahrunfall A3, Golf VII",
+      "desk.ph.text": "Was ist passiert, wer meldet, was liegt schon vor",
+      "field.idea_text": "Die Schadenmeldung",
+      "desk.artifacts_have": "Was schon vorliegt",
+      "desk.act.keep": "Fall anlegen",
+      "desk.empty": "Noch kein Fall. Leg den ersten an.",
+      "desk.act.interpret": "Aufbereiten lassen",
+      "desk.act.to_review": "Zur Prüfung",
+      "desk.act.read": "Gutachten lesen",
+      "desk.act.approve": "Gutachten freigeben",
+      "desk.act.approve_image": "Fotos freigeben",
+      "desk.act.schedule": "Termin setzen",
+      "desk.act.published": "Abgeschlossen melden",
+      "desk.state.running": "wird gerade aufbereitet",
+      "desk.state.material": "Besichtigungsprotokoll liegt vor, der Rest fehlt",
+      "desk.state.open_notes": "{n} Rückfrage(n) an dich offen",
+      "desk.draft": "Das Gutachten",
+      "desk.no_text": "Noch kein Gutachten. Es entsteht im nächsten Schritt.",
+      "desk.notes": "Rückfragen",
+      "desk.notes_empty": "Keine Rückfragen.",
+      "desk.note.write": "Rückfrage stellen",
+      "desk.ask": "Den Sachbearbeiter-Agenten bitten",
+      "desk.nothing_now": "Gerade nichts zu tun — der Fall ist unterwegs.",
+      "desk.nameless": "{n} Akten ohne Deckblatt liegen in der Werkstatt."
+    },
+    "labels": {
+      "KFZ": "Kfz-Schaden",
+      "HAUS": "Gebäudeschaden",
+      "HAFT": "Haftpflichtfall"
+    },
+    "stages": {
+      "10-ideas": "Eingang",
+      "15-interpretation": "wird aufbereitet",
+      "20-produce": "wird aufbereitet",
+      "30-review-human": "Gutachten liegt vor",
+      "40-asset-generation": "beim Partner, Fotos",
+      "50-ready-to-publish": "fertig, Termin wählen",
+      "55-scheduled": "Termin steht",
+      "60-published": "abgeschlossen",
+      "61-field-observation": "abgeschlossen, Nachlauf"
+    },
+    "files": {
+      "source.md": "Schadenmeldung",
+      "interpretation.md": "Aufbereitung",
+      "substack.md": "Gutachten (Entwurf)",
+      "linkedin-post.txt": "Kurzbericht an den Versicherer",
+      "first-comment.txt": "Anschreiben",
+      "script.md": "Besichtigungsprotokoll",
+      "teleprompter.txt": "Gesprächsnotiz",
+      "show-notes.txt": "Anlagenverzeichnis",
+      "visual-brief.md": "Fotoauftrag",
+      "validation.md": "Prüfprotokoll",
+      "review.md": "Anmerkungen",
+      "meta.json": "Steckbrief",
+      "header-16x9.png": "Fotodokumentation",
+      "linkedin-image.png": "Fotodokumentation (Kurzbericht)"
+    },
+    "groups": {
+      "you": "Wartet auf dich",
+      "working": "In Prüfung",
+      "akhil": "Beim Fotopartner",
+      "planned": "Terminiert",
+      "ideas": "Eingang",
+      "out": "Abgeschlossen"
+    },
+    "helpers": {
+      "interpret": "Gutachten aufbereiten",
+      "canonical-review": "Qualitätsprüfung",
+      "reflect": "Beobachtung festhalten",
+      "derive": "Rest erzeugen",
+      "asset": "Fotos anfordern"
+    }
+  },
+  "en": {
+    "product": "Claims File",
+    "journey": {
+      "idea": "Received",
+      "work": "Preparation",
+      "review": "Assessment",
+      "visual": "Photos",
+      "date": "Date",
+      "out": "Closed"
+    },
+    "labels": {
+      "KFZ": "Motor claim",
+      "HAUS": "Building claim",
+      "HAFT": "Liability case"
+    },
+    "stages": {
+      "10-ideas": "received",
+      "15-interpretation": "being prepared",
+      "20-produce": "being prepared",
+      "30-review-human": "assessment ready",
+      "40-asset-generation": "with the partner, photos",
+      "50-ready-to-publish": "done, pick a date",
+      "55-scheduled": "date set",
+      "60-published": "closed",
+      "61-field-observation": "closed, follow-up"
+    },
+    "files": {
+      "source.md": "Claim notice",
+      "interpretation.md": "Preparation",
+      "substack.md": "Assessment (draft)",
+      "linkedin-post.txt": "Short report to the insurer",
+      "first-comment.txt": "Cover letter",
+      "script.md": "Inspection report",
+      "teleprompter.txt": "Call note",
+      "show-notes.txt": "List of enclosures",
+      "visual-brief.md": "Photo order",
+      "validation.md": "Check log",
+      "review.md": "Notes",
+      "meta.json": "Record",
+      "header-16x9.png": "Photo documentation",
+      "linkedin-image.png": "Photo documentation (short report)"
+    },
+    "groups": {
+      "you": "Waiting for you",
+      "working": "Under review",
+      "akhil": "With the photo partner",
+      "planned": "Dated",
+      "ideas": "Received",
+      "out": "Closed"
+    },
+    "helpers": {
+      "interpret": "Prepare the assessment",
+      "canonical-review": "Quality check",
+      "reflect": "Capture an observation",
+      "derive": "Produce the rest",
+      "asset": "Order photos"
+    }
+  }
+}

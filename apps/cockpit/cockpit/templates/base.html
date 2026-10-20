@@ -15,7 +15,7 @@
 {% if not export and (user or not config.login_required) %}
 {% from "glyphs.html" import glyph %}
 <nav class="rail" aria-label="modules">
-  <a href="/" class="rail-home{% if not current %} on{% endif %}" title="{{ t('app.overview') }}">{{ glyph('box') }}</a>
+  <a href="/?all=1" class="rail-home{% if not current %} on{% endif %}" title="{{ t('app.overview') }}">{{ glyph('box') }}</a>
   {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
   <a href="/m/{{ m.id }}" class="{% if current == m.id %}on{% endif %}" title="{{ t(m.id ~ '.title') }}" style="--m: {{ pl.accent if pl else '#3b82f6' }}">{{ glyph(pl.icon if pl else 'box') }}</a>
   {% endfor %}
@@ -29,8 +29,8 @@
   </div>
   {% if not export %}
   <div class="controls">
-    <label>{{ t('app.language') }}
-      <select onchange="location.href='/set?lang='+this.value">
+    <label><span class="lbl">{{ t('app.language') }}</span>
+      <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
         {% for code, name in languages %}
         <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>
         {% endfor %}

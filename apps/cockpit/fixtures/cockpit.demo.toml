@@ -11,6 +11,7 @@ people = "pipeline:people.json"          # the one list of persons: display name
 secret = ".demo-secret"
 plugins = "plugins"
 stale_after_hours = 720   # a live directory scan is never stale (2026-10-07)
+home = "pipeline"         # after sign-in the desk lands on PressRoom; the overview is one click away
 
 # --- Sources: {user.context} is the signed-in user's Context Loop folder -------------
 [[source]]

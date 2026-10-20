@@ -13,6 +13,7 @@ a broken detail becomes one error block, never a broken page. Markdown in a
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import markdown
@@ -23,6 +24,15 @@ from .schema import check
 
 SCHEMA_PATH = Path(__file__).parent / "schemas" / "detail.schema.json"
 _MD = markdown.Markdown(extensions=["tables", "fenced_code", "sane_lists"])
+
+
+def render_md_safe(text: str) -> str:
+    """Markdown from a file a partner may have put into the folder: raw HTML is shown as text, not run,
+    and a link may not carry a script. Everything Markdown itself produces (headings, lists, emphasis,
+    links to http) survives."""
+    import html as _html
+    out = render_md(_html.escape(text, quote=False))
+    return re.sub(r'(href|src)=(["\'])\s*(javascript|data|vbscript):', r'\1=\2#', out, flags=re.I)
 
 
 def render_md(text: str) -> str:

@@ -15,6 +15,11 @@
       "id": "claude",
       "name": "Claude",
       "kind": "agent"
+    },
+    {
+      "id": "maya",
+      "name": "Maya",
+      "kind": "human"
     }
   ]
 }

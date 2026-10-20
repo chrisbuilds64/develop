@@ -1,0 +1,26 @@
+{
+  "label": "HGL",
+  "title": "Hagelereignis Raum Beispielstadt",
+  "spine": "Ein Unwetter, drei Fälle: Halle, Reihenhaus, Fahrzeug.",
+  "status": "running",
+  "editor": "alex",
+  "sourced_by": [
+    "alex",
+    "sam"
+  ],
+  "created": "2026-09-25",
+  "pieces": [
+    {
+      "ref": "HAUS-HGL-01",
+      "role": "Gewerbe"
+    },
+    {
+      "ref": "HAUS-HGL-02",
+      "role": "Wohngebäude"
+    },
+    {
+      "ref": "KFZ-HGL-03",
+      "role": "Fahrzeug"
+    }
+  ]
+}

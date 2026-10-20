@@ -1,44 +1,66 @@
 {% extends "base.html" %}
-{% from "glyphs.html" import glyph %}
-{# The desk: the creator's start page. Pieces grouped by what is next for the person, one button each.
-   The machine's names stay in the workshop (module.html); here the vocabulary speaks. #}
+{# The desk: the creator's start page. One sentence says what waits; shelves of pieces follow, each piece
+   a cover, a state sentence, the six-step path and one button. The machine's names stay in the workshop. #}
+{% macro word(w) %}{{ t(w) if '.' in w else w }}{% endmacro %}
+{% macro path(steps, cls='') %}
+  <ol class="path {{ cls }}" aria-label="{{ t('desk.you_are_here') }}">
+    {% for s in steps %}<li class="{{ s.state }}" title="{{ word(s.word) }}"><i></i>{% if cls == 'big' %}<span>{{ word(s.word) }}</span>{% endif %}</li>{% endfor %}
+  </ol>
+{% endmacro %}
 {% macro act(card) %}
   {% set a = card.action %}
   {% if a %}
     {% if a.kind == 'link' %}
-      <a class="button small" href="{{ a.href }}">{{ t(a.label) }}</a>
+      <a class="button" href="{{ a.href }}">{{ t(a.label) }}</a>
     {% elif a.module %}
       <form method="post" action="/m/{{ module.id }}/a/{{ a.action }}" class="inline">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
         <input type="hidden" name="container" value="{{ card.ref.split('/')[1] }}">
         {% for k, v in a.fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
-        <button class="button small">{{ t(a.label) }}</button>
+        <button class="button">{{ t(a.label) }}</button>
       </form>
     {% elif a.action == 'schedule' %}
       <form method="post" action="/m/{{ module.id }}/doc/{{ card.ref }}/a/schedule" class="inline">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
-        <input type="date" name="date" required><button class="button small">{{ t(a.label) }}</button>
+        <input type="date" name="date" required aria-label="{{ t('field.date') }}"><button class="button">{{ t(a.label) }}</button>
       </form>
     {% else %}
       <form method="post" action="/m/{{ module.id }}/doc/{{ card.ref }}/a/{{ a.action }}" class="inline">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
         {% for k, v in a.fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
-        <button class="button small">{{ t(a.label) }}</button>
+        <button class="button">{{ t(a.label) }}</button>
       </form>
     {% endif %}
+  {% else %}
+    <a class="quiet" href="{{ card.href }}">{{ t('app.open') }} →</a>
   {% endif %}
+{% endmacro %}
+{% macro card(c) %}
+  <article class="pc{% if c.run and c.run.status == 'running' %} pc-running{% endif %}">
+    <a class="pc-cover" href="{{ c.href }}" tabindex="-1" aria-hidden="true">{{ c.cover|safe }}</a>
+    <div class="pc-body">
+      <div class="pc-format">{{ c.format }}{% if c.series %} · {{ c.series }}{% endif %}{% if c.date %} · {{ c.date }}{% endif %}</div>
+      <h4 class="pc-title"><a href="{{ c.href }}">{{ c.title }}</a></h4>
+      <p class="pc-state">{{ t(c.state, n=c.n) if '.' in c.state else c.state }}{% if c.run and c.run.status == 'running' %} <span class="pulse" aria-hidden="true"></span>{% endif %}</p>
+    </div>
+    <div class="pc-foot">
+      {{ path(c.path) }}
+      <div class="pc-act">{{ act(c) }}</div>
+    </div>
+  </article>
 {% endmacro %}
 {% block main %}
 <div class="desk">
-  <div class="desk-head">
-    <div>
-      <h2>{{ t('desk.title') }}</h2>
-      <p class="stamp">{{ t('desk.subtitle') }}</p>
+  <header class="dhead">
+    <div class="dlead">
+      <p class="dday">{{ desk.product }} · {{ desk.today }}</p>
+      <h2>{% if desk.waiting == 1 %}{{ t('desk.lead.one') }}{% elif desk.waiting %}{{ t('desk.lead.many', n=desk.waiting) }}{% else %}{{ t('desk.lead.clear') }}{% endif %}</h2>
+      <p class="dsub">{{ t('desk.lead.sub') }}</p>
     </div>
-    <div class="desk-switch">
-      <a class="button ghost small" href="/set?view=werkstatt">{{ t('desk.workshop') }} →</a>
+    <div class="dtools">
+      <a class="quiet" href="/set?view=werkstatt">{{ t('desk.workshop') }} →</a>
     </div>
-  </div>
+  </header>
 
   {% if flash %}<div class="flash {{ '' if flash_ok else 'bad' }}">{{ flash }}</div>{% endif %}
   {% if desk.error %}<div class="flash bad">{{ desk.error }}</div>{% endif %}
@@ -47,7 +69,7 @@
   {% if idea and role.may_act(module.id ~ '.idea') %}
   {% set a = idea[0] %}
   <details class="newidea" {% if not desk.groups or (flash and not flash_ok) %}open{% endif %}>
-    <summary><span class="plus">+</span> {{ t('desk.new_piece') }}</summary>
+    <summary><span class="plus" aria-hidden="true">+</span> {{ t('desk.new_piece') }}</summary>
     <form class="action" method="post" action="/m/{{ module.id }}/a/idea" enctype="multipart/form-data">
       <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
       <div class="row">
@@ -67,7 +89,7 @@
         {% endfor %}
         </div>
       </fieldset>
-      <button type="submit">{{ t('desk.act.keep') }}</button>
+      <button type="submit" class="button">{{ t('desk.act.keep') }}</button>
     </form>
     <script>
       // The format decides what a piece may begin with and which artifacts it collects (artifacts.json).
@@ -88,23 +110,19 @@
   {% endif %}
 
   {% for g in desk.groups %}
-  <section class="dgroup dgroup-{{ g.id }}">
-    <h3>{{ t('desk.group.' ~ g.id) }} <span class="count">{{ g.cards|length }}</span></h3>
-    <div class="dcards">
-      {% for c in g.cards %}
-      <article class="dcard">
-        {% if c.cover %}<a class="dcover" href="{{ c.href }}">{{ c.cover|safe }}</a>{% endif %}
-        <div class="dbody">
-          <div class="dformat">{{ c.format }}{% if c.series %} · {{ c.series }}{% endif %}{% if c.date %} · {{ c.date }}{% endif %}</div>
-          <div class="dtitle"><a href="{{ c.href }}">{{ c.title }}</a></div>
-          <div class="dstate">{{ t(c.state, n=c.n) if '.' in c.state else c.state }}{% if c.run and c.run.status == 'running' %} · {{ t('desk.since') }}{% endif %}</div>
-        </div>
-        <div class="dact">{{ act(c) }}</div>
-      </article>
-      {% endfor %}
-    </div>
+  {% if g.id == 'out' %}
+  <details class="shelf shelf-out">
+    <summary><h3>{{ word(g.word) }} <span class="count">{{ g.cards|length }}</span></h3><span class="quiet">{{ t('desk.show_all') }}</span></summary>
+    <div class="shelf-row">{% for c in g.cards %}{{ card(c) }}{% endfor %}</div>
+  </details>
+  {% else %}
+  <section class="shelf shelf-{{ g.id }}">
+    <h3>{{ word(g.word) }} <span class="count">{{ g.cards|length }}</span></h3>
+    <div class="shelf-row">{% for c in g.cards %}{{ card(c) }}{% endfor %}</div>
   </section>
+  {% endif %}
   {% endfor %}
   {% if not desk.groups %}<p class="hint">{{ t('desk.empty') }}</p>{% endif %}
+  {% if desk.nameless %}<p class="hint dnameless">{{ t('desk.nameless', n=desk.nameless) }} <a class="quiet" href="/set?view=werkstatt">{{ t('desk.workshop') }} →</a></p>{% endif %}
 </div>
 {% endblock %}

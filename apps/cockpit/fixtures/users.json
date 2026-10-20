@@ -4,15 +4,15 @@
       "role": "operator",
       "context": "home/alex/context",
       "display": "alex",
-      "salt": "hytsfLfGXiF2X+52SnVobw==",
-      "hash": "FWP9BBJJaUSHUuhSVlFYV5JXASf28+fD2JvLfO52bTA="
+      "salt": "aS54So5olfktE5HpIc8jPQ==",
+      "hash": "y+TQ17ErcXHUSjxo09EYIL4fI8sBhd+CTplDkG8nmzc="
     },
     "sam": {
       "role": "guest",
       "context": "home/sam/context",
       "display": "sam",
-      "salt": "D9m3w/1LQdj2UfbaC6caQw==",
-      "hash": "DleT1UPK+cOGuLsMMNNbXfXOlAJJzhatFdtenmxqQdU="
+      "salt": "xu+GaN243oau0J1rLAOOUA==",
+      "hash": "EEkWr7NVbCKWcY5eKdE3DVsTs+QKKQGFruEi7HuZPIY="
     }
   }
 }

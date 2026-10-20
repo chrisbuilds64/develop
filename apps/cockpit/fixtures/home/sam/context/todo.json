@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "meta": {
     "title": "Work list",
-    "updated": "2026-09-27",
+    "updated": "2026-10-20",
     "defaultAssignee": "me"
   },
   "lov": {
@@ -111,9 +111,9 @@
       "status": "doing",
       "priority": "high",
       "assignee": "me",
-      "due": "2026-09-30",
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "due": "2026-10-23",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -126,9 +126,9 @@
       "status": "next",
       "priority": "high",
       "assignee": "me",
-      "due": "2026-10-03",
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "due": "2026-10-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -142,8 +142,8 @@
       "priority": "medium",
       "assignee": "me",
       "due": null,
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -156,9 +156,9 @@
       "status": "next",
       "priority": "high",
       "assignee": "me",
-      "due": "2026-09-25",
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "due": "2026-10-18",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -172,8 +172,8 @@
       "priority": "high",
       "assignee": "vendor",
       "due": null,
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -190,8 +190,8 @@
       "priority": "high",
       "assignee": "me",
       "due": null,
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -205,8 +205,8 @@
       "priority": "low",
       "assignee": "me",
       "due": null,
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -220,13 +220,13 @@
       "priority": "high",
       "assignee": "me",
       "due": null,
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
       },
-      "closed": "2026-09-25"
+      "closed": "2026-10-18"
     },
     {
       "id": "SLS-02",
@@ -235,9 +235,9 @@
       "status": "next",
       "priority": "medium",
       "assignee": "me",
-      "due": "2026-10-09",
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "due": "2026-11-01",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -251,8 +251,8 @@
       "priority": "medium",
       "assignee": "vendor",
       "due": null,
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
@@ -266,13 +266,13 @@
       "priority": "medium",
       "assignee": "me",
       "due": null,
-      "created": "2026-09-07",
-      "updated": "2026-09-26",
+      "created": "2026-09-30",
+      "updated": "2026-10-19",
       "source": {
         "kind": "session",
         "ref": "demo"
       },
-      "closed": "2026-09-22"
+      "closed": "2026-10-15"
     }
   ]
 }
