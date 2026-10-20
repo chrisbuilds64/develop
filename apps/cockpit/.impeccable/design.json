@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-20T19:38:58Z",
+  "title": "Design System: PressRoom Cockpit",
+  "extensions": {
+    "colorMeta": {
+      "ground": { "role": "neutral", "displayName": "Ground", "canonical": "#030712", "tonalRamp": ["#030712", "#0b1220", "#111a2e", "#1e293b", "#334155", "#64748b", "#94a3b8", "#f1f5f9"] },
+      "slate": { "role": "neutral", "displayName": "Slate", "canonical": "#0b1220", "tonalRamp": ["#030712", "#0b1220", "#111a2e", "#1e293b", "#334155", "#64748b", "#94a3b8", "#f1f5f9"] },
+      "slate-raised": { "role": "neutral", "displayName": "Slate Raised", "canonical": "#111a2e", "tonalRamp": ["#030712", "#0b1220", "#111a2e", "#1e293b", "#334155", "#64748b", "#94a3b8", "#f1f5f9"] },
+      "line": { "role": "neutral", "displayName": "Line", "canonical": "#1e293b", "tonalRamp": ["#030712", "#0b1220", "#111a2e", "#1e293b", "#334155", "#64748b", "#94a3b8", "#f1f5f9"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#f1f5f9", "tonalRamp": ["#030712", "#0b1220", "#111a2e", "#1e293b", "#334155", "#64748b", "#94a3b8", "#f1f5f9"] },
+      "ink-quiet": { "role": "neutral", "displayName": "Ink Quiet", "canonical": "#94a3b8", "tonalRamp": ["#030712", "#0b1220", "#111a2e", "#1e293b", "#334155", "#64748b", "#94a3b8", "#f1f5f9"] },
+      "ink-faint": { "role": "neutral", "displayName": "Ink Faint", "canonical": "#64748b", "tonalRamp": ["#030712", "#0b1220", "#111a2e", "#1e293b", "#334155", "#64748b", "#94a3b8", "#f1f5f9"] },
+      "accent": { "role": "primary", "displayName": "Accent Blue", "canonical": "#3b82f6", "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] },
+      "accent-soft": { "role": "primary", "displayName": "Accent Soft", "canonical": "#60a5fa", "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] },
+      "accent-ink": { "role": "primary", "displayName": "Accent Ink", "canonical": "#ffffff", "tonalRamp": ["#030712", "#1e293b", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9", "#ffffff"] },
+      "ok": { "role": "tertiary", "displayName": "Ok Green", "canonical": "#22c55e", "tonalRamp": ["#052e16", "#14532d", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#dcfce7"] },
+      "warn": { "role": "tertiary", "displayName": "Warn Amber", "canonical": "#f59e0b", "tonalRamp": ["#451a03", "#78350f", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fef3c7"] },
+      "bad": { "role": "tertiary", "displayName": "Bad Red", "canonical": "#ef4444", "tonalRamp": ["#450a0a", "#7f1d1d", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"] },
+      "light-ground": { "role": "neutral", "displayName": "Light Ground", "canonical": "#f8fafc", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f1f5f9", "#f8fafc"] },
+      "light-slate": { "role": "neutral", "displayName": "Light Slate", "canonical": "#ffffff", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f1f5f9", "#ffffff"] },
+      "light-slate-raised": { "role": "neutral", "displayName": "Light Slate Raised", "canonical": "#f1f5f9", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f1f5f9", "#f8fafc"] },
+      "light-line": { "role": "neutral", "displayName": "Light Line", "canonical": "#e2e8f0", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f1f5f9", "#f8fafc"] },
+      "light-ink": { "role": "neutral", "displayName": "Light Ink", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f1f5f9", "#f8fafc"] },
+      "light-ink-quiet": { "role": "neutral", "displayName": "Light Ink Quiet", "canonical": "#475569", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f1f5f9", "#f8fafc"] },
+      "light-ink-faint": { "role": "neutral", "displayName": "Light Ink Faint", "canonical": "#94a3b8", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f1f5f9", "#f8fafc"] },
+      "cover-deep-tech": { "role": "secondary", "displayName": "Cover: Deep Tech", "canonical": "#2f6fed", "tonalRamp": ["#0b1a3f", "#132d6e", "#1c449e", "#2659c6", "#2f6fed", "#5c8ff1", "#8eb1f6", "#d6e2fc"] },
+      "cover-provocative": { "role": "secondary", "displayName": "Cover: Provocative", "canonical": "#e0a52a", "tonalRamp": ["#3d2a05", "#6b490c", "#9a6a12", "#c6881d", "#e0a52a", "#e8ba58", "#f0d08a", "#faeecf"] },
+      "cover-business": { "role": "secondary", "displayName": "Cover: Business", "canonical": "#2fa36b", "tonalRamp": ["#062b1a", "#0d4a2e", "#166b43", "#218757", "#2fa36b", "#58b98a", "#8ccfae", "#d4eee0"] },
+      "cover-weekend-notes": { "role": "secondary", "displayName": "Cover: Weekend Notes", "canonical": "#8a5cf6", "tonalRamp": ["#22103f", "#3c1d72", "#562ea3", "#7045cf", "#8a5cf6", "#a582f8", "#c1a8fa", "#e8dffd"] },
+      "cover-fallback": { "role": "secondary", "displayName": "Cover: Fallback", "canonical": "#5a6270", "tonalRamp": ["#15181c", "#262b31", "#383e46", "#4a515c", "#5a6270", "#7c838f", "#a3a9b2", "#e1e3e7"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The desk lead sentence and the piece title. 24px under 640px." },
+      "headline": { "displayName": "Headline", "purpose": "The brand name in the top bar." },
+      "title": { "displayName": "Title", "purpose": "A piece's title on a shelf; 18px on the first shelf." },
+      "body": { "displayName": "Body", "purpose": "Default text; state sentences 14px, kind lines 12.5px, hints 13px." },
+      "prose": { "displayName": "Prose", "purpose": "The draft read in the page, max 72ch." },
+      "label": { "displayName": "Label", "purpose": "Uppercase tracked section labels: workshop blocks and piece-page subsections." },
+      "shelf": { "displayName": "Shelf heading", "purpose": "Sentence-case desk section heading with a tabular count." },
+      "mono": { "displayName": "Mono", "purpose": "File names, record keys, the label code on a cover." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.35)", "purpose": "Workshop cards and the approval visual; becomes 0 1px 2px rgba(15,23,42,.06) in light mode." },
+      { "name": "cover-shelf", "value": "0 6px 18px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.06) inset", "purpose": "A cover on a desk shelf." },
+      { "name": "cover-shelf-hover", "value": "0 12px 26px rgba(0,0,0,.5)", "purpose": "Cover on card hover, with a 3px lift." },
+      { "name": "cover-head", "value": "0 10px 28px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.06) inset", "purpose": "The 120x160 cover on the piece head." },
+      { "name": "cover-workshop-small", "value": "0 1px 4px rgba(0,0,0,.4)", "purpose": "56px cover on a kanban card (older)." },
+      { "name": "cover-workshop-doc", "value": "0 2px 10px rgba(0,0,0,.45)", "purpose": "120px cover on the workshop document head (older)." },
+      { "name": "current-dot-ring", "value": "0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)", "purpose": "The lit step on the path." },
+      { "name": "login-card", "value": "0 20px 60px rgba(0,0,0,.35)", "purpose": "One-off on the login card." }
+    ],
+    "motion": [
+      { "name": "cover-lift", "value": "transform .2s cubic-bezier(.2,.7,.2,1), box-shadow .2s ease", "purpose": "A cover rises 3px when its card is hovered." },
+      { "name": "border-shift", "value": "border-color .15s ease", "purpose": "Card and kanban card hover." },
+      { "name": "pulse", "value": "pulse 1.6s ease-in-out infinite (opacity .35 to 1)", "purpose": "The dot after a state sentence while a helper runs." },
+      { "name": "fold-marker", "value": "transform .15s", "purpose": "Workshop fold chevron rotation." },
+      { "name": "rise", "value": "rise .5s cubic-bezier(.2,.8,.2,1)", "purpose": "Login card and intro entrance; intro honours prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "900px" },
+      { "name": "sm", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one filled action a piece carries. Pill, accent, white 600 text.",
+      "html": "<a class=\"ds-btn\" href=\"#\">Freigeben</a>",
+      "css": ".ds-btn { display: inline-block; font-family: var(--font, Inter, sans-serif); font-weight: 600; font-size: 14px; color: var(--accent-ink, #fff); background: var(--accent, #3b82f6); border: 0; border-radius: var(--pill, 999px); padding: 9px 18px; text-decoration: none; cursor: pointer; } .ds-btn:hover { filter: brightness(1.1); } .ds-btn:focus-visible { outline: 2px solid var(--accent-soft, #60a5fa); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "A secondary action with a box: transparent, ink text, line border.",
+      "html": "<a class=\"ds-btn-ghost\" href=\"#\">Antworten · 2</a>",
+      "css": ".ds-btn-ghost { display: inline-block; font-family: var(--font, Inter, sans-serif); font-weight: 600; font-size: 14px; color: var(--ink, #f1f5f9); background: transparent; border: 1px solid var(--line, #1e293b); border-radius: var(--pill, 999px); padding: 9px 18px; text-decoration: none; cursor: pointer; } .ds-btn-ghost:hover { border-color: var(--ink-3, #64748b); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--accent-soft, #60a5fa); outline-offset: 2px; }"
+    },
+    {
+      "name": "Quiet Link",
+      "kind": "button",
+      "refersTo": "quiet-link",
+      "description": "Every secondary action on the desk: plain quiet text, underline on hover.",
+      "html": "<a class=\"ds-quiet\" href=\"#\">Werkstatt →</a>",
+      "css": ".ds-quiet { font-family: var(--font, Inter, sans-serif); font-size: 13px; color: var(--ink-2, #94a3b8); background: none; border: 0; padding: 0; text-decoration: none; cursor: pointer; } .ds-quiet:hover { color: var(--ink, #f1f5f9); text-decoration: underline; } .ds-quiet:focus-visible { outline: 2px solid var(--accent-soft, #60a5fa); outline-offset: 2px; }"
+    },
+    {
+      "name": "Six-dot Path (small)",
+      "kind": "custom",
+      "refersTo": "path",
+      "description": "Six steps as dots and connectors: hollow ahead, filled done, accent with a ring for the current one.",
+      "html": "<ol class=\"ds-path\" aria-label=\"Du bist hier\"><li class=\"done\"><i></i></li><li class=\"done\"><i></i></li><li class=\"current\"><i></i></li><li><i></i></li><li><i></i></li><li><i></i></li></ol>",
+      "css": ".ds-path { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; } .ds-path li { position: relative; display: flex; align-items: center; } .ds-path li i { display: block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink-3, #64748b); background: transparent; box-sizing: border-box; } .ds-path li.done i { background: var(--ink-3, #64748b); } .ds-path li.current i { width: 14px; height: 14px; background: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #3b82f6) 25%, transparent); } .ds-path li + li::before { content: ''; display: block; width: 14px; height: 2px; background: var(--line, #1e293b); margin: 0 1px; } .ds-path li.done + li::before, .ds-path li.current::before { background: var(--ink-3, #64748b); }"
+    },
+    {
+      "name": "Six-dot Path (big)",
+      "kind": "custom",
+      "refersTo": "path-big",
+      "description": "The piece-page stepper: six labelled columns, the current step holds the one button.",
+      "html": "<ol class=\"ds-path-big\"><li class=\"done\"><i></i><span>Idee</span></li><li class=\"done\"><i></i><span>Ausarbeitung</span></li><li class=\"current\"><i></i><span>Durchsicht</span><div class=\"ds-jact\"><a class=\"ds-btn\" href=\"#\">Freigeben</a></div></li><li><i></i><span>Bild</span></li><li><i></i><span>Termin</span></li><li><i></i><span>Draußen</span></li></ol>",
+      "css": ".ds-path-big { list-style: none; margin: 0; padding: 22px 24px 20px; display: grid; grid-template-columns: repeat(6, 1fr); background: var(--surface, #0b1220); border: 1px solid var(--line, #1e293b); border-radius: var(--radius, 12px); font-family: var(--font, Inter, sans-serif); } .ds-path-big li { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; } .ds-path-big li i { display: block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink-3, #64748b); box-sizing: border-box; } .ds-path-big li.done i { background: var(--ink-3, #64748b); } .ds-path-big li.current i { width: 18px; height: 18px; background: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #3b82f6) 25%, transparent); } .ds-path-big li + li::before { content: ''; position: absolute; left: -100%; top: 7px; width: calc(100% - 22px); margin-left: 20px; height: 2px; background: var(--line, #1e293b); } .ds-path-big li.done + li::before, .ds-path-big li.current::before { background: var(--ink-3, #64748b); } .ds-path-big li span { font-size: 13px; font-weight: 600; color: var(--ink-3, #64748b); } .ds-path-big li.done span { color: var(--ink-2, #94a3b8); } .ds-path-big li.current span { color: var(--ink, #f1f5f9); font-size: 15px; font-weight: 700; } .ds-jact { margin-top: 6px; } .ds-btn { display: inline-block; font-weight: 600; font-size: 15px; color: var(--accent-ink, #fff); background: var(--accent, #3b82f6); border-radius: var(--pill, 999px); padding: 10px 20px; text-decoration: none; } .ds-btn:hover { filter: brightness(1.1); } .ds-btn:focus-visible { outline: 2px solid var(--accent-soft, #60a5fa); outline-offset: 2px; }"
+    },
+    {
+      "name": "Piece Card",
+      "kind": "card",
+      "refersTo": "piece-card",
+      "description": "A piece on a shelf: cover as object on the bare ground, title, kind line, state sentence, path and one button. No box.",
+      "html": "<article class=\"ds-pc\"><a class=\"ds-pc-cover\" href=\"#\" tabindex=\"-1\" aria-hidden=\"true\"><svg viewBox=\"0 0 96 128\" width=\"92\" height=\"123\" role=\"img\"><rect width=\"96\" height=\"128\" rx=\"8\" fill=\"#2f6fed\"/><defs><linearGradient id=\"dsg\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff\"/><stop offset=\"1\" stop-color=\"#000\"/></linearGradient></defs><rect width=\"96\" height=\"128\" rx=\"8\" fill=\"url(#dsg)\" opacity=\".35\"/><g transform=\"translate(9.6 9.6) scale(.9)\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\".9\"><path d=\"M9 8h10M9 13h10M9 18h6\"/></g><text x=\"86.4\" y=\"28.8\" text-anchor=\"end\" font-family=\"ui-monospace, Menlo, monospace\" font-size=\"10.5\" fill=\"#fff\" opacity=\".85\">FN</text><text x=\"9.6\" y=\"71.7\" font-family=\"Inter, sans-serif\" font-weight=\"800\" font-size=\"28.8\" fill=\"#fff\">071</text><text x=\"9.6\" y=\"89.6\" font-family=\"Inter, sans-serif\" font-size=\"10\" fill=\"#fff\" opacity=\".92\">Der Prozess ist</text><text x=\"9.6\" y=\"102\" font-family=\"Inter, sans-serif\" font-size=\"10\" fill=\"#fff\" opacity=\".92\">das Produkt</text><rect x=\"0\" y=\"112.6\" width=\"96\" height=\"15.4\" fill=\"#000\" opacity=\".28\"/><text x=\"9.6\" y=\"123.2\" font-family=\"ui-monospace, Menlo, monospace\" font-size=\"9.6\" fill=\"#fff\">SIM</text></svg></a><div class=\"ds-pc-body\"><h4 class=\"ds-pc-title\"><a href=\"#\">Der Prozess ist das Produkt</a></h4><p class=\"ds-pc-kind\">Field Note · SIM · vor 3 Tagen</p><p class=\"ds-pc-state\">Der Entwurf wartet auf deine Durchsicht.</p></div><div class=\"ds-pc-foot\"><ol class=\"ds-path\"><li class=\"done\"><i></i></li><li class=\"done\"><i></i></li><li class=\"current\"><i></i></li><li><i></i></li><li><i></i></li><li><i></i></li></ol><div><a class=\"ds-btn\" href=\"#\">Lesen</a></div></div></article>",
+      "css": ".ds-pc { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; gap: 8px 18px; align-items: start; font-family: var(--font, Inter, sans-serif); color: var(--ink, #f1f5f9); } .ds-pc-cover { grid-row: 1 / span 2; display: block; width: 92px; border-radius: 7px; overflow: hidden; line-height: 0; box-shadow: 0 6px 18px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.06) inset; transition: transform .2s cubic-bezier(.2,.7,.2,1), box-shadow .2s ease; } .ds-pc-cover svg { display: block; } .ds-pc:hover .ds-pc-cover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(0,0,0,.5); } .ds-pc-body { min-width: 0; padding-top: 2px; } .ds-pc-title { font-size: 17px; font-weight: 650; line-height: 1.25; margin: 0; letter-spacing: -.012em; text-wrap: balance; } .ds-pc-title a { color: var(--ink, #f1f5f9); text-decoration: none; } .ds-pc-title a:hover { text-decoration: underline; } .ds-pc-title a:focus-visible { outline: 2px solid var(--accent-soft, #60a5fa); outline-offset: 2px; } .ds-pc-kind { font-size: 12.5px; color: var(--ink-3, #64748b); margin: 4px 0 0; } .ds-pc-state { font-size: 14px; color: var(--ink-2, #94a3b8); margin: 6px 0 0; line-height: 1.4; min-height: 1.4em; } .ds-pc-foot { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 2px; } .ds-path { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; } .ds-path li { position: relative; display: flex; align-items: center; } .ds-path li i { display: block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink-3, #64748b); box-sizing: border-box; } .ds-path li.done i { background: var(--ink-3, #64748b); } .ds-path li.current i { width: 14px; height: 14px; background: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #3b82f6) 25%, transparent); } .ds-path li + li::before { content: ''; display: block; width: 14px; height: 2px; background: var(--line, #1e293b); margin: 0 1px; } .ds-path li.done + li::before, .ds-path li.current::before { background: var(--ink-3, #64748b); } .ds-btn { display: inline-block; font-weight: 600; font-size: 14px; color: var(--accent-ink, #fff); background: var(--accent, #3b82f6); border-radius: var(--pill, 999px); padding: 9px 18px; text-decoration: none; } .ds-btn:hover { filter: brightness(1.1); } .ds-btn:focus-visible { outline: 2px solid var(--accent-soft, #60a5fa); outline-offset: 2px; }"
+    },
+    {
+      "name": "Shelf Heading",
+      "kind": "custom",
+      "refersTo": "shelf",
+      "description": "The desk's section heading: sentence case, quiet, with a tabular count.",
+      "html": "<h3 class=\"ds-shelf\">Wartet auf dich <span class=\"ds-count\">3</span></h3>",
+      "css": ".ds-shelf { font-family: var(--font, Inter, sans-serif); font-size: 15px; font-weight: 650; color: var(--ink, #f1f5f9); margin: 0; display: flex; align-items: center; gap: 8px; letter-spacing: 0; text-transform: none; } .ds-count { font-weight: 600; color: var(--ink-3, #64748b); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A stacked label over a raised-slate field with an 8px radius.",
+      "html": "<label class=\"ds-field\"><span>Titel</span><input type=\"text\" placeholder=\"Worum geht es?\"></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 4px; font-family: var(--font, Inter, sans-serif); font-size: 12px; color: var(--ink-2, #94a3b8); } .ds-field input { font: inherit; font-size: 14px; color: var(--ink, #f1f5f9); background: var(--surface-2, #111a2e); border: 1px solid var(--line, #1e293b); border-radius: var(--radius-s, 8px); padding: 7px 10px; } .ds-field input:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent, #3b82f6) 55%, transparent); border-color: var(--accent, #3b82f6); }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Note status and helper-run state on the piece page; tone recolours the text.",
+      "html": "<span class=\"ds-badge\">offen</span> <span class=\"ds-badge tone-ok\">freigegeben</span> <span class=\"ds-badge tone-warn\">wartet</span>",
+      "css": ".ds-badge { display: inline-block; font-family: var(--font, Inter, sans-serif); padding: 3px 10px; border-radius: var(--pill, 999px); font-size: 11px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; border: 1px solid var(--line, #1e293b); color: var(--ink-2, #94a3b8); background: var(--surface-2, #111a2e); } .ds-badge.tone-ok { color: var(--ok, #22c55e); } .ds-badge.tone-warn { color: var(--warn, #f59e0b); } .ds-badge.tone-bad { color: var(--bad, #ef4444); }"
+    },
+    {
+      "name": "Rail",
+      "kind": "nav",
+      "refersTo": "rail-item",
+      "description": "The fixed 64px module rail: 42px square items, active one on raised slate in the module's own colour.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"modules\"><a href=\"#\" class=\"on\" style=\"--m:#3b82f6\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\"/></svg></a><a href=\"#\" style=\"--m:#2fa36b\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M16 2v4M8 2v4M3 10h18\"/></svg></a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0; width: 64px; background: var(--surface, #0b1220); border-right: 1px solid var(--line, #1e293b); } .ds-rail a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; color: var(--ink-3, #64748b); text-decoration: none; } .ds-rail a:hover { background: var(--surface-2, #111a2e); color: var(--m, var(--ink, #f1f5f9)); } .ds-rail a.on { background: var(--surface-2, #111a2e); color: var(--m, var(--ink, #f1f5f9)); box-shadow: inset 0 0 0 1px var(--line, #1e293b); } .ds-rail a:focus-visible { outline: 2px solid var(--accent-soft, #60a5fa); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Desk",
+    "overview": "One stylesheet, tokens first. The ground is blue-black (ground), surfaces are slate a step lighter, text is cool off-white in three strengths, and one blue does all the pointing. Inter is the only face and it is bundled; the page makes no request outside its own origin. Light mode is the same tokens re-valued, not a second design.\n\nTwo surfaces share the system and differ in posture. The workshop (older: .card, .kcol, .cal, .matrix, .block) is an operator's board: bordered slate cards on a tonal grid, small uppercase tracked labels, status tones (ok / warn / bad) on bars, badges and dots. The desk (newest: .desk, .shelf, .pc, .path, .journey, .prose) is a creator's start page: pieces are generated covers laid on the bare ground without card chrome, state is a sentence in plain words, a six-dot path shows the way, and one filled button per piece says what is next. Where they differ, the desk is the newer intent; the workshop is kept as it is.",
+    "keyCharacteristics": [
+      "Dark primary, slate layering, almost no shadows except under covers.",
+      "One sans (Inter variable), weights from 400 body to 800 brand.",
+      "Blue accent reserved for the one action, the current step and focus.",
+      "On the desk, the covers bring the colour; everything else is ink on slate.",
+      "Secondary actions are quiet text, never a second filled button."
+    ],
+    "rules": [
+      { "name": "The Covers Carry the Colour Rule", "body": "On the desk, no element except the cover and the one accent button is coloured. Status tones stay in the workshop and in the piece page's notes.", "section": "colors" },
+      { "name": "The One Button Rule", "body": "A piece shows exactly one filled accent button: on its card and at its current step. Everything else it can do is quiet text (.quiet) or a ghost button.", "section": "colors" },
+      { "name": "The One Sans Rule", "body": "Inter for everything that is read. Mono only for things a machine named: file names, keys, the label code on a cover.", "section": "typography" },
+      { "name": "The Sentence Not Badge Rule", "body": "On the desk a piece's state is a sentence in ink-quiet, never a pill. Badges remain on the piece page for note status and helper runs.", "section": "typography" },
+      { "name": "The Flat Slate, Lifted Cover Rule", "body": "Surfaces are flat and bordered. Only covers (and the login card) cast shadow, and a cover's shadow is the same in light mode: it is an object, not a surface.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do put the one action in a filled accent pill and every other action in quiet text or a ghost pill.",
+      "Do let covers be the colour: generated SVG posters with shadow, placed on the bare ground.",
+      "Do say state as a sentence in ink-quiet on the desk; keep ok/warn/bad for the workshop and the notes thread.",
+      "Do keep the six dots identical on card and page; only size and labels change.",
+      "Do use the three radii (8 / 12 / pill) for panels and controls; covers keep their own.",
+      "Do derive light mode by re-valuing the six neutral tokens only.",
+      "Do keep every file of a piece reachable from its page (tiles, matrix, record)."
+    ],
+    "donts": [
+      "Don't name a stage, label or file on the desk; the reader translates through vocabulary.json.",
+      "Don't add a second filled button to a piece.",
+      "Don't box a piece card on the desk; the workshop card is the older pattern.",
+      "Don't add a second typeface or load anything from outside the origin.",
+      "Don't put shadows on panels; shadow belongs to covers.",
+      "Don't colour the desk card by state; the dots and the sentence carry it."
+    ]
+  }
+}

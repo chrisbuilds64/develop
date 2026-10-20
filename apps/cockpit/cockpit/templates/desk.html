@@ -22,7 +22,7 @@
     {% elif a.action == 'schedule' %}
       <form method="post" action="/m/{{ module.id }}/doc/{{ card.ref }}/a/schedule" class="inline">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="_back" value="/m/{{ module.id }}">
-        <input type="date" name="date" required aria-label="{{ t('field.date') }}"><button class="button">{{ t(a.label) }}</button>
+        <label class="when"><span>{{ t('desk.when') }}</span><input type="date" name="date" required></label><button class="button">{{ t(a.label) }}</button>
       </form>
     {% else %}
       <form method="post" action="/m/{{ module.id }}/doc/{{ card.ref }}/a/{{ a.action }}" class="inline">
@@ -39,8 +39,8 @@
   <article class="pc{% if c.run and c.run.status == 'running' %} pc-running{% endif %}">
     <a class="pc-cover" href="{{ c.href }}" tabindex="-1" aria-hidden="true">{{ c.cover|safe }}</a>
     <div class="pc-body">
-      <div class="pc-format">{{ c.format }}{% if c.series %} · {{ c.series }}{% endif %}{% if c.date %} · {{ c.date }}{% endif %}</div>
       <h4 class="pc-title"><a href="{{ c.href }}">{{ c.title }}</a></h4>
+      <p class="pc-kind">{{ c.format }}{% if c.series %} · {{ c.series }}{% endif %}{% if c.date_words %} · {{ c.date_words }}{% endif %}</p>
       <p class="pc-state">{{ t(c.state, n=c.n) if '.' in c.state else c.state }}{% if c.run and c.run.status == 'running' %} <span class="pulse" aria-hidden="true"></span>{% endif %}</p>
     </div>
     <div class="pc-foot">

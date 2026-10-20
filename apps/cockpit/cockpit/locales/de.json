@@ -269,7 +269,7 @@
   "desk.group.out": "Draußen",
   "desk.state.running": "ein Helfer arbeitet daran",
   "desk.state.failed": "der letzte Lauf ist gescheitert",
-  "desk.state.open_notes": "{n} Anmerkung(en) an dich offen",
+  "desk.state.open_notes": "{n} Anmerkungen an dich offen",
   "desk.state.out": "draußen",
   "desk.since": "läuft",
   "desk.act.interpret": "Ausarbeiten lassen",
@@ -279,7 +279,6 @@
   "desk.act.approve_image": "Bild freigeben",
   "desk.act.schedule": "Termin wählen",
   "desk.act.published": "Veröffentlicht melden",
-  "desk.act.log": "Protokoll",
   "desk.act.answer": "Antworten",
   "desk.act.answer_send": "Antwort senden",
   "desk.act.done": "Erledigt",
@@ -357,5 +356,9 @@
   "desk.run.running": "läuft",
   "desk.run.done": "fertig",
   "desk.run.failed": "gescheitert",
-  "desk.nameless": "{n} Ordner ohne Steckbrief liegen in der Werkstatt."
+  "desk.nameless": "{n} weitere Ordner ohne Steckbrief liegen in der Werkstatt.",
+  "desk.act.see_failure": "Nachsehen, was schiefging",
+  "desk.state.open_note": "Eine Anmerkung an dich offen",
+  "desk.when": "Wann?",
+  "desk.record_hint": "Alle Angaben des Steckbriefs"
 }

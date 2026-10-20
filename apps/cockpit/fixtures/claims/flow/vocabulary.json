@@ -32,15 +32,16 @@
       "desk.act.published": "Abgeschlossen melden",
       "desk.state.running": "wird gerade aufbereitet",
       "desk.state.material": "Besichtigungsprotokoll liegt vor, der Rest fehlt",
-      "desk.state.open_notes": "{n} Rückfrage(n) an dich offen",
+      "desk.state.open_notes": "{n} Rückfragen an dich offen",
+      "desk.state.open_note": "Eine Rückfrage an dich offen",
+      "desk.nameless": "{n} Akten ohne Deckblatt liegen in der Werkstatt.",
       "desk.draft": "Das Gutachten",
       "desk.no_text": "Noch kein Gutachten. Es entsteht im nächsten Schritt.",
       "desk.notes": "Rückfragen",
       "desk.notes_empty": "Keine Rückfragen.",
       "desk.note.write": "Rückfrage stellen",
       "desk.ask": "Den Sachbearbeiter-Agenten bitten",
-      "desk.nothing_now": "Gerade nichts zu tun — der Fall ist unterwegs.",
-      "desk.nameless": "{n} Akten ohne Deckblatt liegen in der Werkstatt."
+      "desk.nothing_now": "Gerade nichts zu tun — der Fall ist unterwegs."
     },
     "labels": {
       "KFZ": "Kfz-Schaden",

@@ -570,6 +570,18 @@ def _today(lang: str) -> str:
     return d.strftime("%A, %-d %B")
 
 
+def _date_words(iso: str, lang: str) -> str:
+    """'2026-11-02' → '2. November' / '2 November'; anything that is not a date comes back as it was."""
+    try:
+        d = dt.date.fromisoformat(str(iso)[:10])
+    except (ValueError, TypeError):
+        return str(iso or "")
+    if lang == "de":
+        months = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember")
+        return f"{d.day}. {months[d.month - 1]}" + (f" {d.year}" if d.year != dt.date.today().year else "")
+    return d.strftime("%-d %B") + (f" {d.year}" if d.year != dt.date.today().year else "")
+
+
 def _primary_text(access, role, src, ref: str, files: list[str], label: str, art: dict) -> dict | None:
     """The piece's primary artifact (artifacts.json: formats.<label>.primary), highest version, as text — the draft a person reads on the page."""
     primary = (art.get("formats", {}).get(label) or {}).get("primary")
@@ -663,9 +675,9 @@ def _state(stage: str, run: dict | None, open_for_me: list[dict], has_image: boo
     if run and run.get("status") == "running":
         return {"group": "working", "state": "desk.state.running", "action": None}
     if run and run.get("status") == "failed" and num < 60:
-        return {"group": "you", "state": "desk.state.failed", "action": {"kind": "link", "label": "desk.act.log", "href": f"/m/pipeline/doc/{run.get('log', '')}"}}
+        return {"group": "you", "state": "desk.state.failed", "action": {"kind": "link", "label": "desk.act.see_failure", "href": f"/m/pipeline/doc/{run.get('log', '')}"}}
     if open_for_me:
-        return {"group": "you", "state": "desk.state.open_notes", "n": len(open_for_me),
+        return {"group": "you", "state": "desk.state.open_notes" if len(open_for_me) > 1 else "desk.state.open_note", "n": len(open_for_me),
                 "action": {"kind": "link", "label": "desk.act.answer", "href": "#notes"}}
     if num >= 60:
         return {"group": "out", "state": _word(vocab, "stages", stage, "desk.state.out"), "action": None}
@@ -725,6 +737,7 @@ def desk(access, role, module, config, viewer: str | None = None, lang: str = "e
             "ref": f"{stage}/{name}", "href": href, "title": meta.get("title") or meta.get("working_title") or name,
             "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])),
             "series": meta.get("series") or "", "date": str(meta.get("publishDate") or "")[:10],
+            "date_words": _date_words(meta.get("publishDate"), lang) if meta.get("publishDate") else "",
             "created": str(meta.get("created") or "")[:10],
             "cover": cover_svg(meta, rules, 56) if meta else "", "state": st["state"], "n": st.get("n", 0),
             "action": st["action"], "run": {"status": run.get("status"), "cost": run.get("cost_usd")} if run else None,
@@ -821,6 +834,8 @@ def piece(access, role, module, config, ref: str, viewer: str | None = None, lan
         "ref": ref, "stage": stage, "name": name, "title": meta.get("title") or meta.get("working_title") or name,
         "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])), "series": meta.get("series") or "",
         "number": str(meta.get("number") or ""), "date": str(meta.get("publishDate") or "")[:10], "created": str(meta.get("created") or "")[:10],
+        "date_words": _date_words(meta.get("publishDate"), lang) if meta.get("publishDate") else "",
+        "created_words": _date_words(meta.get("created"), lang) if meta.get("created") else "",
         "state": st["state"], "group": st["group"], "action": st["action"], "cover": cover_svg(meta, _cover_rules(access, role, src), 120) if meta else "",
         "files": tiles, "matrix": matrix, "notes": thread, "open_for_me": [e["id"] for e in open_me], "helpers": helpers,
         "runs": [{"skill": r.get("skill"), "status": r.get("status"), "cost": r.get("cost_usd"), "when": r.get("created", "")[:16].replace("T", " "), "log": r.get("log", "")}

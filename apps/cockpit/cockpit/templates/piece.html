@@ -14,11 +14,10 @@
   <header class="phead">
     {% if piece.cover %}<div class="pcover">{{ piece.cover|safe }}</div>{% endif %}
     <div class="ptext">
-      <div class="pc-format">{{ piece.format }}{% if piece.series %} · {{ piece.series }}{% if piece.number %} {{ piece.number }}{% endif %}{% endif %}{% if piece.created %} · {{ t('idea.created') }} {{ piece.created }}{% endif %}</div>
       <h2>{{ piece.title }}</h2>
       {% if piece.subtitle %}<p class="psub">{{ piece.subtitle }}</p>{% endif %}
-      <p class="pstate">{{ t(piece.state, n=piece.open_for_me|length) if '.' in piece.state else piece.state }}{% if piece.date %} <span class="dim">· {{ piece.date }}</span>{% endif %}
-        {% if piece.meta %}<button type="button" class="quiet" data-record-toggle>{{ t('desk.record') }}</button>{% endif %}</p>
+      <p class="pc-kind">{{ piece.format }}{% if piece.series %} · {{ piece.series }}{% if piece.number %} {{ piece.number }}{% endif %}{% endif %}{% if piece.created_words %} · {{ t('idea.created') }} {{ piece.created_words }}{% endif %}</p>
+      <p class="pstate">{{ t(piece.state, n=piece.open_for_me|length) if '.' in piece.state else piece.state }}{% if piece.date_words %} <span class="dim">· {{ piece.date_words }}</span>{% endif %}</p>
     </div>
   </header>
 
@@ -37,7 +36,7 @@
               <button class="button">{{ t(a.label) }}</button></form>
           {% elif a and a.action == 'schedule' %}
             <form method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/schedule" class="inline"><input type="hidden" name="_csrf" value="{{ csrf }}">
-              <input type="date" name="date" required aria-label="{{ t('field.date') }}"><button class="button">{{ t(a.label) }}</button></form>
+              <label class="when"><span>{{ t('desk.when') }}</span><input type="date" name="date" required></label><button class="button">{{ t(a.label) }}</button></form>
           {% elif a %}
             <form method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/{{ a.action }}"><input type="hidden" name="_csrf" value="{{ csrf }}">
               {% for k, v in a.fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
@@ -46,10 +45,10 @@
           {% if piece.stage == '30-review-human' and role.may_act(module.id ~ '.review_append') %}
             <form method="post" action="/m/{{ module.id }}/doc/{{ piece.ref }}/a/review_append"><input type="hidden" name="_csrf" value="{{ csrf }}">
               <input type="hidden" name="title" value="{{ t('desk.note.approved') }}"><input type="hidden" name="status" value="approved"><input type="hidden" name="text" value="{{ t('desk.note.approved_text') }}">
-              <button class="button ok">{{ t('desk.act.approve') }}</button></form>
+              <button class="button">{{ t('desk.act.approve') }}</button></form>
           {% endif %}
           {% if piece.open_for_me %}<a class="button ghost" href="#notes">{{ t('desk.act.answer') }} · {{ piece.open_for_me|length }}</a>{% endif %}
-          {% if not a and piece.stage != '30-review-human' and not piece.open_for_me %}<p class="hint">{% if s.id == 'out' %}{{ piece.state_word }}{% if piece.date %} · {{ piece.date }}{% endif %}{% else %}{{ t('desk.nothing_now') }}{% endif %}</p>{% endif %}
+          {% if not a and piece.stage != '30-review-human' and not piece.open_for_me %}<p class="hint">{% if s.id == 'out' %}{{ piece.state_word }}{% if piece.date_words %} · {{ piece.date_words }}{% endif %}{% else %}{{ t('desk.nothing_now') }}{% endif %}</p>{% endif %}
         </div>
         {% endif %}
       </li>
@@ -59,7 +58,7 @@
 
   {% if piece.meta %}
   <section class="precord" hidden data-record>
-    <h3>{{ t('desk.record') }} <span class="dim">· meta.json</span></h3>
+    <h3>{{ t('desk.record') }}</h3>
     <dl class="kv">{% for m in piece.meta %}<dt>{{ m.key }}</dt><dd>{{ m.value }}</dd>{% endfor %}</dl>
   </section>
   <script>
@@ -75,10 +74,10 @@
       {% set images = piece.files|selectattr('kind', 'equalto', 'image')|list %}
       {% if images %}
       {% set img = images[-1] %}
-      <figure class="pvisual"><a href="{{ img.href }}" target="_blank"><img src="{{ img.href }}" alt="{{ img.label }}"></a><figcaption>{{ img.label }}{% if img.version %} · {{ t('desk.version', n=img.version) }}{% endif %} · {{ img.name }}</figcaption></figure>
+      <figure class="pvisual"><a href="{{ img.href }}" target="_blank"><img src="{{ img.href }}" alt="{{ img.label }}"></a><figcaption>{{ img.label }}{% if img.version %} · {{ t('desk.version', n=img.version) }}{% endif %}</figcaption></figure>
       {% endif %}
       {% if piece.draft %}
-      <h3>{{ piece.draft.label if piece.draft.label != piece.draft.file else t('desk.draft') }}{% if piece.draft.version %} · {{ t('desk.version', n=piece.draft.version) }}{% endif %} <span class="dim">· {{ piece.draft.file }}</span></h3>
+      <h3>{{ piece.draft.label if piece.draft.label != piece.draft.file else t('desk.draft') }}{% if piece.draft.version %} · {{ t('desk.version', n=piece.draft.version) }}{% endif %}</h3>
       <article class="prose">{{ piece.draft.html|safe }}</article>
       {% else %}
       <h3>{{ t('desk.draft') }}</h3>
@@ -93,7 +92,7 @@
       <article class="note note-{{ e.status }}{% if e.mine and e.status == 'open' and not e.resolved %} note-forme{% endif %}{% if e.resolved %} note-done{% endif %}">
         <div class="nhead"><b>{{ e.author }}</b>{% if e.for %} → {{ e.for }}{% endif %} <span class="dim">· {{ e.date }}</span>
           <span class="badge tone-{{ 'warn' if e.status == 'open' and not e.resolved else 'ok' if e.status == 'approved' else 'muted' }}">{{ t('desk.status.' ~ e.status) }}{% if e.resolved %} · {{ t('desk.status.resolved') }}{% endif %}</span>
-          <span class="nid">{{ e.id }}{% if e.resolves %} ↩ {{ e.resolves }}{% endif %}</span></div>
+          <span class="nid" title="{{ e.id }}{% if e.resolves %} ↩ {{ e.resolves }}{% endif %}">{% if e.resolves %}↩{% endif %}</span></div>
         <div class="ntitle">{{ e.title }}</div>
         <div class="ntext">{{ e.text }}</div>
         {% if e.status == 'open' and not e.resolved and role.may_act(module.id ~ '.review_append') %}
@@ -144,7 +143,7 @@
   </div>
 
   <section class="pfiles">
-    <h3>{{ t('desk.files') }} <span class="dim">· {{ piece.files|length }}</span></h3>
+    <h3>{{ t('desk.files') }} <span class="dim">· {{ piece.files|length }}</span>{% if piece.meta %} <button type="button" class="quiet" data-record-toggle title="{{ t('desk.record_hint') }}">{{ t('desk.record') }}</button>{% endif %}</h3>
     {% set mx = piece.matrix %}
     {% if piece.files %}
     <div class="tiles">

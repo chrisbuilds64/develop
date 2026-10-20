@@ -269,7 +269,7 @@
   "desk.group.out": "Out",
   "desk.state.running": "a helper is working on it",
   "desk.state.failed": "the last run failed",
-  "desk.state.open_notes": "{n} note(s) for you open",
+  "desk.state.open_notes": "{n} notes for you open",
   "desk.state.out": "out",
   "desk.since": "running",
   "desk.act.interpret": "Work it out",
@@ -279,7 +279,6 @@
   "desk.act.approve_image": "Approve visual",
   "desk.act.schedule": "Pick a date",
   "desk.act.published": "Mark as published",
-  "desk.act.log": "Log",
   "desk.act.answer": "Answer",
   "desk.act.answer_send": "Send answer",
   "desk.act.done": "Done",
@@ -357,5 +356,9 @@
   "desk.run.running": "running",
   "desk.run.done": "done",
   "desk.run.failed": "failed",
-  "desk.nameless": "{n} folders without a record sit in the workshop."
+  "desk.nameless": "{n} more folders without a record sit in the workshop.",
+  "desk.act.see_failure": "See what went wrong",
+  "desk.state.open_note": "One note for you open",
+  "desk.when": "When?",
+  "desk.record_hint": "Everything the record says"
 }
