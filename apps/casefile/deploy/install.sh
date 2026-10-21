@@ -12,11 +12,14 @@ REF=${CASEFILE_REF:-main}
 id -u casefile >/dev/null 2>&1 || useradd --system --home /opt/casefile --shell /usr/sbin/nologin casefile
 mkdir -p /opt/casefile "$DEMO"
 
+git config --global --add safe.directory /opt/casefile/src >/dev/null 2>&1 || true
 if [ ! -d /opt/casefile/src/.git ]; then
   git clone --depth 1 --branch "$REF" "$REPO" /opt/casefile/src
 else
-  git -C /opt/casefile/src fetch --depth 1 origin "$REF" && git -C /opt/casefile/src reset --hard FETCH_HEAD
+  git -C /opt/casefile/src fetch --depth 1 origin "$REF"
+  git -C /opt/casefile/src reset -q --hard FETCH_HEAD
 fi
+echo "source at $(git -C /opt/casefile/src log --oneline -1)"
 rm -rf "$APP" && cp -r /opt/casefile/src/apps/casefile "$APP"
 
 [ -x "$VENV/bin/python" ] || python3 -m venv "$VENV"
@@ -33,7 +36,7 @@ fi
 "$VENV/bin/python" -m casefile.demo.worlds "$DEMO/worlds"
 mkdir -p "$DEMO/sessions"
 [ -f /opt/casefile/demo.env ] || { sed "s/change-me/$(openssl rand -hex 32)/" "$APP/deploy/demo.env.example" > /opt/casefile/demo.env; chmod 600 /opt/casefile/demo.env; }
-chown -R casefile:casefile /opt/casefile
+chown -R casefile:casefile "$APP" "$VENV" "$DEMO" /opt/casefile/demo.env      # src stays root's, web-dist stays the deployer's
 install -m 644 "$APP/deploy/casefile-demo.service" /etc/systemd/system/casefile-demo.service
 systemctl daemon-reload
 systemctl enable --now casefile-demo
