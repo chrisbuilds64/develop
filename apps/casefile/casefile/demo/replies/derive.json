@@ -1,0 +1,6 @@
+{
+  "delay_s": 4,
+  "files": {"teleprompter.txt": "inline:Teleprompter, derived from your script. (Fictional.)\n", "show-notes.txt": "inline:Show notes. (Fictional.)\n", "linkedin-post.txt": "inline:The post. (Fictional.)\n", "first-comment.txt": "inline:First comment. (Fictional.)\n", "reel-hooks.txt": "inline:Hook 1. Hook 2. Hook 3. (Fictional.)\n", "visual-brief.md": "inline:# Visual brief\n\n(Fictional.)\n"},
+  "entry": {"title": "Teleprompter, show notes, post and hooks are ready", "text": "I left your script as it is. {note}"},
+  "to": "30-review-human", "cost_usd": 0.0, "model": "replay", "turns": 1
+}

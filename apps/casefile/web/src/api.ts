@@ -60,6 +60,9 @@ export const api = {
   },
 };
 
+export const sample = (id: string, slot: string, step_id: string) =>
+  call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/samples`, { slot, step_id });
+
 export function stepId(prefix: string): string {
   const r = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2)).replace(/-/g, "").slice(0, 12);
   return `${prefix}-${Date.now().toString(36)}-${r}`.slice(0, 80);

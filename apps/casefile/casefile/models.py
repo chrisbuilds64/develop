@@ -25,12 +25,20 @@ class Action(BaseModel):
     actor: str | None = None                     # who may do it; None = the stage's turn
 
 
+class AutoRun(BaseModel):
+    """When a file lands in this stage, a helper is ordered: 'the invoice arrives, the AI reconciles'."""
+    on_file: str
+    skill: str
+    note: str = ""
+
+
 class Stage(BaseModel):
     folder: str                                  # "30-review-human"
     key: str                                     # "review" — the word key and the station on the line
     turn: str | None = None                      # "role:approver", "person:akhil", "claude", or None (nobody's move)
     actions: list[Action] = Field(default_factory=list)
     group: str = "other"                         # where the surface lists it: you | claude | others | date | planned | out | ideas | archive
+    auto: list[AutoRun] = Field(default_factory=list)
 
 
 class Deliverable(BaseModel):
@@ -148,6 +156,7 @@ class Turn(BaseModel):
     blocked_by: list[str]
     since: str = ""
     entry: str | None = None                     # the entry this move answers, when it is an answer
+    payload: list[str] = Field(default_factory=list)   # what the surface must ask for: amount, date, url, note
 
 
 # ----------------------------------------------------------------------------- a step

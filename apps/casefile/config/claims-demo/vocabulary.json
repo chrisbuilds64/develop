@@ -56,7 +56,8 @@
       "deliver": "Abgelegt.",
       "detected": "Von Hand verschoben",
       "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
-      "delivered_title": "Abgelegt: {files}"
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter."
     },
     "files": {
       "meldung.md": "Schadenmeldung",
@@ -68,6 +69,12 @@
       "abgleich.md": "Abgleich",
       "review.md": "Verlauf",
       "meta.json": "Steckbrief"
+    },
+    "roles": {
+      "assessor": "Gutachter",
+      "approver": "Sachbearbeitung",
+      "settlement": "Regulierung",
+      "operator": "Betrieb"
     }
   },
   "en": {
@@ -126,7 +133,8 @@
       "deliver": "Added.",
       "detected": "Moved by hand",
       "detected_text": "The file was found in {stage}; the thread last knew {known}.",
-      "delivered_title": "Added: {files}"
+      "delivered_title": "Added: {files}",
+      "replay_moved": "Moved on."
     },
     "files": {
       "meldung.md": "Claim report",
@@ -138,6 +146,12 @@
       "abgleich.md": "Reconciliation",
       "review.md": "Thread",
       "meta.json": "Record"
+    },
+    "roles": {
+      "assessor": "assessor",
+      "approver": "handler",
+      "settlement": "settlement",
+      "operator": "operator"
     }
   }
 }

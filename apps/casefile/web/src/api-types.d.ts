@@ -56,6 +56,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Sample
+         * @description The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version.
+         */
+        post: operations["post_sample_api_cases__case_id__samples_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/turns": {
         parameters: {
             query?: never;
@@ -517,6 +537,13 @@ export interface components {
             /** Request Id */
             request_id: string;
         };
+        /** SampleIn */
+        SampleIn: {
+            /** Slot */
+            slot: string;
+            /** Step Id */
+            step_id: string;
+        };
         /** SessionIn */
         SessionIn: {
             /** Person */
@@ -536,6 +563,8 @@ export interface components {
             due_station: string;
             /** By */
             by: string;
+            /** By Word */
+            by_word: string;
             /** Versions */
             versions: components["schemas"]["VersionView"][];
             /** Present */
@@ -623,6 +652,8 @@ export interface components {
             since: string;
             /** Entry */
             entry?: string | null;
+            /** Payload */
+            payload?: string[];
         };
         /** TurnOut */
         TurnOut: {
@@ -751,6 +782,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConfigView"];
+                };
+            };
+        };
+    };
+    post_sample_api_cases__case_id__samples_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SampleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

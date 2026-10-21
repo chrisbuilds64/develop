@@ -15,7 +15,7 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"1" * 200
 @pytest.fixture
 def api(tmp_path):
     root = build(tmp_path / "flow")
-    app = create_app(Settings(root=root, config_dir=CONFIG, lang="en", secret="test"))
+    app = create_app(Settings(root=root, config_dir=root.parent / "config", lang="en", secret="test"))
     client = TestClient(app)
     return client, root
 

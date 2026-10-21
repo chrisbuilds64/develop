@@ -18,4 +18,4 @@ def store(root):
 
 @pytest.fixture
 def config(root):
-    return DomainConfig.load(CONFIG, root)
+    return DomainConfig.load(root.parent / "config", root)

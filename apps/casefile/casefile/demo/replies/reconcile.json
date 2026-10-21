@@ -1,0 +1,6 @@
+{
+  "delay_s": 4,
+  "files": {"abgleich.md": "abgleich.md"},
+  "entry": {"title": "Rechnung abgeglichen", "text": "Rechnung, Kostenvoranschlag und Gutachten verglichen. Zwei Abweichungen: Trocknung 1.840 € statt 1.420 € (Gutachten), Malerarbeiten Flur 980 € nicht im Gutachten. Alles andere stimmt überein. Vorschlag: 4.370 € freigeben, 1.400 € zurückfragen.\n\nVorschlag mit Begründung · du entscheidest."},
+  "to": null, "cost_usd": 0.0, "model": "replay", "turns": 1
+}

@@ -67,7 +67,8 @@
       "deliver": "Delivered.",
       "detected": "Moved by hand",
       "detected_text": "The folder was found in {stage}; the thread last knew {known}.",
-      "delivered_title": "Delivered: {files}"
+      "delivered_title": "Delivered: {files}",
+      "replay_moved": "Moved on."
     },
     "files": {
       "source.md": "Source material",
@@ -93,6 +94,12 @@
       "poster-4x5.jpg": "Poster",
       "teaser-reel.mp4": "Teaser reel",
       "screen-segment.mp4": "Screen segment"
+    },
+    "roles": {
+      "author": "author",
+      "approver": "approver",
+      "visual": "visuals",
+      "operator": "operator"
     }
   },
   "de": {
@@ -162,7 +169,8 @@
       "deliver": "Abgelegt.",
       "detected": "Von Hand verschoben",
       "detected_text": "Der Ordner lag in {stage}; der Verlauf kannte zuletzt {known}.",
-      "delivered_title": "Abgelegt: {files}"
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter."
     },
     "files": {
       "source.md": "Ausgangsmaterial",
@@ -188,6 +196,12 @@
       "poster-4x5.jpg": "Poster",
       "teaser-reel.mp4": "Teaser-Reel",
       "screen-segment.mp4": "Bildschirm-Segment"
+    },
+    "roles": {
+      "author": "Autor",
+      "approver": "Freigabe",
+      "visual": "Bild",
+      "operator": "Betrieb"
     }
   }
 }

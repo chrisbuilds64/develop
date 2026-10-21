@@ -1,0 +1,6 @@
+{
+  "delay_s": 5,
+  "files": {"substack.md": "draft-interpret.md", "linkedin-post.txt": "inline:The post, derived from the idea. (Fictional.)\n", "first-comment.txt": "inline:Link in the first comment. (Fictional.)\n", "visual-brief.md": "inline:# Visual brief\n\nOne image: a line that bends where nobody looks. (Fictional.)\n"},
+  "entry": {"title": "Draft ready", "text": "Draft, post, first comment and visual brief are in. {note}\n\nTwo things to check: the opening claim, and whether the example is yours to tell."},
+  "to": "30-review-human", "cost_usd": 0.0, "model": "replay", "turns": 1
+}

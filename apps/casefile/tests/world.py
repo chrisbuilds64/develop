@@ -46,6 +46,15 @@ def build(root: Path) -> Path:
     for name in ("artifacts.json", "vocabulary.json", "run-policy.json", "calendar.json"):
         shutil.copy(CONFIG / name, root / name)
     (root / "people.json").write_text(json.dumps(PEOPLE, indent=2))
+    cfg = root.parent / "config"
+    cfg.mkdir(exist_ok=True)
+    stages = json.loads((CONFIG / "stages.json").read_text())
+    for st in stages["stages"]:
+        for a in st.get("actions", []):
+            if a["id"] == "approve_to_visual":
+                a["four_eyes"] = True                      # the test world keeps the four-eyes rule on, the pressroom itself does not
+    (cfg / "stages.json").write_text(json.dumps(stages, indent=2))
+    (cfg / "theme.json").write_text((CONFIG / "theme.json").read_text())
     (root / "_runs").mkdir(exist_ok=True)
     now = dt.datetime(2026, 10, 20, 12, 0)
 

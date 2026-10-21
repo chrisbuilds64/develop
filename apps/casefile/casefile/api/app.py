@@ -43,6 +43,9 @@ class Settings:
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
     recover_on_start: bool = True
+    demo: bool = False                           # the public demo: samples offered, prepared replies played back
+    samples_dir: Path | None = None              # bundled sample files by slot file name (demo)
+    replies_dir: Path | None = None              # prepared replies by skill (demo)
 
 
 class SessionIn(BaseModel):
@@ -98,6 +101,11 @@ class AssetOut(BaseModel):
     step: StepResult
 
 
+class SampleIn(BaseModel):
+    slot: str
+    step_id: str
+
+
 def _sign(secret: str, value: str) -> str:
     return hmac.new(secret.encode(), value.encode(), hashlib.sha256).hexdigest()[:32]
 
@@ -111,6 +119,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     if settings.recover_on_start:
         stepping.recover(store, config)
+    if settings.demo and settings.replies_dir:
+        from ..demo.replay import ReplayRunner
+        app.state.replay = ReplayRunner([(store, config)], settings.replies_dir).start()
+    samples = sorted(p.name for p in settings.samples_dir.iterdir()) if settings.samples_dir and settings.samples_dir.is_dir() else []
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")
@@ -172,7 +184,24 @@ def create_app(settings: Settings) -> FastAPI:
     # ------------------------------------------------------------ reading
     @app.get("/api/config", response_model=views.ConfigView)
     def get_config():
-        return views.config_view(config, lang)
+        v = views.config_view(config, lang)
+        v.theme = {**v.theme, "demo": settings.demo, "samples": samples if settings.demo else []}
+        return v
+
+    @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
+    def post_sample(case_id: str, body: SampleIn, who: str = Depends(viewer)):
+        """The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version."""
+        if not settings.demo or not settings.samples_dir or body.slot not in samples:
+            raise HTTPException(404, "no sample for that slot")
+        prior = stepping.read_journal(store, body.step_id)
+        if prior is not None:
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=stepping.step(store, config, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
+        try:
+            name = assets.put(store, config, case_id, body.slot, settings.samples_dir / body.slot, body.slot)
+        except StoreError as exc:
+            raise HTTPException(409, str(exc))
+        result = stepping.step(store, config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who)
+        return AssetOut(name=name, slot=body.slot, step=result)
 
     @app.get("/api/me/turns", response_model=list[TurnOut])
     def my_turns(who: str = Depends(viewer)):
@@ -282,4 +311,6 @@ def app_from_env() -> FastAPI:
                                lang=os.environ.get("CASEFILE_LANG"),
                                open_identity=os.environ.get("CASEFILE_OPEN_IDENTITY", "1") == "1",
                                secret=os.environ.get("CASEFILE_SECRET") or secrets.token_hex(16),
-                               web_dist=Path(os.environ["CASEFILE_WEB"]) if os.environ.get("CASEFILE_WEB") else (here / "web" / "dist")))
+                               web_dist=Path(os.environ["CASEFILE_WEB"]) if os.environ.get("CASEFILE_WEB") else (here / "web" / "dist"),
+                               demo=os.environ.get("CASEFILE_DEMO", "0") == "1",
+                               samples_dir=here / "casefile" / "demo" / "samples", replies_dir=here / "casefile" / "demo" / "replies"))

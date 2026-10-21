@@ -113,7 +113,7 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
             fe = four_eyes_block(config, case, action, actor)
             if fe:
                 blocked.append(fe)
-            out.append(Turn(actor=actor, action=action.id, label=_label(config, action.label, lang),
+            out.append(Turn(actor=actor, action=action.id, label=_label(config, action.label, lang), payload=list(action.payload),
                             reason=config.word("stages", case.stage, lang, case.stage), blocked_by=blocked, since=case.since))
     elif stage and stage.turn == "claude":
         out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],

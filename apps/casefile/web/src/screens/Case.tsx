@@ -1,20 +1,17 @@
 // One case: head, the line, what is on the desk, what is missing, the conversation, and the one button in the thumb zone.
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, ApiError, stepId, type CaseView, type ConfigView, type MeOut, type SlotView, type Turn } from "../api";
+import { api, ApiError, sample as putSample, stepId, type ConfigView, type MeOut, type Turn } from "../api";
 import { Line } from "../components/Line";
 import { Frame } from "../components/Frames";
 import { Thread } from "../components/Thread";
 import { ago, dateWords, type words } from "../words";
 
-function excerpt(v: CaseView, slot: SlotView): string {
-  return slot.present ? `${slot.by === "human" ? v.meta?.author ?? "" : slot.by}` : "";
-}
-
 export function CaseScreen({ id, config, me, go, w }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words> }) {
   const qc = useQueryClient();
   const lang = config.lang;
-  const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id) });
+  const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
+  const samples = ((config.theme as { samples?: string[] }).samples ?? []);
   const [refused, setRefused] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null);
   const [amount, setAmount] = useState("");
@@ -24,10 +21,13 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const askRef = useRef<HTMLInputElement>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); };
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
-  const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown> }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r) => { setRefused(null); refresh(); if (r.to) setToast({ text: w.doneMoved(config.stations.find((s) => s.key === (q.data?.stations ?? [])[0]?.key)?.word ?? r.to.replace(/^\d+-/, "")) }); }, onError: fail });
+  const stageWord = (f: string) => ((config.words as { stages?: Record<string, string> }).stages?.[f]) ?? f.replace(/^\d+-/, "");
+  const roleWord = (actor: string) => actor.startsWith("role:") ? (((config.words as { roles?: Record<string, string> }).roles?.[actor.slice(5)]) ?? actor.slice(5)) : (config.people.find((p) => p.id === actor)?.name ?? actor);
+  const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown> }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r) => { setRefused(null); refresh(); if (r.to) setToast({ text: w.doneMoved(stageWord(r.to)) }); }, onError: fail });
   const entry = useMutation({ mutationFn: (b: Parameters<typeof api.entry>[1]) => api.entry(id, b), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); setAsk(""); refresh(); }, onError: fail });
   const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
+  const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); askRef.current?.focus(); } };
@@ -38,24 +38,26 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   if (q.isLoading) return <main className="main"><p className="empty">…</p></main>;
   if (!q.data) return <main className="main"><p className="empty">{String(q.error ?? "—")}</p></main>;
   const v = q.data;
-  const busy = step.isPending || entry.isPending || run.isPending || upload.isPending;
+  const busy = step.isPending || entry.isPending || run.isPending || upload.isPending || sampleIn.isPending;
   const main: Turn | undefined = v.my_turns[0] ?? v.turns[0];
   const mine = v.mine;
   const actionTurns = v.my_turns.filter((t) => !["answer", "wait"].includes(t.action));
   const primaryTurn: Turn | undefined = actionTurns[0];
   const secondary = actionTurns.slice(1);
-  const needsAmount = primaryTurn && /amount/.test(JSON.stringify(config.words)) && primaryTurn.action.includes("settlement");
-  const needsDate = primaryTurn && (primaryTurn.action === "schedule" || primaryTurn.action === "schedule_inspection");
-  const needsUrl = primaryTurn && primaryTurn.action === "published";
+  const asks = primaryTurn?.payload ?? [];
+  const needsAmount = asks.includes("amount");
+  const needsDate = asks.includes("date");
+  const needsUrl = asks.includes("url");
+  const needsNote = asks.includes("note");
   const blocked = primaryTurn?.blocked_by ?? [];
-  const canPress = primaryTurn && blocked.length === 0 && (!needsAmount || amount.trim()) && (!needsDate || date) && !busy;
+  const canPress = primaryTurn && blocked.length === 0 && (!needsAmount || amount.trim()) && (!needsDate || date) && (!needsNote || note.trim()) && !busy;
   const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file));
   const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && (s.required || s.due_station === v.station || blocked.includes(s.file)));
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const stub = main
-    ? mine ? `${v.stage_word} · ${w.waitingFor(w.you.toLowerCase())}${v.since ? ` ${w.since} ${ago(v.since, lang)}` : ""}`
+    ? mine ? `${v.stage_word} · ${w.waitingForYou}${v.since ? ` ${w.since} ${ago(v.since, lang)}` : ""}`
       : main.actor === "claude" ? `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
-      : `${v.stage_word} · ${w.waitingFor(main.actor.replace(/^role:/, ""))}`
+      : `${v.stage_word} · ${w.waitingFor(roleWord(main.actor))}`
     : `${v.stage_word}${v.date ? ` · ${dateWords(v.date, lang)}` : ""}`;
   const payload: Record<string, unknown> = {};
   if (needsAmount) payload.amount = amount.trim();
@@ -81,7 +83,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           <div className="desk-grid">
             {primary?.present && (
               <a className="file wide stack" href={primary.versions[primary.versions.length - 1].url} target="_blank" rel="noreferrer">
-                <span className="head"><span className="name">{primary.word}</span><span className="meta">{w.version(Math.max(1, primary.versions[primary.versions.length - 1].version))} · {primary.by}</span></span>
+                <span className="head"><span className="name">{primary.word}</span><span className="meta">{w.version(Math.max(1, primary.versions[primary.versions.length - 1].version))}{primary.by_word ? ` · ${primary.by_word}` : ""}</span></span>
                 {primary.versions.length > 1 && <span className="hint">{w.keeps}</span>}
               </a>
             )}
@@ -91,7 +93,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
                 <a key={s.file} className={`file${s.versions.length > 1 ? " stack" : ""}`} href={newest.url} target="_blank" rel="noreferrer">
                   {s.shape.startsWith("image") && <img src={newest.url} alt="" />}
                   <span className="name">{s.word}</span>
-                  <span className="meta">{w.version(Math.max(1, newest.version))}{s.by ? ` · ${s.by}` : ""}{excerpt(v, s) ? "" : ""}</span>
+                  <span className="meta">{w.version(Math.max(1, newest.version))}{s.by_word ? ` · ${s.by_word}` : ""}</span>
                 </a>
               );
             })}
@@ -102,7 +104,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             <>
               <p className="kicker" style={{ marginTop: 10 }}>{w.missing}</p>
               <div className="frames">
-                {missing.map((s) => <Frame key={s.file} slot={s} mine={mine && blocked.includes(s.file)} w={w} busy={busy} onFile={(f) => upload.mutate({ slot: s.file, file: f })} />)}
+                {missing.map((s) => <Frame key={s.file} slot={s} mine={mine && blocked.includes(s.file)} w={w} busy={busy} onFile={(f) => upload.mutate({ slot: s.file, file: f })}
+                                           sample={samples.includes(s.file)} onSample={() => sampleIn.mutate(s.file)} />)}
                 {needsAmount && (
                   <div className="frame"><div className="box mine" style={{ width: 260, height: 120, alignItems: "flex-start", textAlign: "left" }}>
                     <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{primaryTurn?.label}</span>
@@ -116,13 +119,13 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             <label className="money" style={{ marginTop: 10 }}>{w.amount}<input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" /></label>
           )}
           {needsDate && <label className="date" style={{ marginTop: 10, display: "inline-flex", gap: 10, alignItems: "center" }}>{w.date}<input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>}
-          {needsUrl && <label className="ask" style={{ marginTop: 10, maxWidth: 480 }}><span className="sr">{w.link}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder={`${w.link} …`} /></label>}
+          {(needsUrl || needsNote) && <label className="ask" style={{ marginTop: 10, maxWidth: 480 }}><span className="sr">{needsUrl ? w.link : primaryTurn?.label}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder={needsUrl ? `${w.link} …` : `${primaryTurn?.label} …`} /></label>}
         </div>
 
         <aside className="thread" aria-label={w.conversation}>
           <p className="kicker">{w.conversation}</p>
           <Thread entries={v.entries} meName={me.name ?? ""} agentName={v.agent} lang={lang} w={w} busy={busy}
-                  stageWord={(f) => ((config.words as { stages?: Record<string, string> }).stages?.[f]) ?? f.replace(/^\d+-/, "")}
+                  stageWord={stageWord}
                   onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
                   onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })} />
           <div className="grow" />
@@ -148,7 +151,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             <button type="button" className="btn" disabled={!canPress} onClick={() => step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>
           </>
         ) : main ? (
-          <span className="says">{main.actor === "claude" ? w.isWorking(v.agent) : `${w.waitingFor(main.actor.replace(/^role:/, ""))}`}</span>
+          <span className="says">{main.actor === "claude" ? w.isWorking(v.agent) : `${w.waitingFor(roleWord(main.actor))}`}</span>
         ) : (
           <span className="says">{v.stage_word}</span>
         )}

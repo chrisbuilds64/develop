@@ -94,6 +94,56 @@
         }
       }
     },
+    "/api/cases/{case_id}/samples": {
+      "post": {
+        "summary": "Post Sample",
+        "description": "The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version.",
+        "operationId": "post_sample_api_cases__case_id__samples_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SampleIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/turns": {
       "get": {
         "summary": "My Turns",
@@ -1290,6 +1340,24 @@
         ],
         "title": "RunIn"
       },
+      "SampleIn": {
+        "properties": {
+          "slot": {
+            "type": "string",
+            "title": "Slot"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slot",
+          "step_id"
+        ],
+        "title": "SampleIn"
+      },
       "SessionIn": {
         "properties": {
           "person": {
@@ -1329,6 +1397,10 @@
             "type": "string",
             "title": "By"
           },
+          "by_word": {
+            "type": "string",
+            "title": "By Word"
+          },
           "versions": {
             "items": {
               "$ref": "#/components/schemas/VersionView"
@@ -1349,6 +1421,7 @@
           "required",
           "due_station",
           "by",
+          "by_word",
           "versions",
           "present"
         ],
@@ -1553,6 +1626,13 @@
               }
             ],
             "title": "Entry"
+          },
+          "payload": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Payload"
           }
         },
         "type": "object",

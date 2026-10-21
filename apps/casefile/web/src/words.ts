@@ -40,9 +40,11 @@ const W = {
     link: "Link",
     byHand: "von Hand",
     waitingFor: (who: string) => `wartet auf ${who}`,
+    waitingForYou: "wartet auf dich",
     isWorking: (who: string) => `${who} arbeitet gerade`,
     you: "Du",
     moved: "Weiter",
+    sample: (what: string) => `Beispiel einlegen: ${what}`,
   },
   en: {
     nothing: "Nothing waits for you.",
@@ -82,9 +84,11 @@ const W = {
     link: "Link",
     byHand: "by hand",
     waitingFor: (who: string) => `waiting for ${who}`,
+    waitingForYou: "waiting for you",
     isWorking: (who: string) => `${who} is working`,
     you: "You",
     moved: "Moved",
+    sample: (what: string) => `Put in a sample ${what.toLowerCase()}`,
   },
 };
 

@@ -162,6 +162,13 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
     if target and req.action != "ask":
         e["for"] = target.name
     j.entry = _append_entry(store, config, j.case, case.stage, e)
+    if req.action == "deliver":
+        from .cases import split_version
+        delivered = {split_version(f)[0] for f in e["files"]}
+        stage = config.stage(case.stage)
+        for rule in (stage.auto if stage else []):
+            if rule.on_file in delivered and j.run is None:
+                j.run = ordering.order(store, config, j.case, case.stage, rule.skill, person_id, rule.note, request_id=f"{j.step_id}-auto")
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)

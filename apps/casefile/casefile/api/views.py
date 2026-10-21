@@ -30,6 +30,7 @@ class SlotView(BaseModel):
     required: bool
     due_station: str
     by: str
+    by_word: str
     versions: list[VersionView]
     present: bool
 
@@ -84,6 +85,19 @@ class ConfigView(BaseModel):
     words: dict                                           # the vocabulary for the language, flat
 
 
+def by_word(config: DomainConfig, by: str, lang: str) -> str:
+    """'role:assessor' → the role's word; a skill name or 'claude' → the agent's name; 'human' → nothing."""
+    if not by or by == "human":
+        return ""
+    if by.startswith("role:"):
+        return config.word("roles", by[5:], lang, by[5:])
+    if by == "claude" or by in (config.run_policy.get("skills") or {}) or by in ("interpret", "derive", "reconcile", "asset"):
+        agent = config.agent
+        return agent.name if agent else by
+    p = config.person(by)
+    return p.name if p else by
+
+
 def station_of(config: DomainConfig, stage: str) -> tuple[str, int]:
     st = config.stage(stage)
     key = st.key if st else "out"
@@ -121,7 +135,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     stations = [StationView(key=k, word=config.word("stations", k, lang, k), state="done" if i < c.station_index else "current" if i == c.station_index else "todo")
                 for i, k in enumerate(config.stations)]
     slots = [SlotView(file=s.file, word=config.word("files", s.file, lang, s.file), shape=s.shape, required=s.required,
-                      due_station=station_of(config, s.due_stage)[0] if s.due_stage else "", by=s.by,
+                      due_station=station_of(config, s.due_stage)[0] if s.due_stage else "", by=s.by, by_word=by_word(config, s.by, lang),
                       versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in s.versions], present=s.present)
              for s in case.slots]
     agent = config.agent
