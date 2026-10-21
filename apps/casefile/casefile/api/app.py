@@ -20,6 +20,8 @@ import json
 import os
 import secrets
 import shutil
+
+from ..demo.sandbox import copy_world
 import threading
 import time
 from collections import defaultdict, deque
@@ -190,7 +192,11 @@ def create_app(settings: Settings) -> FastAPI:
     sessions_lock = threading.Lock()
     if settings.worlds:
         settings.sessions_dir.mkdir(parents=True, exist_ok=True)
-    samples = sorted(p.name for p in settings.samples_dir.iterdir()) if settings.samples_dir and settings.samples_dir.is_dir() else []
+    def samples_of(c: Ctx) -> tuple[Path | None, list[str]]:
+        """The world's own samples (`_samples/` at the pipeline root) win over the ones bundled with the package."""
+        own = c.store.root / "_samples"
+        d = own if own.is_dir() else settings.samples_dir
+        return (d, sorted(p.name for p in d.iterdir() if p.is_file())) if d and d.is_dir() else (None, [])
 
     # ------------------------------------------------------------ sandboxes
     def _session_ctx(sid: str) -> Ctx | None:
@@ -214,7 +220,7 @@ def create_app(settings: Settings) -> FastAPI:
         w = settings.worlds[world]
         sid = secrets.token_urlsafe(12)
         d = settings.sessions_dir / sid
-        shutil.copytree(w.template, d / "flow")
+        copy_world(w.template, d / "flow")
         (d / ".world").write_text(world, encoding="utf-8")
         (d / ".created").write_text(_now(), encoding="utf-8")
         _sweep()
@@ -365,7 +371,7 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/api/config", response_model=views.ConfigView)
     def get_config(c: Ctx = Depends(ctx)):
         v = views.config_view(c.config, c.lang)
-        v.theme = {**v.theme, "demo": settings.demo, "samples": samples if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
+        v.theme = {**v.theme, "demo": settings.demo, "samples": samples_of(c)[1] if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
         return v
 
     @app.get("/api/me/turns", response_model=list[TurnOut])
@@ -477,13 +483,14 @@ def create_app(settings: Settings) -> FastAPI:
     @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
     def post_sample(case_id: str, body: SampleIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         """The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version."""
-        if not settings.demo or not settings.samples_dir or body.slot not in samples:
+        samples_dir, samples = samples_of(c)
+        if not settings.demo or not samples_dir or body.slot not in samples:
             raise HTTPException(404, "no sample for that slot")
         prior = stepping.read_journal(c.store, body.step_id)
         if prior is not None:
             return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
         try:
-            name = assets.put(c.store, c.config, case_id, body.slot, settings.samples_dir / body.slot, body.slot)
+            name = assets.put(c.store, c.config, case_id, body.slot, samples_dir / body.slot, body.slot)
         except StoreError as exc:
             raise HTTPException(409, str(exc))
         return AssetOut(name=name, slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))

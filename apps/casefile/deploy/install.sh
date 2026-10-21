@@ -33,7 +33,11 @@ elif [ ! -d "$APP/web/dist" ]; then
   if command -v npm >/dev/null; then (cd "$APP/web" && npm ci --no-audit --no-fund && VITE_BASE="${CASEFILE_BASE:-/}" npm run build); else echo "web/dist missing and no npm: build it elsewhere (VITE_BASE=/demo/ npm run build) and copy it to /opt/casefile/web-dist"; exit 1; fi
 fi
 
-"$VENV/bin/python" -m casefile.demo.worlds "$DEMO/worlds"
+if [ -f "$DEMO/worlds/.seed" ]; then
+  echo "demo worlds seeded from outside ($(cat "$DEMO/worlds/.seed")) — not rebuilt; remove $DEMO/worlds/.seed to fall back to the built-in worlds"
+else
+  "$VENV/bin/python" -m casefile.demo.worlds "$DEMO/worlds"
+fi
 mkdir -p "$DEMO/sessions"
 [ -f /opt/casefile/demo.env ] || { sed "s/change-me/$(openssl rand -hex 32)/" "$APP/deploy/demo.env.example" > /opt/casefile/demo.env; chmod 600 /opt/casefile/demo.env; }
 chown -R casefile:casefile "$APP" "$VENV" "$DEMO" /opt/casefile/demo.env      # src stays root's, web-dist stays the deployer's

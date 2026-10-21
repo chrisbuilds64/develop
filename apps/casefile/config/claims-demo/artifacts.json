@@ -1,39 +1,336 @@
 {
   "$comment": "What a claims file collects on its way. Shapes drive the empty frames; required drives the button. Fictional domain for the demo.",
   "common": [
-    {"file": "meldung.md", "stage": "10-meldung", "by": "human", "shape": "text"},
-    {"file": "meta.json", "stage": "10-meldung", "by": "human", "shape": "text"},
-    {"file": "review.md", "stage": "10-meldung", "by": "human", "shape": "text"}
+    {
+      "file": "meldung.md",
+      "stage": "10-meldung",
+      "by": "human",
+      "shape": "text"
+    },
+    {
+      "file": "schadenmeldung.pdf",
+      "stage": "10-meldung",
+      "by": "human",
+      "shape": "pdf"
+    },
+    {
+      "file": "meta.json",
+      "stage": "10-meldung",
+      "by": "human",
+      "shape": "text"
+    },
+    {
+      "file": "review.md",
+      "stage": "10-meldung",
+      "by": "human",
+      "shape": "text"
+    }
   ],
   "formats": {
-    "HR": {"primary": "gutachten.pdf", "artifacts": [
-      {"file": "fotos-1.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image", "required": false},
-      {"file": "gutachten.pdf", "stage": "20-besichtigung", "by": "role:assessor", "shape": "pdf", "required": true},
-      {"file": "feuchtemessung.pdf", "stage": "20-besichtigung", "by": "role:assessor", "shape": "pdf"},
-      {"file": "kostenvoranschlag.pdf", "stage": "20-besichtigung", "by": "human", "shape": "pdf"},
-      {"file": "abgleich.md", "stage": "25-abgleich", "by": "claude", "shape": "text"},
-      {"file": "rechnung.pdf", "stage": "30-pruefung", "by": "human", "shape": "pdf", "required": true}
-    ]},
-    "WG": {"primary": "gutachten.pdf", "artifacts": [
-      {"file": "fotos-1.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-      {"file": "gutachten.pdf", "stage": "20-besichtigung", "by": "role:assessor", "shape": "pdf", "required": true},
-      {"file": "kostenvoranschlag.pdf", "stage": "20-besichtigung", "by": "human", "shape": "pdf"},
-      {"file": "abgleich.md", "stage": "25-abgleich", "by": "claude", "shape": "text"},
-      {"file": "rechnung.pdf", "stage": "30-pruefung", "by": "human", "shape": "pdf", "required": true}
-    ]},
-    "KFZ": {"primary": "gutachten.pdf", "artifacts": [
-      {"file": "fotos-1.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-      {"file": "gutachten.pdf", "stage": "20-besichtigung", "by": "role:assessor", "shape": "pdf", "required": true},
-      {"file": "kostenvoranschlag.pdf", "stage": "20-besichtigung", "by": "human", "shape": "pdf"},
-      {"file": "abgleich.md", "stage": "25-abgleich", "by": "claude", "shape": "text"},
-      {"file": "rechnung.pdf", "stage": "30-pruefung", "by": "human", "shape": "pdf", "required": true}
-    ]},
-    "HP": {"primary": "gutachten.pdf", "artifacts": [
-      {"file": "gutachten.pdf", "stage": "20-besichtigung", "by": "role:assessor", "shape": "pdf", "required": true},
-      {"file": "abgleich.md", "stage": "25-abgleich", "by": "claude", "shape": "text"},
-      {"file": "rechnung.pdf", "stage": "30-pruefung", "by": "human", "shape": "pdf", "required": true}
-    ]}
+    "HR": {
+      "primary": "gutachten.pdf",
+      "artifacts": [
+        {
+          "file": "feuerwehrbericht.pdf",
+          "stage": "10-meldung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "stehlgutliste.pdf",
+          "stage": "10-meldung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "anzeige.pdf",
+          "stage": "10-meldung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "fotos-1.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image",
+          "required": false
+        },
+        {
+          "file": "fotos-2.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-3.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-4.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-5.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "gutachten.pdf",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "pdf",
+          "required": true
+        },
+        {
+          "file": "feuchtemessung.pdf",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "pdf"
+        },
+        {
+          "file": "kostenvoranschlag.pdf",
+          "stage": "20-besichtigung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "abgleich.md",
+          "stage": "25-abgleich",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "rechnung.pdf",
+          "stage": "30-pruefung",
+          "by": "human",
+          "shape": "pdf",
+          "required": true
+        }
+      ]
+    },
+    "WG": {
+      "primary": "gutachten.pdf",
+      "artifacts": [
+        {
+          "file": "fotos-1.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-2.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-3.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-4.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-5.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "gutachten.pdf",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "pdf",
+          "required": true
+        },
+        {
+          "file": "kostenvoranschlag.pdf",
+          "stage": "20-besichtigung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "abgleich.md",
+          "stage": "25-abgleich",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "rechnung.pdf",
+          "stage": "30-pruefung",
+          "by": "human",
+          "shape": "pdf",
+          "required": true
+        }
+      ]
+    },
+    "KFZ": {
+      "primary": "gutachten.pdf",
+      "artifacts": [
+        {
+          "file": "wildunfallbescheinigung.pdf",
+          "stage": "10-meldung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "unfallbericht.pdf",
+          "stage": "10-meldung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "fotos-1.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-2.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-3.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-4.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-5.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "gutachten.pdf",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "pdf",
+          "required": true
+        },
+        {
+          "file": "kostenvoranschlag.pdf",
+          "stage": "20-besichtigung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "abgleich.md",
+          "stage": "25-abgleich",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "rechnung.pdf",
+          "stage": "30-pruefung",
+          "by": "human",
+          "shape": "pdf",
+          "required": true
+        }
+      ]
+    },
+    "HP": {
+      "primary": "gutachten.pdf",
+      "artifacts": [
+        {
+          "file": "streuprotokoll.pdf",
+          "stage": "10-meldung",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "fotos-1.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-2.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-3.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-4.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-5.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "gutachten.pdf",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "pdf",
+          "required": true
+        },
+        {
+          "file": "abgleich.md",
+          "stage": "25-abgleich",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "rechnung.pdf",
+          "stage": "30-pruefung",
+          "by": "human",
+          "shape": "pdf",
+          "required": true
+        }
+      ]
+    }
   },
-  "skills": {"25-abgleich": ["reconcile"]},
-  "kinds": ["fotos-1.jpg", "gutachten.pdf", "feuchtemessung.pdf", "kostenvoranschlag.pdf", "rechnung.pdf", "abgleich.md"]
+  "skills": {
+    "25-abgleich": [
+      "reconcile"
+    ]
+  },
+  "kinds": [
+    "schadenmeldung.pdf",
+    "fotos-1.jpg",
+    "fotos-2.jpg",
+    "fotos-3.jpg",
+    "fotos-4.jpg",
+    "fotos-5.jpg",
+    "gutachten.pdf",
+    "feuchtemessung.pdf",
+    "kostenvoranschlag.pdf",
+    "rechnung.pdf",
+    "abgleich.md",
+    "anzeige.pdf",
+    "stehlgutliste.pdf",
+    "feuerwehrbericht.pdf",
+    "unfallbericht.pdf",
+    "wildunfallbescheinigung.pdf",
+    "streuprotokoll.pdf"
+  ]
 }

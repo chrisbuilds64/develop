@@ -30,10 +30,20 @@ def _now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def load_reply(replies_dir: Path, skill: str, config: DomainConfig | None = None) -> tuple[dict | None, Path]:
-    """The domain's own replies (config/<domain>/replies/) win; the shared folder is the fallback."""
-    for d in ([config.dir / "replies"] if config and config.dir else []) + [replies_dir]:
-        p = d / f"{skill}.json"
+def load_reply(replies_dir: Path, skill: str, config: DomainConfig | None = None, root: Path | None = None, case_id: str | None = None) -> tuple[dict | None, Path]:
+    """Where a prepared reply comes from, nearest first: the world's own `_replies/` at the pipeline root — for this very case
+    (`<skill>.<case>.json`) or for the skill — then the domain's `config/<domain>/replies/`, then the shared folder."""
+    places: list[tuple[Path, str]] = []
+    if root is not None:
+        if case_id:
+            places.append((root / "_replies", f"{skill}.{case_id}.json"))
+        places.append((root / "_replies", f"{skill}.json"))
+    if config and config.dir:
+        places.append((config.dir / "replies", f"{skill}.json"))
+    if replies_dir is not None:
+        places.append((replies_dir, f"{skill}.json"))
+    for d, name in places:
+        p = d / name
         if p.is_file():
             return json.loads(p.read_text(encoding="utf-8")), d
     return None, replies_dir
@@ -44,7 +54,7 @@ def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path,
     room full of sandboxes is served in parallel by one thread. `wait=False` finishes it in one call (tests)."""
     rel = f"_runs/{run_name}"
     doc = store.read_json(rel)
-    reply, replies_dir = load_reply(replies_dir, doc.get("skill", ""), config)
+    reply, replies_dir = load_reply(replies_dir, doc.get("skill", ""), config, store.root, doc["container"].split("/")[-1])
     if doc.get("status") == "queued":
         doc["status"], doc["started"], doc["taken_by"] = "running", _now(), "replay"
         store.write_json(rel, doc)

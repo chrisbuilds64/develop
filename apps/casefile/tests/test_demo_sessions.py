@@ -81,3 +81,40 @@ def test_the_single_pipeline_mode_still_works(tmp_path):
     assert client.post("/api/session", json={"person": "du"}).status_code == 200
     assert client.get("/api/me").json()["world"] is None
     assert client.post("/api/demo/session", json={}).status_code == 404
+
+
+def test_a_sandbox_links_documents_copies_text_and_the_world_brings_its_own_samples_and_replies(tmp_path):
+    """Documents are hard-linked into the sandbox (the core never writes into one), review.md is a real copy; a `_samples/`
+    folder at the world's root is what the frames offer, a `_replies/` folder answers an order — for one case first."""
+    import json
+    from casefile.demo.replay import load_reply
+    from casefile.demo.sandbox import copy_world
+    build_claims(tmp_path / "w" / "claims")
+    world = tmp_path / "w" / "claims"
+    (world / "_samples").mkdir()
+    (world / "_samples" / "rechnung.pdf").write_bytes(b"%PDF-1.4 own sample")
+    (world / "_replies").mkdir()
+    (world / "_replies" / "reconcile.HR-2026-0417-wasserschaden-badezimmer.json").write_text(json.dumps({"delay_s": 0, "files": {}, "entry": {"title": "own", "text": "for this case"}, "to": None}))
+    (world / "_replies" / "ask.json").write_text(json.dumps({"delay_s": 0, "files": {}, "entry": {"title": "own ask", "text": "for the world"}, "to": None}))
+    copy_world(world, tmp_path / "sb")
+    photo = tmp_path / "sb" / "30-pruefung" / "HR-2026-0417-wasserschaden-badezimmer" / "fotos-1.jpg"
+    review = tmp_path / "sb" / "30-pruefung" / "HR-2026-0417-wasserschaden-badezimmer" / "review.md"
+    assert photo.stat().st_nlink == 2 and review.stat().st_nlink == 1
+    from casefile.config import DomainConfig
+    config = DomainConfig.load(CONFIG / "claims-demo", world)
+    r, _ = load_reply(HERE / "replies", "reconcile", config, world, "HR-2026-0417-wasserschaden-badezimmer")
+    assert r["entry"]["title"] == "own"
+    r, _ = load_reply(HERE / "replies", "reconcile", config, world, "WG-2026-0421-sturmschaden-carport")
+    assert r["entry"]["title"] == "Rechnung abgeglichen"      # the domain's reply for every other case
+    r, _ = load_reply(HERE / "replies", "ask", config, world, "x")
+    assert r["entry"]["title"] == "own ask"
+    settings = Settings(secret="t", demo=True, samples_dir=HERE / "samples", replies_dir=None, sessions_dir=tmp_path / "sessions",
+                        worlds={"claims": World(config_dir=CONFIG / "claims-demo", template=world, person="du", lang="de")})
+    client = TestClient(create_app(settings))
+    client.post("/api/demo/session", json={"world": "claims"})
+    cfg = client.get("/api/config").json()
+    assert cfg["theme"]["samples"] == ["rechnung.pdf"]
+    r = client.post("/api/cases/HR-2026-0417-wasserschaden-badezimmer/samples", json={"slot": "rechnung.pdf", "step_id": "s1"})
+    assert r.status_code == 200
+    body = client.get("/api/cases/HR-2026-0417-wasserschaden-badezimmer/files/rechnung.pdf").content
+    assert body == b"%PDF-1.4 own sample"
