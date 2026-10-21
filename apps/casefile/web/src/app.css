@@ -24,7 +24,8 @@ input, textarea { font: inherit; color: inherit; }
 .menu .sheet { display: flex; flex-direction: column; gap: 4px; padding: 20px 14px; flex: 1; min-height: 0; }
 .scrim { display: none; }
 .menu-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--hairline); }
-.brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; min-width: 0; }
+.brand span { overflow: hidden; text-overflow: ellipsis; }
 .brand svg { flex: none; }
 .swap { width: var(--touch); height: var(--touch); border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 18px; }
 .nav-row { display: flex; justify-content: space-between; align-items: center; min-height: var(--touch); padding: 0 10px; border: none; border-radius: 10px; background: transparent; font-size: 15px; text-align: left; color: var(--ink); width: 100%; }
