@@ -23,9 +23,11 @@ rm -rf "$APP" && cp -r /opt/casefile/src/apps/casefile "$APP"
 "$VENV/bin/pip" install -q --upgrade pip
 "$VENV/bin/pip" install -q "$APP"
 
-# the surface: build on the server when node is there, else expect web/dist in the checkout
-if [ ! -d "$APP/web/dist" ]; then
-  if command -v npm >/dev/null; then (cd "$APP/web" && npm ci --no-audit --no-fund && npm run build); else echo "web/dist missing and no npm: build it elsewhere and copy it in"; exit 1; fi
+# the surface: a prebuilt copy in /opt/casefile/web-dist wins; else build on the server when node is there
+if [ -d /opt/casefile/web-dist ]; then
+  rm -rf "$APP/web/dist" && cp -r /opt/casefile/web-dist "$APP/web/dist"
+elif [ ! -d "$APP/web/dist" ]; then
+  if command -v npm >/dev/null; then (cd "$APP/web" && npm ci --no-audit --no-fund && VITE_BASE="${CASEFILE_BASE:-/}" npm run build); else echo "web/dist missing and no npm: build it elsewhere (VITE_BASE=/demo/ npm run build) and copy it to /opt/casefile/web-dist"; exit 1; fi
 fi
 
 "$VENV/bin/python" -m casefile.demo.worlds "$DEMO/worlds"

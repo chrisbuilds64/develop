@@ -14,6 +14,16 @@ bash /tmp/install.sh                 # user, venv, worlds, systemd unit on 127.0
 Re-running the script updates the checkout and restarts the service. The surface is built on the host when
 `npm` exists; otherwise build `web/dist` elsewhere (`npm ci && npm run build`) and copy it to `/opt/casefile/app/web/dist`.
 
+## Under a path (e.g. `https://pressroom.chrisbuilds64.com/demo/`)
+
+Build the surface with the base path and drop it on the host before running the installer:
+
+```bash
+cd apps/casefile/web && VITE_BASE=/demo/ npm run build && rsync -a dist/ root@host:/opt/casefile/web-dist/
+```
+
+The proxy strips the prefix: `location /demo/ { proxy_pass http://127.0.0.1:8410/; … }` (note the trailing slash).
+
 ## Reverse proxy
 
 A site for the demo's host name that proxies to `127.0.0.1:8410` with TLS. On CloudPanel: *Sites → Add site →

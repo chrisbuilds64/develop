@@ -1,6 +1,7 @@
 // The list: one sentence, the cases that wait for you with a blue border, then the others in grey, then what is coming up.
 import { useQuery } from "@tanstack/react-query";
 import { api, type CaseCard, type ConfigView } from "../api";
+import { BASE } from "../api";
 import type { Route } from "../App";
 import { ago, dateWords, type words } from "../words";
 
@@ -9,7 +10,7 @@ function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void;
   const running = t?.actor === "claude";
   const state = t ? (c.mine ? `${c.stage_word}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;
   return (
-    <a className={`card${c.mine ? " mine" : ""}${quiet ? " quiet" : ""}`} href={`/case/${encodeURIComponent(c.id)}`} onClick={(e) => { e.preventDefault(); go(`/case/${encodeURIComponent(c.id)}`); }}>
+    <a className={`card${c.mine ? " mine" : ""}${quiet ? " quiet" : ""}`} href={`${BASE}/case/${encodeURIComponent(c.id)}`} onClick={(e) => { e.preventDefault(); go(`/case/${encodeURIComponent(c.id)}`); }}>
       {!quiet && <span className="ref">{c.label_word} · {c.id.split("-").slice(0, 2).join("-")}</span>}
       <span className="title">{c.title}</span>
       <span className="state">{state}</span>
@@ -47,7 +48,7 @@ export function List({ config, route, go, w }: { config: ConfigView; route: Rout
       {coming.length > 0 && (
         <div className="coming">
           <span className="kicker">{w.coming}</span>
-          {coming.map((c) => <span key={c.id}>{dateWords(c.date, lang)} · <a href={`/case/${c.id}`} onClick={(e) => { e.preventDefault(); go(`/case/${c.id}`); }}>{c.title}</a></span>)}
+          {coming.map((c) => <span key={c.id}>{dateWords(c.date, lang)} · <a href={`${BASE}/case/${c.id}`} onClick={(e) => { e.preventDefault(); go(`/case/${c.id}`); }}>{c.title}</a></span>)}
         </div>
       )}
     </section>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
+import { Restart, Swap, Worlds } from "./Icons";
 
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, w }:
   { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
@@ -20,7 +21,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
           <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
           <span>{config.product}</span>
         </div>
-        <button type="button" className="swap" onClick={onSwap} aria-label={w.switchHand} title={w.switchHand}>{side === "left" ? "⇄" : "⇆"}</button>
+        <button type="button" className="swap" onClick={onSwap} aria-label={w.switchHand} title={w.switchHand}><Swap /></button>
       </div>
       {config.groups.map((g) => {
         const n = counts.get(g.key) ?? 0;
@@ -46,8 +47,8 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       <button type="button" className="nav-row phone-only" onClick={() => go(route.name === "workshop" ? "/" : "/workshop")}>{route.name === "workshop" ? w.yourMove : w.workshop}</button>
       {me.demo && (
         <div className="demo-row">
-          {otherWorld && <button type="button" className="nav-row quiet" onClick={() => onFresh(otherWorld)}><span>{w.world(otherWorld)}</span><span className="mono n">⇄</span></button>}
-          <button type="button" className="nav-row quiet" onClick={() => onFresh()}><span>{w.startOver}</span><span className="mono n">↺</span></button>
+          {otherWorld && <button type="button" className="nav-row quiet" onClick={() => onFresh(otherWorld)}><span>{w.world(otherWorld)}</span><span className="n"><Worlds /></span></button>}
+          <button type="button" className="nav-row quiet" onClick={() => onFresh()}><span>{w.startOver}</span><span className="n"><Restart /></span></button>
         </div>
       )}
       <div className="who">

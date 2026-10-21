@@ -1,6 +1,6 @@
 // Empty frames in real shape. Tap or drop a file: it becomes the next version, nothing is overwritten.
 import { useRef, useState } from "react";
-import type { SlotView } from "../api";
+import { BASE, type SlotView } from "../api";
 import type { words } from "../words";
 
 const SIZE: Record<string, [number, number]> = { "image-16x9": [208, 117], "image-4x5": [94, 117], image: [160, 117], "video-9x16": [66, 117], video: [160, 117], pdf: [120, 150], money: [200, 120], text: [160, 120] };
@@ -20,7 +20,7 @@ export function Frame({ slot, mine, onFile, w, busy, sample, onSample }: { slot:
               onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
               onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}
               aria-label={`${slot.word}${slot.present ? "" : ` · ${w.dropHere}`}`}>
-        {slot.present && newest && slot.shape.startsWith("image") ? <img src={newest.url} alt="" /> :
+        {slot.present && newest && slot.shape.startsWith("image") ? <img src={BASE + newest.url} alt="" /> :
          slot.present ? <span className="tick">✓ {slot.word}</span> :
          <>{/^(image|video)/.test(slot.shape) ? <span>{ratio}</span> : <span>{slot.word}</span>}<span style={{ fontSize: 12 }}>{over ? w.dropHere : w.tapToAdd}</span></>}
       </button>

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { Entry } from "../api";
 import { ago, type words } from "../words";
+import { Send } from "./Icons";
 
 export function Thread({ entries, meName, agentName, lang, w, onAnswer, onDone, busy, stageWord }:
   { entries: Entry[]; meName: string; agentName: string; lang: string; w: ReturnType<typeof words>; onAnswer: (e: Entry, text: string) => void; onDone: (e: Entry) => void; busy: boolean; stageWord: (folder: string) => string }) {
@@ -35,7 +36,7 @@ export function Thread({ entries, meName, agentName, lang, w, onAnswer, onDone, 
             {answering === e.id && (
               <form className="ask" style={{ marginTop: 6 }} onSubmit={(ev) => { ev.preventDefault(); if (text.trim()) { onAnswer(e, text.trim()); setAnswering(null); setText(""); } }}>
                 <input autoFocus value={text} onChange={(ev) => setText(ev.target.value)} placeholder={w.answer} />
-                <button type="submit" className="send" disabled={busy}>↵</button>
+                <button type="submit" className="send" disabled={busy} aria-label={w.answer}><Send /></button>
               </form>
             )}
           </div>

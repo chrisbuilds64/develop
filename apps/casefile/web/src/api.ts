@@ -23,8 +23,10 @@ export class ApiError extends Error {
   }
 }
 
+export const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+
 async function call<T>(method: string, path: string, body?: unknown, form?: FormData): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(BASE + path, {
     method,
     headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
     body: form ?? (body !== undefined ? JSON.stringify(body) : undefined),

@@ -1,10 +1,11 @@
 // One case: head, the line, what is on the desk, what is missing, the conversation, and the one button in the thumb zone.
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, ApiError, sample as putSample, stepId, type ConfigView, type MeOut, type Turn } from "../api";
+import { api, ApiError, BASE, sample as putSample, stepId, type ConfigView, type MeOut, type Turn } from "../api";
 import { Line } from "../components/Line";
 import { Frame } from "../components/Frames";
 import { Thread } from "../components/Thread";
+import { Send } from "../components/Icons";
 import { ago, dateWords, type words } from "../words";
 
 export function CaseScreen({ id, config, me, go, w }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words> }) {
@@ -18,6 +19,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const [date, setDate] = useState("");
   const [note, setNote] = useState("");
   const [ask, setAsk] = useState("");
+  const [pending, setPending] = useState<Turn | null>(null);
   const askRef = useRef<HTMLInputElement>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); };
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
@@ -89,7 +91,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           <p className="kicker">{w.onDesk}</p>
           <div className="desk-grid">
             {primary?.present && (
-              <a className="file wide stack" href={primary.versions[primary.versions.length - 1].url} target="_blank" rel="noreferrer">
+              <a className="file wide stack" href={BASE + primary.versions[primary.versions.length - 1].url} target="_blank" rel="noreferrer">
                 <span className="head"><span className="name">{primary.word}</span><span className="meta">{w.version(Math.max(1, primary.versions[primary.versions.length - 1].version))}{primary.by_word ? ` · ${primary.by_word}` : ""}</span></span>
                 {primary.versions.length > 1 && <span className="hint">{w.keeps}</span>}
               </a>
@@ -97,8 +99,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             {desk.filter((s) => s.file !== v.primary).map((s) => {
               const newest = s.versions[s.versions.length - 1];
               return (
-                <a key={s.file} className={`file${s.versions.length > 1 ? " stack" : ""}`} href={newest.url} target="_blank" rel="noreferrer">
-                  {s.shape.startsWith("image") && <img src={newest.url} alt="" />}
+                <a key={s.file} className={`file${s.versions.length > 1 ? " stack" : ""}`} href={BASE + newest.url} target="_blank" rel="noreferrer">
+                  {s.shape.startsWith("image") && <img src={BASE + newest.url} alt="" />}
                   <span className="name">{s.word}</span>
                   <span className="meta">{w.version(Math.max(1, newest.version))}{s.by_word ? ` · ${s.by_word}` : ""}</span>
                 </a>
@@ -138,14 +140,15 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           <div className="grow" />
           {secondary.length > 0 && (
             <div className="chips">
-              {secondary.map((t) => <button key={t.action} type="button" className="chip" disabled={busy || t.blocked_by.length > 0} title={t.blocked_by.join(", ")}
-                                            onClick={() => { const text = window.prompt(t.label) ?? ""; if (text.trim()) step.mutate({ action: t.action, payload: { note: text.trim(), text: text.trim() } }); }}>{t.label}</button>)}
+              {secondary.map((t) => <button key={t.action} type="button" className={`chip${pending?.action === t.action ? " on" : ""}`} disabled={busy || t.blocked_by.length > 0} title={t.blocked_by.join(", ")}
+                                            onClick={() => { setPending(t); setAsk(""); askRef.current?.focus(); }}>{t.label}</button>)}
             </div>
           )}
-          <form className="ask" onSubmit={(e) => { e.preventDefault(); if (ask.trim()) run.mutate(ask.trim()); }}>
-            <span className="sr">{w.notePlaceholder(v.agent)}</span>
-            <input ref={askRef} value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={w.notePlaceholder(v.agent)} />
-            <button type="submit" className="send" disabled={busy || !ask.trim()}>↵</button>
+          <form className="ask" onSubmit={(e) => { e.preventDefault(); if (!ask.trim()) return; if (pending) { step.mutate({ action: pending.action, payload: { note: ask.trim(), text: ask.trim() } }); setPending(null); setAsk(""); } else run.mutate(ask.trim()); }}>
+            <span className="sr">{pending ? pending.label : w.notePlaceholder(v.agent)}</span>
+            {pending && <span className="chip on small" onClick={() => setPending(null)} role="button" tabIndex={0}>{pending.label} ×</span>}
+            <input ref={askRef} value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={pending ? `${pending.label} …` : w.notePlaceholder(v.agent)} />
+            <button type="submit" className="send" disabled={busy || !ask.trim()} aria-label="↵"><Send /></button>
           </form>
         </aside>
       </div>
@@ -156,6 +159,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         ) : primaryTurn ? (
           <>
             {blocked.length > 0 && <span className="says">{w.firstHere}: {blocked.map(blockedWord).join(", ")}</span>}
+            {blocked.length === 0 && needsAmount && !amount.trim() && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" /></label>}
+            {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
             <button type="button" className="btn" disabled={!canPress} onClick={() => step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>
           </>

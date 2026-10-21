@@ -1,7 +1,7 @@
 // The shell: menu, the list, the case. Three routes, read from the location: /, /case/<id>, /workshop, /group/<key>.
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "./api";
+import { api, BASE } from "./api";
 import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
 import { List } from "./screens/List";
@@ -11,7 +11,8 @@ import { words } from "./words";
 
 export type Route = { name: "home" } | { name: "case"; id: string } | { name: "workshop" } | { name: "group"; key: string };
 
-export function parse(path: string): Route {
+export function parse(full: string): Route {
+  const path = full.startsWith(BASE) ? full.slice(BASE.length) || "/" : full;
   const m = path.match(/^\/case\/([^/]+)/);
   if (m) return { name: "case", id: decodeURIComponent(m[1]) };
   if (path.startsWith("/workshop")) return { name: "workshop" };
@@ -28,7 +29,7 @@ export function useRoute(): [Route, (path: string) => void] {
     return () => window.removeEventListener("popstate", on);
   }, []);
   const go = (p: string) => {
-    window.history.pushState(null, "", p);
+    window.history.pushState(null, "", BASE + p);
     setPath(p);
     window.scrollTo({ top: 0 });
   };
