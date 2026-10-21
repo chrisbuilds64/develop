@@ -4,8 +4,11 @@ import { api, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
 
-export function Menu({ config, me, route, go, side, onSwap, onSignOut, w }:
-  { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void; w: ReturnType<typeof words> }) {
+export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, w }:
+  { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
+    onFresh: (world?: string) => void; onPerson: (person: string) => void; w: ReturnType<typeof words> }) {
+  const humans = config.people.filter((p) => p.kind === "human");
+  const otherWorld = me.worlds.find((x) => x !== me.world);
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
   const agent = config.people.find((p) => p.kind === "agent")?.name ?? "Claude";
@@ -41,10 +44,20 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, w }:
         <span>{w.askClaude(agent)}</span><span className="mono n">⌘K</span>
       </button>
       <button type="button" className="nav-row phone-only" onClick={() => go(route.name === "workshop" ? "/" : "/workshop")}>{route.name === "workshop" ? w.yourMove : w.workshop}</button>
+      {me.demo && (
+        <div className="demo-row">
+          {otherWorld && <button type="button" className="nav-row quiet" onClick={() => onFresh(otherWorld)}><span>{w.world(otherWorld)}</span><span className="mono n">⇄</span></button>}
+          <button type="button" className="nav-row quiet" onClick={() => onFresh()}><span>{w.startOver}</span><span className="mono n">↺</span></button>
+        </div>
+      )}
       <div className="who">
         <span className="avatar">{(me.name ?? "?").slice(0, 2).toUpperCase()}</span>
-        <span>{me.name}</span>
-        <button type="button" className="btn link small" style={{ marginLeft: "auto", padding: 0 }} onClick={onSignOut}>{w.signOut}</button>
+        {me.demo && humans.length > 1 ? (
+          <select className="person-switch" value={me.person ?? ""} onChange={(e) => onPerson(e.target.value)} aria-label={w.signIn}>
+            {humans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        ) : <span>{me.name}</span>}
+        {!me.demo && <button type="button" className="btn link small" style={{ marginLeft: "auto", padding: 0 }} onClick={onSignOut}>{w.signOut}</button>}
       </div>
     </nav>
   );

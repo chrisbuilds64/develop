@@ -31,6 +31,8 @@ input, textarea { font: inherit; color: inherit; }
 .menu .spacer { flex: 1; }
 .drop-in { min-height: 46px; border: 1.5px dashed var(--dashed); border-radius: var(--r-m); background: transparent; color: var(--ink); font-size: 15px; font-weight: 600; }
 .who { display: flex; align-items: center; gap: 10px; padding: 10px 8px 0; }
+.person-switch { flex: 1; min-height: 36px; border: 1px solid var(--hairline); border-radius: var(--r-s); background: var(--surface); padding: 0 8px; font-size: 15px; }
+.demo-row { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--hairline); padding-top: 6px; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--ground); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none; }
 .avatar.small { width: 28px; height: 28px; font-size: 12px; background: var(--hairline); color: var(--ink); }
 
@@ -160,7 +162,11 @@ input, textarea { font: inherit; color: inherit; }
   .shell, .shell.right { flex-direction: column; }
   .menu { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; height: 76px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 20px 10px; border-top: 1px solid var(--hairline); gap: 8px; z-index: 10; }
   .shell.right .menu { flex-direction: row-reverse; }
-  .menu-head, .menu .rule, .menu .spacer, .menu .who, .menu .nav-row:not(.phone), .menu .ask-row { display: none; }
+  .menu-head, .menu .rule, .menu .spacer, .menu .who, .menu .nav-row:not(.phone):not(.demo-row .nav-row), .menu .ask-row { display: none; }
+  .menu .demo-row { flex-direction: row; border: none; padding: 0; gap: 0; }
+  .menu .demo-row .nav-row { display: flex; width: auto; min-height: 48px; padding: 0 8px; }
+  .menu .demo-row .nav-row > span:first-child { display: none; }
+  .menu .demo-row .nav-row .n { font-size: 20px; color: var(--ink); }
   .menu .drop-in { width: 56px; height: 56px; min-height: 0; border-radius: 50%; border: none; background: var(--ink); color: var(--ground); font-size: 26px; flex: none; }
   .menu .nav-row.phone, .menu .nav-row.phone-only { display: flex; width: auto; min-height: 48px; }
   .list, .main { width: auto; height: auto; min-height: 0; overflow: visible; border: none; padding: 28px 20px 100px; }
@@ -180,4 +186,5 @@ input, textarea { font: inherit; color: inherit; }
   .foot .says { flex-basis: 100%; }
   .main { padding-bottom: 180px; }
   .frames { gap: 12px; }
+  .toast { bottom: 170px; width: calc(100% - 32px); justify-content: space-between; border-radius: var(--r-m); }
 }

@@ -3,6 +3,12 @@
 Every request leaves one audit line in `<root>/_audit/api.jsonl`. Identity is a signed cookie naming a
 person from people.json; how it is obtained depends on the deployment (open in development and in the
 demo sandbox, a login later). The core recovers half-done steps on start and records manual moves on read.
+
+Two ways to run it:
+- **one pipeline** (`Settings.root` + `config_dir`): the real thing, one store, one configuration;
+- **the public demo** (`Settings.worlds`): every visitor gets a sandbox, a fresh copy of a world's template
+  under `sessions_dir/<id>/`, bound to a signed cookie (ADR-016). "Start over" makes a new one. Old
+  sandboxes are swept; a cap removes the oldest first; a per-IP limit protects the host.
 """
 
 from __future__ import annotations
@@ -13,7 +19,10 @@ import hmac
 import json
 import os
 import secrets
+import shutil
+import threading
 import time
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -31,25 +40,45 @@ from ..store import FsStore, StoreError
 from . import views
 
 COOKIE = "cf_person"
+DEMO_COOKIE = "cf_demo"
+
+
+@dataclass
+class World:
+    config_dir: Path
+    template: Path                               # a built pipeline root to copy per visitor
+    person: str                                  # the visitor's identity in this world
+    lang: str | None = None
 
 
 @dataclass
 class Settings:
-    root: Path                                   # the pipeline root
-    config_dir: Path                             # config/<domain>
+    root: Path | None = None                     # one pipeline: the root
+    config_dir: Path | None = None               # one pipeline: config/<domain>
     lang: str | None = None
     open_identity: bool = True                   # POST /api/session {person} without a password (development, demo)
     secret: str = field(default_factory=lambda: secrets.token_hex(16))
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
     recover_on_start: bool = True
-    demo: bool = False                           # the public demo: samples offered, prepared replies played back
-    samples_dir: Path | None = None              # bundled sample files by slot file name (demo)
-    replies_dir: Path | None = None              # prepared replies by skill (demo)
+    demo: bool = False                           # samples offered, prepared replies played back
+    samples_dir: Path | None = None
+    replies_dir: Path | None = None
+    worlds: dict[str, World] = field(default_factory=dict)      # the public demo: name → world
+    default_world: str = "claims"
+    sessions_dir: Path | None = None
+    session_hours: int = 24
+    session_cap: int = 500
+    rate_per_minute: int = 300                   # requests per IP and minute
+    sessions_per_minute: int = 12                # new sandboxes per IP and minute
 
 
 class SessionIn(BaseModel):
     person: str
+
+
+class DemoSessionIn(BaseModel):
+    world: str | None = None
 
 
 class EntryIn(BaseModel):
@@ -69,12 +98,20 @@ class RunIn(BaseModel):
     request_id: str
 
 
+class SampleIn(BaseModel):
+    slot: str
+    step_id: str
+
+
 class MeOut(BaseModel):
     person: str | None
     name: str | None
-    roles: list[str] = Field(default_factory=list)
+    roles: list[str]
     lang: str
     product: str
+    demo: bool
+    world: str | None
+    worlds: list[str]
 
 
 class TurnOut(BaseModel):
@@ -101,28 +138,173 @@ class AssetOut(BaseModel):
     step: StepResult
 
 
-class SampleIn(BaseModel):
-    slot: str
-    step_id: str
+@dataclass
+class Ctx:
+    store: FsStore
+    config: DomainConfig
+    lang: str
+    world: str | None = None
+    session: str | None = None
 
 
 def _sign(secret: str, value: str) -> str:
     return hmac.new(secret.encode(), value.encode(), hashlib.sha256).hexdigest()[:32]
 
 
-def create_app(settings: Settings) -> FastAPI:
-    store = FsStore(settings.root)
-    config = DomainConfig.load(settings.config_dir, settings.root)
-    lang = settings.lang or config.lang
-    app = FastAPI(title="casefile", version=__version__, description=__doc__)
-    app.state.settings, app.state.store, app.state.config = settings, store, config
+def _now() -> str:
+    return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
-    if settings.recover_on_start:
-        stepping.recover(store, config)
+
+class Limiter:
+    """A small per-key sliding window; enough to keep one host alive under a room full of phones."""
+
+    def __init__(self):
+        self._hits: dict[str, deque] = defaultdict(deque)
+        self._lock = threading.Lock()
+
+    def allow(self, key: str, limit: int, window: float = 60.0) -> bool:
+        now = time.monotonic()
+        with self._lock:
+            q = self._hits[key]
+            while q and q[0] < now - window:
+                q.popleft()
+            if len(q) >= limit:
+                return False
+            q.append(now)
+            return True
+
+
+def create_app(settings: Settings) -> FastAPI:
+    app = FastAPI(title="casefile", version=__version__, description=__doc__)
+    app.state.settings = settings
+    limiter = Limiter()
+    single: Ctx | None = None
+    if settings.root is not None and settings.config_dir is not None:
+        store = FsStore(settings.root)
+        config = DomainConfig.load(settings.config_dir, settings.root)
+        single = Ctx(store=store, config=config, lang=settings.lang or config.lang)
+        if settings.recover_on_start:
+            stepping.recover(store, config)
+    world_configs: dict[str, DomainConfig] = {name: DomainConfig.load(w.config_dir, w.template) for name, w in settings.worlds.items()}
+    sessions: dict[str, Ctx] = {}
+    sessions_lock = threading.Lock()
+    if settings.worlds:
+        settings.sessions_dir.mkdir(parents=True, exist_ok=True)
+    samples = sorted(p.name for p in settings.samples_dir.iterdir()) if settings.samples_dir and settings.samples_dir.is_dir() else []
+
+    # ------------------------------------------------------------ sandboxes
+    def _session_ctx(sid: str) -> Ctx | None:
+        with sessions_lock:
+            if sid in sessions:
+                return sessions[sid]
+        d = settings.sessions_dir / sid
+        if not d.is_dir():
+            return None
+        try:
+            world = (d / ".world").read_text(encoding="utf-8").strip()
+            w = settings.worlds[world]
+        except (OSError, KeyError):
+            return None
+        ctx = Ctx(store=FsStore(d / "flow"), config=DomainConfig.load(w.config_dir, d / "flow"), lang=w.lang or world_configs[world].lang, world=world, session=sid)
+        with sessions_lock:
+            sessions[sid] = ctx
+        return ctx
+
+    def _new_session(world: str) -> Ctx:
+        w = settings.worlds[world]
+        sid = secrets.token_urlsafe(12)
+        d = settings.sessions_dir / sid
+        shutil.copytree(w.template, d / "flow")
+        (d / ".world").write_text(world, encoding="utf-8")
+        (d / ".created").write_text(_now(), encoding="utf-8")
+        _sweep()
+        return _session_ctx(sid)
+
+    def _sweep() -> int:
+        """Old sandboxes go; above the cap, the oldest go first."""
+        if not settings.worlds:
+            return 0
+        now = time.time()
+        gone = 0
+        for p in [p for p in settings.sessions_dir.iterdir() if p.is_dir() and (p / ".created").is_file()]:
+            if now - p.stat().st_mtime > settings.session_hours * 3600 and now - (p / ".created").stat().st_mtime > settings.session_hours * 3600:
+                shutil.rmtree(p, ignore_errors=True)
+                gone += 1
+        dirs = sorted((p for p in settings.sessions_dir.iterdir() if p.is_dir() and (p / ".created").is_file()), key=lambda p: (p / ".created").stat().st_mtime)
+        while len(dirs) > settings.session_cap:
+            shutil.rmtree(dirs.pop(0), ignore_errors=True)
+            gone += 1
+        with sessions_lock:
+            for sid in list(sessions):
+                if not (settings.sessions_dir / sid).is_dir():
+                    sessions.pop(sid, None)
+        return gone
+
+    app.state.sweep = _sweep
+    app.state.sessions = sessions
+
     if settings.demo and settings.replies_dir:
         from ..demo.replay import ReplayRunner
-        app.state.replay = ReplayRunner([(store, config)], settings.replies_dir).start()
-    samples = sorted(p.name for p in settings.samples_dir.iterdir()) if settings.samples_dir and settings.samples_dir.is_dir() else []
+
+        def roots():
+            with sessions_lock:
+                live = list(sessions.values())
+            return [(c.store, c.config) for c in ([single] if single else []) + live]
+        app.state.replay = ReplayRunner(roots, settings.replies_dir).start()
+
+    # ------------------------------------------------------------ resolving a request
+    def _who(request: Request, config: DomainConfig) -> str | None:
+        raw = request.cookies.get(COOKIE, "")
+        if "." not in raw:
+            return None
+        person, sig = raw.rsplit(".", 1)
+        p = config.person(person) if hmac.compare_digest(sig, _sign(settings.secret, person)) else None
+        return p.id if p else None
+
+    def _client(request: Request) -> str:
+        return request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[0].strip()
+
+    def _set_person(response: Response, person_id: str) -> None:
+        response.set_cookie(COOKIE, f"{person_id}.{_sign(settings.secret, person_id)}", httponly=True, samesite="lax", max_age=30 * 24 * 3600)
+
+    def _set_session(response: Response, sid: str) -> None:
+        response.set_cookie(DEMO_COOKIE, f"{sid}.{_sign(settings.secret, sid)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
+
+    def ctx(request: Request, response: Response) -> Ctx:
+        """The store and configuration this request works on. In the demo, a missing sandbox is created on the spot."""
+        if not limiter.allow(_client(request), settings.rate_per_minute):
+            raise HTTPException(429, "too many requests")
+        if single is not None and not settings.worlds:
+            return single
+        raw = request.cookies.get(DEMO_COOKIE, "")
+        if "." in raw:
+            sid, sig = raw.rsplit(".", 1)
+            if hmac.compare_digest(sig, _sign(settings.secret, sid)):
+                c = _session_ctx(sid)
+                if c is not None:
+                    return c
+        if not limiter.allow("new:" + _client(request), settings.sessions_per_minute):
+            raise HTTPException(429, "too many new sessions")
+        c = _new_session(settings.default_world)
+        _set_session(response, c.session)
+        _set_person(response, settings.worlds[c.world].person)
+        request.state.fresh_person = settings.worlds[c.world].person
+        return c
+
+    def viewer(request: Request, c: Ctx = Depends(ctx)) -> str:
+        who = getattr(request.state, "fresh_person", None) or _who(request, c.config)
+        if not who:
+            raise HTTPException(401, "not signed in")
+        return who
+
+    def product(c: Ctx) -> str:
+        v = c.config.vocabulary.get(c.lang) or c.config.vocabulary.get("en") or {}
+        return str(v.get("product") or c.config.name)
+
+    def me_out(c: Ctx, person_id: str | None) -> MeOut:
+        p = c.config.person(person_id) if person_id else None
+        return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
+                     demo=settings.demo, world=c.world, worlds=list(settings.worlds))
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")
@@ -130,116 +312,102 @@ def create_app(settings: Settings) -> FastAPI:
         t0 = time.perf_counter()
         response = await call_next(request)
         if request.url.path.startswith("/api/"):
-            line = {"at": dt.datetime.now().astimezone().isoformat(timespec="seconds"), "who": _who(request) or "-",
-                    "method": request.method, "path": request.url.path, "status": response.status_code,
-                    "ms": round((time.perf_counter() - t0) * 1000)}
-            store.append("_audit/api.jsonl", json.dumps(line, ensure_ascii=False) + "\n")
+            line = {"at": _now(), "who": "-", "method": request.method, "path": request.url.path, "status": response.status_code,
+                    "ms": round((time.perf_counter() - t0) * 1000), "ip": _client(request)}
+            target = single
+            raw = request.cookies.get(DEMO_COOKIE, "")
+            if settings.worlds and "." in raw:
+                target = _session_ctx(raw.rsplit(".", 1)[0])
+            if target is not None:
+                line["who"] = _who(request, target.config) or "-"
+                try:
+                    target.store.append("_audit/api.jsonl", json.dumps(line, ensure_ascii=False) + "\n")
+                except OSError:
+                    pass
         return response
-
-    # ------------------------------------------------------------ identity
-    def _who(request: Request) -> str | None:
-        raw = request.cookies.get(COOKIE, "")
-        if "." not in raw:
-            return None
-        person, sig = raw.rsplit(".", 1)
-        if hmac.compare_digest(sig, _sign(settings.secret, person)) and config.person(person):
-            return config.person(person).id
-        return None
-
-    def viewer(request: Request) -> str:
-        who = _who(request)
-        if not who:
-            raise HTTPException(401, "not signed in")
-        return who
-
-    def file_url(case: Case, name: str) -> str:
-        return f"/api/cases/{case.id}/files/{name}"
 
     # ------------------------------------------------------------ session
     @app.post("/api/session", response_model=MeOut)
-    def session(body: SessionIn, response: Response):
+    def session(body: SessionIn, response: Response, c: Ctx = Depends(ctx)):
         if not settings.open_identity:
             raise HTTPException(403, "this deployment does not accept an open identity")
-        p = config.person(body.person)
+        p = c.config.person(body.person)
         if p is None or p.kind != "human":
             raise HTTPException(404, f"'{body.person}' is not a person here")
-        response.set_cookie(COOKIE, f"{p.id}.{_sign(settings.secret, p.id)}", httponly=True, samesite="lax", max_age=30 * 24 * 3600)
-        return MeOut(person=p.id, name=p.name, roles=p.roles, lang=lang, product=_product())
+        _set_person(response, p.id)
+        return me_out(c, p.id)
 
     @app.delete("/api/session")
     def end_session(response: Response):
         response.delete_cookie(COOKIE)
         return {"ok": True}
 
-    @app.get("/api/me", response_model=MeOut)
-    def me(request: Request):
-        who = _who(request)
-        p = config.person(who) if who else None
-        return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=lang, product=_product())
+    @app.post("/api/demo/session", response_model=MeOut)
+    def demo_session(response: Response, request: Request, body: DemoSessionIn | None = None):
+        """A fresh sandbox: start over, or switch to the other world."""
+        if not settings.worlds:
+            raise HTTPException(404, "not a demo")
+        if not limiter.allow("new:" + _client(request), settings.sessions_per_minute):
+            raise HTTPException(429, "too many new sessions")
+        world = (body.world if body and body.world else None) or settings.default_world
+        if world not in settings.worlds:
+            raise HTTPException(404, f"no world '{world}'")
+        c = _new_session(world)
+        _set_session(response, c.session)
+        _set_person(response, settings.worlds[world].person)
+        return me_out(c, settings.worlds[world].person)
 
-    def _product() -> str:
-        v = config.vocabulary.get(lang) or config.vocabulary.get("en") or {}
-        return str(v.get("product") or config.name)
+    @app.get("/api/me", response_model=MeOut)
+    def me(request: Request, c: Ctx = Depends(ctx)):
+        return me_out(c, getattr(request.state, "fresh_person", None) or _who(request, c.config))
 
     # ------------------------------------------------------------ reading
     @app.get("/api/config", response_model=views.ConfigView)
-    def get_config():
-        v = views.config_view(config, lang)
-        v.theme = {**v.theme, "demo": settings.demo, "samples": samples if settings.demo else []}
+    def get_config(c: Ctx = Depends(ctx)):
+        v = views.config_view(c.config, c.lang)
+        v.theme = {**v.theme, "demo": settings.demo, "samples": samples if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
         return v
 
-    @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
-    def post_sample(case_id: str, body: SampleIn, who: str = Depends(viewer)):
-        """The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version."""
-        if not settings.demo or not settings.samples_dir or body.slot not in samples:
-            raise HTTPException(404, "no sample for that slot")
-        prior = stepping.read_journal(store, body.step_id)
-        if prior is not None:
-            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=stepping.step(store, config, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
-        try:
-            name = assets.put(store, config, case_id, body.slot, settings.samples_dir / body.slot, body.slot)
-        except StoreError as exc:
-            raise HTTPException(409, str(exc))
-        result = stepping.step(store, config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who)
-        return AssetOut(name=name, slot=body.slot, step=result)
-
     @app.get("/api/me/turns", response_model=list[TurnOut])
-    def my_turns(who: str = Depends(viewer)):
-        stepping.detect(store, config)
-        all_cases = reading.load_all(store, config)
-        return [TurnOut(case=views.card(config, c, who, lang), turn=t) for c, t in whose.turns_for(who, all_cases, config, lang)]
+    def my_turns(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        stepping.detect(c.store, c.config)
+        all_cases = reading.load_all(c.store, c.config)
+        return [TurnOut(case=views.card(c.config, case, who, c.lang), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
 
     @app.get("/api/cases", response_model=list[GroupOut])
-    def list_cases(group: str | None = None, who: str = Depends(viewer)):
-        stepping.detect(store, config)
-        cards = [views.card(config, c, who, lang) for c in reading.load_all(store, config)]
+    def list_cases(group: str | None = None, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        stepping.detect(c.store, c.config)
+        cards = [views.card(c.config, case, who, c.lang) for case in reading.load_all(c.store, c.config)]
         order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
         out = []
         for g in order:
             if group and g != group:
                 continue
-            mine = [c for c in cards if c.group == g]
+            mine = [x for x in cards if x.group == g]
             if g == "out":
-                mine.sort(key=lambda c: c.date, reverse=True)
+                mine.sort(key=lambda x: x.date, reverse=True)
             else:
-                mine.sort(key=lambda c: c.since)
-            out.append(GroupOut(key=g, word=config.word("groups", g, lang, g), cases=mine))
+                mine.sort(key=lambda x: x.since)
+            out.append(GroupOut(key=g, word=c.config.word("groups", g, c.lang, g), cases=mine))
         return out
 
+    def file_url(case: Case, name: str) -> str:
+        return f"/api/cases/{case.id}/files/{name}"
+
     @app.get("/api/cases/{case_id}", response_model=views.CaseView)
-    def get_case(case_id: str, who: str = Depends(viewer)):
+    def get_case(case_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         try:
-            case = reading.load(store, config, case_id)
+            case = reading.load(c.store, c.config, case_id)
         except (KeyError, StoreError) as exc:
             raise HTTPException(404, str(exc) or case_id)
-        return views.view(config, case, who, lang, file_url)
+        return views.view(c.config, case, who, c.lang, file_url)
 
     @app.get("/api/cases/{case_id}/files/{name}")
-    def get_file(case_id: str, name: str, who: str = Depends(viewer)):
+    def get_file(case_id: str, name: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         if "/" in name or name.startswith("."):
             raise HTTPException(404, name)
         try:
-            p = store.case_dir(case_id) / name
+            p = c.store.case_dir(case_id) / name
         except StoreError:
             raise HTTPException(404, case_id)
         if not p.is_file():
@@ -247,47 +415,60 @@ def create_app(settings: Settings) -> FastAPI:
         return FileResponse(p)
 
     @app.get("/api/stages", response_model=list[StageOut])
-    def stages(who: str = Depends(viewer)):
+    def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         out = []
-        for folder in store.stages():
-            st = config.stage(folder)
-            cards = [views.card(config, reading.load(store, config, cid), who, lang) for cid in store.cases(folder)]
-            out.append(StageOut(folder=folder, key=st.key if st else "", word=config.word("stages", folder, lang, folder), cases=cards))
+        for folder in c.store.stages():
+            st = c.config.stage(folder)
+            cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang) for cid in c.store.cases(folder)]
+            out.append(StageOut(folder=folder, key=st.key if st else "", word=c.config.word("stages", folder, c.lang, folder), cases=cards))
         return out
 
     # ------------------------------------------------------------ writing: every write is a step
-    @app.post("/api/cases/{case_id}/steps", response_model=StepResult)
-    def post_step(case_id: str, body: StepRequest, who: str = Depends(viewer)):
-        result = stepping.step(store, config, case_id, body, who)
+    def _answer(result: StepResult) -> JSONResponse:
         return JSONResponse(status_code=200 if result.ok else 409, content=result.model_dump(by_alias=True))
 
+    @app.post("/api/cases/{case_id}/steps", response_model=StepResult)
+    def post_step(case_id: str, body: StepRequest, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        return _answer(stepping.step(c.store, c.config, case_id, body, who))
+
     @app.post("/api/cases/{case_id}/entries", response_model=StepResult)
-    def post_entry(case_id: str, body: EntryIn, who: str = Depends(viewer)):
+    def post_entry(case_id: str, body: EntryIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         if body.kind not in ("note", "answer", "done"):
             raise HTTPException(422, "kind must be note, answer or done")
         payload = {"text": body.text, "resolves": body.resolves or "", "for": body.for_ or "", "title": body.title or ""}
-        result = stepping.step(store, config, case_id, StepRequest(action=body.kind, step_id=body.step_id, payload=payload), who)
-        return JSONResponse(status_code=200 if result.ok else 409, content=result.model_dump(by_alias=True))
+        return _answer(stepping.step(c.store, c.config, case_id, StepRequest(action=body.kind, step_id=body.step_id, payload=payload), who))
 
     @app.post("/api/cases/{case_id}/runs", response_model=StepResult)
-    def post_run(case_id: str, body: RunIn, who: str = Depends(viewer)):
-        result = stepping.step(store, config, case_id, StepRequest(action="ask", step_id=body.request_id, payload={"skill": body.skill, "text": body.note}), who)
-        return JSONResponse(status_code=200 if result.ok else 409, content=result.model_dump(by_alias=True))
+    def post_run(case_id: str, body: RunIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        return _answer(stepping.step(c.store, c.config, case_id, StepRequest(action="ask", step_id=body.request_id, payload={"skill": body.skill, "text": body.note}), who))
 
     @app.post("/api/cases/{case_id}/assets", response_model=AssetOut)
-    async def post_asset(case_id: str, slot: str = Form(...), step_id: str = Form(...), file: UploadFile = File(...), who: str = Depends(viewer)):
+    async def post_asset(case_id: str, slot: str = Form(...), step_id: str = Form(...), file: UploadFile = File(...), c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         data = await file.read()
         if len(data) > settings.max_upload_mb * 1024 * 1024:
             raise HTTPException(413, f"larger than {settings.max_upload_mb} MB")
-        prior = stepping.read_journal(store, step_id)
-        if prior is not None:                                   # the same upload twice: the first outcome
-            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=slot, step=stepping.step(store, config, case_id, StepRequest(action="deliver", step_id=step_id), who))
+        prior = stepping.read_journal(c.store, step_id)
+        if prior is not None:
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=step_id), who))
         try:
-            name = assets.put(store, config, case_id, slot, data, file.filename or "")
+            name = assets.put(c.store, c.config, case_id, slot, data, file.filename or "")
         except StoreError as exc:
             raise HTTPException(409, str(exc))
-        result = stepping.step(store, config, case_id, StepRequest(action="deliver", step_id=step_id, payload={"files": [name], "title": ""}), who)
-        return AssetOut(name=name, slot=slot, step=result)
+        return AssetOut(name=name, slot=slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=step_id, payload={"files": [name], "title": ""}), who))
+
+    @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
+    def post_sample(case_id: str, body: SampleIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version."""
+        if not settings.demo or not settings.samples_dir or body.slot not in samples:
+            raise HTTPException(404, "no sample for that slot")
+        prior = stepping.read_journal(c.store, body.step_id)
+        if prior is not None:
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
+        try:
+            name = assets.put(c.store, c.config, case_id, body.slot, settings.samples_dir / body.slot, body.slot)
+        except StoreError as exc:
+            raise HTTPException(409, str(exc))
+        return AssetOut(name=name, slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
 
     # ------------------------------------------------------------ the surface
     if settings.web_dist and settings.web_dist.is_dir():
@@ -296,7 +477,7 @@ def create_app(settings: Settings) -> FastAPI:
         @app.get("/{path:path}", include_in_schema=False)
         def spa(path: str):
             candidate = settings.web_dist / path
-            if path and candidate.is_file():
+            if path and ".." not in path and candidate.is_file():
                 return FileResponse(candidate)
             return FileResponse(settings.web_dist / "index.html")
 
@@ -304,13 +485,27 @@ def create_app(settings: Settings) -> FastAPI:
 
 
 def app_from_env() -> FastAPI:
-    """`uvicorn casefile.api.app:app_from_env --factory` with CASEFILE_ROOT, CASEFILE_CONFIG, CASEFILE_WEB, CASEFILE_SECRET."""
+    """`uvicorn casefile.api.app:app_from_env --factory`.
+
+    One pipeline: CASEFILE_ROOT, CASEFILE_CONFIG. The demo: CASEFILE_DEMO_WORLDS=<dir with claims/ and pressroom/> (built by
+    `python -m casefile.demo.worlds <dir>`), CASEFILE_SESSIONS=<dir>. Both: CASEFILE_WEB, CASEFILE_SECRET, CASEFILE_LANG.
+    """
     here = Path(__file__).resolve().parents[2]
+    web = Path(os.environ["CASEFILE_WEB"]) if os.environ.get("CASEFILE_WEB") else (here / "web" / "dist")
+    secret = os.environ.get("CASEFILE_SECRET") or secrets.token_hex(16)
+    if os.environ.get("CASEFILE_DEMO_WORLDS"):
+        worlds_dir = Path(os.environ["CASEFILE_DEMO_WORLDS"]).expanduser()
+        return create_app(Settings(secret=secret, web_dist=web, demo=True, samples_dir=here / "casefile" / "demo" / "samples",
+                                   replies_dir=here / "casefile" / "demo" / "replies",
+                                   worlds={"claims": World(config_dir=here / "config" / "claims-demo", template=worlds_dir / "claims", person="du", lang="de"),
+                                           "pressroom": World(config_dir=here / "config" / "pressroom", template=worlds_dir / "pressroom", person="chris", lang="en")},
+                                   default_world=os.environ.get("CASEFILE_DEFAULT_WORLD", "claims"),
+                                   sessions_dir=Path(os.environ.get("CASEFILE_SESSIONS") or worlds_dir / "sessions"),
+                                   open_identity=True))
     return create_app(Settings(root=Path(os.environ["CASEFILE_ROOT"]).expanduser(),
                                config_dir=Path(os.environ.get("CASEFILE_CONFIG") or here / "config" / "pressroom"),
                                lang=os.environ.get("CASEFILE_LANG"),
                                open_identity=os.environ.get("CASEFILE_OPEN_IDENTITY", "1") == "1",
-                               secret=os.environ.get("CASEFILE_SECRET") or secrets.token_hex(16),
-                               web_dist=Path(os.environ["CASEFILE_WEB"]) if os.environ.get("CASEFILE_WEB") else (here / "web" / "dist"),
+                               secret=secret, web_dist=web,
                                demo=os.environ.get("CASEFILE_DEMO", "0") == "1",
                                samples_dir=here / "casefile" / "demo" / "samples", replies_dir=here / "casefile" / "demo" / "replies"))

@@ -50,9 +50,16 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const needsUrl = asks.includes("url");
   const needsNote = asks.includes("note");
   const blocked = primaryTurn?.blocked_by ?? [];
+  const blockedWord = (b: string) => {
+    const slot = v.slots.find((s) => s.file === b);
+    if (slot) return slot.word;
+    if (b.startsWith("shape:")) { const want = b.slice(6); const first = v.slots.find((s) => !s.present && s.shape.startsWith(want)); return first ? first.word : w.shape(want); }
+    return b;
+  };
+  const framesAreTheMove = primaryTurn?.action === "deliver";
   const canPress = primaryTurn && blocked.length === 0 && (!needsAmount || amount.trim()) && (!needsDate || date) && (!needsNote || note.trim()) && !busy;
   const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file));
-  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && (s.required || s.due_station === v.station || blocked.includes(s.file)));
+  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))))));
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const stub = main
     ? mine ? `${v.stage_word} · ${w.waitingForYou}${v.since ? ` ${w.since} ${ago(v.since, lang)}` : ""}`
@@ -144,9 +151,11 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
       </div>
 
       <footer className="foot">
-        {primaryTurn ? (
+        {primaryTurn && framesAreTheMove ? (
+          <span className="says">{w.fillFrames(blocked.map(blockedWord).join(", "))}</span>
+        ) : primaryTurn ? (
           <>
-            {blocked.length > 0 && <span className="says">{w.firstHere}: {blocked.map((b) => v.slots.find((s) => s.file === b)?.word ?? b).join(", ")}</span>}
+            {blocked.length > 0 && <span className="says">{w.firstHere}: {blocked.map(blockedWord).join(", ")}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
             <button type="button" className="btn" disabled={!canPress} onClick={() => step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>
           </>

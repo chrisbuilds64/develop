@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "casefile",
-    "description": "The core's API (Bauplan \u00a74). JSON in, JSON out; the surface is static files served beside it (ADR-014).\n\nEvery request leaves one audit line in `<root>/_audit/api.jsonl`. Identity is a signed cookie naming a\nperson from people.json; how it is obtained depends on the deployment (open in development and in the\ndemo sandbox, a login later). The core recovers half-done steps on start and records manual moves on read.\n",
+    "description": "The core's API (Bauplan \u00a74). JSON in, JSON out; the surface is static files served beside it (ADR-014).\n\nEvery request leaves one audit line in `<root>/_audit/api.jsonl`. Identity is a signed cookie naming a\nperson from people.json; how it is obtained depends on the deployment (open in development and in the\ndemo sandbox, a login later). The core recovers half-done steps on start and records manual moves on read.\n\nTwo ways to run it:\n- **one pipeline** (`Settings.root` + `config_dir`): the real thing, one store, one configuration;\n- **the public demo** (`Settings.worlds`): every visitor gets a sandbox, a fresh copy of a world's template\n  under `sessions_dir/<id>/`, bound to a signed cookie (ADR-016). \"Start over\" makes a new one. Old\n  sandboxes are swept; a cap removes the oldest first; a per-IP limit protects the host.\n",
     "version": "0.1.0"
   },
   "paths": {
@@ -58,6 +58,52 @@
         }
       }
     },
+    "/api/demo/session": {
+      "post": {
+        "summary": "Demo Session",
+        "description": "A fresh sandbox: start over, or switch to the other world.",
+        "operationId": "demo_session_api_demo_session_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DemoSessionIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me": {
       "get": {
         "summary": "Me",
@@ -87,56 +133,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConfigView"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/samples": {
-      "post": {
-        "summary": "Post Sample",
-        "description": "The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version.",
-        "operationId": "post_sample_api_cases__case_id__samples_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SampleIn"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssetOut"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -518,6 +514,56 @@
           }
         }
       }
+    },
+    "/api/cases/{case_id}/samples": {
+      "post": {
+        "summary": "Post Sample",
+        "description": "The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version.",
+        "operationId": "post_sample_api_cases__case_id__samples_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SampleIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -859,6 +905,23 @@
         ],
         "title": "ConfigView"
       },
+      "DemoSessionIn": {
+        "properties": {
+          "world": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "World"
+          }
+        },
+        "type": "object",
+        "title": "DemoSessionIn"
+      },
       "Entry": {
         "properties": {
           "id": {
@@ -1127,14 +1190,40 @@
           "product": {
             "type": "string",
             "title": "Product"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo"
+          },
+          "world": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "World"
+          },
+          "worlds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Worlds"
           }
         },
         "type": "object",
         "required": [
           "person",
           "name",
+          "roles",
           "lang",
-          "product"
+          "product",
+          "demo",
+          "world",
+          "worlds"
         ],
         "title": "MeOut"
       },

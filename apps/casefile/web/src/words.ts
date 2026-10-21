@@ -45,6 +45,11 @@ const W = {
     you: "Du",
     moved: "Weiter",
     sample: (what: string) => `Beispiel einlegen: ${what}`,
+    startOver: "Neu starten",
+    world: (k: string) => (k === "claims" ? "Zur Schadenakte" : k === "pressroom" ? "Zum PressRoom" : k),
+    fictional: "Fiktive Demo. Jeder Name ist erfunden.",
+    shape: (k: string) => (k.startsWith("image") ? "ein Bild" : k.startsWith("video") ? "ein Video" : k === "pdf" ? "ein PDF" : k),
+    fillFrames: (what: string) => `Leg ${what} in den Rahmen. Mehr braucht es nicht.`,
   },
   en: {
     nothing: "Nothing waits for you.",
@@ -89,6 +94,11 @@ const W = {
     you: "You",
     moved: "Moved",
     sample: (what: string) => `Put in a sample ${what.toLowerCase()}`,
+    startOver: "Start over",
+    world: (k: string) => (k === "claims" ? "To the claims file" : k === "pressroom" ? "To PressRoom" : k),
+    fictional: "Fictional demo. Every name is invented.",
+    shape: (k: string) => (k.startsWith("image") ? "an image" : k.startsWith("video") ? "a video" : k === "pdf" ? "a PDF" : k),
+    fillFrames: (what: string) => `Put ${what} into the frame. That is all it needs.`,
   },
 };
 

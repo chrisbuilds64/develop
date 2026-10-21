@@ -22,6 +22,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Demo Session
+         * @description A fresh sandbox: start over, or switch to the other world.
+         */
+        post: operations["demo_session_api_demo_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -50,26 +70,6 @@ export interface paths {
         get: operations["get_config_api_config_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/samples": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Post Sample
-         * @description The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version.
-         */
-        post: operations["post_sample_api_cases__case_id__samples_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -229,6 +229,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Sample
+         * @description The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version.
+         */
+        post: operations["post_sample_api_cases__case_id__samples_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -365,6 +385,11 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** DemoSessionIn */
+        DemoSessionIn: {
+            /** World */
+            world?: string | null;
+        };
         /**
          * Entry
          * @description One item of the thread (review.md): `## REV-NNN — title`, a head line, text.
@@ -463,11 +488,17 @@ export interface components {
             /** Name */
             name: string | null;
             /** Roles */
-            roles?: string[];
+            roles: string[];
             /** Lang */
             lang: string;
             /** Product */
             product: string;
+            /** Demo */
+            demo: boolean;
+            /** World */
+            world: string | null;
+            /** Worlds */
+            worlds: string[];
         };
         /** PersonView */
         PersonView: {
@@ -746,6 +777,39 @@ export interface operations {
             };
         };
     };
+    demo_session_api_demo_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DemoSessionIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     me_api_me_get: {
         parameters: {
             query?: never;
@@ -782,41 +846,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConfigView"];
-                };
-            };
-        };
-    };
-    post_sample_api_cases__case_id__samples_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SampleIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AssetOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1072,6 +1101,41 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_post_asset_api_cases__case_id__assets_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_sample_api_cases__case_id__samples_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SampleIn"];
             };
         };
         responses: {
