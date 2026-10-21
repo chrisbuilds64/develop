@@ -1,4 +1,5 @@
-// The shell: menu, the list, the case. Routes, read from the location: /, /case/<id>, /workshop, /group/<key>, and /doc/<id>/<name> as the reader in its own window.
+// The shell: menu and one of three views on the same folders — the cases (list + case), the board, the stacked list.
+// Routes, read from the location: /, /case/<id>, /group/<key> (cases), /board, /list, and /doc/<id>/<name> as the reader in its own window.
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, BASE } from "./api";
@@ -6,11 +7,12 @@ import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
 import { List } from "./screens/List";
 import { CaseScreen } from "./screens/Case";
-import { Workshop } from "./screens/Workshop";
+import { Board } from "./screens/Board";
+import { Stacked } from "./screens/Stacked";
 import { DocWindow } from "./screens/DocWindow";
 import { words } from "./words";
 
-export type Route = { name: "home" } | { name: "case"; id: string } | { name: "workshop" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
+export type Route = { name: "home" } | { name: "case"; id: string } | { name: "board" } | { name: "list" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
   const path = full.startsWith(BASE) ? full.slice(BASE.length) || "/" : full;
@@ -18,7 +20,8 @@ export function parse(full: string): Route {
   if (d) return { name: "doc", id: decodeURIComponent(d[1]), file: decodeURIComponent(d[2]) };
   const m = path.match(/^\/case\/([^/]+)/);
   if (m) return { name: "case", id: decodeURIComponent(m[1]) };
-  if (path.startsWith("/workshop")) return { name: "workshop" };
+  if (path.startsWith("/board") || path.startsWith("/workshop")) return { name: "board" };
+  if (path.startsWith("/list")) return { name: "list" };
   const g = path.match(/^\/group\/([^/]+)/);
   if (g) return { name: "group", key: g[1] };
   return { name: "home" };
@@ -80,8 +83,10 @@ export function App() {
       <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
             onSignOut={async () => { await api.signOut(); qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
             theme={theme} onTheme={setTheme} />
-      {route.name === "workshop" ? (
-        <Workshop config={config.data} go={go} w={w} />
+      {route.name === "board" ? (
+        <Board config={config.data} go={go} w={w} />
+      ) : route.name === "list" ? (
+        <Stacked config={config.data} go={go} w={w} />
       ) : (
         <>
           {showList && <List config={config.data} route={route} go={go} w={w} />}

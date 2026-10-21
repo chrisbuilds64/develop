@@ -6,7 +6,7 @@ import type { Route } from "../App";
 import { Cover } from "../components/Cover";
 import { ago, dateWords, type words } from "../words";
 
-function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void; w: ReturnType<typeof words>; lang: string; quiet?: boolean }) {
+export function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void; w: ReturnType<typeof words>; lang: string; quiet?: boolean }) {
   const t = c.turn;
   const running = t?.actor === "claude";
   const state = t ? (c.mine ? `${c.stage_word}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;

@@ -12,3 +12,6 @@ export const Back = () => <svg {...base}><path d="M19 12H6M12 6l-6 6 6 6" /></sv
 export const Prev = () => <svg {...base}><path d="M15 6l-6 6 6 6" /></svg>;
 export const Next = () => <svg {...base}><path d="M9 6l6 6-6 6" /></svg>;
 export const PopOut = () => <svg {...base}><path d="M14 4h6v6M20 4l-8 8M18 14v5H5V6h5" /></svg>;
+export const ViewCases = () => <svg {...base}><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>;
+export const ViewBoard = () => <svg {...base}><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z" /></svg>;
+export const ViewList = () => <svg {...base}><path d="M4 6h16M4 12h16M4 18h16" /></svg>;

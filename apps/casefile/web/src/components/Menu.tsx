@@ -1,9 +1,9 @@
-// The menu: groups by urgency, the workshop behind a rule, drop-in and the person at the bottom. Left or right.
+// The menu: the three views under the name, groups by urgency, drop-in and the person at the bottom. Left or right.
 import { useQuery } from "@tanstack/react-query";
 import { api, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Close, MenuIcon, Moon, Restart, Sun, Swap, Worlds } from "./Icons";
+import { Close, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
 import { useState } from "react";
 
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, w, theme, onTheme }:
@@ -18,6 +18,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
   const agent = config.people.find((p) => p.kind === "agent")?.name ?? "Claude";
   const current = route.name === "group" ? route.key : route.name === "home" ? "you" : null;
+  const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
   return (
     <nav className={`menu${open ? " open" : ""}`} aria-label={w.menu}>
       <button type="button" className={`nav-row phone-only${route.name === "home" ? " on" : ""}`} onClick={() => goClose("/")}>
@@ -34,6 +35,11 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         </div>
         <button type="button" className="swap" onClick={onSwap} aria-label={w.switchHand} title={w.switchHand}><Swap /></button>
       </div>
+      <div className="views" role="tablist" aria-label={w.views}>
+        <button type="button" role="tab" aria-selected={view === "cases"} className={`view${view === "cases" ? " on" : ""}`} onClick={() => goClose("/")} title={w.casesView}><ViewCases /><span>{w.casesView}</span></button>
+        <button type="button" role="tab" aria-selected={view === "board"} className={`view${view === "board" ? " on" : ""}`} onClick={() => goClose("/board")} title={w.board}><ViewBoard /><span>{w.board}</span></button>
+        <button type="button" role="tab" aria-selected={view === "list"} className={`view${view === "list" ? " on" : ""}`} onClick={() => goClose("/list")} title={w.stacked}><ViewList /><span>{w.stacked}</span></button>
+      </div>
       {config.groups.map((g) => {
         const n = counts.get(g.key) ?? 0;
         if (n === 0 && !["you", "claude", "others", "out"].includes(g.key)) return null;
@@ -46,10 +52,6 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
           </button>
         );
       })}
-      <div className="rule" />
-      <button type="button" className={`nav-row quiet${route.name === "workshop" ? " on" : ""}`} onClick={() => goClose("/workshop")}>
-        <span>{w.workshop}</span><span className="mono n">{w.stages}</span>
-      </button>
       <div className="spacer" />
       <button type="button" className="drop-in" onClick={() => goClose("/")} aria-label={w.dropIn}>{w.dropIn}</button>
       <button type="button" className="nav-row quiet ask-row" onClick={() => document.querySelector<HTMLInputElement>(".ask input")?.focus()}>
