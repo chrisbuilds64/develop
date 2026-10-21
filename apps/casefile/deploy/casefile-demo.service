@@ -1,0 +1,22 @@
+[Unit]
+Description=casefile public demo (sandbox per visitor, fictional data only)
+After=network.target
+
+[Service]
+Type=simple
+User=casefile
+Group=casefile
+WorkingDirectory=/opt/casefile/app
+EnvironmentFile=/opt/casefile/demo.env
+ExecStart=/opt/casefile/venv/bin/python -m uvicorn casefile.api.app:app_from_env --factory --host 127.0.0.1 --port 8410 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/casefile/demo
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

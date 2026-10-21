@@ -36,16 +36,22 @@ def load_reply(replies_dir: Path, skill: str) -> dict | None:
 
 
 def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path, wait: bool = True) -> bool:
-    """Play one order to its end. Returns True when it was played."""
+    """Move one order along: queued → running now; running → done once its delay has passed. No sleeping, so a
+    room full of sandboxes is served in parallel by one thread. `wait=False` finishes it in one call (tests)."""
     rel = f"_runs/{run_name}"
     doc = store.read_json(rel)
-    if doc.get("status") != "queued":
-        return False
     reply = load_reply(replies_dir, doc.get("skill", ""))
-    doc["status"], doc["started"], doc["taken_by"] = "running", _now(), "replay"
-    store.write_json(rel, doc)
-    if wait:
-        time.sleep(float((reply or {}).get("delay_s", 3)))
+    if doc.get("status") == "queued":
+        doc["status"], doc["started"], doc["taken_by"] = "running", _now(), "replay"
+        store.write_json(rel, doc)
+        if wait:
+            return True
+    elif doc.get("status") == "running" and doc.get("taken_by") == "replay":
+        started = dt.datetime.fromisoformat(doc["started"])
+        if wait and (dt.datetime.now().astimezone() - started).total_seconds() < float((reply or {}).get("delay_s", 3)):
+            return False
+    else:
+        return False
     case_id = doc["container"].split("/")[-1]
     try:
         stage = store.find(case_id)

@@ -69,8 +69,8 @@ class Settings:
     sessions_dir: Path | None = None
     session_hours: int = 24
     session_cap: int = 500
-    rate_per_minute: int = 300                   # requests per IP and minute
-    sessions_per_minute: int = 12                # new sandboxes per IP and minute
+    rate_per_minute: int = 1200                  # requests per IP and minute — a room shares one Wi-Fi address
+    sessions_per_minute: int = 60                # new sandboxes per IP and minute
 
 
 class SessionIn(BaseModel):
