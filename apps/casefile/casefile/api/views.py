@@ -1,0 +1,114 @@
+"""What the surface receives: cards, the case view, the configuration in words. Built from the domain, never from the folder directly."""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+from ..config import DomainConfig
+from ..domain import turn as whose
+from ..models import Case, Entry, Run, Turn
+
+
+class SlotView(BaseModel):
+    file: str
+    word: str
+    shape: str
+    required: bool
+    due_station: str
+    by: str
+    versions: list[dict] = Field(default_factory=list)   # [{name, version, size, url}]
+    present: bool
+
+
+class CaseCard(BaseModel):
+    id: str
+    title: str
+    label: str
+    label_word: str
+    stage: str
+    stage_word: str
+    station: str
+    station_index: int
+    group: str
+    group_word: str
+    since: str
+    date: str = ""
+    turn: Turn | None = None                              # the main move
+    mine: bool = False                                    # the viewer is the actor of the main move
+
+
+class CaseView(CaseCard):
+    meta: dict = Field(default_factory=dict)
+    stations: list[dict] = Field(default_factory=list)    # [{key, word, state: done|current|todo}]
+    slots: list[SlotView] = Field(default_factory=list)
+    entries: list[Entry] = Field(default_factory=list)
+    turns: list[Turn] = Field(default_factory=list)
+    my_turns: list[Turn] = Field(default_factory=list)
+    last_run: Run | None = None
+    primary: str | None = None
+    agent: str = "Claude"
+
+
+class ConfigView(BaseModel):
+    product: str
+    lang: str
+    stations: list[dict]
+    groups: list[dict]
+    people: list[dict]
+    theme: dict
+    words: dict                                           # the vocabulary for the language, flat
+
+
+def station_of(config: DomainConfig, stage: str) -> tuple[str, int]:
+    st = config.stage(stage)
+    key = st.key if st else "out"
+    stations = config.stations
+    return key, stations.index(key) if key in stations else len(stations) - 1
+
+
+def group_of(config: DomainConfig, case: Case, main: Turn | None, viewer: str | None) -> str:
+    """Where the surface lists a case: the viewer's move first, then Claude's, then the stage's own group."""
+    if main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor)):
+        return "you"
+    if main and main.actor == "claude":
+        return "claude"
+    st = config.stage(case.stage)
+    g = st.group if st else "out"
+    return "others" if g == "you" else g
+
+
+def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> CaseCard:
+    turns = whose.turn(case, config, lang)
+    main = turns[0] if turns else None
+    key, idx = station_of(config, case.stage)
+    g = group_of(config, case, main, viewer)
+    return CaseCard(id=case.id, title=str(case.meta.get("title") or case.meta.get("working_title") or case.id), label=case.label,
+                    label_word=config.word("labels", case.label, lang, case.label), stage=case.stage,
+                    stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,
+                    group_word=config.word("groups", g, lang, g), since=case.since, date=str(case.meta.get("publishDate") or "")[:10],
+                    turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))))
+
+
+def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url) -> CaseView:
+    c = card(config, case, viewer, lang)
+    turns = whose.turn(case, config, lang)
+    mine = [t for t in turns if viewer and (t.actor == viewer or config.may_act(viewer, t.actor))]
+    stations = [{"key": k, "word": config.word("stations", k, lang, k), "state": "done" if i < c.station_index else "current" if i == c.station_index else "todo"}
+                for i, k in enumerate(config.stations)]
+    slots = [SlotView(file=s.file, word=config.word("files", s.file, lang, s.file), shape=s.shape, required=s.required,
+                      due_station=station_of(config, s.due_stage)[0] if s.due_stage else "", by=s.by,
+                      versions=[{"name": v.name, "version": v.version, "size": v.size, "url": file_url(case, v.name)} for v in s.versions], present=s.present)
+             for s in case.slots]
+    agent = config.agent
+    return CaseView(**c.model_dump(), meta=case.meta, stations=stations, slots=slots, entries=case.entries, turns=turns, my_turns=mine,
+                    last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude")
+
+
+def config_view(config: DomainConfig, lang: str) -> ConfigView:
+    v = config.vocabulary.get(lang) or config.vocabulary.get("en") or {}
+    groups_order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
+    return ConfigView(product=str(v.get("product") or config.name),
+                      lang=lang, stations=[{"key": k, "word": config.word("stations", k, lang, k)} for k in config.stations],
+                      groups=[{"key": g, "word": config.word("groups", g, lang, g)} for g in groups_order],
+                      people=[{"id": p.id, "name": p.name, "kind": p.kind, "roles": p.roles} for p in config.people],
+                      theme=config.theme, words=v)

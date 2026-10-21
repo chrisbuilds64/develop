@@ -1,0 +1,45 @@
+{
+  "$comment": "Words for the invented claims file. German is the demo language; English for the surface's fallback.",
+  "de": {
+    "product": "Schadenakte",
+    "labels": {"HR": "Hausrat", "WG": "Wohngebäude", "KFZ": "Kfz", "HP": "Haftpflicht"},
+    "stations": {"report": "Meldung", "inspection": "Besichtigung", "check": "Deine Prüfung", "settlement": "Regulierung", "closed": "Abschluss"},
+    "stages": {
+      "10-meldung": "gemeldet, Besichtigung ausstehend", "20-besichtigung": "beim Gutachter", "25-abgleich": "KI gleicht ab",
+      "30-pruefung": "Gutachten liegt vor", "40-regulierung": "zur Regulierung", "60-abgeschlossen": "abgeschlossen"
+    },
+    "groups": {"you": "Du bist dran", "claude": "KI prüft gerade", "others": "Beim Gutachter", "date": "Termin", "planned": "Terminiert", "out": "Abgeschlossen", "ideas": "Neu gemeldet", "archive": "Archiv"},
+    "actions": {
+      "schedule_inspection": "Besichtigung ansetzen", "deliver_report": "Gutachten übergeben", "approve_settlement": "Freigeben und zur Regulierung",
+      "ask_assessor": "Rückfrage an Gutachter", "paid": "Als reguliert melden", "answer": "Antworten", "note": "Notiz", "done": "Erledigt",
+      "deliver": "Ablegen", "see_failure": "Nachsehen, was schiefging", "wait": "Warten"
+    },
+    "reasons": {"running": "die KI prüft gerade", "failed": "der letzte Lauf ist gescheitert", "missing": "es fehlt noch etwas"},
+    "texts": {"done": "Erledigt.", "deliver": "Abgelegt.", "detected": "Von Hand verschoben", "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}."},
+    "files": {
+      "meldung.md": "Schadenmeldung", "fotos-1.jpg": "Schadenfotos", "gutachten.pdf": "Gutachten", "feuchtemessung.pdf": "Feuchtemessung",
+      "kostenvoranschlag.pdf": "Kostenvoranschlag", "rechnung.pdf": "Rechnung", "abgleich.md": "Abgleich", "review.md": "Verlauf", "meta.json": "Steckbrief"
+    }
+  },
+  "en": {
+    "product": "Claims File",
+    "labels": {"HR": "Contents", "WG": "Building", "KFZ": "Motor", "HP": "Liability"},
+    "stations": {"report": "Report", "inspection": "Inspection", "check": "Your check", "settlement": "Settlement", "closed": "Closed"},
+    "stages": {
+      "10-meldung": "reported, inspection pending", "20-besichtigung": "with the assessor", "25-abgleich": "AI reconciling",
+      "30-pruefung": "assessment ready", "40-regulierung": "in settlement", "60-abgeschlossen": "closed"
+    },
+    "groups": {"you": "Your move", "claude": "AI is checking", "others": "With the assessor", "date": "Date", "planned": "Scheduled", "out": "Closed", "ideas": "New reports", "archive": "Archive"},
+    "actions": {
+      "schedule_inspection": "Schedule the inspection", "deliver_report": "Hand over the assessment", "approve_settlement": "Approve for settlement",
+      "ask_assessor": "Ask the assessor", "paid": "Mark as settled", "answer": "Answer", "note": "Note", "done": "Done",
+      "deliver": "Add", "see_failure": "See what went wrong", "wait": "Wait"
+    },
+    "reasons": {"running": "the AI is checking", "failed": "the last run failed", "missing": "something is still missing"},
+    "texts": {"done": "Done.", "deliver": "Added.", "detected": "Moved by hand", "detected_text": "The file was found in {stage}; the thread last knew {known}."},
+    "files": {
+      "meldung.md": "Claim report", "fotos-1.jpg": "Damage photos", "gutachten.pdf": "Assessment", "feuchtemessung.pdf": "Moisture reading",
+      "kostenvoranschlag.pdf": "Estimate", "rechnung.pdf": "Invoice", "abgleich.md": "Reconciliation", "review.md": "Thread", "meta.json": "Record"
+    }
+  }
+}

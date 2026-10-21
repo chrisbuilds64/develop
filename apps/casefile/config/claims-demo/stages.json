@@ -1,0 +1,21 @@
+{
+  "$comment": "A claims file as configuration (ADR-015). Invented demo domain; every name fictional. Five stations: report, inspection, your check, settlement, closed.",
+  "name": "Schadenakte",
+  "lang": "de",
+  "configVersion": "1",
+  "stages": [
+    {"folder": "10-meldung", "key": "report", "group": "ideas", "turn": "role:assessor",
+     "actions": [{"id": "schedule_inspection", "label": "schedule_inspection", "to": "20-besichtigung", "payload": ["date"]}]},
+    {"folder": "20-besichtigung", "key": "inspection", "group": "others", "turn": "role:assessor",
+     "actions": [{"id": "deliver_report", "label": "deliver_report", "to": "25-abgleich", "requires": ["gutachten.pdf", "shape:image"], "entry_status": "info"}]},
+    {"folder": "25-abgleich", "key": "inspection", "group": "claude", "turn": "claude"},
+    {"folder": "30-pruefung", "key": "check", "group": "you", "turn": "role:approver",
+     "actions": [
+       {"id": "approve_settlement", "label": "approve_settlement", "to": "40-regulierung", "requires": ["gutachten.pdf", "rechnung.pdf"], "payload": ["amount"], "entry_status": "approved"},
+       {"id": "ask_assessor", "label": "ask_assessor", "payload": ["note"], "entry_status": "open", "actor": "role:approver"}
+     ]},
+    {"folder": "40-regulierung", "key": "settlement", "group": "others", "turn": "role:settlement",
+     "actions": [{"id": "paid", "label": "paid", "to": "60-abgeschlossen", "entry_status": "info"}]},
+    {"folder": "60-abgeschlossen", "key": "closed", "group": "out"}
+  ]
+}

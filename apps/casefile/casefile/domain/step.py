@@ -21,7 +21,7 @@ from . import runs as ordering
 from .turn import four_eyes_block, missing_for, primary_author
 
 STEP_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
-BUILTIN = ("answer", "note", "done", "deliver")
+BUILTIN = ("answer", "note", "done", "deliver", "ask")
 
 
 def _now() -> str:
@@ -131,6 +131,13 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
         files = [str(f) for f in req.payload.get("files", []) if str(f).strip()]
         if not files:
             return _refuse(store, j, "nothing delivered")
+    skill = str(req.payload.get("skill") or "interpret").strip()
+    if req.action == "ask":
+        if not text:
+            return _refuse(store, j, "the text is empty")
+        refusal = ordering.may_order(config, skill, person)
+        if refusal:
+            return _refuse(store, j, refusal)
     _write_journal(store, j)
     e = {"author": person.name, "status": "resolved" if req.action in ("answer", "done") else "open" if req.action == "note" and req.payload.get("for") else "info",
          "title": str(req.payload.get("title") or ("Re: " + next((x.title for x in case.entries if x.id == resolves), "")) if resolves else req.payload.get("title") or "Note")[:120],
@@ -139,11 +146,18 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
     if req.action == "deliver":
         e["files"] = [str(f) for f in req.payload.get("files", [])]
         e["title"] = str(req.payload.get("title") or "Delivered: " + ", ".join(e["files"]))[:120]
+    if req.action == "ask":
+        agent = config.agent
+        e["title"] = (text.splitlines()[0] if text else skill)[:120]
+        e["status"] = "info"
+        if agent:
+            e["for"] = agent.name
+        j.run = ordering.order(store, config, j.case, case.stage, skill, person_id, text, request_id=j.step_id)
     target = config.person(str(req.payload.get("for", "")))
     if req.action == "answer":
         src = next((x for x in case.entries if x.id == resolves), None)
         target = config.person(src.author) if src else None
-    if target:
+    if target and req.action != "ask":
         e["for"] = target.name
     j.entry = _append_entry(store, config, j.case, case.stage, e)
     j.status, j.finished = "done", _now()

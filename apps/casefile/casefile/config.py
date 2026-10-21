@@ -70,7 +70,7 @@ class DomainConfig:
         """The keys in order, duplicates folded — the line the surface draws."""
         out: list[str] = []
         for s in self.stages:
-            if s.key not in out:
+            if s.group != "archive" and s.key not in out:        # the archive is a place, not a station on the way
                 out.append(s.key)
         return out
 
@@ -111,7 +111,10 @@ class DomainConfig:
     # ------------------------------------------------------------------ words
     def word(self, kind: str, key: str, lang: str | None = None, fallback: str | None = None) -> str:
         v = self.vocabulary.get(lang or self.lang) or self.vocabulary.get("en") or {}
-        return (v.get(kind) or {}).get(key) or (fallback if fallback is not None else key)
+        section = v.get(kind)
+        if not isinstance(section, dict):
+            return fallback if fallback is not None else key
+        return section.get(key) or (fallback if fallback is not None else key)
 
     # ------------------------------------------------------------------ people
     def person(self, ref: str | None) -> Person | None:

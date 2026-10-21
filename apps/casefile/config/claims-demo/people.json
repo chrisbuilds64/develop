@@ -1,0 +1,9 @@
+{
+  "$comment": "Fictional people for the claims demo. The viewer is the claims handler (approver); the assessor and the settlement desk are the others; the AI is a colleague in the thread.",
+  "people": [
+    {"id": "du", "name": "Du", "kind": "human", "roles": ["approver", "operator"]},
+    {"id": "gutachter", "name": "Gutachter Berger", "kind": "human", "roles": ["assessor"]},
+    {"id": "regulierung", "name": "Regulierung", "kind": "human", "roles": ["settlement"]},
+    {"id": "ki", "name": "KI", "kind": "agent", "roles": []}
+  ]
+}
