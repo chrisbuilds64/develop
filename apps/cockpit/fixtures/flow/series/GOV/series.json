@@ -1,0 +1,25 @@
+{
+  "label": "GOV",
+  "title": "Governance, in practice",
+  "spine": "Two essays on who signs what, and one short post to close.",
+  "status": "running",
+  "editor": "alex",
+  "sourced_by": [
+    "alex"
+  ],
+  "created": "2026-08-11",
+  "pieces": [
+    {
+      "ref": "FN-GOV-01",
+      "role": "the question"
+    },
+    {
+      "ref": "FN-GOV-02",
+      "role": "the answer"
+    },
+    {
+      "ref": "SP-GOV-03",
+      "role": "the summary"
+    }
+  ]
+}

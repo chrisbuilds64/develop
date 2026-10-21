@@ -430,6 +430,9 @@ def document(access, role, module, config, ref) -> dict | None:
     parts = ref.split("/")
     if parts[0] == "series" and len(parts) == 2:
         return _series_page(access, role, module, src, parts[1])
+    if parts[0] == "_runs" and len(parts) == 2 and parts[1].endswith((".log", ".json")):   # a run's transcript or order, from the desk's "Log" link
+        body = access.read_text(src, ref, role)
+        return {"title": parts[1], "body": "```\n" + body[-20000:] + "\n```"}
     if len(parts) == 3:
         stage, name, fname = parts                       # stage/name/file — or series/<LABEL>/file
         if not fname.endswith((".md", ".txt", ".json")):
@@ -541,6 +544,68 @@ SKILL_STAGES = {"interpret": ("10-ideas", "30-review-human"), "canonical-review"
                 "reflect": ("05-operational-observations",)}
 PRIMARY_FILES = ("script.md", "substack.md", "linkedin-post.txt")   # what a piece that begins with finished material holds
 
+# The path: the six steps a piece takes, in the person's words. Every card and the piece head draw it;
+# the stage number says which step is current. Words come from vocabulary.json ("journey") or the locale.
+STEPS = ("idea", "work", "review", "visual", "date", "out")
+STEP_OF_STAGE = {0: 0, 5: 0, 10: 0, 15: 1, 20: 1, 30: 2, 40: 3, 50: 4, 55: 4}   # 60 and up: the last step
+
+
+def _journey(stage: str, vocab: dict, running: bool = False) -> list[dict]:
+    """[{id, word, state}] — done before the current step, current at it, todo after. A running helper lights 'work'."""
+    num = int(STAGE.match(stage).group(1))
+    known = max((k for k in STEP_OF_STAGE if k <= num), default=None)           # an unknown stage counts as the nearest one below it
+    cur = 1 if running and num < 30 else (len(STEPS) - 1 if num >= 60 else STEP_OF_STAGE.get(known, 0))
+    words = vocab.get("journey") or {}
+    return [{"id": sid, "word": words.get(sid) or f"desk.step.{sid}",
+             "state": "done" if i < cur else "current" if i == cur else "todo"} for i, sid in enumerate(STEPS)]
+
+
+def _today(lang: str) -> str:
+    """The day in words, for the desk's head: 'Montag, 20. Oktober' / 'Monday, 20 October'."""
+    d = dt.date.today()
+    if lang == "de":
+        days = ("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag")
+        months = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember")
+        return f"{days[d.weekday()]}, {d.day}. {months[d.month - 1]}"
+    return d.strftime("%A, %-d %B")
+
+
+def _date_words(iso: str, lang: str) -> str:
+    """'2026-11-02' → '2. November' / '2 November'; anything that is not a date comes back as it was."""
+    try:
+        d = dt.date.fromisoformat(str(iso)[:10])
+    except (ValueError, TypeError):
+        return str(iso or "")
+    if lang == "de":
+        months = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember")
+        return f"{d.day}. {months[d.month - 1]}" + (f" {d.year}" if d.year != dt.date.today().year else "")
+    return d.strftime("%-d %B") + (f" {d.year}" if d.year != dt.date.today().year else "")
+
+
+def _primary_text(access, role, src, ref: str, files: list[str], label: str, art: dict) -> dict | None:
+    """The piece's primary artifact (artifacts.json: formats.<label>.primary), highest version, as text — the draft a person reads on the page."""
+    primary = (art.get("formats", {}).get(label) or {}).get("primary")
+    # the primary artifact when it exists; before that, what the piece began with (source.md, idea.md) — the person always sees a text
+    order = [n for n in ([primary] if primary else []) + list(PRIMARY_FILES) + ["source.md", "idea.md"]]
+    best = None
+    for name in order:
+        if "." not in name:
+            continue
+        stem, ext = name.rsplit(".", 1)
+        candidates = [f for f in files if f == name or (f.startswith(stem + ".v") and f.endswith("." + ext))]
+        if candidates:
+            best = max(candidates, key=lambda f: int(VERSION.search(f).group(1)) if VERSION.search(f) else 0)
+            break
+    if best is None:
+        return None
+    ext = best.rsplit(".", 1)[-1]
+    try:
+        text = access.read_text(src, f"{ref}/{best}", role)
+    except Exception:
+        return None
+    m = VERSION.search(best)
+    return {"file": best, "text": text, "kind": "md" if ext == "md" else "plain", "label": _file_word({}, best)[0], "version": m.group(1) if m else ""}
+
 
 def _has_primary(files) -> bool:
     return any(f == n or (f.startswith(n.rsplit(".", 1)[0] + ".v") and f.endswith("." + n.rsplit(".", 1)[1])) for f in files for n in PRIMARY_FILES)
@@ -610,12 +675,12 @@ def _state(stage: str, run: dict | None, open_for_me: list[dict], has_image: boo
     if run and run.get("status") == "running":
         return {"group": "working", "state": "desk.state.running", "action": None}
     if run and run.get("status") == "failed" and num < 60:
-        return {"group": "you", "state": "desk.state.failed", "action": {"kind": "link", "label": "desk.act.log", "href": f"/m/pipeline/doc/{run.get('log', '')}"}}
+        return {"group": "you", "state": "desk.state.failed", "action": {"kind": "link", "label": "desk.act.see_failure", "href": f"/m/pipeline/doc/{run.get('log', '')}"}}
     if open_for_me:
-        return {"group": "you", "state": "desk.state.open_notes", "n": len(open_for_me),
+        return {"group": "you", "state": "desk.state.open_notes" if len(open_for_me) > 1 else "desk.state.open_note", "n": len(open_for_me),
                 "action": {"kind": "link", "label": "desk.act.answer", "href": "#notes"}}
     if num >= 60:
-        return {"group": "out", "state": "desk.state.out", "action": None}
+        return {"group": "out", "state": _word(vocab, "stages", stage, "desk.state.out"), "action": None}
     group = GROUP_OF_STAGE.get(num, "ideas")
     action = None
     if stage == "10-ideas" and has_primary:
@@ -657,7 +722,7 @@ def desk(access, role, module, config, viewer: str | None = None, lang: str = "e
         try:
             meta = access.read_json(src, f"{stage}/{name}/meta.json", role)
         except Exception:
-            meta = {}
+            return {"nameless": True, "ref": f"{stage}/{name}"}       # a folder without a record is not a piece on the desk; the workshop shows it
         files = access.listdir(src, role, f"{stage}/{name}")
         run = runs.get(f"{stage}/{name}")
         entries = _review_of(access, role, src, stage, name) if "review.md" in files and num < 60 else []
@@ -672,17 +737,21 @@ def desk(access, role, module, config, viewer: str | None = None, lang: str = "e
             "ref": f"{stage}/{name}", "href": href, "title": meta.get("title") or meta.get("working_title") or name,
             "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])),
             "series": meta.get("series") or "", "date": str(meta.get("publishDate") or "")[:10],
+            "date_words": _date_words(meta.get("publishDate"), lang) if meta.get("publishDate") else "",
             "created": str(meta.get("created") or "")[:10],
             "cover": cover_svg(meta, rules, 56) if meta else "", "state": st["state"], "n": st.get("n", 0),
             "action": st["action"], "run": {"status": run.get("status"), "cost": run.get("cost_usd")} if run else None,
-            "group": st["group"],
+            "group": st["group"], "path": _journey(stage, vocab, running=bool(run and run.get("status") == "running")),
         }
 
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=12) as pool:
         cards = list(pool.map(card_of, todo))
+    nameless = 0
     for card in cards:
-        if card:
+        if card and card.get("nameless"):
+            nameless += 1
+        elif card:
             groups[card["group"]].append(card)
     groups["planned"].sort(key=lambda c: c["date"])
     groups["out"].sort(key=lambda c: c["date"], reverse=True)
@@ -691,7 +760,10 @@ def desk(access, role, module, config, viewer: str | None = None, lang: str = "e
     intake = {label: [x["file"] if isinstance(x, dict) else x for x in spec.get("artifacts", [])
                       if (x["file"] if isinstance(x, dict) else x).rsplit(".", 1)[-1] in ("md", "txt", "html")]
               for label, spec in art.get("formats", {}).items()}
-    return {"groups": [{"id": g, "cards": groups[g]} for g in GROUPS if groups[g]], "vocab": vocab, "intake": intake}
+    words = vocab.get("groups") or {}
+    return {"groups": [{"id": g, "cards": groups[g], "word": words.get(g) or f"desk.group.{g}"} for g in GROUPS if groups[g]],
+            "vocab": vocab, "intake": intake, "today": _today(lang), "product": vocab.get("product") or "PressRoom",
+            "waiting": len(groups["you"]), "nameless": nameless, "words": vocab.get("words") or {}}
 
 
 def piece(access, role, module, config, ref: str, viewer: str | None = None, lang: str = "en") -> dict | None:
@@ -762,6 +834,8 @@ def piece(access, role, module, config, ref: str, viewer: str | None = None, lan
         "ref": ref, "stage": stage, "name": name, "title": meta.get("title") or meta.get("working_title") or name,
         "format": _word(vocab, "labels", str(meta.get("label") or name.split("-", 1)[0])), "series": meta.get("series") or "",
         "number": str(meta.get("number") or ""), "date": str(meta.get("publishDate") or "")[:10], "created": str(meta.get("created") or "")[:10],
+        "date_words": _date_words(meta.get("publishDate"), lang) if meta.get("publishDate") else "",
+        "created_words": _date_words(meta.get("created"), lang) if meta.get("created") else "",
         "state": st["state"], "group": st["group"], "action": st["action"], "cover": cover_svg(meta, _cover_rules(access, role, src), 120) if meta else "",
         "files": tiles, "matrix": matrix, "notes": thread, "open_for_me": [e["id"] for e in open_me], "helpers": helpers,
         "runs": [{"skill": r.get("skill"), "status": r.get("status"), "cost": r.get("cost_usd"), "when": r.get("created", "")[:16].replace("T", " "), "log": r.get("log", "")}
@@ -770,6 +844,10 @@ def piece(access, role, module, config, ref: str, viewer: str | None = None, lan
         "meta": [{"key": k, "value": (", ".join(str(x) for x in v) if isinstance(v, list) else json.dumps(v, ensure_ascii=False) if isinstance(v, dict) else str(v))}
                  for k, v in meta.items() if v not in (None, "", [], {})],
         "agent": next((x.get("name") for x in (_people_list(access, role, src)) if x.get("kind") == "agent"), "Axel"),
+        "path": _journey(stage, vocab, running=bool(run and run.get("status") == "running")),
+        "draft": (lambda d: d and {**d, "label": _file_word(vocab, d["file"])[0]})(_primary_text(access, role, src, ref, files, label, art)),
+        "product": vocab.get("product") or "PressRoom", "words": {"helpers": vocab.get("helpers") or {}, "groups": vocab.get("groups") or {}, "ui": vocab.get("words") or {}},
+        "state_word": _word(vocab, "stages", stage),
     }
 
 

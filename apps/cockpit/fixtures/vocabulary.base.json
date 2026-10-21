@@ -1,0 +1,85 @@
+{
+  "$comment": "What the surface calls things, per language. The machine keeps its names (stage folders, labels, file names); the desk shows these. A name missing here falls back to the machine's. Read by the pipeline reader; nothing else.",
+  "de": {
+    "labels": {
+      "FN": "Essay",
+      "POD": "Podcast-Folge",
+      "SP": "LinkedIn-Post",
+      "WN": "Weekend Note"
+    },
+    "stages": {
+      "00-archive": "Archiv",
+      "05-operational-observations": "Beobachtung",
+      "10-ideas": "Idee",
+      "15-interpretation": "wird ausgearbeitet",
+      "20-produce": "wird ausgearbeitet",
+      "30-review-human": "Entwurf liegt vor",
+      "40-asset-generation": "bei Akhil, Bild",
+      "50-ready-to-publish": "fertig, Termin wählen",
+      "55-scheduled": "geplant",
+      "60-published": "draußen",
+      "61-field-observation": "draußen, Resonanz läuft",
+      "65-canonical-review": "in der kanonischen Prüfung",
+      "66-reviewed": "geprüft",
+      "70-reference-frames": "Referenz"
+    },
+    "files": {
+      "source.md": "Ausgangsmaterial",
+      "interpretation.md": "Interpretation",
+      "substack.md": "Entwurf (Substack)",
+      "substack.html": "Entwurf (Substack, HTML)",
+      "linkedin-post.txt": "LinkedIn-Post",
+      "first-comment.txt": "Erster Kommentar",
+      "script.md": "Skript",
+      "teleprompter.txt": "Teleprompter",
+      "show-notes.txt": "Show Notes",
+      "edit-instructions.txt": "Schnittanweisung",
+      "reel-hooks.txt": "Reel-Hooks",
+      "visual-brief.md": "Bildbrief",
+      "validation.md": "Prüfprotokoll",
+      "review.md": "Anmerkungen",
+      "meta.json": "Steckbrief"
+    }
+  },
+  "en": {
+    "labels": {
+      "FN": "Essay",
+      "POD": "Podcast episode",
+      "SP": "LinkedIn post",
+      "WN": "Weekend note"
+    },
+    "stages": {
+      "00-archive": "archive",
+      "05-operational-observations": "observation",
+      "10-ideas": "idea",
+      "15-interpretation": "being worked out",
+      "20-produce": "being worked out",
+      "30-review-human": "draft ready",
+      "40-asset-generation": "with Akhil, visual",
+      "50-ready-to-publish": "ready, pick a date",
+      "55-scheduled": "scheduled",
+      "60-published": "out",
+      "61-field-observation": "out, watching resonance",
+      "65-canonical-review": "in canonical review",
+      "66-reviewed": "reviewed",
+      "70-reference-frames": "reference"
+    },
+    "files": {
+      "source.md": "Source material",
+      "interpretation.md": "Interpretation",
+      "substack.md": "Draft (Substack)",
+      "substack.html": "Draft (Substack, HTML)",
+      "linkedin-post.txt": "LinkedIn post",
+      "first-comment.txt": "First comment",
+      "script.md": "Script",
+      "teleprompter.txt": "Teleprompter",
+      "show-notes.txt": "Show notes",
+      "edit-instructions.txt": "Edit instructions",
+      "reel-hooks.txt": "Reel hooks",
+      "visual-brief.md": "Visual brief",
+      "validation.md": "Validation log",
+      "review.md": "Notes",
+      "meta.json": "Record"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "20261020-212714_interpret_HAUS-0419-brand-dachstuhl-einfamilienhaus",
+  "skill": "interpret",
+  "container": "15-interpretation/HAUS-0419-brand-dachstuhl-einfamilienhaus",
+  "requested_by": "alex",
+  "runner": "claude-code",
+  "status": "running",
+  "created": "2026-10-20T21:27:14+02:00",
+  "note": "Feuerwehrbericht einbeziehen.",
+  "started": "2026-10-20T21:27:34+02:00",
+  "taken_by": "alex@studio"
+}

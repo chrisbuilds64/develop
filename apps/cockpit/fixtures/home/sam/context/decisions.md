@@ -4,6 +4,6 @@
 
 ---
 
-## 2026-09-22 — Case study goes out without customer logos
+## 2026-10-15 — Case study goes out without customer logos
 **Why:** Two of three customers asked for anonymity.
 **Instead of:** Waiting for all three approvals

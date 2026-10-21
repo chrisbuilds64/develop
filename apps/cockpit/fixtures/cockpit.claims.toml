@@ -1,0 +1,90 @@
+# Claims demo (a copy of cockpit.demo.toml, other words): everything below points into fixtures/. Nothing on this machine is read.
+# Two users: alex (operator) and sam (guest). Password for both: cockpit-demo
+[cockpit]
+name = "Schadenakte"
+locale = "de"
+bind = "127.0.0.1:8301"
+default_role = "operator"
+audit = "claims-audit.jsonl"
+users = "users.json"
+people = "pipeline:people.json"          # the one list of persons: display names here, --by/--for in the tools
+secret = ".demo-secret"
+plugins = "plugins"
+stale_after_hours = 720   # a live directory scan is never stale (2026-10-07)
+home = "pipeline"         # after sign-in the desk lands on PressRoom; the overview is one click away
+
+# --- Sources: {user.context} is the signed-in user's Context Loop folder -------------
+[[source]]
+id = "context"
+label = "Your context"
+path = "{user.context}"
+mode = "read-write"                   # tools may write here — the cockpit itself never does
+sensitivity = "internal"
+
+[[source]]
+id = "worklist"
+label = "Work list"
+path = "{user.context}"
+include = ["todo.json", "todo.schema.json"]
+mode = "read-write"
+sensitivity = "internal"
+
+[[source]]
+id = "tools"
+label = "Tools"
+path = "tools"
+include = ["todo.py", "todo_validate.py"]
+sensitivity = "internal"
+
+[[source]]
+id = "pipeline"
+label = "Content pipeline"
+path = "claims/flow"
+mode = "read-write"                   # move, review_append and asset_put write here; the cockpit never does
+sensitivity = "internal"
+
+[[source]]
+id = "audits"
+label = "Audits"
+path = "audits"
+sensitivity = "internal"
+
+[[source]]
+id = "contextloop"
+label = "Context Loop"
+path = "context-loop"
+include = [".claude-plugin", "skills"]
+sensitivity = "public"
+
+[[source]]
+id = "canon"
+label = "Canon"
+path = "canon"
+mode = "read-write"
+sensitivity = "internal"
+
+[[source]]
+id = "elicitation"
+label = "Canon elicitation"
+path = "gatehouse-instance"
+include = ["run.json", "audit.jsonl"]
+sensitivity = "confidential"
+
+# --- Modules: each names a plugin; reader and app come from its manifest -------------
+[[module]]
+id = "pipeline"
+plugin = "pipeline"
+sources = ["pipeline"]
+maturity = "running"
+
+[[role]]
+id = "operator"
+modules = ["*"]
+max_sensitivity = "confidential"
+actions = ["*"]
+
+[[role]]
+id = "guest"
+modules = ["pipeline"]
+max_sensitivity = "internal"
+actions = ["pipeline.review_append", "pipeline.upload", "pipeline.verify"]

@@ -1,0 +1,3 @@
+Seven checks before merge
+
+A short post: the claim in one line, the reason in three, a question at the end.

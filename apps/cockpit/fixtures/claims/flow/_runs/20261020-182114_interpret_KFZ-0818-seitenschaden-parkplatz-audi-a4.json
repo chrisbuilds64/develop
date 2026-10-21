@@ -1,0 +1,19 @@
+{
+  "id": "20261020-182114_interpret_KFZ-0818-seitenschaden-parkplatz-audi-a4",
+  "skill": "interpret",
+  "container": "20-produce/KFZ-0818-seitenschaden-parkplatz-audi-a4",
+  "requested_by": "alex",
+  "runner": "claude-code",
+  "status": "done",
+  "created": "2026-10-20T18:21:14+02:00",
+  "started": "2026-10-20T18:21:34+02:00",
+  "taken_by": "alex@studio",
+  "finished": "2026-10-20T18:24:14+02:00",
+  "exit": 0,
+  "log": "_runs/20261020-182114_interpret_KFZ-0818-seitenschaden-parkplatz-audi-a4.log",
+  "model": "claude-opus-5-5",
+  "turns": 13,
+  "duration_s": 160.2,
+  "cost_usd": 0.88,
+  "result": "Done. The deliverables are in the folder."
+}

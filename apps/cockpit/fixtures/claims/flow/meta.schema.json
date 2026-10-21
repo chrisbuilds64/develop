@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Container meta (demo)",
+  "type": "object",
+  "required": [
+    "label",
+    "title"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "label": {
+      "enum": [
+        "KFZ",
+        "HAUS",
+        "HAFT"
+      ]
+    },
+    "number": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "track": {
+      "enum": [
+        "standard",
+        "komplex",
+        "eilig"
+      ]
+    },
+    "series": {
+      "type": "string",
+      "x-ref": "series",
+      "description": "The series label — valid when series/<LABEL>/series.json exists."
+    },
+    "publishDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created": {
+      "type": "string"
+    },
+    "origin": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "working_title": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "boolean"
+    }
+  }
+}

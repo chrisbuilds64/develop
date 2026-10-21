@@ -1,0 +1,13 @@
+The Arc, Spoken - show notes
+
+In this episode: why a skipped review step never shows up as a failure, and what a visible order looks like in practice.
+
+Chapters
+00:00 Cold open
+02:10 The case: five stations, one shortcut
+06:40 Why nobody blames a missing gate
+11:25 Making the order visible
+15:00 What the log is for
+17:30 Three things to take away
+
+Mentioned: the stage folders, the review file, the run log.

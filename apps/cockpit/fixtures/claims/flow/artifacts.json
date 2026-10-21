@@ -1,0 +1,188 @@
+{
+  "$comment": "The matrix: what a piece of each format collects on its way, each artifact with the stage it appears at and who makes it (a skill name, `akhil` for visuals, `human` for what a person brings). The first artifact of a format is its primary one — a human may bring it in finished, and /derive makes the rest. `common` travels with every piece. `skills` says which helper works at which stage. `kinds` is the flat list the upload field offers. Names in words: vocabulary.json. Derived from the 40 published containers on 2026-10-13.",
+  "formats": {
+    "KFZ": {
+      "primary": "script.md",
+      "artifacts": [
+        {
+          "file": "script.md",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "linkedin-post.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "first-comment.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "visual-brief.md",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "header-16x9.png",
+          "stage": "40-asset-generation",
+          "by": "akhil"
+        }
+      ]
+    },
+    "HAUS": {
+      "primary": "script.md",
+      "artifacts": [
+        {
+          "file": "script.md",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "teleprompter.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "show-notes.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "linkedin-post.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "first-comment.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "visual-brief.md",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "header-16x9.png",
+          "stage": "40-asset-generation",
+          "by": "akhil"
+        }
+      ]
+    },
+    "HAFT": {
+      "primary": "substack.md",
+      "artifacts": [
+        {
+          "file": "substack.md",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "substack.html",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "linkedin-post.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "first-comment.txt",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "visual-brief.md",
+          "stage": "20-produce",
+          "by": "interpret"
+        },
+        {
+          "file": "header-16x9.png",
+          "stage": "40-asset-generation",
+          "by": "akhil"
+        }
+      ]
+    }
+  },
+  "common": [
+    {
+      "file": "source.md",
+      "stage": "10-ideas",
+      "by": "human"
+    },
+    {
+      "file": "meta.json",
+      "stage": "10-ideas",
+      "by": "human"
+    },
+    {
+      "file": "interpretation.md",
+      "stage": "15-interpretation",
+      "by": "interpret"
+    },
+    {
+      "file": "review.md",
+      "stage": "20-produce",
+      "by": "interpret"
+    },
+    {
+      "file": "validation.md",
+      "stage": "20-produce",
+      "by": "interpret"
+    }
+  ],
+  "skills": {
+    "10-ideas": [
+      "interpret"
+    ],
+    "30-review-human": [
+      "interpret"
+    ],
+    "40-asset-generation": [
+      "asset"
+    ],
+    "60-published": [
+      "canonical-review"
+    ],
+    "61-field-observation": [
+      "field-scan",
+      "canonical-review"
+    ],
+    "65-canonical-review": [
+      "canonical-review"
+    ]
+  },
+  "kinds": [
+    "edit-instructions.txt",
+    "first-comment.txt",
+    "header-16x9",
+    "header-16x9.png",
+    "header-4x5",
+    "header-4x5.png",
+    "image",
+    "image.png",
+    "linkedin-image",
+    "linkedin-image.png",
+    "linkedin-post.txt",
+    "poster-4x5",
+    "poster-4x5.jpg",
+    "reel-hooks.txt",
+    "screen-segment",
+    "screen-segment.mp4",
+    "script.md",
+    "show-notes.txt",
+    "substack-image",
+    "substack-image.png",
+    "substack.html",
+    "substack.md",
+    "teaser-reel",
+    "teaser-reel.mp4",
+    "teleprompter.txt",
+    "thumbnail",
+    "thumbnail-16x9.png",
+    "visual-brief.md"
+  ]
+}

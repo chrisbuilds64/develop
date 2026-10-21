@@ -1,0 +1,25 @@
+Last week I told you that a pipeline is a promise about order.
+This week: what happens when the promise is broken, and nobody notices.
+
+A piece moves through five stations. Idea. Draft. Review. Image. Schedule.
+Each station has an owner.
+The trouble starts when one is skipped because it looked redundant.
+
+Nothing breaks. Hear that. Nothing breaks.
+So the skipped station never gets blamed. It just stops existing.
+
+Order is invisible when it works.
+You only feel the gate that closes.
+So people remove the gates that close.
+
+My answer is not clever. I made the order visible.
+A piece lives in a folder named after its stage.
+To move on, it has to move. And the move leaves a line.
+
+The log is not for control.
+It is for the day something goes wrong.
+So the question is: where did it leave the road, not who did this.
+
+One: order is a promise, and a promise needs a witness.
+Two: a skipped station does not fail, it disappears.
+Three: write the move down, even when nobody asks.
