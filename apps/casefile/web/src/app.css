@@ -16,10 +16,14 @@ input, textarea { font: inherit; color: inherit; }
 /* ------------------------------------------------------------------ shell: menu · list · main */
 .shell { display: flex; height: 100dvh; overflow: hidden; }
 .shell.right { flex-direction: row-reverse; }
-.menu { width: var(--menu-w); flex: none; display: flex; flex-direction: column; background: var(--surface); position: sticky; top: 0; height: 100dvh; }
+/* the menu is a white sheet beside the cream: a hairline and the faintest shadow set it apart from the list */
+.menu { width: var(--menu-w); flex: none; display: flex; flex-direction: column; background: var(--surface); position: sticky; top: 0; height: 100dvh; z-index: 2; box-shadow: 1px 0 0 var(--hairline), 4px 0 18px rgba(0,0,0,.035); }
+.shell.right .menu { box-shadow: -1px 0 0 var(--hairline), -4px 0 18px rgba(0,0,0,.035); }
+:root[data-theme="dark"] .menu, :root[data-theme="dark"] .shell.right .menu { box-shadow: 1px 0 0 var(--hairline), 4px 0 18px rgba(0,0,0,.3); }
+:root[data-theme="dark"] .shell.right .menu { box-shadow: -1px 0 0 var(--hairline), -4px 0 18px rgba(0,0,0,.3); }
 .menu .sheet { display: flex; flex-direction: column; gap: 4px; padding: 20px 14px; flex: 1; min-height: 0; }
 .scrim { display: none; }
-.menu-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 18px; }
+.menu-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--hairline); }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
 .brand svg { flex: none; }
 .swap { width: var(--touch); height: var(--touch); border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 18px; }
@@ -38,7 +42,8 @@ input, textarea { font: inherit; color: inherit; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--ground); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none; }
 .avatar.small { width: 28px; height: 28px; font-size: 12px; background: var(--hairline); color: var(--ink); }
 
-.list { width: var(--list-w); flex: none; display: flex; flex-direction: column; gap: 14px; padding: 28px 20px; background: var(--ground-2); border-left: 1px solid var(--hairline); border-right: 1px solid var(--hairline); height: 100dvh; overflow-y: auto; }
+.list { width: var(--list-w); flex: none; display: flex; flex-direction: column; gap: 14px; padding: 28px 20px; background: var(--ground-2); border-right: 1px solid var(--hairline); height: 100dvh; overflow-y: auto; }
+.shell.right .list { border-right: none; border-left: 1px solid var(--hairline); }
 .list h2 { margin: 0; font-size: 26px; font-weight: 500; line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 30px 40px 0; gap: 18px; height: 100dvh; overflow: hidden; }
 
@@ -97,7 +102,10 @@ input, textarea { font: inherit; color: inherit; }
 
 /* the head and the line stay; the desk and the conversation scroll each for themselves; the one button stays in the thumb zone */
 .body { flex: 1 1 auto; min-height: 0; display: flex; gap: 28px; }
-.desk { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-bottom: 20px; }
+/* the two areas sit each on a quiet panel, a shade lighter than the ground, with a hairline — set apart, not boxed in */
+.desk, .thread { background: var(--ground-2); border: 1px solid var(--hairline); border-radius: var(--r-l); padding: 16px 18px; }
+.desk { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-top: 0; padding-bottom: 20px; }
+.desk > .kicker:first-child { position: sticky; top: 0; z-index: 1; padding: 16px 0 4px; background: var(--ground-2); }
 .desk:has(.reader) { overflow: hidden; }
 .desk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; align-items: start; grid-auto-rows: min-content; }
 .file { text-align: left; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-m); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; color: var(--ink); text-decoration: none; font: inherit; width: 100%; }
@@ -185,6 +193,7 @@ input, textarea { font: inherit; color: inherit; }
   .shell, .shell.right { flex-direction: column; }
   .menu { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; height: 76px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 20px 10px; border-top: 1px solid var(--hairline); gap: 8px; z-index: 10; background: var(--surface); }
   .shell.right .menu { flex-direction: row-reverse; }
+  .menu, .shell.right .menu, :root[data-theme="dark"] .menu, :root[data-theme="dark"] .shell.right .menu { box-shadow: 0 -8px 24px rgba(0,0,0,.05); }
   .menu .sheet { position: fixed; left: 0; right: 0; bottom: 76px; max-height: calc(100dvh - 76px - 24px); overflow-y: auto; background: var(--surface); border-top: 1px solid var(--hairline); border-radius: var(--r-l) var(--r-l) 0 0; padding: 16px 14px 20px; transform: translateY(110%); transition: transform .25s var(--ease); z-index: 11; box-shadow: 0 -12px 32px rgba(0,0,0,.12); }
   .menu.open .sheet { transform: translateY(0); }
   .menu .sheet .menu-head { display: flex; }
@@ -214,6 +223,7 @@ input, textarea { font: inherit; color: inherit; }
   .file.wide { grid-column: span 2; }
   .thread, .body.reading .thread { width: auto; }
   .desk, .desk:has(.reader), .thread-scroll { overflow: visible; min-height: auto; }
+  .desk, .thread { padding: 14px; } .desk { padding-top: 14px; } .desk > .kicker:first-child { position: static; padding: 0; }
   .reader-body { min-height: 240px; } .reader-body iframe { height: 70dvh; }
   .bubble.you { max-width: 85%; }
   .foot { margin: 0 -20px; padding: 10px 20px; position: fixed; left: 0; right: 0; bottom: 76px; z-index: 9; justify-content: stretch; }
