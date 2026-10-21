@@ -21,7 +21,7 @@ rm -rf "$APP" && cp -r /opt/casefile/src/apps/casefile "$APP"
 
 [ -x "$VENV/bin/python" ] || python3 -m venv "$VENV"
 "$VENV/bin/pip" install -q --upgrade pip
-"$VENV/bin/pip" install -q "$APP"
+"$VENV/bin/pip" install -q -e "$APP"     # editable: config/ and demo/ are found next to the package
 
 # the surface: a prebuilt copy in /opt/casefile/web-dist wins; else build on the server when node is there
 if [ -d /opt/casefile/web-dist ]; then
