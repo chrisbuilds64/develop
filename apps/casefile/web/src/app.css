@@ -2,7 +2,7 @@
 
 * { box-sizing: border-box; }
 html { color-scheme: light dark; -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.45 var(--font); -webkit-font-smoothing: antialiased; height: 100dvh; overflow: hidden; }
 button { font: inherit; cursor: pointer; color: inherit; }
 button:disabled { cursor: not-allowed; }
 a { color: inherit; }
@@ -82,11 +82,11 @@ input, textarea { font: inherit; color: inherit; }
 
 .body { flex: 1; min-height: 0; display: flex; gap: 28px; }
 .desk { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.desk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
+.desk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .file { text-align: left; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-m); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; color: var(--ink); text-decoration: none; }
 .file.wide { grid-column: span 2; padding: 14px 16px; gap: 6px; }
 .file .head { display: flex; justify-content: space-between; gap: 10px; width: 100%; }
-.file .name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.file .name { font-weight: 600; font-size: 15px; hyphens: auto; overflow-wrap: break-word; }
 .file .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .file .excerpt { font-size: 15px; line-height: 1.45; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .file.stack { position: relative; box-shadow: 4px 4px 0 -1px var(--surface), 4px 4px 0 0 var(--hairline), 8px 8px 0 -1px var(--surface), 8px 8px 0 0 var(--hairline); }
@@ -175,6 +175,7 @@ input, textarea { font: inherit; color: inherit; }
   .menu .nav-row.phone, .menu .nav-row.phone-only { display: flex; width: auto; min-height: 48px; }
   .list, .main { width: auto; height: auto; min-height: 0; overflow: visible; border: none; padding: 28px 20px 100px; }
   .shell, .shell.right { height: auto; overflow: visible; }
+  body { height: auto; overflow: auto; }
   .list h2 { font-size: 30px; }
   .main { padding-top: 20px; gap: 14px; }
   .case-head h1 { font-size: 28px; }

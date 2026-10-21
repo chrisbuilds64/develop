@@ -115,17 +115,9 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
               <div className="frames">
                 {missing.map((s) => <Frame key={s.file} slot={s} mine={mine && blocked.includes(s.file)} w={w} busy={busy} onFile={(f) => upload.mutate({ slot: s.file, file: f })}
                                            sample={samples.includes(s.file)} onSample={() => sampleIn.mutate(s.file)} />)}
-                {needsAmount && (
-                  <div className="frame"><div className="box mine" style={{ width: 260, height: 120, alignItems: "flex-start", textAlign: "left" }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{primaryTurn?.label}</span>
-                    <label className="money">{w.amount}<input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" /></label>
-                  </div></div>
-                )}
+
               </div>
             </>
-          )}
-          {missing.length === 0 && needsAmount && (
-            <label className="money" style={{ marginTop: 10 }}>{w.amount}<input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" /></label>
           )}
           {needsDate && <label className="date" style={{ marginTop: 10, display: "inline-flex", gap: 10, alignItems: "center" }}>{w.date}<input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>}
           {(needsUrl || needsNote) && <label className="ask" style={{ marginTop: 10, maxWidth: 480 }}><span className="sr">{needsUrl ? w.link : primaryTurn?.label}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder={needsUrl ? `${w.link} …` : `${primaryTurn?.label} …`} /></label>}
@@ -159,7 +151,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         ) : primaryTurn ? (
           <>
             {blocked.length > 0 && <span className="says">{w.firstHere}: {blocked.map(blockedWord).join(", ")}</span>}
-            {blocked.length === 0 && needsAmount && !amount.trim() && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" /></label>}
+            {blocked.length === 0 && needsAmount && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" autoFocus /></label>}
             {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
             <button type="button" className="btn" disabled={!canPress} onClick={() => step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>
