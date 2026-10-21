@@ -59,7 +59,7 @@ export function App() {
     try { return (localStorage.getItem("cf.side") as "left" | "right") || "left"; } catch { return "left"; }
   });
   useEffect(() => { try { localStorage.setItem("cf.side", side); } catch { /* private window */ } }, [side]);
-  useEffect(() => { if (config.data) document.title = config.data.product; }, [config.data]);
+  useEffect(() => { if (config.data) { document.title = config.data.product; document.documentElement.lang = config.data.lang; } }, [config.data]);
 
   if (me.isLoading || config.isLoading) return null;
   if (!config.data) return <div className="gate"><p className="empty">The core is not reachable.</p></div>;
@@ -70,6 +70,7 @@ export function App() {
   // a fresh sandbox or the other world: the cookie changes, then every live query reloads against it (removing them instead left the observers on the old world for one round)
   const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries({ queryKey: ["case"] }); await Promise.all([qc.resetQueries({ queryKey: ["groups"] }), qc.resetQueries({ queryKey: ["turns"] }), qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["config"] })]); };
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
+  const onLang = async (l: string) => { await api.setLang(l); await qc.invalidateQueries(); };
   const w = words(lang);
   const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id;
   const isPhone = window.matchMedia("(max-width: 900px)").matches;
@@ -82,7 +83,7 @@ export function App() {
     <div className={`shell ${side}`}>
       <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
             onSignOut={async () => { await api.signOut(); qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
-            theme={theme} onTheme={setTheme} />
+            theme={theme} onTheme={setTheme} onLang={onLang} />
       {route.name === "board" ? (
         <Board config={config.data} go={go} w={w} />
       ) : route.name === "list" ? (

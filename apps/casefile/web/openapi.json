@@ -58,6 +58,43 @@
         }
       }
     },
+    "/api/session/lang": {
+      "post": {
+        "summary": "Set Lang",
+        "description": "The viewer's language, kept in a cookie for a year; only languages the domain's vocabulary speaks.",
+        "operationId": "set_lang_api_session_lang_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LangIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/demo/session": {
       "post": {
         "summary": "Demo Session",
@@ -1238,6 +1275,19 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "LangIn": {
+        "properties": {
+          "lang": {
+            "type": "string",
+            "title": "Lang"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lang"
+        ],
+        "title": "LangIn"
       },
       "MeOut": {
         "properties": {

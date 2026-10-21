@@ -3,12 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Close, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
+import { Close, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
 import { useState } from "react";
 
-export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, w, theme, onTheme }:
+export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme }:
   { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
-    onFresh: (world?: string) => void; onPerson: (person: string) => void; w: ReturnType<typeof words>; theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void }) {
+    onFresh: (world?: string) => void; onPerson: (person: string) => void; onLang: (lang: string) => void; w: ReturnType<typeof words>; theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void }) {
   const [open, setOpen] = useState(false);
   const goClose = (p: string) => { setOpen(false); go(p); };
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -64,6 +64,9 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
           <button type="button" className="nav-row quiet" onClick={() => onFresh()}><span>{w.startOver}</span><span className="n"><Restart /></span></button>
         </div>
       )}
+      <button type="button" className="nav-row quiet" onClick={() => onLang(config.lang === "de" ? "en" : "de")} title={w.language} lang={config.lang === "de" ? "en" : "de"}>
+        <span>{w.otherLang}</span><span className="n"><Globe /></span>
+      </button>
       <button type="button" className="nav-row quiet" onClick={() => onTheme(dark ? "light" : "dark")} aria-label={w.theme}>
         <span>{dark ? w.light : w.dark}</span><span className="n">{dark ? <Sun /> : <Moon />}</span>
       </button>

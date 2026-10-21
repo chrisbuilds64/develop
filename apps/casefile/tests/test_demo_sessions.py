@@ -118,3 +118,21 @@ def test_a_sandbox_links_documents_copies_text_and_the_world_brings_its_own_samp
     assert r.status_code == 200
     body = client.get("/api/cases/HR-2026-0417-wasserschaden-badezimmer/files/rechnung.pdf").content
     assert body == b"%PDF-1.4 own sample"
+
+
+def test_the_viewer_can_switch_the_language_the_world_speaks(demo):
+    """The claims world speaks German by default; a cookie set through /api/session/lang turns every word English — and back."""
+    app, _ = demo
+    client = TestClient(app)
+    client.post("/api/demo/session", json={"world": "claims"})
+    assert client.get("/api/me").json()["lang"] == "de"
+    groups = {g["key"]: g["word"] for g in client.get("/api/cases").json()}
+    assert groups["you"] == "Du bist dran"
+    assert client.post("/api/session/lang", json={"lang": "fr"}).status_code == 400
+    assert client.post("/api/session/lang", json={"lang": "en"}).status_code == 200
+    assert client.get("/api/me").json()["lang"] == "en"
+    groups = {g["key"]: g["word"] for g in client.get("/api/cases").json()}
+    assert groups["you"] == "Your move"
+    assert client.get("/api/config").json()["lang"] == "en"
+    client.post("/api/session/lang", json={"lang": "de"})
+    assert client.get("/api/me").json()["lang"] == "de"

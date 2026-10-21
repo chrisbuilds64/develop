@@ -42,6 +42,7 @@ export const api = {
   me: () => call<MeOut>("GET", "/api/me"),
   signIn: (person: string) => call<MeOut>("POST", "/api/session", { person }),
   signOut: () => call<{ ok: boolean }>("DELETE", "/api/session"),
+  setLang: (lang: string) => call<{ ok: boolean; lang: string }>("POST", "/api/session/lang", { lang }),
   demoSession: (world?: string) => call<MeOut>("POST", "/api/demo/session", { world: world ?? null }),
   config: () => call<ConfigView>("GET", "/api/config"),
   turns: () => call<TurnOut[]>("GET", "/api/me/turns"),

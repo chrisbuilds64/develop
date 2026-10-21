@@ -22,6 +22,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/session/lang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Lang
+         * @description The viewer's language, kept in a cookie for a year; only languages the domain's vocabulary speaks.
+         */
+        post: operations["set_lang_api_session_lang_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demo/session": {
         parameters: {
             query?: never;
@@ -541,6 +561,11 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** LangIn */
+        LangIn: {
+            /** Lang */
+            lang: string;
+        };
         /** MeOut */
         MeOut: {
             /** Person */
@@ -833,6 +858,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    set_lang_api_session_lang_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LangIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -25,7 +25,7 @@ from ..demo.sandbox import copy_world
 import threading
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
@@ -43,6 +43,7 @@ from . import views
 
 COOKIE = "cf_person"
 DEMO_COOKIE = "cf_demo"
+LANG_COOKIE = "cf_lang"           # the viewer's language, when it differs from the world's; plain, not secret
 
 
 @dataclass
@@ -77,6 +78,10 @@ class Settings:
 
 class SessionIn(BaseModel):
     person: str
+
+
+class LangIn(BaseModel):
+    lang: str
 
 
 class DemoSessionIn(BaseModel):
@@ -277,7 +282,13 @@ def create_app(settings: Settings) -> FastAPI:
         response.set_cookie(DEMO_COOKIE, f"{sid}.{_sign(settings.secret, sid)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
 
     def ctx(request: Request, response: Response) -> Ctx:
-        """The store and configuration this request works on. In the demo, a missing sandbox is created on the spot."""
+        """The store and configuration this request works on, in the viewer's language if they chose one the domain speaks."""
+        c = _ctx(request, response)
+        lang = request.cookies.get(LANG_COOKIE, "")
+        return replace(c, lang=lang) if lang and lang != c.lang and lang in c.config.vocabulary else c
+
+    def _ctx(request: Request, response: Response) -> Ctx:
+        """In the demo, a missing sandbox is created on the spot."""
         if not limiter.allow(_client(request), settings.rate_per_minute):
             raise HTTPException(429, "too many requests")
         if single is not None and not settings.worlds:
@@ -347,6 +358,14 @@ def create_app(settings: Settings) -> FastAPI:
     def end_session(response: Response):
         response.delete_cookie(COOKIE)
         return {"ok": True}
+
+    @app.post("/api/session/lang")
+    def set_lang(body: LangIn, response: Response, c: Ctx = Depends(ctx)):
+        """The viewer's language, kept in a cookie for a year; only languages the domain's vocabulary speaks."""
+        if body.lang not in c.config.vocabulary:
+            raise HTTPException(400, f"no vocabulary for '{body.lang}'; the domain speaks {', '.join(k for k in c.config.vocabulary if not k.startswith('$'))}")
+        response.set_cookie(LANG_COOKIE, body.lang, samesite="lax", max_age=365 * 24 * 3600)
+        return {"ok": True, "lang": body.lang}
 
     @app.post("/api/demo/session", response_model=MeOut)
     def demo_session(response: Response, request: Request, body: DemoSessionIn | None = None):
