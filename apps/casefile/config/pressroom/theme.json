@@ -1,0 +1,6 @@
+{
+  "name": "PressRoom",
+  "lang": "en",
+  "accent": "your-move",
+  "$comment": "The one accent is --your-move (blue) and means only: this waits for you. Values live in tokens.css; nothing here names a colour."
+}

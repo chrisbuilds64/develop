@@ -1,0 +1,70 @@
+{
+  "$comment": "What a skill run may do, and who may order one. Read by run_request.py when an order is placed (orderable_by) and by runner.py when it executes (the rest). No policy at the pipeline root: nothing is ordered and nothing runs. `default` applies where a skill says nothing; a skill lists only what differs. Paths: {data} is the pipeline root, {container} the ordered container. `agent` is the name (from people.json) the headless session works and signs as. `model` is handed to the session as --model; a skill that writes text runs on Opus, a skill that checks runs on Sonnet (Chris, 2026-10-13); without the field Claude Code's default applies.",
+  "default": {
+    "orderable_by": [
+      "operator"
+    ],
+    "permission_mode": "acceptEdits",
+    "write": [
+      "{container}"
+    ],
+    "tools": [
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)"
+    ],
+    "web": false,
+    "timeout": 1800,
+    "agent": "Claude",
+    "model": "claude-sonnet-5-5"
+  },
+  "skills": {
+    "interpret": {
+      "$comment": "Produces the container's deliverables and may move it a stage — the whole pipeline root is writable; python3 for the production scripts; the web for the fact-checker.",
+      "write": [
+        "{data}"
+      ],
+      "tools": [
+        "Bash(python3:*)",
+        "Bash(mv:*)",
+        "Bash(mkdir:*)",
+        "Bash(cp:*)",
+        "Bash(ls:*)",
+        "Bash(cat:*)"
+      ],
+      "web": true,
+      "model": "claude-opus-5-5"
+    },
+    "canonical-review": {
+      "$comment": "Evaluates a published piece and writes its verdict into the container. Reads the canon, writes one folder.",
+      "web": true,
+      "model": "claude-opus-5-5"
+    },
+    "reflect": {
+      "$comment": "Turns an observation into a signal container in 05-operational-observations.",
+      "write": [
+        "{data}"
+      ]
+    },
+    "asset": {
+      "$comment": "Dormant since 2026-09-06 — visuals are made elsewhere. Nobody may order it until that changes.",
+      "orderable_by": []
+    },
+    "derive": {
+      "$comment": "Derives the remaining deliverables from a human-written primary artifact; never rewrites it. Same rights as interpret.",
+      "write": [
+        "{data}"
+      ],
+      "tools": [
+        "Bash(python3:*)",
+        "Bash(mv:*)",
+        "Bash(mkdir:*)",
+        "Bash(cp:*)",
+        "Bash(ls:*)",
+        "Bash(cat:*)"
+      ],
+      "web": true,
+      "model": "claude-opus-5-5"
+    }
+  }
+}

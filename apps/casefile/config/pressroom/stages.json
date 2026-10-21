@@ -1,0 +1,31 @@
+{
+  "$comment": "The content pipeline as configuration (ADR-015). Folder = status; key = the station on the line; turn = whose move; actions = the one button per stage, with what it needs. Words live in vocabulary.json under 'actions' and 'stages'.",
+  "name": "PressRoom",
+  "lang": "en",
+  "configVersion": "1",
+  "stages": [
+    {"folder": "00-archive", "key": "archive", "group": "archive"},
+    {"folder": "05-operational-observations", "key": "idea", "group": "ideas", "turn": "role:author",
+     "actions": [{"id": "work_out", "label": "work_out", "run": "interpret", "entry_status": "info"}]},
+    {"folder": "10-ideas", "key": "idea", "group": "ideas", "turn": "role:author",
+     "actions": [{"id": "work_out", "label": "work_out", "run": "interpret", "entry_status": "info"}]},
+    {"folder": "15-interpretation", "key": "draft", "group": "claude", "turn": "claude"},
+    {"folder": "20-produce", "key": "draft", "group": "claude", "turn": "claude"},
+    {"folder": "30-review-human", "key": "review", "group": "you", "turn": "role:approver",
+     "actions": [
+       {"id": "approve_to_visual", "label": "approve_to_visual", "to": "40-asset-generation", "requires": ["primary"], "four_eyes": true, "entry_status": "approved"},
+       {"id": "rework", "label": "rework", "run": "interpret", "payload": ["note"], "entry_status": "open"}
+     ]},
+    {"folder": "40-asset-generation", "key": "visual", "group": "others", "turn": "role:visual",
+     "actions": [{"id": "approve_visual", "label": "approve_visual", "to": "50-ready-to-publish", "requires": ["shape:image"], "actor": "role:approver", "entry_status": "approved"}]},
+    {"folder": "50-ready-to-publish", "key": "date", "group": "date", "turn": "role:approver",
+     "actions": [{"id": "schedule", "label": "schedule", "to": "55-scheduled", "payload": ["date"]}]},
+    {"folder": "55-scheduled", "key": "date", "group": "planned", "turn": "role:approver",
+     "actions": [{"id": "published", "label": "published", "to": "60-published", "payload": ["url"]}]},
+    {"folder": "60-published", "key": "out", "group": "out"},
+    {"folder": "61-field-observation", "key": "out", "group": "out"},
+    {"folder": "65-canonical-review", "key": "out", "group": "out"},
+    {"folder": "66-reviewed", "key": "out", "group": "out"},
+    {"folder": "70-reference-frames", "key": "out", "group": "out"}
+  ]
+}

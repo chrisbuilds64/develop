@@ -1,0 +1,8 @@
+{
+  "$comment": "Defaults for a fresh pipeline; a pipeline root carries its own people.json, which wins. Roles: author (enters ideas), approver (the human gate), visual (makes the visuals), operator (runs the place).",
+  "people": [
+    {"id": "chris", "name": "Chris", "kind": "human", "roles": ["author", "approver", "operator"]},
+    {"id": "akhil", "name": "Akhil", "kind": "human", "roles": ["visual", "author"]},
+    {"id": "axel", "name": "Axel", "kind": "agent", "roles": []}
+  ]
+}
