@@ -1,4 +1,4 @@
-// The shell: menu, the list, the case. Three routes, read from the location: /, /case/<id>, /workshop, /group/<key>.
+// The shell: menu, the list, the case. Routes, read from the location: /, /case/<id>, /workshop, /group/<key>, and /doc/<id>/<name> as the reader in its own window.
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, BASE } from "./api";
@@ -7,12 +7,15 @@ import { Menu } from "./components/Menu";
 import { List } from "./screens/List";
 import { CaseScreen } from "./screens/Case";
 import { Workshop } from "./screens/Workshop";
+import { DocWindow } from "./screens/DocWindow";
 import { words } from "./words";
 
-export type Route = { name: "home" } | { name: "case"; id: string } | { name: "workshop" } | { name: "group"; key: string };
+export type Route = { name: "home" } | { name: "case"; id: string } | { name: "workshop" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
   const path = full.startsWith(BASE) ? full.slice(BASE.length) || "/" : full;
+  const d = path.match(/^\/doc\/([^/]+)\/([^/]+)/);
+  if (d) return { name: "doc", id: decodeURIComponent(d[1]), file: decodeURIComponent(d[2]) };
   const m = path.match(/^\/case\/([^/]+)/);
   if (m) return { name: "case", id: decodeURIComponent(m[1]) };
   if (path.startsWith("/workshop")) return { name: "workshop" };
@@ -68,6 +71,8 @@ export function App() {
   const isPhone = window.matchMedia("(max-width: 900px)").matches;
   const showList = !isPhone || route.name === "home" || route.name === "group";
   const showMain = !isPhone || route.name !== "home";
+
+  if (route.name === "doc") return <div className="shell"><DocWindow id={route.id} name={route.file} config={config.data} w={w} /></div>;
 
   return (
     <div className={`shell ${side}`}>

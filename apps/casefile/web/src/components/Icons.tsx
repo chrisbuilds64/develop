@@ -8,3 +8,7 @@ export const Sun = () => <svg {...base}><circle cx="12" cy="12" r="4" /><path d=
 export const Moon = () => <svg {...base}><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>;
 export const MenuIcon = () => <svg {...base}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
 export const Close = () => <svg {...base}><path d="M6 6l12 12M18 6L6 18" /></svg>;
+export const Back = () => <svg {...base}><path d="M19 12H6M12 6l-6 6 6 6" /></svg>;
+export const Prev = () => <svg {...base}><path d="M15 6l-6 6 6 6" /></svg>;
+export const Next = () => <svg {...base}><path d="M9 6l6 6-6 6" /></svg>;
+export const PopOut = () => <svg {...base}><path d="M14 4h6v6M20 4l-8 8M18 14v5H5V6h5" /></svg>;
