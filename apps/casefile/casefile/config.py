@@ -33,6 +33,7 @@ class DomainConfig:
     theme: dict = field(default_factory=dict)
     lang: str = "en"
     config_version: str = "1"
+    dir: Path | None = None                       # where the domain files came from (replies for the demo live beside them)
 
     # ------------------------------------------------------------------ loading
     @classmethod
@@ -56,6 +57,7 @@ class DomainConfig:
             theme=theme,
             lang=theme.get("lang") or stages_doc.get("lang") or "en",
             config_version=str(stages_doc.get("configVersion") or "1"),
+            dir=domain_dir,
         )
 
     # ------------------------------------------------------------------ stages

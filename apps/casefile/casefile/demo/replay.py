@@ -30,9 +30,13 @@ def _now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def load_reply(replies_dir: Path, skill: str) -> dict | None:
-    p = replies_dir / f"{skill}.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else None
+def load_reply(replies_dir: Path, skill: str, config: DomainConfig | None = None) -> tuple[dict | None, Path]:
+    """The domain's own replies (config/<domain>/replies/) win; the shared folder is the fallback."""
+    for d in ([config.dir / "replies"] if config and config.dir else []) + [replies_dir]:
+        p = d / f"{skill}.json"
+        if p.is_file():
+            return json.loads(p.read_text(encoding="utf-8")), d
+    return None, replies_dir
 
 
 def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path, wait: bool = True) -> bool:
@@ -40,7 +44,7 @@ def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path,
     room full of sandboxes is served in parallel by one thread. `wait=False` finishes it in one call (tests)."""
     rel = f"_runs/{run_name}"
     doc = store.read_json(rel)
-    reply = load_reply(replies_dir, doc.get("skill", ""))
+    reply, replies_dir = load_reply(replies_dir, doc.get("skill", ""), config)
     if doc.get("status") == "queued":
         doc["status"], doc["started"], doc["taken_by"] = "running", _now(), "replay"
         store.write_json(rel, doc)

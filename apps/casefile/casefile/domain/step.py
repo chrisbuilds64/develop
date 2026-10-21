@@ -131,7 +131,7 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
         files = [str(f) for f in req.payload.get("files", []) if str(f).strip()]
         if not files:
             return _refuse(store, j, "nothing delivered")
-    skill = str(req.payload.get("skill") or "interpret").strip()
+    skill = str(req.payload.get("skill") or ("ask" if req.action == "ask" else "interpret")).strip()
     if req.action == "ask":
         if not text:
             return _refuse(store, j, "the text is empty")

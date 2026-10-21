@@ -40,7 +40,7 @@ def test_the_claims_path_invoice_reconcile_approve(tmp_path):
     (root / "30-pruefung" / cid / "rechnung.pdf").write_bytes(b"%PDF-1.4 fictional")
     assert whose.turn(cases.load(store, config, cid), config, "de")[0].actor == "claude"
     # the replay plays the prepared answer without waiting
-    played = play(store, config, r.run + ".json", HERE / "replies", wait=False)
+    played = play(store, config, r.run + ".json", HERE / "replies", wait=False)   # falls through to config/claims-demo/replies
     assert played
     case = cases.load(store, config, cid)
     assert case.entries[-1].author == "KI" and "abgleich.md" in case.files and case.last_run.status == "done"

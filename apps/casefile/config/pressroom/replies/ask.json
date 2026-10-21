@@ -1,0 +1,6 @@
+{
+  "delay_s": 3,
+  "files": {},
+  "entry": {"title": "On your question", "text": "You asked: “{note}”\n\nWhere the piece stands: the draft and its companions are in. Read it, then approve and send it to Akhil for the visuals, or send it back with a note and I rework it. If something is missing, the frames say what."},
+  "to": null, "cost_usd": 0.0, "model": "replay", "turns": 1
+}

@@ -93,7 +93,7 @@ class EntryIn(BaseModel):
 
 
 class RunIn(BaseModel):
-    skill: str = "interpret"
+    skill: str = "ask"
     note: str = ""
     request_id: str
 

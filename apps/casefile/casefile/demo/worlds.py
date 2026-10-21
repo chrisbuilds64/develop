@@ -109,7 +109,7 @@ def build_claims(root: Path) -> Path:
     _case(root, "25-abgleich", "WG-2026-0421-sturmschaden-carport",
           {"label": "WG", "number": "2026-0421", "title": "Sturmschaden Carport", "created": _stamp(2)[:10]},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Sturm, Carportdach abgedeckt.\n", "gutachten.pdf": pdf, "kostenvoranschlag.pdf": kva, "rechnung.pdf": kva},
-          _entry(1, "Gutachten übergeben", "Gutachter Berger", stage="20-besichtigung", when=_stamp(1, 14), files=["gutachten.pdf"], text="Dach und Pfosten, siehe Gutachten."))
+          _entry(1, "Gutachten übergeben", "Gutachter Berger", stage="20-besichtigung", when=_stamp(1, 14), files=["gutachten.pdf"], text="Dach und Pfosten, siehe Gutachten.", step="demo-c21", frm="20-besichtigung", to="25-abgleich"))
     _run(root, "WG-2026-0421-sturmschaden-carport", "25-abgleich", "reconcile", "queued", 3, "du")   # the replay finishes it a few seconds after the sandbox opens
 
     # with the assessor

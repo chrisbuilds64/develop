@@ -1,0 +1,6 @@
+{
+  "delay_s": 3,
+  "files": {},
+  "entry": {"title": "Zu deiner Frage", "text": "Du hast gefragt: „{note}“\n\nStand der Akte: Gutachten und Fotos liegen vor. Fehlt die Rechnung, lege sie in den Rahmen; dann gleiche ich Rechnung, Kostenvoranschlag und Gutachten ab. Liegt der Abgleich vor, trägst du den Betrag ein und gibst frei, oder du stellst eine Rückfrage an den Gutachter. Entscheiden tust du; ich bereite vor."},
+  "to": null, "cost_usd": 0.0, "model": "replay", "turns": 1
+}
