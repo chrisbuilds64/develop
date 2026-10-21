@@ -16,7 +16,9 @@ input, textarea { font: inherit; color: inherit; }
 /* ------------------------------------------------------------------ shell: menu · list · main */
 .shell { display: flex; height: 100dvh; overflow: hidden; }
 .shell.right { flex-direction: row-reverse; }
-.menu { width: var(--menu-w); flex: none; display: flex; flex-direction: column; gap: 4px; padding: 20px 14px; background: var(--surface); position: sticky; top: 0; height: 100dvh; }
+.menu { width: var(--menu-w); flex: none; display: flex; flex-direction: column; background: var(--surface); position: sticky; top: 0; height: 100dvh; }
+.menu .sheet { display: flex; flex-direction: column; gap: 4px; padding: 20px 14px; flex: 1; min-height: 0; }
+.scrim { display: none; }
 .menu-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 18px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
 .brand svg { flex: none; }
@@ -26,7 +28,7 @@ input, textarea { font: inherit; color: inherit; }
 .nav-row .n { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .nav-row .badge { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--your-move); color: var(--your-move-on); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .nav-row.quiet { color: var(--muted); }
-.nav-row.phone-only { display: none; }
+.phone-only { display: none !important; }
 .menu .rule { height: 1px; background: var(--hairline); margin: 10px 8px; }
 .menu .spacer { flex: 1; }
 .drop-in { min-height: 46px; border: 1.5px dashed var(--dashed); border-radius: var(--r-m); background: transparent; color: var(--ink); font-size: 15px; font-weight: 600; }
@@ -164,15 +166,22 @@ input, textarea { font: inherit; color: inherit; }
 /* ------------------------------------------------------------------ the phone */
 @media (max-width: 900px) {
   .shell, .shell.right { flex-direction: column; }
-  .menu { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; height: 76px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 20px 10px; border-top: 1px solid var(--hairline); gap: 8px; z-index: 10; }
+  .menu { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%; height: 76px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 20px 10px; border-top: 1px solid var(--hairline); gap: 8px; z-index: 10; background: var(--surface); }
   .shell.right .menu { flex-direction: row-reverse; }
-  .menu-head, .menu .rule, .menu .spacer, .menu .who, .menu .nav-row:not(.phone):not(.demo-row .nav-row), .menu .ask-row { display: none; }
-  .menu .demo-row { flex-direction: row; border: none; padding: 0; gap: 0; }
-  .menu .demo-row .nav-row { display: flex; width: auto; min-height: 48px; padding: 0 8px; }
-  .menu .demo-row .nav-row > span:first-child { display: none; }
-  .menu .demo-row .nav-row .n { font-size: 20px; color: var(--ink); }
-  .menu .drop-in { width: 56px; height: 56px; min-height: 0; border-radius: 50%; border: none; background: var(--ink); color: var(--ground); font-size: 26px; flex: none; }
-  .menu .nav-row.phone, .menu .nav-row.phone-only { display: flex; width: auto; min-height: 48px; }
+  .menu .sheet { position: fixed; left: 0; right: 0; bottom: 76px; max-height: calc(100dvh - 76px - 24px); overflow-y: auto; background: var(--surface); border-top: 1px solid var(--hairline); border-radius: var(--r-l) var(--r-l) 0 0; padding: 16px 14px 20px; transform: translateY(110%); transition: transform .25s var(--ease); z-index: 11; box-shadow: 0 -12px 32px rgba(0,0,0,.12); }
+  .menu.open .sheet { transform: translateY(0); }
+  .menu .sheet .menu-head { display: flex; }
+  .menu .sheet .swap { display: inline-grid; place-items: center; }
+  .menu .sheet .spacer { display: none; }
+  .menu .sheet .nav-row, .menu .sheet .rule, .menu .sheet .who, .menu .sheet .demo-row, .menu .sheet .ask-row { display: flex; }
+  .menu .sheet .ask-row { display: none; }
+  .menu .sheet .drop-in { display: block; width: 100%; height: auto; min-height: 46px; border-radius: var(--r-m); border: 1.5px dashed var(--dashed); background: transparent; color: var(--ink); font-size: 15px; }
+  .menu > .phone-only { display: flex !important; }
+  .menu > .nav-row.phone-only { width: auto; min-height: 48px; padding: 0 10px; align-items: center; gap: 8px; }
+  .menu > .nav-row.phone-only.on { background: transparent; font-weight: 600; }
+  .menu > .drop-in.phone-only { width: 56px; height: 56px; min-height: 0; border-radius: 50%; border: none; background: var(--ink); color: var(--ground); font-size: 26px; flex: none; align-items: center; justify-content: center; }
+  .scrim { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.25); border: none; z-index: 9; }
+  @media (prefers-reduced-motion: reduce) { .menu .sheet { transition: none; } }
   .list, .main { width: auto; height: auto; min-height: 0; overflow: visible; border: none; padding: 28px 20px 100px; }
   .shell, .shell.right { height: auto; overflow: visible; }
   body { height: auto; overflow: auto; }

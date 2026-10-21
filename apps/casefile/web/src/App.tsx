@@ -42,6 +42,13 @@ export function App() {
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups, enabled: !!me.data?.person });
   const config = useQuery({ queryKey: ["config"], queryFn: api.config, refetchInterval: false });
   const [route, go] = useRoute();
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
+    try { return (localStorage.getItem("cf.theme") as "light" | "dark" | "system") || "system"; } catch { return "system"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("cf.theme", theme); } catch { /* private window */ }
+    if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
+  }, [theme]);
   const [side, setSide] = useState<"left" | "right">(() => {
     try { return (localStorage.getItem("cf.side") as "left" | "right") || "left"; } catch { return "left"; }
   });
@@ -65,7 +72,8 @@ export function App() {
   return (
     <div className={`shell ${side}`}>
       <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
-            onSignOut={async () => { await api.signOut(); qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson} />
+            onSignOut={async () => { await api.signOut(); qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
+            theme={theme} onTheme={setTheme} />
       {route.name === "workshop" ? (
         <Workshop config={config.data} go={go} w={w} />
       ) : (
