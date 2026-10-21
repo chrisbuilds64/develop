@@ -1,6 +1,6 @@
 # ADR-014: The Surface Is a Static Single-Page App Served by the Core
 
-**Status:** Proposed
+**Status:** Accepted (Chris, 2026-10-21)
 **Date:** 2026-10-21
 
 ---

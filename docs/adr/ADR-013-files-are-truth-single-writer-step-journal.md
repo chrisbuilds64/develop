@@ -1,6 +1,6 @@
 # ADR-013: Files Are the Truth, One Writer, Steps Through a Journal
 
-**Status:** Proposed
+**Status:** Accepted (Chris, 2026-10-21)
 **Date:** 2026-10-21
 
 ---

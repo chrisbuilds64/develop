@@ -1,6 +1,6 @@
 # ADR-015: Domains Are Configuration, Not Code
 
-**Status:** Proposed
+**Status:** Accepted (Chris, 2026-10-21)
 **Date:** 2026-10-21
 
 ---
