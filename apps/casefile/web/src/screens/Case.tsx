@@ -5,6 +5,7 @@ import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type C
 import { Line } from "../components/Line";
 import { Frame } from "../components/Frames";
 import { Thread } from "../components/Thread";
+import { Cover } from "../components/Cover";
 import { Send } from "../components/Icons";
 import { Reader, type Doc } from "../components/Reader";
 import { ago, dateWords, type words } from "../words";
@@ -13,7 +14,7 @@ import { ago, dateWords, type words } from "../words";
 export function docsOf(v: CaseView): Doc[] {
   const present = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file));
   const ordered = v.primary ? [...present.filter((s) => s.file === v.primary), ...present.filter((s) => s.file !== v.primary)] : present;
-  return ordered.map((s) => { const n = s.versions[s.versions.length - 1]; return { name: n.name, word: s.word, version: n.version, url: n.url, shape: s.shape }; });
+  return ordered.map((s) => ({ word: s.word, shape: s.shape, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) }));
 }
 
 export function CaseScreen({ id, config, me, go, w }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words> }) {
@@ -31,6 +32,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const [pending, setPending] = useState<Turn | null>(null);
   const [reading, setReading] = useState<string | null>(null);
   const askRef = useRef<HTMLInputElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); };
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
   const stageWord = (f: string) => ((config.words as { stages?: Record<string, string> }).stages?.[f]) ?? f.replace(/^\d+-/, "");
@@ -40,6 +42,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); setAsk(""); refresh(); }, onError: fail });
   const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
+  const entryCount = q.data?.entries.length ?? 0;
+  useEffect(() => { const down = () => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }; down(); document.fonts?.ready.then(down); const t = setTimeout(down, 250); return () => clearTimeout(t); }, [entryCount, id]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); askRef.current?.focus(); } };
@@ -74,7 +78,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))))));
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const docs = docsOf(v);
-  const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.name === reading);
+  const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((v) => v.name === reading));
   const stub = main
     ? mine ? `${v.stage_word} · ${w.waitingForYou}${v.since ? ` ${w.since} ${ago(v.since, lang)}` : ""}`
       : main.actor === "claude" ? `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
@@ -89,8 +93,10 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   return (
     <main className="main">
       <header className="case-head">
-        <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""} · {v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer" title={extWord}>{v.external_id}</a> : <span title={extWord}>{v.external_id}</span>) : v.id.split("-").slice(0, 2).join("-")}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
-        <h1>{v.title}</h1>
+        <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} size="m" />
+        <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
+        <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>
+        <p className="title">{v.title}</p>
         <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span></p>
       </header>
 
@@ -101,7 +107,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
       <div className={`body${readingIndex >= 0 ? " reading" : ""}`}>
         <div className="desk">
           {readingIndex >= 0 ? (
-            <Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].name)} onClose={() => setReading(null)} w={w} />
+            <Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].versions[docs[i].versions.length - 1].name)} onClose={() => setReading(null)} w={w} />
           ) : (<>
           <p className="kicker">{w.onDesk}</p>
           <div className="desk-grid">
@@ -141,11 +147,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
 
         <aside className="thread" aria-label={w.conversation}>
           <p className="kicker">{w.conversation}</p>
+          <div className="thread-scroll" ref={threadRef}>
           <Thread entries={v.entries} meName={me.name ?? ""} agentName={v.agent} lang={lang} w={w} busy={busy}
                   stageWord={stageWord}
                   onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
                   onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })} />
-          <div className="grow" />
+          </div>
           {secondary.length > 0 && (
             <div className="chips">
               {secondary.map((t) => <button key={t.action} type="button" className={`chip${pending?.action === t.action ? " on" : ""}`} disabled={busy || t.blocked_by.length > 0} title={t.blocked_by.join(", ")}

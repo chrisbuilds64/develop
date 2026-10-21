@@ -10,16 +10,16 @@ export function DocWindow({ id, name, config, w }: { id: string; name: string; c
   if (q.isLoading) return <main className="main doc-window"><p className="empty">…</p></main>;
   if (!q.data) return <main className="main doc-window"><p className="empty">{q.error instanceof ApiError && q.error.status === 404 ? w.notHere : w.unreachable}</p></main>;
   const docs = docsOf(q.data);
-  const index = Math.max(0, docs.findIndex((d) => d.name === name));
+  const index = Math.max(0, docs.findIndex((d) => d.versions.some((v) => v.name === name)));
   const setIndex = (i: number) => {
-    window.history.replaceState(null, "", `${BASE}/doc/${encodeURIComponent(id)}/${encodeURIComponent(docs[i].name)}`);
+    window.history.replaceState(null, "", `${BASE}/doc/${encodeURIComponent(id)}/${encodeURIComponent(docs[i].versions[docs[i].versions.length - 1].name)}`);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
   document.title = `${docs[index]?.word ?? name} · ${q.data.title} · ${config.product}`;
   return (
     <main className="main doc-window">
       <p className="ref mono hint">{q.data.label_word} · {q.data.external_id ?? q.data.id} · {q.data.title}</p>
-      <Reader docs={docs} index={index} caseId={id} onIndex={setIndex} onClose={() => window.close()} standalone w={w} />
+      <Reader docs={docs} index={index} caseId={id} onIndex={setIndex} onClose={() => window.close()} standalone startAt={name} w={w} />
     </main>
   );
 }

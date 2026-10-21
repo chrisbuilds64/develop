@@ -2,5 +2,15 @@
   "name": "PressRoom",
   "lang": "en",
   "accent": "your-move",
-  "$comment": "The one accent is --your-move (blue) and means only: this waits for you. Values live in tokens.css; nothing here names a colour."
+  "$comment": "The one accent is --your-move (blue) and means only: this waits for you. covers: every case carries a small coloured cover, the colour from one meta key (the cockpit coloured by track; this demo's pieces carry no track, so by label), the fallback for everything else.",
+  "covers": {
+    "by": "label",
+    "colors": {
+      "FN": "#2f6fed",
+      "POD": "#e0a52a",
+      "SP": "#2fa36b",
+      "WN": "#8a5cf6"
+    },
+    "fallback": "#5a6270"
+  }
 }

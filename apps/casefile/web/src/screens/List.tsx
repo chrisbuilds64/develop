@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type CaseCard, type ConfigView } from "../api";
 import { BASE } from "../api";
 import type { Route } from "../App";
+import { Cover } from "../components/Cover";
 import { ago, dateWords, type words } from "../words";
 
 function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void; w: ReturnType<typeof words>; lang: string; quiet?: boolean }) {
@@ -11,11 +12,15 @@ function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void;
   const state = t ? (c.mine ? `${c.stage_word}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;
   return (
     <a className={`card${c.mine ? " mine" : ""}${quiet ? " quiet" : ""}`} href={`${BASE}/case/${encodeURIComponent(c.id)}`} onClick={(e) => { e.preventDefault(); go(`/case/${encodeURIComponent(c.id)}`); }}>
-      {!quiet && <span className="ref">{c.label_word} · {c.external_id || c.id.split("-").slice(0, 2).join("-")}</span>}
-      <span className="title">{c.title}</span>
-      <span className="state">{state}</span>
-      {c.mine && <span className="yours">{w.yourMove}</span>}
-      {running && <span className="bar"><i /></span>}
+      <Cover label={c.label} number={c.number || c.id.split("-")[1] || ""} tint={c.tint} />
+      <span className="card-body">
+        {!quiet && <span className="ref">{c.label_word}</span>}
+        <span className="num">{c.external_id || (c.number ? `${c.label}-${c.number}` : c.id)}</span>
+        <span className="title">{c.title}</span>
+        <span className="state">{state}</span>
+        {c.mine && <span className="yours">{w.yourMove}</span>}
+        {running && <span className="bar"><i /></span>}
+      </span>
     </a>
   );
 }

@@ -52,6 +52,8 @@ class CaseCard(BaseModel):
     mine: bool = False                                    # the viewer is the actor of the main move
     external_id: str = ""                                 # the number the house's own system knows this case by
     external_url: str = ""                                # a link into that system, from the theme's url template
+    number: str = ""                                      # the short number on the cover (meta.number)
+    tint: str = ""                                        # the cover's colour, from theme.covers (by one meta key)
 
 
 class StationView(BaseModel):
@@ -125,7 +127,9 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> Cas
     g = group_of(config, case, main, viewer)
     ext = str(case.meta.get("external_id") or case.meta.get("claim_number") or "")
     tpl = str(config.theme.get("external_url") or "")
-    return CaseCard(id=case.id, title=str(case.meta.get("title") or case.meta.get("working_title") or case.id), label=case.label,
+    covers = config.theme.get("covers") or {}
+    tint = str((covers.get("colors") or {}).get(str(case.meta.get(covers.get("by") or "label") or ""), covers.get("fallback") or "")) if covers else ""
+    return CaseCard(id=case.id, number=str(case.meta.get("number") or ""), tint=tint, title=str(case.meta.get("title") or case.meta.get("working_title") or case.id), label=case.label,
                     external_id=ext, external_url=(tpl.replace("{external_id}", ext) if ext and tpl else ""),
                     label_word=config.word("labels", case.label, lang, case.label), stage=case.stage,
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,

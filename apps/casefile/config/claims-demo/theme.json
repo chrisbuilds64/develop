@@ -4,5 +4,15 @@
   "accent": "your-move",
   "$comment": "Same tokens as PressRoom; the one accent means only: this waits for you. external_url: a template with {external_id} turns the claim number into a link into the house's system of record, e.g. https://bestand.example/schaden/{external_id}; empty in the demo.",
   "external_label": "Schadennummer",
-  "external_url": ""
+  "external_url": "",
+  "covers": {
+    "by": "label",
+    "colors": {
+      "HR": "#2f6fed",
+      "WG": "#2fa36b",
+      "KFZ": "#e0a52a",
+      "HP": "#8a5cf6"
+    },
+    "fallback": "#5a6270"
+  }
 }

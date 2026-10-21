@@ -736,6 +736,16 @@
             "type": "string",
             "title": "External Url",
             "default": ""
+          },
+          "number": {
+            "type": "string",
+            "title": "Number",
+            "default": ""
+          },
+          "tint": {
+            "type": "string",
+            "title": "Tint",
+            "default": ""
           }
         },
         "type": "object",
@@ -828,6 +838,16 @@
           "external_url": {
             "type": "string",
             "title": "External Url",
+            "default": ""
+          },
+          "number": {
+            "type": "string",
+            "title": "Number",
+            "default": ""
+          },
+          "tint": {
+            "type": "string",
+            "title": "Tint",
             "default": ""
           },
           "meta": {

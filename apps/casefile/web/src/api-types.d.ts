@@ -335,6 +335,16 @@ export interface components {
              * @default
              */
             external_url: string;
+            /**
+             * Number
+             * @default
+             */
+            number: string;
+            /**
+             * Tint
+             * @default
+             */
+            tint: string;
         };
         /** CaseView */
         CaseView: {
@@ -381,6 +391,16 @@ export interface components {
              * @default
              */
             external_url: string;
+            /**
+             * Number
+             * @default
+             */
+            number: string;
+            /**
+             * Tint
+             * @default
+             */
+            tint: string;
             /** Meta */
             meta?: {
                 [key: string]: unknown;

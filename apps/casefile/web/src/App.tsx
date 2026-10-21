@@ -64,7 +64,8 @@ export function App() {
   if (!me.data?.person) {
     return <Gate config={config.data} onSignedIn={() => qc.invalidateQueries()} />;
   }
-  const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries(); await qc.refetchQueries({ queryKey: ["me"] }); qc.invalidateQueries(); };
+  // a fresh sandbox or the other world: the cookie changes, then every live query reloads against it (removing them instead left the observers on the old world for one round)
+  const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries({ queryKey: ["case"] }); await Promise.all([qc.resetQueries({ queryKey: ["groups"] }), qc.resetQueries({ queryKey: ["turns"] }), qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["config"] })]); };
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
   const w = words(lang);
   const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id;
