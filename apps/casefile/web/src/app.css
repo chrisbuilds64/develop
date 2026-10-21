@@ -38,7 +38,7 @@ input, textarea { font: inherit; color: inherit; }
 
 .list { width: var(--list-w); flex: none; display: flex; flex-direction: column; gap: 14px; padding: 28px 20px; background: var(--ground-2); border-left: 1px solid var(--hairline); border-right: 1px solid var(--hairline); height: 100dvh; overflow-y: auto; }
 .list h2 { margin: 0; font-size: 26px; font-weight: 500; line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
-.main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 30px 40px 0; gap: 18px; height: 100dvh; overflow-y: auto; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 30px 40px 0; gap: 18px; height: 100dvh; overflow-y: auto; scroll-padding-bottom: 110px; }
 .body { padding-bottom: 120px; }
 
 /* ------------------------------------------------------------------ cards */
