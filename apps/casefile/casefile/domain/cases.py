@@ -21,15 +21,33 @@ def split_version(name: str) -> tuple[str, int]:
     return name.replace(m.group(0), ".", 1), int(m.group(1))
 
 
+SHAPES = {".png": "image", ".jpg": "image", ".jpeg": "image", ".webp": "image", ".gif": "image", ".pdf": "pdf", ".mp4": "video", ".mov": "video", ".webm": "video",
+          ".md": "text", ".txt": "text", ".json": "text", ".html": "text", ".csv": "text"}
+HIDDEN = {"meta.json", "review.md"}
+
+
+def shape_of(name: str) -> str:
+    return SHAPES.get("." + name.rsplit(".", 1)[-1].lower() if "." in name else "", "other")
+
+
 def slots_for(config: DomainConfig, label: str, files: list[str], sizes: dict[str, int] | None = None) -> list[Slot]:
+    """The matrix's slots first, filled or empty; then every other file the folder holds — the case shows what is there,
+    the matrix only lends words, shapes and due stages to what it knows."""
     present: dict[str, list[FileVersion]] = {}
     for f in files:
+        if f.startswith("."):
+            continue
         base, v = split_version(f)
         present.setdefault(base, []).append(FileVersion(name=f, version=v, size=(sizes or {}).get(f, 0)))
-    out = []
+    out, known = [], set()
     for d in config.deliverables(label):
         versions = sorted(present.get(d.file, []), key=lambda x: x.version)
         out.append(Slot(file=d.file, shape=d.shape, required=d.required, due_stage=d.stage, by=d.by, versions=versions))
+        known.add(d.file)
+    for base, versions in present.items():
+        if base in known or base in HIDDEN:
+            continue
+        out.append(Slot(file=base, shape=shape_of(base), required=False, due_stage="", by="human", versions=sorted(versions, key=lambda x: x.version)))
     return out
 
 

@@ -63,3 +63,18 @@ def test_the_lock_serialises_steps_on_one_case(store):
     for kind, _ in order:
         depth += 1 if kind == "in" else -1
         assert depth in (0, 1)
+
+
+def test_a_file_outside_the_matrix_still_shows_on_the_desk():
+    """A real container carries files the matrix never named (overlay-16x9.jpg, image.png); the case shows them, shaped by their extension."""
+    from casefile.config import DomainConfig
+    from casefile.domain.cases import slots_for
+    from tests.world import CONFIG
+    config = DomainConfig.load(CONFIG)
+    slots = slots_for(config, "FN", ["substack.md", "overlay-16x9.jpg", "overlay-16x9.v2.jpg", "notes.txt", "meta.json", "review.md", ".DS_Store"])
+    by = {s.file: s for s in slots}
+    assert by["substack.md"].present and by["substack.md"].required
+    assert by["overlay-16x9.jpg"].shape == "image" and [v.version for v in by["overlay-16x9.jpg"].versions] == [0, 2] and not by["overlay-16x9.jpg"].required
+    assert by["notes.txt"].shape == "text" and by["notes.txt"].due_stage == ""
+    assert "meta.json" not in by or by["meta.json"].due_stage       # the matrix may name it; the folder never adds it twice
+    assert ".DS_Store" not in by
