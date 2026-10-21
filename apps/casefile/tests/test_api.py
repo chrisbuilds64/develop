@@ -125,3 +125,16 @@ def test_stages_openapi_and_audit(api):
     lines = [json.loads(l) for l in (root / "_audit" / "api.jsonl").read_text().splitlines()]
     assert lines[-1]["path"] == "/openapi.json" or lines[-1]["path"].startswith("/api/")
     assert any(l["who"] == "chris" and l["path"] == "/api/stages" for l in lines)
+
+
+def test_a_text_file_is_rendered_for_the_viewer_with_raw_html_shown_not_run(api):
+    client, root = api
+    sign_in(client)
+    (root / "30-review-human" / "FN-105-the-review-that-reads-itself" / "substack.v2.md").write_text("# Safe\n\n<script>alert(1)</script> [x](javascript:alert(1))\n\n- a\n- b\n")
+    r = client.get("/api/cases/FN-105-the-review-that-reads-itself/read/substack.v2.md")
+    assert r.status_code == 200 and r.json()["kind"] == "md"
+    h = r.json()["html"]
+    assert "<h1>Safe</h1>" in h and "<li>a</li>" in h and "<script>" not in h and "&lt;script&gt;" in h and 'href="javascript:' not in h
+    r = client.get("/api/cases/FN-105-the-review-that-reads-itself/read/linkedin-post.txt")
+    assert r.status_code == 200 and r.json()["html"].startswith("<pre>")
+    assert client.get("/api/cases/POD-110-the-silent-failure/read/thumbnail-16x9.png").status_code == 415

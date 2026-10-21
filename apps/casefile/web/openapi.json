@@ -297,6 +297,53 @@
         }
       }
     },
+    "/api/cases/{case_id}/read/{name}": {
+      "get": {
+        "summary": "Read File",
+        "description": "A text file rendered for the viewer: {kind, html}. Images and PDFs come from /files.",
+        "operationId": "read_file_api_cases__case_id__read__name__get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/stages": {
       "get": {
         "summary": "Stages",
@@ -679,6 +726,16 @@
             "type": "boolean",
             "title": "Mine",
             "default": false
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id",
+            "default": ""
+          },
+          "external_url": {
+            "type": "string",
+            "title": "External Url",
+            "default": ""
           }
         },
         "type": "object",
@@ -762,6 +819,16 @@
             "type": "boolean",
             "title": "Mine",
             "default": false
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id",
+            "default": ""
+          },
+          "external_url": {
+            "type": "string",
+            "title": "External Url",
+            "default": ""
           },
           "meta": {
             "additionalProperties": true,
@@ -1411,7 +1478,7 @@
           "skill": {
             "type": "string",
             "title": "Skill",
-            "default": "interpret"
+            "default": "ask"
           },
           "note": {
             "type": "string",

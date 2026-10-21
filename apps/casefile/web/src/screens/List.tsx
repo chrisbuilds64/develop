@@ -11,7 +11,7 @@ function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void;
   const state = t ? (c.mine ? `${c.stage_word}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;
   return (
     <a className={`card${c.mine ? " mine" : ""}${quiet ? " quiet" : ""}`} href={`${BASE}/case/${encodeURIComponent(c.id)}`} onClick={(e) => { e.preventDefault(); go(`/case/${encodeURIComponent(c.id)}`); }}>
-      {!quiet && <span className="ref">{c.label_word} · {c.id.split("-").slice(0, 2).join("-")}</span>}
+      {!quiet && <span className="ref">{c.label_word} · {c.external_id || c.id.split("-").slice(0, 2).join("-")}</span>}
       <span className="title">{c.title}</span>
       <span className="state">{state}</span>
       {c.mine && <span className="yours">{w.yourMove}</span>}

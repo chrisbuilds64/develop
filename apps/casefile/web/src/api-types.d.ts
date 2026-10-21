@@ -144,6 +144,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/read/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read File
+         * @description A text file rendered for the viewer: {kind, html}. Images and PDFs come from /files.
+         */
+        get: operations["read_file_api_cases__case_id__read__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stages": {
         parameters: {
             query?: never;
@@ -305,6 +325,16 @@ export interface components {
              * @default false
              */
             mine: boolean;
+            /**
+             * External Id
+             * @default
+             */
+            external_id: string;
+            /**
+             * External Url
+             * @default
+             */
+            external_url: string;
         };
         /** CaseView */
         CaseView: {
@@ -341,6 +371,16 @@ export interface components {
              * @default false
              */
             mine: boolean;
+            /**
+             * External Id
+             * @default
+             */
+            external_id: string;
+            /**
+             * External Url
+             * @default
+             */
+            external_url: string;
             /** Meta */
             meta?: {
                 [key: string]: unknown;
@@ -557,7 +597,7 @@ export interface components {
         RunIn: {
             /**
              * Skill
-             * @default interpret
+             * @default ask
              */
             skill: string;
             /**
@@ -933,6 +973,38 @@ export interface operations {
         };
     };
     get_file_api_cases__case_id__files__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_file_api_cases__case_id__read__name__get: {
         parameters: {
             query?: never;
             header?: never;

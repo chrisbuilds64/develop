@@ -6,6 +6,7 @@ import { Line } from "../components/Line";
 import { Frame } from "../components/Frames";
 import { Thread } from "../components/Thread";
 import { Send } from "../components/Icons";
+import { Viewer, type Doc } from "../components/Viewer";
 import { ago, dateWords, type words } from "../words";
 
 export function CaseScreen({ id, config, me, go, w }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words> }) {
@@ -13,6 +14,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const lang = config.lang;
   const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false, refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
   const samples = ((config.theme as { samples?: string[] }).samples ?? []);
+  const extWord = ((config.words as { words?: Record<string, string> }).words?.external_id) ?? "";
   const [refused, setRefused] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null);
   const [amount, setAmount] = useState("");
@@ -20,6 +22,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const [note, setNote] = useState("");
   const [ask, setAsk] = useState("");
   const [pending, setPending] = useState<Turn | null>(null);
+  const [doc, setDoc] = useState<Doc | null>(null);
   const askRef = useRef<HTMLInputElement>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); };
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
@@ -77,7 +80,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   return (
     <main className="main">
       <header className="case-head">
-        <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""} · {v.id.split("-").slice(0, 2).join("-")}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
+        <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""} · {v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer" title={extWord}>{v.external_id}</a> : <span title={extWord}>{v.external_id}</span>) : v.id.split("-").slice(0, 2).join("-")}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
         <h1>{v.title}</h1>
         <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span></p>
       </header>
@@ -91,19 +94,19 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           <p className="kicker">{w.onDesk}</p>
           <div className="desk-grid">
             {primary?.present && (
-              <a className="file wide stack" href={BASE + primary.versions[primary.versions.length - 1].url} target="_blank" rel="noreferrer">
+              <button type="button" className="file wide stack" onClick={() => { const v = primary.versions[primary.versions.length - 1]; setDoc({ name: v.name, word: primary.word, version: v.version, url: v.url, shape: primary.shape }); }}>
                 <span className="head"><span className="name">{primary.word}</span><span className="meta">{w.version(Math.max(1, primary.versions[primary.versions.length - 1].version))}{primary.by_word ? ` · ${primary.by_word}` : ""}</span></span>
                 {primary.versions.length > 1 && <span className="hint">{w.keeps}</span>}
-              </a>
+              </button>
             )}
             {desk.filter((s) => s.file !== v.primary).map((s) => {
               const newest = s.versions[s.versions.length - 1];
               return (
-                <a key={s.file} className={`file${s.versions.length > 1 ? " stack" : ""}`} href={BASE + newest.url} target="_blank" rel="noreferrer">
+                <button key={s.file} type="button" className={`file${s.versions.length > 1 ? " stack" : ""}`} onClick={() => setDoc({ name: newest.name, word: s.word, version: newest.version, url: newest.url, shape: s.shape })}>
                   {s.shape.startsWith("image") && <img src={BASE + newest.url} alt="" />}
                   <span className="name">{s.word}</span>
                   <span className="meta">{w.version(Math.max(1, newest.version))}{s.by_word ? ` · ${s.by_word}` : ""}</span>
-                </a>
+                </button>
               );
             })}
             {desk.length === 0 && !primary?.present && <span className="empty">—</span>}
@@ -162,6 +165,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           <span className="says">{v.stage_word}</span>
         )}
       </footer>
+      <Viewer doc={doc} caseId={id} onClose={() => setDoc(null)} w={w} />
       {toast && <div className="toast" role="status"><span>{toast.text}</span>{toast.undo && <button type="button" onClick={toast.undo}>{w.undo}</button>}<button type="button" onClick={() => go("/")}>{w.yourMove} →</button></div>}
     </main>
   );

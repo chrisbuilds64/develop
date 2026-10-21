@@ -414,6 +414,24 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(404, name)
         return FileResponse(p)
 
+    @app.get("/api/cases/{case_id}/read/{name}")
+    def read_file(case_id: str, name: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A text file rendered for the viewer: {kind, html}. Images and PDFs come from /files."""
+        from .text import render
+        if "/" in name or name.startswith("."):
+            raise HTTPException(404, name)
+        try:
+            p = c.store.case_dir(case_id) / name
+        except StoreError:
+            raise HTTPException(404, case_id)
+        if not p.is_file():
+            raise HTTPException(404, name)
+        ext = name.rsplit(".", 1)[-1].lower()
+        if ext not in ("md", "txt", "json"):
+            raise HTTPException(415, "not a text file")
+        kind = "md" if ext == "md" else "plain"
+        return {"name": name, "kind": kind, "html": render(p.read_text(encoding="utf-8", errors="replace"), kind)}
+
     @app.get("/api/stages", response_model=list[StageOut])
     def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         out = []

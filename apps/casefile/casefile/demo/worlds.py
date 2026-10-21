@@ -53,6 +53,8 @@ def _case(root: Path, stage: str, cid: str, meta: dict, files: dict[str, bytes |
     d = root / stage / cid
     d.mkdir(parents=True)
     meta = {"configVersion": "1", "fictional": True, **meta}
+    if meta.get("label") in ("HR", "WG", "KFZ", "HP") and "external_id" not in meta:
+        meta["external_id"] = "SN-" + str(meta.get("number", "")).replace("2026-", "2026-0")     # the house's claim number (fictional)
     (d / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     for name, content in (files or {}).items():
         if isinstance(content, Path):
