@@ -61,7 +61,7 @@ export function App() {
   if (!me.data?.person) {
     return <Gate config={config.data} onSignedIn={() => qc.invalidateQueries()} />;
   }
-  const onFresh = async (world?: string) => { await api.demoSession(world); qc.clear(); go("/"); qc.invalidateQueries(); };
+  const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries(); await qc.refetchQueries({ queryKey: ["me"] }); qc.invalidateQueries(); };
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
   const w = words(lang);
   const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id;

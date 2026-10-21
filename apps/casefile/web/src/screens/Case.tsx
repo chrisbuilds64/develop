@@ -11,7 +11,7 @@ import { ago, dateWords, type words } from "../words";
 export function CaseScreen({ id, config, me, go, w }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words> }) {
   const qc = useQueryClient();
   const lang = config.lang;
-  const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
+  const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false, refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
   const samples = ((config.theme as { samples?: string[] }).samples ?? []);
   const [refused, setRefused] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null);
@@ -38,7 +38,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   }, []);
 
   if (q.isLoading) return <main className="main"><p className="empty">…</p></main>;
-  if (!q.data) return <main className="main"><p className="empty">{String(q.error ?? "—")}</p></main>;
+  if (!q.data) return <main className="main"><p className="empty">{q.error instanceof ApiError && q.error.status === 404 ? w.notHere : q.error ? w.unreachable : "…"}</p></main>;
   const v = q.data;
   const busy = step.isPending || entry.isPending || run.isPending || upload.isPending || sampleIn.isPending;
   const main: Turn | undefined = v.my_turns[0] ?? v.turns[0];

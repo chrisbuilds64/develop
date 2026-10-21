@@ -110,7 +110,7 @@ def build_claims(root: Path) -> Path:
           {"label": "WG", "number": "2026-0421", "title": "Sturmschaden Carport", "created": _stamp(2)[:10]},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Sturm, Carportdach abgedeckt.\n", "gutachten.pdf": pdf, "kostenvoranschlag.pdf": kva, "rechnung.pdf": kva},
           _entry(1, "Gutachten übergeben", "Gutachter Berger", stage="20-besichtigung", when=_stamp(1, 14), files=["gutachten.pdf"], text="Dach und Pfosten, siehe Gutachten."))
-    _run(root, "WG-2026-0421-sturmschaden-carport", "25-abgleich", "reconcile", "running", 3, "du", started=(dt.datetime.now().astimezone() - dt.timedelta(minutes=2)).isoformat(timespec="seconds"))
+    _run(root, "WG-2026-0421-sturmschaden-carport", "25-abgleich", "reconcile", "queued", 3, "du")   # the replay finishes it a few seconds after the sandbox opens
 
     # with the assessor
     _case(root, "20-besichtigung", "WG-2026-0425-glasbruch-wintergarten",
@@ -177,7 +177,7 @@ def build_pressroom(root: Path) -> Path:
     # Claude is writing
     _case(root, "15-interpretation", "SP-032-the-fourth-reviewer", {"label": "SP", "number": "032", "title": "The fourth reviewer", "created": _stamp(1)[:10]},
           {"source.md": "# Idea\n\nThree reviewers agreed; the fourth was the log.\n"})
-    _run(root, "SP-032-the-fourth-reviewer", "15-interpretation", "interpret", "running", 5, "chris", started=(dt.datetime.now().astimezone() - dt.timedelta(minutes=4)).isoformat(timespec="seconds"))
+    _run(root, "SP-032-the-fourth-reviewer", "15-interpretation", "interpret", "queued", 5, "chris")   # played by the replay once the sandbox opens
 
     # with Akhil: thumbnail missing
     _case(root, "40-asset-generation", "FN-042-seven-checks-before-merge", {"label": "FN", "number": "042", "title": "Seven checks before merge", "created": _stamp(9)[:10]},

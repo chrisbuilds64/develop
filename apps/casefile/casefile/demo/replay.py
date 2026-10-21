@@ -46,9 +46,11 @@ def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path,
         store.write_json(rel, doc)
         if wait:
             return True
-    elif doc.get("status") == "running" and doc.get("taken_by") == "replay":
-        started = dt.datetime.fromisoformat(doc["started"])
-        if wait and (dt.datetime.now().astimezone() - started).total_seconds() < float((reply or {}).get("delay_s", 3)):
+    elif doc.get("status") == "running":
+        started = dt.datetime.fromisoformat(doc.get("started") or doc["created"])
+        age = (dt.datetime.now().astimezone() - started).total_seconds()
+        limit = float((reply or {}).get("delay_s", 3)) if doc.get("taken_by") == "replay" else 120.0
+        if wait and age < limit:
             return False
     else:
         return False
