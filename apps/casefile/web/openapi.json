@@ -674,8 +674,7 @@
           },
           "stations": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/StationView"
             },
             "type": "array",
             "title": "Stations"
@@ -747,7 +746,12 @@
           "station_index",
           "group",
           "group_word",
-          "since"
+          "since",
+          "stations",
+          "slots",
+          "entries",
+          "turns",
+          "my_turns"
         ],
         "title": "CaseView"
       },
@@ -763,24 +767,21 @@
           },
           "stations": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/StationView"
             },
             "type": "array",
             "title": "Stations"
           },
           "groups": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/GroupView"
             },
             "type": "array",
             "title": "Groups"
           },
           "people": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/PersonView"
             },
             "type": "array",
             "title": "People"
@@ -1007,6 +1008,24 @@
         ],
         "title": "GroupOut"
       },
+      "GroupView": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word"
+        ],
+        "title": "GroupView"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1068,6 +1087,37 @@
           "product"
         ],
         "title": "MeOut"
+      },
+      "PersonView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Roles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "roles"
+        ],
+        "title": "PersonView"
       },
       "Run": {
         "properties": {
@@ -1281,8 +1331,7 @@
           },
           "versions": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/VersionView"
             },
             "type": "array",
             "title": "Versions"
@@ -1300,6 +1349,7 @@
           "required",
           "due_station",
           "by",
+          "versions",
           "present"
         ],
         "title": "SlotView"
@@ -1334,6 +1384,29 @@
           "cases"
         ],
         "title": "StageOut"
+      },
+      "StationView": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word",
+          "state"
+        ],
+        "title": "StationView"
       },
       "StepRequest": {
         "properties": {
@@ -1487,7 +1560,8 @@
           "actor",
           "action",
           "label",
-          "reason"
+          "reason",
+          "blocked_by"
         ],
         "title": "Turn",
         "description": "One move that waits. Element 0 of `turn()` is the main one."
@@ -1547,6 +1621,34 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VersionView": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "size",
+          "url"
+        ],
+        "title": "VersionView"
       }
     }
   }

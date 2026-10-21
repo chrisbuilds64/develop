@@ -81,12 +81,12 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
     # 1. a helper is at work
     if run and run.status in ("running", "queued"):
         agent = config.agent
-        return [Turn(actor="claude", action="wait", label=_label(config, "wait", lang),
+        return [Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                      reason=config.word("reasons", "running", lang, "a helper is working on it"), since=run.started or run.created)]
 
     # 2. the last run failed
     if run and run.status == "failed":
-        out.append(Turn(actor=OPERATOR, action="see_failure", label=_label(config, "see_failure", lang),
+        out.append(Turn(actor=OPERATOR, action="see_failure", label=_label(config, "see_failure", lang), blocked_by=[],
                         reason=config.word("reasons", "failed", lang, "the last run failed"), since=run.finished or run.created))
 
     # 3. open entries addressed to a person
@@ -94,7 +94,7 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
         person = config.person(e.for_)
         if not person:
             continue
-        out.append(Turn(actor=person.id, action="answer", label=_label(config, "answer", lang),
+        out.append(Turn(actor=person.id, action="answer", label=_label(config, "answer", lang), blocked_by=[],
                         reason=e.title, since=e.date, entry=e.id))
 
     # 4. by stage
@@ -116,7 +116,7 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
             out.append(Turn(actor=actor, action=action.id, label=_label(config, action.label, lang),
                             reason=config.word("stages", case.stage, lang, case.stage), blocked_by=blocked, since=case.since))
     elif stage and stage.turn == "claude":
-        out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang),
+        out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                         reason=config.word("stages", case.stage, lang, case.stage), since=case.since))
     return out
 

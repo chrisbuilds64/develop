@@ -9,6 +9,20 @@ from ..domain import turn as whose
 from ..models import Case, Entry, Run, Turn
 
 
+class VersionView(BaseModel):
+    name: str
+    version: int
+    size: int
+    url: str
+
+
+class PersonView(BaseModel):
+    id: str
+    name: str
+    kind: str
+    roles: list[str]
+
+
 class SlotView(BaseModel):
     file: str
     word: str
@@ -16,7 +30,7 @@ class SlotView(BaseModel):
     required: bool
     due_station: str
     by: str
-    versions: list[dict] = Field(default_factory=list)   # [{name, version, size, url}]
+    versions: list[VersionView]
     present: bool
 
 
@@ -37,13 +51,24 @@ class CaseCard(BaseModel):
     mine: bool = False                                    # the viewer is the actor of the main move
 
 
+class StationView(BaseModel):
+    key: str
+    word: str
+    state: str                                            # done | current | todo
+
+
+class GroupView(BaseModel):
+    key: str
+    word: str
+
+
 class CaseView(CaseCard):
     meta: dict = Field(default_factory=dict)
-    stations: list[dict] = Field(default_factory=list)    # [{key, word, state: done|current|todo}]
-    slots: list[SlotView] = Field(default_factory=list)
-    entries: list[Entry] = Field(default_factory=list)
-    turns: list[Turn] = Field(default_factory=list)
-    my_turns: list[Turn] = Field(default_factory=list)
+    stations: list[StationView]
+    slots: list[SlotView]
+    entries: list[Entry]
+    turns: list[Turn]
+    my_turns: list[Turn]
     last_run: Run | None = None
     primary: str | None = None
     agent: str = "Claude"
@@ -52,9 +77,9 @@ class CaseView(CaseCard):
 class ConfigView(BaseModel):
     product: str
     lang: str
-    stations: list[dict]
-    groups: list[dict]
-    people: list[dict]
+    stations: list[StationView]
+    groups: list[GroupView]
+    people: list[PersonView]
     theme: dict
     words: dict                                           # the vocabulary for the language, flat
 
@@ -93,11 +118,11 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     c = card(config, case, viewer, lang)
     turns = whose.turn(case, config, lang)
     mine = [t for t in turns if viewer and (t.actor == viewer or config.may_act(viewer, t.actor))]
-    stations = [{"key": k, "word": config.word("stations", k, lang, k), "state": "done" if i < c.station_index else "current" if i == c.station_index else "todo"}
+    stations = [StationView(key=k, word=config.word("stations", k, lang, k), state="done" if i < c.station_index else "current" if i == c.station_index else "todo")
                 for i, k in enumerate(config.stations)]
     slots = [SlotView(file=s.file, word=config.word("files", s.file, lang, s.file), shape=s.shape, required=s.required,
                       due_station=station_of(config, s.due_stage)[0] if s.due_stage else "", by=s.by,
-                      versions=[{"name": v.name, "version": v.version, "size": v.size, "url": file_url(case, v.name)} for v in s.versions], present=s.present)
+                      versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in s.versions], present=s.present)
              for s in case.slots]
     agent = config.agent
     return CaseView(**c.model_dump(), meta=case.meta, stations=stations, slots=slots, entries=case.entries, turns=turns, my_turns=mine,
@@ -108,7 +133,7 @@ def config_view(config: DomainConfig, lang: str) -> ConfigView:
     v = config.vocabulary.get(lang) or config.vocabulary.get("en") or {}
     groups_order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
     return ConfigView(product=str(v.get("product") or config.name),
-                      lang=lang, stations=[{"key": k, "word": config.word("stations", k, lang, k)} for k in config.stations],
-                      groups=[{"key": g, "word": config.word("groups", g, lang, g)} for g in groups_order],
-                      people=[{"id": p.id, "name": p.name, "kind": p.kind, "roles": p.roles} for p in config.people],
+                      lang=lang, stations=[StationView(key=k, word=config.word("stations", k, lang, k), state="todo") for k in config.stations],
+                      groups=[GroupView(key=g, word=config.word("groups", g, lang, g)) for g in groups_order],
+                      people=[PersonView(id=p.id, name=p.name, kind=p.kind, roles=p.roles) for p in config.people],
                       theme=config.theme, words=v)

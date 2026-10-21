@@ -145,7 +145,7 @@ class Turn(BaseModel):
     action: str                                  # action id from the configuration, or a built-in: "answer", "see_failure", "wait"
     label: str                                   # the word the surface shows
     reason: str                                  # one sentence
-    blocked_by: list[str] = Field(default_factory=list)
+    blocked_by: list[str]
     since: str = ""
     entry: str | None = None                     # the entry this move answers, when it is an answer
 

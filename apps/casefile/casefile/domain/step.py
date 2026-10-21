@@ -145,7 +145,9 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
          "step": j.step_id, "resolves": resolves}
     if req.action == "deliver":
         e["files"] = [str(f) for f in req.payload.get("files", [])]
-        e["title"] = str(req.payload.get("title") or "Delivered: " + ", ".join(e["files"]))[:120]
+        from .cases import split_version
+        words = [config.word("files", split_version(f)[0], None, f) for f in e["files"]]
+        e["title"] = str(req.payload.get("title") or config.word("texts", "delivered_title", None, "{files}").format(files=", ".join(words)))[:120]
     if req.action == "ask":
         agent = config.agent
         e["title"] = (text.splitlines()[0] if text else skill)[:120]

@@ -11,6 +11,6 @@ root = build(Path(tempfile.mkdtemp()) / "flow")
 app = create_app(Settings(root=root, config_dir=CONFIG, secret="x", recover_on_start=False))
 Path("web/openapi.json").write_text(json.dumps(app.openapi(), indent=2) + "\n")
 PY
-npx -y openapi-typescript@7 web/openapi.json -o web/src/api.d.ts >/dev/null
-if [ "${1:-}" = "--check" ]; then git diff --exit-code -- web/openapi.json web/src/api.d.ts || { echo "API types drifted: run scripts/types.sh and commit"; exit 1; }; fi
-echo "types: web/src/api.d.ts"
+npx -y openapi-typescript@7 web/openapi.json -o web/src/api-types.d.ts >/dev/null
+if [ "${1:-}" = "--check" ]; then git diff --exit-code -- web/openapi.json web/src/api-types.d.ts || { echo "API types drifted: run scripts/types.sh and commit"; exit 1; }; fi
+echo "types: web/src/api-types.d.ts"

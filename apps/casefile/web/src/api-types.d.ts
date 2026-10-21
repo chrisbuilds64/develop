@@ -306,17 +306,15 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Stations */
-            stations?: {
-                [key: string]: unknown;
-            }[];
+            stations: components["schemas"]["StationView"][];
             /** Slots */
-            slots?: components["schemas"]["SlotView"][];
+            slots: components["schemas"]["SlotView"][];
             /** Entries */
-            entries?: components["schemas"]["Entry"][];
+            entries: components["schemas"]["Entry"][];
             /** Turns */
-            turns?: components["schemas"]["Turn"][];
+            turns: components["schemas"]["Turn"][];
             /** My Turns */
-            my_turns?: components["schemas"]["Turn"][];
+            my_turns: components["schemas"]["Turn"][];
             last_run?: components["schemas"]["Run"] | null;
             /** Primary */
             primary?: string | null;
@@ -333,17 +331,11 @@ export interface components {
             /** Lang */
             lang: string;
             /** Stations */
-            stations: {
-                [key: string]: unknown;
-            }[];
+            stations: components["schemas"]["StationView"][];
             /** Groups */
-            groups: {
-                [key: string]: unknown;
-            }[];
+            groups: components["schemas"]["GroupView"][];
             /** People */
-            people: {
-                [key: string]: unknown;
-            }[];
+            people: components["schemas"]["PersonView"][];
             /** Theme */
             theme: {
                 [key: string]: unknown;
@@ -432,6 +424,13 @@ export interface components {
             /** Cases */
             cases: components["schemas"]["CaseCard"][];
         };
+        /** GroupView */
+        GroupView: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -449,6 +448,17 @@ export interface components {
             lang: string;
             /** Product */
             product: string;
+        };
+        /** PersonView */
+        PersonView: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Roles */
+            roles: string[];
         };
         /** Run */
         Run: {
@@ -527,9 +537,7 @@ export interface components {
             /** By */
             by: string;
             /** Versions */
-            versions?: {
-                [key: string]: unknown;
-            }[];
+            versions: components["schemas"]["VersionView"][];
             /** Present */
             present: boolean;
         };
@@ -543,6 +551,15 @@ export interface components {
             word: string;
             /** Cases */
             cases: components["schemas"]["CaseCard"][];
+        };
+        /** StationView */
+        StationView: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /** State */
+            state: string;
         };
         /** StepRequest */
         StepRequest: {
@@ -598,7 +615,7 @@ export interface components {
             /** Reason */
             reason: string;
             /** Blocked By */
-            blocked_by?: string[];
+            blocked_by: string[];
             /**
              * Since
              * @default
@@ -624,6 +641,17 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VersionView */
+        VersionView: {
+            /** Name */
+            name: string;
+            /** Version */
+            version: number;
+            /** Size */
+            size: number;
+            /** Url */
+            url: string;
         };
     };
     responses: never;

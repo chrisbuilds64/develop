@@ -1,0 +1,77 @@
+// The shell: menu, the list, the case. Three routes, read from the location: /, /case/<id>, /workshop, /group/<key>.
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "./api";
+import { Gate } from "./screens/Gate";
+import { Menu } from "./components/Menu";
+import { List } from "./screens/List";
+import { CaseScreen } from "./screens/Case";
+import { Workshop } from "./screens/Workshop";
+import { words } from "./words";
+
+export type Route = { name: "home" } | { name: "case"; id: string } | { name: "workshop" } | { name: "group"; key: string };
+
+export function parse(path: string): Route {
+  const m = path.match(/^\/case\/([^/]+)/);
+  if (m) return { name: "case", id: decodeURIComponent(m[1]) };
+  if (path.startsWith("/workshop")) return { name: "workshop" };
+  const g = path.match(/^\/group\/([^/]+)/);
+  if (g) return { name: "group", key: g[1] };
+  return { name: "home" };
+}
+
+export function useRoute(): [Route, (path: string) => void] {
+  const [path, setPath] = useState(window.location.pathname);
+  useEffect(() => {
+    const on = () => setPath(window.location.pathname);
+    window.addEventListener("popstate", on);
+    return () => window.removeEventListener("popstate", on);
+  }, []);
+  const go = (p: string) => {
+    window.history.pushState(null, "", p);
+    setPath(p);
+    window.scrollTo({ top: 0 });
+  };
+  return [parse(path), go];
+}
+
+export function App() {
+  const qc = useQueryClient();
+  const me = useQuery({ queryKey: ["me"], queryFn: api.me, refetchInterval: false });
+  const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups, enabled: !!me.data?.person });
+  const config = useQuery({ queryKey: ["config"], queryFn: api.config, refetchInterval: false });
+  const [route, go] = useRoute();
+  const [side, setSide] = useState<"left" | "right">(() => {
+    try { return (localStorage.getItem("cf.side") as "left" | "right") || "left"; } catch { return "left"; }
+  });
+  useEffect(() => { try { localStorage.setItem("cf.side", side); } catch { /* private window */ } }, [side]);
+  useEffect(() => { if (config.data) document.title = config.data.product; }, [config.data]);
+
+  if (me.isLoading || config.isLoading) return null;
+  if (!config.data) return <div className="gate"><p className="empty">The core is not reachable.</p></div>;
+  const lang = config.data.lang;
+  if (!me.data?.person) {
+    return <Gate config={config.data} onSignedIn={() => qc.invalidateQueries()} />;
+  }
+  const w = words(lang);
+  const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id;
+  const isPhone = window.matchMedia("(max-width: 900px)").matches;
+  const showList = !isPhone || route.name === "home" || route.name === "group";
+  const showMain = !isPhone || route.name !== "home";
+
+  return (
+    <div className={`shell ${side}`}>
+      <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
+            onSignOut={async () => { await api.signOut(); qc.invalidateQueries(); }} />
+      {route.name === "workshop" ? (
+        <Workshop config={config.data} go={go} w={w} />
+      ) : (
+        <>
+          {showList && <List config={config.data} route={route} go={go} w={w} />}
+          {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} />}
+          {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} /> : <main className="main" />)}
+        </>
+      )}
+    </div>
+  );
+}
