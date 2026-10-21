@@ -39,7 +39,7 @@ for (const [w, h, tag] of [[1440, 900, "desktop"], [390, 844, "phone"]]) {
   await page.waitForTimeout(300);
   await beat(page, tag, "akhil-frames");
   const sample = page.getByRole("button", { name: /Put in a sample thumbnail/i });
-  if (await sample.count()) await sample.first().click(); else issues.push(`${tag}: no thumbnail sample`);
+  if (await sample.count()) { await sample.first().evaluate((el) => el.scrollIntoView({ block: "center" })); await page.waitForTimeout(150); await sample.first().click(); } else issues.push(`${tag}: no thumbnail sample`);
   await page.waitForTimeout(900);
   await beat(page, tag, "akhil-thumbnail-in");
   // back to Chris

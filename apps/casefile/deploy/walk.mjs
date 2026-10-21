@@ -29,7 +29,7 @@ for (const [w, h, tag] of [[1440, 900, "desktop"], [390, 844, "phone"]]) {
   await page.waitForTimeout(300);
   await beat(page, tag, "akte");
   const sample = page.getByRole("button", { name: /Beispiel einlegen/ });
-  if (await sample.count()) { await sample.first().scrollIntoViewIfNeeded(); await page.mouse.wheel(0, 240); await page.waitForTimeout(150); await sample.first().click({ force: true }); } else { issues.push(`${tag}: no sample button`); }
+  if (await sample.count()) { await sample.first().evaluate((el) => el.scrollIntoView({ block: "center" })); await page.waitForTimeout(150); await sample.first().click(); } else { issues.push(`${tag}: no sample button`); }
   await page.waitForTimeout(800);
   await beat(page, tag, "rechnung-drin");
   await page.waitForTimeout(6000);
@@ -38,7 +38,7 @@ for (const [w, h, tag] of [[1440, 900, "desktop"], [390, 844, "phone"]]) {
   const amount = page.locator("label.money input");
   if (await amount.count()) { await amount.first().fill("4.370 €"); }
   const btn = page.getByRole("button", { name: /Freigeben und zur Regulierung/ });
-  if (await btn.count()) { await btn.first().click({ force: true }); } else { issues.push(`${tag}: no approve button`); }
+  if (await btn.count()) { await btn.first().click(); } else { issues.push(`${tag}: no approve button`); }
   await page.waitForTimeout(900);
   await beat(page, tag, "freigegeben");
   await page.goto(PFX + "/", { waitUntil: "networkidle" });
