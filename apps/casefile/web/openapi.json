@@ -381,6 +381,29 @@
         }
       }
     },
+    "/api/signals": {
+      "get": {
+        "summary": "Get Signals",
+        "description": "What the pattern helper noticed across the files of this world: `_signale/*.md` at the pipeline root.",
+        "operationId": "get_signals_api_signals_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SignalOut"
+                  },
+                  "type": "array",
+                  "title": "Response Get Signals Api Signals Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/rules": {
       "get": {
         "summary": "Get Rules",
@@ -1468,6 +1491,44 @@
         ],
         "title": "RuleAuto"
       },
+      "RuleConnector": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "standard": {
+            "type": "string",
+            "title": "Standard",
+            "default": ""
+          },
+          "carries": {
+            "type": "string",
+            "title": "Carries",
+            "default": ""
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction",
+            "default": ""
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RuleConnector"
+      },
       "RuleModule": {
         "properties": {
           "id": {
@@ -1621,6 +1682,14 @@
             },
             "type": "array",
             "title": "Modules"
+          },
+          "connectors": {
+            "items": {
+              "$ref": "#/components/schemas/RuleConnector"
+            },
+            "type": "array",
+            "title": "Connectors",
+            "default": []
           }
         },
         "type": "object",
@@ -1630,7 +1699,7 @@
           "modules"
         ],
         "title": "RulesOut",
-        "description": "The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions."
+        "description": "The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions, the connectors."
       },
       "Run": {
         "properties": {
@@ -1833,6 +1902,81 @@
           "person"
         ],
         "title": "SessionIn"
+      },
+      "SignalCase": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id",
+            "default": ""
+          },
+          "stage_word": {
+            "type": "string",
+            "title": "Stage Word",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "SignalCase"
+      },
+      "SignalOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/SignalCase"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "status",
+          "date",
+          "cases",
+          "text"
+        ],
+        "title": "SignalOut",
+        "description": "A hint the pattern helper found across files: never a finding, always with its reasoning and the files it rests on."
       },
       "SlotView": {
         "properties": {

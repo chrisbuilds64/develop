@@ -168,3 +168,29 @@ def test_a_quote_in_markdown_stays_a_quote_and_tags_stay_text():
     from casefile.api.text import render
     out = render("> **[B-01]** Zitat\n\n<script>x()</script>", "md")
     assert "<blockquote>" in out and "<script>" not in out and "&lt;script&gt;" in out
+
+
+def test_the_rulebook_lists_the_connectors_with_their_standards(tmp_path):
+    from fastapi.testclient import TestClient
+    from casefile.api.app import Settings, create_app
+    from casefile.demo.worlds import CONFIG, build_egutachten
+    root = build_egutachten(tmp_path / "egut")
+    client = TestClient(create_app(Settings(root=root, config_dir=CONFIG / "egutachten", secret="t", demo=True, samples_dir=None, replies_dir=None)))
+    client.post("/api/session", json={"person": "du"})
+    body = client.get("/api/rules").json()
+    by = {k["id"]: k for k in body["connectors"]}
+    assert "GDV" in by["versicherer"]["standard"] and "BiPRO" in by["vermittler"]["standard"] and "DAT" in by["kalkulation"]["standard"]
+    assert {m["id"] for m in body["modules"]} >= {"R-01", "R-07", "B-01"}
+
+
+def test_signals_are_hints_with_their_files(tmp_path):
+    from fastapi.testclient import TestClient
+    from casefile.api.app import Settings, create_app
+    from casefile.demo.worlds import CONFIG, build_egutachten
+    root = build_egutachten(tmp_path / "egut")
+    client = TestClient(create_app(Settings(root=root, config_dir=CONFIG / "egutachten", secret="t", demo=True, samples_dir=None, replies_dir=None)))
+    client.post("/api/session", json={"person": "du"})
+    body = client.get("/api/signals").json()
+    assert [s["id"] for s in body] == ["M-002", "M-001"]
+    dup = next(s for s in body if s["id"] == "M-001")
+    assert dup["kind"] == "Dublette" and len(dup["cases"]) == 2 and dup["cases"][0]["title"] == "Parkrempler Supermarkt" and "keine Feststellung" in dup["text"]

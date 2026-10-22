@@ -184,6 +184,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Signals
+         * @description What the pattern helper noticed across the files of this world: `_signale/*.md` at the pipeline root.
+         */
+        get: operations["get_signals_api_signals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rules": {
         parameters: {
             query?: never;
@@ -645,6 +665,33 @@ export interface components {
             /** Skill */
             skill: string;
         };
+        /** RuleConnector */
+        RuleConnector: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Standard
+             * @default
+             */
+            standard: string;
+            /**
+             * Carries
+             * @default
+             */
+            carries: string;
+            /**
+             * Direction
+             * @default
+             */
+            direction: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** RuleModule */
         RuleModule: {
             /** Id */
@@ -706,7 +753,7 @@ export interface components {
         };
         /**
          * RulesOut
-         * @description The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions.
+         * @description The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions, the connectors.
          */
         RulesOut: {
             /** Stages */
@@ -715,6 +762,11 @@ export interface components {
             skills: components["schemas"]["RuleSkill"][];
             /** Modules */
             modules: components["schemas"]["RuleModule"][];
+            /**
+             * Connectors
+             * @default []
+             */
+            connectors: components["schemas"]["RuleConnector"][];
         };
         /** Run */
         Run: {
@@ -784,6 +836,43 @@ export interface components {
         SessionIn: {
             /** Person */
             person: string;
+        };
+        /** SignalCase */
+        SignalCase: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * External Id
+             * @default
+             */
+            external_id: string;
+            /**
+             * Stage Word
+             * @default
+             */
+            stage_word: string;
+        };
+        /**
+         * SignalOut
+         * @description A hint the pattern helper found across files: never a finding, always with its reasoning and the files it rests on.
+         */
+        SignalOut: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Title */
+            title: string;
+            /** Status */
+            status: string;
+            /** Date */
+            date: string;
+            /** Cases */
+            cases: components["schemas"]["SignalCase"][];
+            /** Text */
+            text: string;
         };
         /** SlotView */
         SlotView: {
@@ -1235,6 +1324,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_signals_api_signals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalOut"][];
                 };
             };
         };

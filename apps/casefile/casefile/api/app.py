@@ -181,11 +181,39 @@ class RuleModule(BaseModel):
     text: str
 
 
+class RuleConnector(BaseModel):
+    id: str
+    name: str
+    standard: str = ""
+    carries: str = ""
+    direction: str = ""
+    note: str = ""
+
+
+class SignalCase(BaseModel):
+    id: str
+    title: str
+    external_id: str = ""
+    stage_word: str = ""
+
+
+class SignalOut(BaseModel):
+    """A hint the pattern helper found across files: never a finding, always with its reasoning and the files it rests on."""
+    id: str
+    kind: str
+    title: str
+    status: str
+    date: str
+    cases: list[SignalCase]
+    text: str
+
+
 class RulesOut(BaseModel):
-    """The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions."""
+    """The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions, the connectors."""
     stages: list[RuleStage]
     skills: list[RuleSkill]
     modules: list[RuleModule]
+    connectors: list[RuleConnector] = []
 
 
 class AssetOut(BaseModel):
@@ -506,6 +534,32 @@ def create_app(settings: Settings) -> FastAPI:
         kind = "md" if ext == "md" else "plain"
         return {"name": name, "kind": kind, "html": render(p.read_text(encoding="utf-8", errors="replace"), kind)}
 
+    @app.get("/api/signals", response_model=list[SignalOut])
+    def get_signals(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """What the pattern helper noticed across the files of this world: `_signale/*.md` at the pipeline root."""
+        folder = c.store.root / "_signale"
+        if not folder.is_dir():
+            return []
+        titles = {case.id: (str(case.meta.get("title") or case.id), str(case.meta.get("external_id") or ""), c.config.word("stages", case.stage, c.lang, case.stage))
+                  for case in reading.load_all(c.store, c.config)}
+        out = []
+        for f in sorted(folder.glob("*.md"), reverse=True):
+            text = f.read_text(encoding="utf-8")
+            head, body = {}, text
+            if text.startswith("---"):
+                parts = text.split("---", 2)
+                if len(parts) == 3:
+                    for line in parts[1].splitlines():
+                        if ":" in line:
+                            k, v = line.split(":", 1)
+                            head[k.strip()] = v.strip()
+                    body = parts[2]
+            ids = [x.strip() for x in head.get("cases", "").split(",") if x.strip()]
+            out.append(SignalOut(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), status=head.get("status", "offen"), date=head.get("date", ""),
+                                 cases=[SignalCase(id=i, title=titles.get(i, (i, "", ""))[0], external_id=titles.get(i, (i, "", ""))[1], stage_word=titles.get(i, (i, "", ""))[2]) for i in ids],
+                                 text=body.strip()))
+        return out
+
     @app.get("/api/rules", response_model=RulesOut)
     def get_rules(c: Ctx = Depends(ctx)):
         """The rulebook of this world: read from the configuration and from `_bausteine/` at the pipeline root."""
@@ -550,7 +604,15 @@ def create_app(settings: Settings) -> FastAPI:
                         body = parts[2]
                 modules.append(RuleModule(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), version=int(head.get("version", "1") or 1),
                                           status=head.get("status", ""), approved_by=head.get("approved_by", ""), date=head.get("date", ""), text=body.strip()))
-        return RulesOut(stages=stages, skills=skills, modules=modules)
+        connectors = []
+        for place in (c.store.root / "connectors.json", c.config.dir / "connectors.json" if c.config.dir else None):
+            if place and place.is_file():
+                try:
+                    connectors = [RuleConnector(**{k: str(v) for k, v in item.items() if not k.startswith("$")}) for item in json.loads(place.read_text(encoding="utf-8")).get("connectors", [])]
+                except (OSError, ValueError, TypeError):
+                    connectors = []
+                break
+        return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors)
 
     @app.get("/api/stages", response_model=list[StageOut])
     def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):

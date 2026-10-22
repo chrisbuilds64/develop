@@ -14,7 +14,9 @@
           "id": "dispatch",
           "label": "dispatch",
           "to": "20-besichtigung",
-          "payload": ["date"]
+          "payload": [
+            "date"
+          ]
         }
       ]
     },
@@ -29,8 +31,19 @@
           "label": "deliver_draft",
           "to": "30-vorpruefung",
           "run": "vorpruefung",
-          "requires": ["gutachten.md", "kalkulation.pdf", "shape:image"],
+          "requires": [
+            "gutachten.md",
+            "kalkulation.pdf",
+            "shape:image"
+          ],
           "entry_status": "info"
+        }
+      ],
+      "auto": [
+        {
+          "on_file": "fotos-1.jpg",
+          "skill": "fotohinweis",
+          "note": "Erste Fotos sind da."
         }
       ]
     },
@@ -51,21 +64,28 @@
           "label": "approve_report",
           "to": "50-versand",
           "run": "anschreiben",
-          "requires": ["gutachten.md", "pruefbericht.md"],
+          "requires": [
+            "gutachten.md",
+            "pruefbericht.md"
+          ],
           "entry_status": "approved"
         },
         {
           "id": "return_to_assessor",
           "label": "return_to_assessor",
           "to": "20-besichtigung",
-          "payload": ["note"],
+          "payload": [
+            "note"
+          ],
           "entry_status": "info",
           "actor": "role:approver"
         },
         {
           "id": "ask_assessor",
           "label": "ask_assessor",
-          "payload": ["note"],
+          "payload": [
+            "note"
+          ],
           "entry_status": "open",
           "actor": "role:approver"
         }
@@ -81,7 +101,9 @@
           "id": "send",
           "label": "send",
           "to": "60-versendet",
-          "requires": ["anschreiben.md"],
+          "requires": [
+            "anschreiben.md"
+          ],
           "entry_status": "info"
         }
       ]
@@ -101,7 +123,9 @@
         {
           "id": "ask_assessor",
           "label": "ask_assessor",
-          "payload": ["note"],
+          "payload": [
+            "note"
+          ],
           "entry_status": "open",
           "actor": "role:approver"
         }

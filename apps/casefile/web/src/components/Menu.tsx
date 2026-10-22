@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Book, Close, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
+import { Book, Close, Spark, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
 import { useState } from "react";
 
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme }:
@@ -53,6 +53,9 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         );
       })}
       <div className="rule" />
+      <button type="button" className={`nav-row quiet${route.name === "signals" ? " on" : ""}`} onClick={() => goClose("/signals")}>
+        <span>{w.signals}</span><span className="n"><Spark /></span>
+      </button>
       <button type="button" className={`nav-row quiet${route.name === "rules" ? " on" : ""}`} onClick={() => goClose("/rules")}>
         <span>{w.rules}</span><span className="n"><Book /></span>
       </button>

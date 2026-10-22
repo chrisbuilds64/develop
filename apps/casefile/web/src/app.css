@@ -215,6 +215,12 @@ table.stack tr.group th > span:first-child { display: inline-block; }
 .module { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-m); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .module-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; } .module-head b { font-size: 14px; }
 .module-text { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+/* patterns across files */
+.signal { background: var(--ground-2); border: 1px solid var(--hairline); border-radius: var(--r-l); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.signal-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; } .signal-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
+.signal-cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.signal-cases .card.quiet { background: var(--surface); }
+.signal-text { font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 80ch; } .signal-text p { margin: 0 0 8px; } .signal-text em { color: var(--muted); }
 .stack-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; background: var(--ground-2); border: 1px solid var(--hairline); border-radius: var(--r-l); }
 table.stack { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.stack th, table.stack td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }

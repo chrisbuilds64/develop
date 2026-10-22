@@ -47,6 +47,19 @@ export function Rules({ config, w }: { config: ConfigView; w: ReturnType<typeof 
             </tbody>
           </table>
         </section>
+        {r.connectors.length > 0 && (
+          <section className="rules-block">
+            <p className="kicker">{w.rulesConnectors}</p>
+            <table className="rules-table">
+              <thead><tr><th>{w.rulesSystem}</th><th>{w.rulesStandard}</th><th>{w.rulesCarries}</th></tr></thead>
+              <tbody>
+                {r.connectors.map((k) => (
+                  <tr key={k.id}><td><b>{k.name}</b><small>{k.direction}</small></td><td>{k.standard}</td><td>{k.carries}{k.note && <small>{k.note}</small>}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
         {rules.length > 0 && (
           <section className="rules-block">
             <p className="kicker">{w.rulesRules}</p>

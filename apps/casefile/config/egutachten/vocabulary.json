@@ -2,8 +2,19 @@
   "$comment": "Every word the surface shows for the e-report world, in German and English. Stage words are sentences about the file's state; stations are the dots on the line; actions are the one button.",
   "de": {
     "product": "Gutachtenakte",
-    "labels": {"KH": "Kfz-Haftpflicht", "KK": "Kasko"},
-    "stations": {"order": "Auftrag", "inspection": "Besichtigung", "precheck": "Vorprüfung", "review": "Deine Prüfung", "dispatch": "Versand", "sent": "Versendet", "closed": "Abschluss"},
+    "labels": {
+      "KH": "Kfz-Haftpflicht",
+      "KK": "Kasko"
+    },
+    "stations": {
+      "order": "Auftrag",
+      "inspection": "Besichtigung",
+      "precheck": "Vorprüfung",
+      "review": "Deine Prüfung",
+      "dispatch": "Versand",
+      "sent": "Versendet",
+      "closed": "Abschluss"
+    },
     "stages": {
       "10-auftrag": "Auftrag eingegangen, Besichtigung einplanen",
       "20-besichtigung": "beim Gutachter",
@@ -13,26 +24,86 @@
       "60-versendet": "an den Versicherer versendet",
       "70-abgeschlossen": "abgeschlossen"
     },
-    "groups": {"you": "Du bist dran", "claude": "KI prüft gerade", "others": "Bei anderen", "date": "Termin", "planned": "Terminiert", "out": "Abgeschlossen", "ideas": "Neue Aufträge", "archive": "Archiv"},
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "KI prüft gerade",
+      "others": "Bei anderen",
+      "date": "Termin",
+      "planned": "Terminiert",
+      "out": "Abgeschlossen",
+      "ideas": "Neue Aufträge",
+      "archive": "Archiv"
+    },
     "actions": {
-      "dispatch": "Besichtigung einplanen", "deliver_draft": "Entwurf zur Vorprüfung", "approve_report": "Freigeben und Anschreiben entwerfen", "return_to_assessor": "Zurück an Gutachter",
-      "ask_assessor": "Rückfrage an Gutachter", "send": "Versenden", "close": "Abschließen",
-      "answer": "Antworten", "note": "Notiz", "done": "Erledigt", "deliver": "Ablegen", "see_failure": "Nachsehen, was schiefging", "wait": "Warten"
+      "dispatch": "Besichtigung einplanen",
+      "deliver_draft": "Entwurf zur Vorprüfung",
+      "approve_report": "Freigeben und Anschreiben entwerfen",
+      "return_to_assessor": "Zurück an Gutachter",
+      "ask_assessor": "Rückfrage an Gutachter",
+      "send": "Versenden",
+      "close": "Abschließen",
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten"
     },
-    "reasons": {"running": "die KI prüft gerade", "failed": "der letzte Lauf ist gescheitert", "missing": "es fehlt noch etwas"},
-    "texts": {"done": "Erledigt.", "deliver": "Abgelegt.", "detected": "Von Hand verschoben", "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.", "delivered_title": "Abgelegt: {files}", "replay_moved": "Weiter."},
+    "reasons": {
+      "running": "die KI prüft gerade",
+      "failed": "der letzte Lauf ist gescheitert",
+      "missing": "es fehlt noch etwas"
+    },
+    "texts": {
+      "done": "Erledigt.",
+      "deliver": "Abgelegt.",
+      "detected": "Von Hand verschoben",
+      "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter."
+    },
     "files": {
-      "auftrag.pdf": "Gutachtenauftrag", "fotos-1.jpg": "Foto 1", "fotos-2.jpg": "Foto 2", "fotos-3.jpg": "Foto 3", "fotos-4.jpg": "Foto 4", "fotos-5.jpg": "Foto 5",
-      "kalkulation.pdf": "Kalkulation", "gutachten.md": "Gutachten", "pruefbericht.md": "Prüfbericht (KI)", "anschreiben.md": "Anschreiben", "rechnung.pdf": "Rechnung", "belegpruefung.md": "Belegprüfung (KI)",
-      "review.md": "Verlauf", "meta.json": "Steckbrief"
+      "auftrag.pdf": "Gutachtenauftrag",
+      "fotos-1.jpg": "Foto 1",
+      "fotos-2.jpg": "Foto 2",
+      "fotos-3.jpg": "Foto 3",
+      "fotos-4.jpg": "Foto 4",
+      "fotos-5.jpg": "Foto 5",
+      "kalkulation.pdf": "Kalkulation",
+      "gutachten.md": "Gutachten",
+      "pruefbericht.md": "Prüfbericht (KI)",
+      "anschreiben.md": "Anschreiben",
+      "rechnung.pdf": "Rechnung",
+      "belegpruefung.md": "Belegprüfung (KI)",
+      "review.md": "Verlauf",
+      "meta.json": "Steckbrief",
+      "fotohinweise.md": "Fotohinweise (KI)"
     },
-    "roles": {"assessor": "Gutachter", "approver": "Prüfung", "operator": "Innendienst", "client": "Versicherer"},
-    "words": {"external_id": "Auftragsnummer"}
+    "roles": {
+      "assessor": "Gutachter",
+      "approver": "Prüfung",
+      "operator": "Innendienst",
+      "client": "Versicherer"
+    },
+    "words": {
+      "external_id": "Auftragsnummer"
+    }
   },
   "en": {
     "product": "Assessment File",
-    "labels": {"KH": "Motor liability", "KK": "Comprehensive"},
-    "stations": {"order": "Order", "inspection": "Inspection", "precheck": "Pre-check", "review": "Your review", "dispatch": "Dispatch", "sent": "Sent", "closed": "Closed"},
+    "labels": {
+      "KH": "Motor liability",
+      "KK": "Comprehensive"
+    },
+    "stations": {
+      "order": "Order",
+      "inspection": "Inspection",
+      "precheck": "Pre-check",
+      "review": "Your review",
+      "dispatch": "Dispatch",
+      "sent": "Sent",
+      "closed": "Closed"
+    },
     "stages": {
       "10-auftrag": "order received, inspection to schedule",
       "20-besichtigung": "with the assessor",
@@ -42,20 +113,69 @@
       "60-versendet": "sent to the insurer",
       "70-abgeschlossen": "closed"
     },
-    "groups": {"you": "Your move", "claude": "AI is checking", "others": "With others", "date": "Date", "planned": "Scheduled", "out": "Closed", "ideas": "New orders", "archive": "Archive"},
+    "groups": {
+      "you": "Your move",
+      "claude": "AI is checking",
+      "others": "With others",
+      "date": "Date",
+      "planned": "Scheduled",
+      "out": "Closed",
+      "ideas": "New orders",
+      "archive": "Archive"
+    },
     "actions": {
-      "dispatch": "Schedule inspection", "deliver_draft": "Draft to pre-check", "approve_report": "Approve and draft the letter", "return_to_assessor": "Back to the assessor",
-      "ask_assessor": "Ask the assessor", "send": "Send", "close": "Close",
-      "answer": "Answer", "note": "Note", "done": "Done", "deliver": "Drop in", "see_failure": "See what went wrong", "wait": "Wait"
+      "dispatch": "Schedule inspection",
+      "deliver_draft": "Draft to pre-check",
+      "approve_report": "Approve and draft the letter",
+      "return_to_assessor": "Back to the assessor",
+      "ask_assessor": "Ask the assessor",
+      "send": "Send",
+      "close": "Close",
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "Drop in",
+      "see_failure": "See what went wrong",
+      "wait": "Wait"
     },
-    "reasons": {"running": "the AI is checking", "failed": "the last run failed", "missing": "something is still missing"},
-    "texts": {"done": "Done.", "deliver": "Dropped in.", "detected": "Moved by hand", "detected_text": "The file was in {stage}; the thread last knew {known}.", "delivered_title": "Dropped in: {files}", "replay_moved": "On."},
+    "reasons": {
+      "running": "the AI is checking",
+      "failed": "the last run failed",
+      "missing": "something is still missing"
+    },
+    "texts": {
+      "done": "Done.",
+      "deliver": "Dropped in.",
+      "detected": "Moved by hand",
+      "detected_text": "The file was in {stage}; the thread last knew {known}.",
+      "delivered_title": "Dropped in: {files}",
+      "replay_moved": "On."
+    },
     "files": {
-      "auftrag.pdf": "Assessment order", "fotos-1.jpg": "Photo 1", "fotos-2.jpg": "Photo 2", "fotos-3.jpg": "Photo 3", "fotos-4.jpg": "Photo 4", "fotos-5.jpg": "Photo 5",
-      "kalkulation.pdf": "Calculation", "gutachten.md": "Report", "pruefbericht.md": "Pre-check (AI)", "anschreiben.md": "Cover letter", "rechnung.pdf": "Invoice", "belegpruefung.md": "Receipt check (AI)",
-      "review.md": "Thread", "meta.json": "Record"
+      "auftrag.pdf": "Assessment order",
+      "fotos-1.jpg": "Photo 1",
+      "fotos-2.jpg": "Photo 2",
+      "fotos-3.jpg": "Photo 3",
+      "fotos-4.jpg": "Photo 4",
+      "fotos-5.jpg": "Photo 5",
+      "kalkulation.pdf": "Calculation",
+      "gutachten.md": "Report",
+      "pruefbericht.md": "Pre-check (AI)",
+      "anschreiben.md": "Cover letter",
+      "rechnung.pdf": "Invoice",
+      "belegpruefung.md": "Receipt check (AI)",
+      "review.md": "Thread",
+      "meta.json": "Record",
+      "fotohinweise.md": "Photo hints (AI)"
     },
-    "roles": {"assessor": "Assessor", "approver": "Review", "operator": "Back office", "client": "Insurer"},
-    "words": {"external_id": "Order number"}
+    "roles": {
+      "assessor": "Assessor",
+      "approver": "Review",
+      "operator": "Back office",
+      "client": "Insurer"
+    },
+    "words": {
+      "external_id": "Order number"
+    }
   }
 }

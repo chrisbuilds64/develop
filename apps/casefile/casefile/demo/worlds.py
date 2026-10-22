@@ -42,8 +42,9 @@ def _root(root: Path, config_dir: Path, stages: list[str]) -> Path:
     root.mkdir(parents=True)
     for s in stages:
         (root / s).mkdir()
-    for name in ("artifacts.json", "vocabulary.json", "people.json", "run-policy.json", "calendar.json"):
-        shutil.copy(config_dir / name, root / name)
+    for name in ("artifacts.json", "vocabulary.json", "people.json", "run-policy.json", "calendar.json", "connectors.json"):
+        if (config_dir / name).is_file():
+            shutil.copy(config_dir / name, root / name)
     (root / "_runs").mkdir()
     (root / "DEMO.md").write_text("Fiktive Demo-Daten. Jeder Name, jede Adresse, jede Zahl ist erfunden.\nFictional demo data. Every name, address and number is invented.\n", encoding="utf-8")
     return root
@@ -64,6 +65,12 @@ def _case(root: Path, stage: str, cid: str, meta: dict, files: dict[str, bytes |
     if review:
         (d / "review.md").write_text(f"# Review — {cid}\n\nAppend only. Newest entry at the end, never edited afterwards.\n" + review, encoding="utf-8")
     return d
+
+
+def _signal(root: Path, sid: str, kind: str, title: str, cases: list[str], text: str, days_ago: float = 0) -> None:
+    """A hint from the pattern helper across files: never a finding, always with reasoning and the files it rests on."""
+    (root / "_signale").mkdir(exist_ok=True)
+    (root / "_signale" / f"{sid}.md").write_text(f"---\nid: {sid}\nkind: {kind}\ntitle: {title}\ncases: {', '.join(cases)}\nstatus: offen\ndate: {_stamp(days_ago)[:10]}\n---\n{text}\n", encoding="utf-8")
 
 
 def _run(root: Path, cid: str, stage: str, skill: str, status: str, minutes_ago: float, by: str, **extra) -> None:
@@ -133,6 +140,9 @@ def build_claims(root: Path) -> Path:
           {"label": "HP", "number": "2026-0309", "title": "Sturz auf Glatteis, Hausmeisterdienst", "created": _stamp(20)[:10]},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv.\n", "gutachten.pdf": pdf, "rechnung.pdf": kva, "abgleich.md": "# Abgleich\n\nKeine Abweichung.\n"},
           _entry(1, "Freigegeben und zur Regulierung", "Du", status="approved", stage="30-pruefung", when=_stamp(2, 9), text="Betrag wie im Gutachten.", step="demo-3", frm="30-pruefung", to="40-regulierung"))
+    _signal(root, "M-001", "Wiederholung", "Gleiche Risikoanschrift in zwei Akten innerhalb von fünf Wochen",
+            ["HR-2026-0417-wasserschaden-badezimmer", "HR-2026-0430-einbruch-wohnung"],
+            "Musterstraße 12, 2. OG: Wasserschaden gemeldet am {a}, Einbruch gemeldet am {b}. Zwei verschiedene Schadenarten, derselbe Vertrag. Das ist kein Verdacht; es ist ein Hinweis, die zweite Akte mit Kenntnis der ersten zu lesen (Zustand der Wohnung nach der Trocknung, Zugänglichkeit).\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*".format(a=_stamp(6)[:10], b=_stamp(0)[:10]), 0)
     for i, (cid, title, label, days) in enumerate([("HR-2026-0388-leitungswasser-kueche", "Leitungswasser Küche", "HR", 14), ("KFZ-2026-0790-parkrempler", "Parkrempler Tiefgarage", "KFZ", 21),
                                                   ("WG-2026-0371-blitzschlag-dachstuhl", "Blitzschlag Dachstuhl", "WG", 30)]):
         _case(root, "60-abgeschlossen", cid, {"label": label, "number": cid.split("-")[1] + "-" + cid.split("-")[2], "title": title, "created": _stamp(days + 10)[:10],
@@ -244,10 +254,12 @@ MODULES = {
     "B-05-wertminderung.md": "---\nid: B-05\nkind: Baustein\ntitle: Wertminderung\nversion: 2\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-06-14\n---\nDie merkantile Wertminderung wird nach dem im Hause freigegebenen Verfahren aus Fahrzeugalter, Laufleistung, Wiederbeschaffungswert und Reparaturkosten ermittelt. Liegt sie unter der Bagatellgrenze, wird sie mit 0 € ausgewiesen und begründet.\n",
     "B-07-restwert.md": "---\nid: B-07\nkind: Baustein\ntitle: Restwert und Wiederbeschaffung\nversion: 2\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-06-14\n---\nDer Wiederbeschaffungswert wird anhand des regionalen Marktes ermittelt. Eine Restwertermittlung erfolgt, sobald die Reparaturkosten die hausinterne Grenze erreichen.\n",
     "B-08-schlussformel.md": "---\nid: B-08\nkind: Baustein\ntitle: Schlussformel\nversion: 1\nstatus: freigegeben\napproved_by: Innendienst\ndate: 2026-03-20\n---\nFür Rückfragen stehen wir gern zur Verfügung. Bitte beziehen Sie sich auf die Auftragsnummer.\n",
+    "R-01-vorschaeden.md": "---\nid: R-01\nkind: Regel\ntitle: Vorschäden und HIS\nversion: 2\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-04-08\n---\nJedes Gutachten nennt Vorschäden und Altschäden, auch wenn es keine gibt. Hinweise des Versicherers aus dem HIS (Hinweis- und Informationssystem) kommen mit dem Auftrag und werden im Gutachten beantwortet; die Vorprüfung meldet, wenn ein Hinweis unbeantwortet bleibt.\n",
     "R-02-fotostandard.md": "---\nid: R-02\nkind: Regel\ntitle: Fotostandard je Schadenart\nversion: 4\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-08-11\n---\nPflichtansichten je Schadenart: Gesamtansicht vorne und hinten, beide Seiten, Fahrgestellnummer, Tacho, jede kalkulierte Position im Detail. Fehlt eine Ansicht, benennt die Vorprüfung sie; sie entscheidet nicht über die Position.\n",
     "R-03-plausibilitaet.md": "---\nid: R-03\nkind: Regel\ntitle: Plausibilität der Kalkulation\nversion: 2\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-05-05\n---\nDie Kalkulation wird gegen Fahrzeugtyp, Schadenbild und Erfahrungswerte des Hauses geprüft. Abweichungen werden benannt und begründet; eine Position wird nie durch die Vorprüfung geändert.\n",
     "R-04-wertminderung.md": "---\nid: R-04\nkind: Regel\ntitle: Wertminderung ausweisen\nversion: 1\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-06-14\n---\nJedes Gutachten trägt eine Aussage zur Wertminderung, auch wenn sie 0 € lautet.\n",
     "R-05-vier-augen.md": "---\nid: R-05\nkind: Regel\ntitle: Vier-Augen-Schwelle\nversion: 1\nstatus: freigegeben\napproved_by: Geschäftsleitung\ndate: 2026-01-15\n---\nAb einer Schadenhöhe über der hausinternen Schwelle gibt eine zweite Person frei. Die Schwelle steht in dieser Regel, nicht im Code.\n",
+    "R-07-totalschaden.md": "---\nid: R-07\nkind: Regel\ntitle: Totalschadengrenze und Restwert\nversion: 3\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-09-30\n---\nErreichen die Reparaturkosten 60 % des Wiederbeschaffungswerts, ermittelt der Gutachter den Restwert mit drei Angeboten vom regionalen Markt (BGH) und weist den Wiederbeschaffungsaufwand aus. Ab 100 % liegt ein wirtschaftlicher Totalschaden vor; bis 130 % ist die Reparatur bei Weiternutzung möglich (Integritätsinteresse). Die Vorprüfung rechnet das Verhältnis nach und meldet, wenn ein Pflichtteil fehlt.\n",
     "R-06-belegabgleich.md": "---\nid: R-06\nkind: Regel\ntitle: Belegabgleich\nversion: 1\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-07-01\n---\nDie Rechnung wird Position für Position gegen Gutachten und Kalkulation gelegt. Die KI benennt Abweichungen; kürzen tut der Prüfer.\n",
 }
 
@@ -316,6 +328,12 @@ def build_egutachten(root: Path) -> Path:
               {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk, "gutachten.md": GUTACHTEN_MD.format(order="GA", car="Pkw", seen=_stamp(days + 4)[:10], story="Kurzfall.", finding="Kurzfall.", amount="900 €", wm="0 €."), "pruefbericht.md": pruef},
               _entry(1, "Versendet", "Innendienst", stage="50-versand", when=_stamp(days + 1, 10), step=f"demo-gs{i}", frm="50-versand", to="60-versendet") +
               _entry(2, "Abgeschlossen", "Innendienst", stage="60-versendet", when=_stamp(days, 15), step=f"demo-gc{i}", frm="60-versendet", to="70-abgeschlossen"))
+    _signal(root, "M-001", "Dublette", "Identisches Foto in zwei Gutachtenakten",
+            ["KH-2026-1140-parkrempler", "KK-2026-1131-marderschaden"],
+            "Foto 1 der beiden Akten ist byteweise identisch. Zwei Aufträge, zwei Fahrzeuge, dasselbe Bild: entweder vertauscht oder doppelt abgelegt. Beide Gutachten sind versendet.\n\n*Hinweis, keine Feststellung · der Prüfer entscheidet, ob ein Nachtrag nötig ist.*", 1)
+    _signal(root, "M-002", "Wiederholung", "Gleicher Halter in zwei Aufträgen innerhalb von 60 Tagen",
+            ["KH-2026-1182-auffahrunfall-a3-kleinwagen", "KK-2026-0902-wildunfall-landstrasse"],
+            "Herr Beispiel, Musterstadt: Wildunfall (Kasko) vor 30 Tagen, jetzt Geschädigter eines Auffahrunfalls (Haftpflicht), zwei verschiedene Fahrzeuge. Nichts daran ist auffällig; der Hinweis spart dem Prüfer das Nachschlagen und bringt die Fotos des ersten Falls neben die des zweiten.\n\n*Hinweis, keine Feststellung · der Prüfer entscheidet.*", 0)
     return root
 
 

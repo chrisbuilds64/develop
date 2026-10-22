@@ -1,48 +1,220 @@
 {
   "$comment": "What an e-report collects on its way. The report itself (gutachten.md) is the primary artifact and keeps every version: a follow-up is gutachten.v2.md, never an overwrite. pruefbericht.md is the AI's pre-check, anschreiben.md the AI's draft letter from approved text modules. KH = third-party liability (Haftpflicht), KK = comprehensive (Kasko).",
   "common": [
-    {"file": "auftrag.pdf", "stage": "10-auftrag", "by": "human", "shape": "pdf"},
-    {"file": "meta.json", "stage": "10-auftrag", "by": "human", "shape": "text"},
-    {"file": "review.md", "stage": "10-auftrag", "by": "human", "shape": "text"}
+    {
+      "file": "auftrag.pdf",
+      "stage": "10-auftrag",
+      "by": "human",
+      "shape": "pdf"
+    },
+    {
+      "file": "meta.json",
+      "stage": "10-auftrag",
+      "by": "human",
+      "shape": "text"
+    },
+    {
+      "file": "review.md",
+      "stage": "10-auftrag",
+      "by": "human",
+      "shape": "text"
+    }
   ],
   "formats": {
     "KH": {
       "primary": "gutachten.md",
       "artifacts": [
-        {"file": "fotos-1.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image", "required": true},
-        {"file": "fotos-2.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-        {"file": "fotos-3.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-        {"file": "fotos-4.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-        {"file": "fotos-5.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-        {"file": "kalkulation.pdf", "stage": "20-besichtigung", "by": "role:assessor", "shape": "pdf", "required": true},
-        {"file": "gutachten.md", "stage": "20-besichtigung", "by": "role:assessor", "shape": "text", "required": true},
-        {"file": "pruefbericht.md", "stage": "30-vorpruefung", "by": "claude", "shape": "text"},
-        {"file": "anschreiben.md", "stage": "50-versand", "by": "claude", "shape": "text"},
-        {"file": "rechnung.pdf", "stage": "60-versendet", "by": "human", "shape": "pdf"},
-        {"file": "belegpruefung.md", "stage": "60-versendet", "by": "claude", "shape": "text"}
+        {
+          "file": "fotos-1.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image",
+          "required": true
+        },
+        {
+          "file": "fotos-2.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-3.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-4.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-5.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotohinweise.md",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "kalkulation.pdf",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "pdf",
+          "required": true
+        },
+        {
+          "file": "gutachten.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text",
+          "required": true
+        },
+        {
+          "file": "pruefbericht.md",
+          "stage": "30-vorpruefung",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "50-versand",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "rechnung.pdf",
+          "stage": "60-versendet",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "belegpruefung.md",
+          "stage": "60-versendet",
+          "by": "claude",
+          "shape": "text"
+        }
       ]
     },
     "KK": {
       "primary": "gutachten.md",
       "artifacts": [
-        {"file": "fotos-1.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image", "required": true},
-        {"file": "fotos-2.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-        {"file": "fotos-3.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-        {"file": "fotos-4.jpg", "stage": "20-besichtigung", "by": "role:assessor", "shape": "image"},
-        {"file": "kalkulation.pdf", "stage": "20-besichtigung", "by": "role:assessor", "shape": "pdf", "required": true},
-        {"file": "gutachten.md", "stage": "20-besichtigung", "by": "role:assessor", "shape": "text", "required": true},
-        {"file": "pruefbericht.md", "stage": "30-vorpruefung", "by": "claude", "shape": "text"},
-        {"file": "anschreiben.md", "stage": "50-versand", "by": "claude", "shape": "text"},
-        {"file": "rechnung.pdf", "stage": "60-versendet", "by": "human", "shape": "pdf"},
-        {"file": "belegpruefung.md", "stage": "60-versendet", "by": "claude", "shape": "text"}
+        {
+          "file": "fotos-1.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image",
+          "required": true
+        },
+        {
+          "file": "fotos-2.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-3.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-4.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotohinweise.md",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "kalkulation.pdf",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "pdf",
+          "required": true
+        },
+        {
+          "file": "gutachten.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text",
+          "required": true
+        },
+        {
+          "file": "pruefbericht.md",
+          "stage": "30-vorpruefung",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "50-versand",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "rechnung.pdf",
+          "stage": "60-versendet",
+          "by": "human",
+          "shape": "pdf"
+        },
+        {
+          "file": "belegpruefung.md",
+          "stage": "60-versendet",
+          "by": "claude",
+          "shape": "text"
+        }
       ]
     }
   },
   "skills": {
-    "vorpruefung": {"stage": "30-vorpruefung", "$comment": "Photos against positions, calculation plausibility, the draft for gaps and contradictions; writes pruefbericht.md and moves the file to the reviewer."},
-    "anschreiben": {"stage": "50-versand", "$comment": "Drafts the cover letter from approved text modules (_bausteine/) and the file; a person sends."},
-    "belegpruefung": {"stage": "60-versendet", "$comment": "Invoice against report and calculation; writes belegpruefung.md."},
-    "ask": {"stage": "*", "$comment": "A free question about the file."}
+    "vorpruefung": {
+      "stage": "30-vorpruefung",
+      "$comment": "Photos against positions, calculation plausibility, the draft for gaps and contradictions; writes pruefbericht.md and moves the file to the reviewer."
+    },
+    "anschreiben": {
+      "stage": "50-versand",
+      "$comment": "Drafts the cover letter from approved text modules (_bausteine/) and the file; a person sends."
+    },
+    "belegpruefung": {
+      "stage": "60-versendet",
+      "$comment": "Invoice against report and calculation; writes belegpruefung.md."
+    },
+    "ask": {
+      "stage": "*",
+      "$comment": "A free question about the file."
+    },
+    "fotohinweis": {
+      "stage": "20-besichtigung",
+      "$comment": "Looks at the first photos while the assessor is still at the car: missing views, likely hidden damage from similar cases."
+    },
+    "muster": {
+      "stage": "*",
+      "$comment": "Across all files: duplicates, repeats, deviations. Writes signals to _signale/."
+    }
   },
-  "kinds": ["auftrag.pdf", "fotos-1.jpg", "fotos-2.jpg", "fotos-3.jpg", "fotos-4.jpg", "fotos-5.jpg", "kalkulation.pdf", "gutachten.md", "pruefbericht.md", "anschreiben.md", "rechnung.pdf", "belegpruefung.md"]
+  "kinds": [
+    "auftrag.pdf",
+    "fotos-1.jpg",
+    "fotos-2.jpg",
+    "fotos-3.jpg",
+    "fotos-4.jpg",
+    "fotos-5.jpg",
+    "fotohinweise.md",
+    "kalkulation.pdf",
+    "gutachten.md",
+    "pruefbericht.md",
+    "anschreiben.md",
+    "rechnung.pdf",
+    "belegpruefung.md"
+  ]
 }

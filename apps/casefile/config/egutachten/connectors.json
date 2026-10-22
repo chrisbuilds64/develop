@@ -1,0 +1,72 @@
+{
+  "$comment": "The connectors of this domain (ADR layer 5): agents ask for a system by name; the standard that carries it is a fact of the domain, not of the code. Shown in the rulebook. Every entry is a real standard or product class; the organisations are fictional.",
+  "connectors": [
+    {
+      "id": "versicherer",
+      "name": "Versicherer",
+      "standard": "GDV Schadennetz · Kfz-Schadenservice",
+      "carries": "Gutachtenauftrag, Gutachten (eGutachten), Nachtrag, Rückfragen, Honorarrechnung, Restwertanfragen",
+      "direction": "beide Richtungen",
+      "note": "Der GDV-Datensatz läuft seit 1999 produktiv; über 110 Versicherer und 100 Dienstleister sind angeschlossen."
+    },
+    {
+      "id": "vermittler",
+      "name": "Makler und Vermittler",
+      "standard": "BiPRO 430.5 (Schadenstatus) · BiPRO 503 (Schadenservice)",
+      "carries": "Schadenstatus, Dokumente zum Schaden",
+      "direction": "ausgehend",
+      "note": "Eine eigene BiPRO-Norm Kfz-Schaden ist in der Normierung (RNext)."
+    },
+    {
+      "id": "kalkulation",
+      "name": "Kalkulation",
+      "standard": "DAT SilverDAT calculateEXP · Audatex Qapter",
+      "carries": "Fahrzeugidentifikation (VIN), Ersatzteile, Arbeitswerte, Lackierung, Reparaturdauer",
+      "direction": "beide Richtungen",
+      "note": "Die Kalkulation bleibt im Werkzeug des Gutachters; die Akte trägt das Ergebnis als Anlage."
+    },
+    {
+      "id": "bewertung",
+      "name": "Fahrzeugbewertung",
+      "standard": "DAT · Schwacke",
+      "carries": "Wiederbeschaffungswert, Ausstattung, Marktpreise",
+      "direction": "eingehend"
+    },
+    {
+      "id": "restwert",
+      "name": "Restwertbörse",
+      "standard": "Restwertbörse (Marktplatz)",
+      "carries": "drei Restwertangebote vom regionalen Markt bei Totalschaden",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "his",
+      "name": "Vorschadenhinweise",
+      "standard": "HIS (Hinweis- und Informationssystem der Versicherer)",
+      "carries": "Hinweise zu Vorschäden, kommen mit dem Auftrag des Versicherers",
+      "direction": "eingehend",
+      "note": "Die Abfrage macht der Versicherer, nicht der Gutachter."
+    },
+    {
+      "id": "disposition",
+      "name": "Disposition",
+      "standard": "eigenes System",
+      "carries": "Termine, Touren, Besichtigungsart (vor Ort, Werkstatt, remote)",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "dokumente",
+      "name": "Dokumente",
+      "standard": "Dateiablage der Akte",
+      "carries": "Fotos, Gutachten in Fassungen, Anschreiben, Belege",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "postausgang",
+      "name": "Postausgang",
+      "standard": "E-Mail · GDV Schadennetz",
+      "carries": "Versand des freigegebenen Gutachtens, nur nach Freigabe",
+      "direction": "ausgehend"
+    }
+  ]
+}

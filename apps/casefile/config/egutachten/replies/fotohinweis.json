@@ -1,0 +1,15 @@
+{
+  "$comment": "The prepared photo hint for the demo: what similar cases taught, while the assessor is still at the car.",
+  "delay_s": 4,
+  "files": {
+    "fotohinweise.md": "fotohinweise-default.md"
+  },
+  "entry": {
+    "title": "Fotohinweise für die Besichtigung",
+    "text": "Drei Aufnahmen gesehen. Nach dem Fotostandard fehlen Fahrgestellnummer und Tacho. Aus ähnlichen Fällen: bei Streifschäden an Tür und Schweller zeigt sich in etwa jedem dritten Fall ein verdeckter Schaden am Schwellerfalz, deshalb eine Aufnahme von unten mit Licht. Hinweis aus der Erfahrung der Akten · der Gutachter entscheidet."
+  },
+  "to": null,
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}
