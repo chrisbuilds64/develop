@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Close, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
+import { Book, Close, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
 import { useState } from "react";
 
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme }:
@@ -13,7 +13,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const goClose = (p: string) => { setOpen(false); go(p); };
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const humans = config.people.filter((p) => p.kind === "human");
-  const otherWorld = me.worlds.find((x) => x !== me.world);
+  const otherWorlds = me.worlds.filter((x) => x !== me.world);
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
   const agent = config.people.find((p) => p.kind === "agent")?.name ?? "Claude";
@@ -29,7 +29,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       <button type="button" className="nav-row phone-only" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? <Close /> : <MenuIcon />}<span style={{ marginLeft: 8 }}>{w.menu}</span></button>
       <div className="sheet">
       <div className="menu-head">
-        <div className="brand">
+        <div className={`brand${config.product.length > 11 ? " long" : ""}`}>
           <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
           <span>{config.product}</span>
         </div>
@@ -52,6 +52,10 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
           </button>
         );
       })}
+      <div className="rule" />
+      <button type="button" className={`nav-row quiet${route.name === "rules" ? " on" : ""}`} onClick={() => goClose("/rules")}>
+        <span>{w.rules}</span><span className="n"><Book /></span>
+      </button>
       <div className="spacer" />
       <button type="button" className="drop-in" onClick={() => goClose("/")} aria-label={w.dropIn}>{w.dropIn}</button>
       <button type="button" className="nav-row quiet ask-row" onClick={() => document.querySelector<HTMLInputElement>(".ask input")?.focus()}>
@@ -60,7 +64,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
 
       {me.demo && (
         <div className="demo-row">
-          {otherWorld && <button type="button" className="nav-row quiet" onClick={() => onFresh(otherWorld)}><span>{w.world(otherWorld)}</span><span className="n"><Worlds /></span></button>}
+          {otherWorlds.map((x) => <button key={x} type="button" className="nav-row quiet" onClick={() => onFresh(x)}><span>{w.world(x)}</span><span className="n"><Worlds /></span></button>)}
           <button type="button" className="nav-row quiet" onClick={() => onFresh()}><span>{w.startOver}</span><span className="n"><Restart /></span></button>
         </div>
       )}

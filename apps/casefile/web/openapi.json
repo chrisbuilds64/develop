@@ -381,6 +381,25 @@
         }
       }
     },
+    "/api/rules": {
+      "get": {
+        "summary": "Get Rules",
+        "description": "The rulebook of this world: read from the configuration and from `_bausteine/` at the pipeline root.",
+        "operationId": "get_rules_api_rules_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RulesOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/stages": {
       "get": {
         "summary": "Stages",
@@ -1395,6 +1414,224 @@
         ],
         "title": "PersonView"
       },
+      "RuleAction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "to_word": {
+            "type": "string",
+            "title": "To Word",
+            "default": ""
+          },
+          "run": {
+            "type": "string",
+            "title": "Run",
+            "default": ""
+          },
+          "requires": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requires",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "word"
+        ],
+        "title": "RuleAction"
+      },
+      "RuleAuto": {
+        "properties": {
+          "on_file": {
+            "type": "string",
+            "title": "On File"
+          },
+          "skill": {
+            "type": "string",
+            "title": "Skill"
+          }
+        },
+        "type": "object",
+        "required": [
+          "on_file",
+          "skill"
+        ],
+        "title": "RuleAuto"
+      },
+      "RuleModule": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "approved_by": {
+            "type": "string",
+            "title": "Approved By"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "version",
+          "status",
+          "approved_by",
+          "date",
+          "text"
+        ],
+        "title": "RuleModule"
+      },
+      "RuleSkill": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "does": {
+            "type": "string",
+            "title": "Does",
+            "default": ""
+          },
+          "never": {
+            "type": "string",
+            "title": "Never",
+            "default": ""
+          },
+          "rules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rules",
+            "default": []
+          },
+          "orderable_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Orderable By",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RuleSkill"
+      },
+      "RuleStage": {
+        "properties": {
+          "folder": {
+            "type": "string",
+            "title": "Folder"
+          },
+          "station": {
+            "type": "string",
+            "title": "Station"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "turn_word": {
+            "type": "string",
+            "title": "Turn Word"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/RuleAction"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "auto": {
+            "items": {
+              "$ref": "#/components/schemas/RuleAuto"
+            },
+            "type": "array",
+            "title": "Auto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "folder",
+          "station",
+          "word",
+          "turn_word",
+          "actions",
+          "auto"
+        ],
+        "title": "RuleStage"
+      },
+      "RulesOut": {
+        "properties": {
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/RuleStage"
+            },
+            "type": "array",
+            "title": "Stages"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/RuleSkill"
+            },
+            "type": "array",
+            "title": "Skills"
+          },
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/RuleModule"
+            },
+            "type": "array",
+            "title": "Modules"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stages",
+          "skills",
+          "modules"
+        ],
+        "title": "RulesOut",
+        "description": "The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions."
+      },
       "Run": {
         "properties": {
           "id": {
@@ -1666,6 +1903,11 @@
           "word": {
             "type": "string",
             "title": "Word"
+          },
+          "station": {
+            "type": "string",
+            "title": "Station",
+            "default": ""
           },
           "cases": {
             "items": {

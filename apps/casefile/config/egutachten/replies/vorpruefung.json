@@ -1,0 +1,13 @@
+{
+  "$comment": "The prepared pre-check for the demo (ADR-016). A world's _replies/ may carry one per case; this is the fallback. Moves the file to the reviewer.",
+  "delay_s": 5,
+  "files": {"pruefbericht.md": "pruefbericht-default.md"},
+  "entry": {
+    "title": "Vorprüfung abgeschlossen",
+    "text": "Fotos gegen Positionen geprüft, Kalkulation auf Plausibilität, Entwurf auf Lücken und Widersprüche. Zwei Befunde, beide mit Begründung im Prüfbericht. Keiner spricht gegen die Freigabe; beide sollte der Gutachter sehen.\n\nBefund mit Begründung · du entscheidest."
+  },
+  "to": "40-fachpruefung",
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

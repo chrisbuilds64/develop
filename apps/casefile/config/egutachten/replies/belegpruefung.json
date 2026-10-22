@@ -1,0 +1,13 @@
+{
+  "$comment": "The prepared receipt check for the demo: invoice against report and calculation.",
+  "delay_s": 4,
+  "files": {"belegpruefung.md": "belegpruefung-default.md"},
+  "entry": {
+    "title": "Rechnung abgeglichen",
+    "text": "Rechnung gegen Gutachten und Kalkulation verglichen. Alle Positionen stimmen überein; eine Position weicht im Stundenansatz ab und ist im Bericht benannt. Kürzen oder durchwinken entscheidet der Prüfer.\n\nBefund mit Begründung · du entscheidest."
+  },
+  "to": null,
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

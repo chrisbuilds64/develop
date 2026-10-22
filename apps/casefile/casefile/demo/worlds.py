@@ -1,7 +1,7 @@
 """The demo worlds: invented, labelled fictional, built fresh into a folder. Nothing here is real.
 
-Two stories (Bauplan §5): a claims file in German, a content piece with two people. Both run on the same core;
-only the configuration differs. `build_claims(root)` and `build_pressroom(root)` write a pipeline root the
+Three stories (Bauplan §5): a claims file in German, a content piece with two people, and the e-report of an assessment
+organisation (the report as an editorial file). All run on the same core; only the configuration differs. `build_claims(root)` and `build_pressroom(root)` write a pipeline root the
 core can serve; the demo copies it once per visitor (ADR-016).
 """
 
@@ -216,9 +216,113 @@ def build_pressroom(root: Path) -> Path:
     return root
 
 
+# ----------------------------------------------------------------------------- the e-report (German, the assessor's organisation)
+
+EGUT_STAGES = ["10-auftrag", "20-besichtigung", "30-vorpruefung", "40-fachpruefung", "50-versand", "60-versendet", "70-abgeschlossen"]
+
+GUTACHTEN_MD = """# Kfz-Schadengutachten (Entwurf)
+
+**Auftrag:** {order} · **Fahrzeug:** {car} · **Besichtigung:** {seen}
+
+## Schadenhergang
+{story}
+
+## Befund
+{finding}
+
+## Kalkulation
+Siehe Kalkulation (Anlage). Reparaturkosten netto {amount}. Reparaturwürdig.
+
+## Wertminderung
+{wm}
+
+*Fiktives Gutachten für eine Demonstration. Textbausteine B-01, B-05 in der jeweils gültigen Fassung.*
+"""
+
+MODULES = {
+    "B-01-haftungshinweis.md": "---\nid: B-01\nkind: Baustein\ntitle: Haftungshinweis\nversion: 3\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-09-02\n---\nDas Gutachten beruht auf der Besichtigung des Fahrzeugs und den vorgelegten Unterlagen. Verdeckte Schäden, die erst bei der Instandsetzung erkennbar werden, sind nicht Gegenstand dieses Gutachtens; sie werden auf Anforderung in einem Nachtrag bewertet.\n",
+    "B-05-wertminderung.md": "---\nid: B-05\nkind: Baustein\ntitle: Wertminderung\nversion: 2\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-06-14\n---\nDie merkantile Wertminderung wird nach dem im Hause freigegebenen Verfahren aus Fahrzeugalter, Laufleistung, Wiederbeschaffungswert und Reparaturkosten ermittelt. Liegt sie unter der Bagatellgrenze, wird sie mit 0 € ausgewiesen und begründet.\n",
+    "B-07-restwert.md": "---\nid: B-07\nkind: Baustein\ntitle: Restwert und Wiederbeschaffung\nversion: 2\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-06-14\n---\nDer Wiederbeschaffungswert wird anhand des regionalen Marktes ermittelt. Eine Restwertermittlung erfolgt, sobald die Reparaturkosten die hausinterne Grenze erreichen.\n",
+    "B-08-schlussformel.md": "---\nid: B-08\nkind: Baustein\ntitle: Schlussformel\nversion: 1\nstatus: freigegeben\napproved_by: Innendienst\ndate: 2026-03-20\n---\nFür Rückfragen stehen wir gern zur Verfügung. Bitte beziehen Sie sich auf die Auftragsnummer.\n",
+    "R-02-fotostandard.md": "---\nid: R-02\nkind: Regel\ntitle: Fotostandard je Schadenart\nversion: 4\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-08-11\n---\nPflichtansichten je Schadenart: Gesamtansicht vorne und hinten, beide Seiten, Fahrgestellnummer, Tacho, jede kalkulierte Position im Detail. Fehlt eine Ansicht, benennt die Vorprüfung sie; sie entscheidet nicht über die Position.\n",
+    "R-03-plausibilitaet.md": "---\nid: R-03\nkind: Regel\ntitle: Plausibilität der Kalkulation\nversion: 2\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-05-05\n---\nDie Kalkulation wird gegen Fahrzeugtyp, Schadenbild und Erfahrungswerte des Hauses geprüft. Abweichungen werden benannt und begründet; eine Position wird nie durch die Vorprüfung geändert.\n",
+    "R-04-wertminderung.md": "---\nid: R-04\nkind: Regel\ntitle: Wertminderung ausweisen\nversion: 1\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-06-14\n---\nJedes Gutachten trägt eine Aussage zur Wertminderung, auch wenn sie 0 € lautet.\n",
+    "R-05-vier-augen.md": "---\nid: R-05\nkind: Regel\ntitle: Vier-Augen-Schwelle\nversion: 1\nstatus: freigegeben\napproved_by: Geschäftsleitung\ndate: 2026-01-15\n---\nAb einer Schadenhöhe über der hausinternen Schwelle gibt eine zweite Person frei. Die Schwelle steht in dieser Regel, nicht im Code.\n",
+    "R-06-belegabgleich.md": "---\nid: R-06\nkind: Regel\ntitle: Belegabgleich\nversion: 1\nstatus: freigegeben\napproved_by: Fachliche Leitung\ndate: 2026-07-01\n---\nDie Rechnung wird Position für Position gegen Gutachten und Kalkulation gelegt. Die KI benennt Abweichungen; kürzen tut der Prüfer.\n",
+}
+
+
+def build_egutachten(root: Path) -> Path:
+    cfg = CONFIG / "egutachten"
+    root = _root(root, cfg, EGUT_STAGES)
+    (root / "DEMO.md").write_text("Fiktive Gutachtenakten für die Demonstration. Jeder Name, jede Nummer und jeder Betrag ist erfunden.\n", encoding="utf-8")
+    (root / "_bausteine").mkdir()
+    for name, text in MODULES.items():
+        (root / "_bausteine" / name).write_text(text, encoding="utf-8")
+    photo, kalk, auftrag = SAMPLES / "foto.jpg", SAMPLES / "kostenvoranschlag.pdf", SAMPLES / "gutachten.pdf"
+    pruef = (cfg / "replies" / "pruefbericht-default.md").read_text(encoding="utf-8")
+
+    # the demo path: draft and pre-check are in, you approve, the letter gets drafted, the back office sends
+    c = "KH-2026-1182-auffahrunfall-a3-kleinwagen"
+    _case(root, "40-fachpruefung", c,
+          {"label": "KH", "number": "2026-1182", "title": "Auffahrunfall A3, Kleinwagen", "created": _stamp(4)[:10], "external_id": "GA-2026-01182", "subtitle": "Heckschaden, Haftpflicht des Auffahrenden", "client": "Nordlicht Versicherung"},
+          {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk,
+           "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-01182", car="Kleinwagen, EZ 2022, 31.400 km", seen=_stamp(2)[:10], story="Auffahrunfall am Stauende der A3. Heck, Stoßfänger, Rückleuchte links.",
+                                               finding="Stoßfänger hinten verformt, Heckklappe eingedrückt, Rückleuchte links gebrochen. Heckrahmen vermessen, ohne Befund. Airbags nicht ausgelöst.", amount="2.900 €", wm="Noch nicht ausgewiesen."),
+           "pruefbericht.md": pruef},
+          _entry(1, "Auftrag eingegangen", "Innendienst", stage="10-auftrag", when=_stamp(4, 9), files=["auftrag.pdf"], text="Nordlicht Versicherung, Haftpflicht, Besichtigung beim Kunden.") +
+          _entry(2, "Besichtigung eingeplant", "Innendienst", stage="10-auftrag", when=_stamp(4, 10), text="Gutachter Lenz, Donnerstag.", step="demo-g1", frm="10-auftrag", to="20-besichtigung") +
+          _entry(3, "Entwurf zur Vorprüfung", "Gutachter Lenz", stage="20-besichtigung", when=_stamp(2, 16), files=["fotos-1.jpg", "kalkulation.pdf", "gutachten.md"], text="Fassung 1 mit Fotos und Kalkulation.", step="demo-g2", frm="20-besichtigung", to="30-vorpruefung") +
+          _entry(4, "Vorprüfung abgeschlossen", "KI", stage="30-vorpruefung", when=_stamp(2, 17), files=["pruefbericht.md"],
+                 text="Zwei Befunde: eine Position ohne Detailfoto, Wertminderung nicht ausgewiesen. Keiner spricht gegen die Freigabe; beide sollte der Gutachter sehen.\n\nBefund mit Begründung · du entscheidest.", step="demo-g3", frm="30-vorpruefung", to="40-fachpruefung"))
+
+    # with the assessor: order placed, draft missing
+    c = "KK-2026-1190-parkschaden-tiefgarage"
+    _case(root, "20-besichtigung", c, {"label": "KK", "number": "2026-1190", "title": "Parkschaden Tiefgarage", "created": _stamp(1)[:10], "external_id": "GA-2026-01190", "client": "Nordlicht Versicherung"},
+          {"auftrag.pdf": auftrag},
+          _entry(1, "Besichtigung eingeplant", "Innendienst", stage="10-auftrag", when=_stamp(1, 9), text="Gutachterin Kaya, morgen.", step="demo-g4", frm="10-auftrag", to="20-besichtigung"))
+
+    # the AI is pre-checking right now (the replay finishes it after the sandbox opens)
+    c = "KK-2026-1203-hagelschaden-pkw"
+    _case(root, "30-vorpruefung", c, {"label": "KK", "number": "2026-1203", "title": "Hagelschaden Pkw", "created": _stamp(3)[:10], "external_id": "GA-2026-01203", "client": "Nordlicht Versicherung"},
+          {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk,
+           "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-01203", car="Kombi, EZ 2021, 58.200 km", seen=_stamp(1)[:10], story="Hagel am Abend, Fahrzeug im Freien.", finding="Dach, Motorhaube und Kofferraumdeckel mit zahlreichen Dellen, keine Lackrisse.", amount="3.480 €", wm="0 €, Bagatellgrenze.")},
+          _entry(1, "Entwurf zur Vorprüfung", "Gutachterin Kaya", stage="20-besichtigung", when=_stamp(0, 8), files=["gutachten.md", "kalkulation.pdf", "fotos-1.jpg"], text="Fassung 1.", step="demo-g5", frm="20-besichtigung", to="30-vorpruefung"))
+    _run(root, c, "30-vorpruefung", "vorpruefung", "queued", 3, "kaya")
+
+    # approved, the letter is drafted, the back office sends
+    c = "KH-2026-1175-glasschaden-frontscheibe"
+    _case(root, "50-versand", c, {"label": "KH", "number": "2026-1175", "title": "Glasschaden Frontscheibe", "created": _stamp(6)[:10], "external_id": "GA-2026-01175", "client": "Nordlicht Versicherung"},
+          {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk, "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-01175", car="Limousine, EZ 2019", seen=_stamp(4)[:10], story="Steinschlag auf der Autobahn.", finding="Frontscheibe im Sichtfeld gerissen, Austausch erforderlich.", amount="1.120 €", wm="0 €."),
+           "pruefbericht.md": pruef, "anschreiben.md": (cfg / "replies" / "anschreiben-default.md").read_text(encoding="utf-8")},
+          _entry(1, "Freigegeben und Anschreiben entwerfen", "Du", status="approved", stage="40-fachpruefung", when=_stamp(1, 11), text="Ohne Befund.", step="demo-g6", frm="40-fachpruefung", to="50-versand") +
+          _entry(2, "Anschreiben entworfen", "KI", stage="50-versand", when=_stamp(1, 11), files=["anschreiben.md"], text="Aus den Bausteinen B-01, B-07, B-08.\n\nEntwurf · ein Mensch versendet."))
+
+    # sent, the insurer asks, a follow-up becomes version 2
+    c = "KK-2026-0902-wildunfall-landstrasse"
+    _case(root, "60-versendet", c, {"label": "KK", "number": "2026-0902", "title": "Wildunfall L 412", "created": _stamp(30)[:10], "external_id": "GA-2026-00902", "client": "Nordlicht Versicherung"},
+          {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk, "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-00902", car="Kombi, EZ 2021, 58.200 km", seen=_stamp(27)[:10], story="Zusammenstoß mit einem Reh auf der L 412.", finding="Frontschaden: Stoßfänger, Scheinwerfer links, Motorhaube, Grill, Lüfter. Kein Rahmenschaden.", amount="4.880 €", wm="250 €."),
+           "pruefbericht.md": pruef, "anschreiben.md": (cfg / "replies" / "anschreiben-default.md").read_text(encoding="utf-8")},
+          _entry(1, "Versendet", "Innendienst", stage="50-versand", when=_stamp(20, 10), step="demo-g7", frm="50-versand", to="60-versendet") +
+          _entry(2, "Rückfrage des Versicherers", "Nordlicht Versicherung", status="open", for_="Gutachter Lenz", stage="60-versendet", when=_stamp(1, 14),
+                 text="Der Restwert ist nicht ausgewiesen. Liegen die Reparaturkosten wirklich unter der Grenze? Bitte kurz bestätigen oder Nachtrag."))
+
+    # new order
+    _case(root, "10-auftrag", "KH-2026-1210-kreuzungsunfall", {"label": "KH", "number": "2026-1210", "title": "Kreuzungsunfall, Seitenschaden", "created": _stamp(0)[:10], "external_id": "GA-2026-01210", "client": "Nordlicht Versicherung"},
+          {"auftrag.pdf": auftrag}, _entry(1, "Auftrag eingegangen", "Innendienst", stage="10-auftrag", when=_stamp(0, 9), files=["auftrag.pdf"], text="Haftpflicht, Besichtigung in der Werkstatt."))
+    # closed
+    for i, (cid, title, label, days) in enumerate([("KH-2026-1140-parkrempler", "Parkrempler Supermarkt", "KH", 12), ("KK-2026-1131-marderschaden", "Marderschaden Motorraum", "KK", 18)]):
+        _case(root, "70-abgeschlossen", cid, {"label": label, "number": cid.split("-")[1] + "-" + cid.split("-")[2], "title": title, "created": _stamp(days + 8)[:10], "external_id": "GA-" + cid.split("-")[1] + "-0" + cid.split("-")[2], "publishDate": (dt.date.today() - dt.timedelta(days=days)).isoformat()},
+              {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk, "gutachten.md": GUTACHTEN_MD.format(order="GA", car="Pkw", seen=_stamp(days + 4)[:10], story="Kurzfall.", finding="Kurzfall.", amount="900 €", wm="0 €."), "pruefbericht.md": pruef},
+              _entry(1, "Versendet", "Innendienst", stage="50-versand", when=_stamp(days + 1, 10), step=f"demo-gs{i}", frm="50-versand", to="60-versendet") +
+              _entry(2, "Abgeschlossen", "Innendienst", stage="60-versendet", when=_stamp(days, 15), step=f"demo-gc{i}", frm="60-versendet", to="70-abgeschlossen"))
+    return root
+
+
 if __name__ == "__main__":
     import sys
     target = Path(sys.argv[1]).expanduser()
     build_claims(target / "claims")
     build_pressroom(target / "pressroom")
+    build_egutachten(target / "egutachten")
     print(f"demo worlds in {target}")

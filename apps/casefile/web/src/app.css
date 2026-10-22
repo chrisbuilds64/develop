@@ -26,6 +26,7 @@ input, textarea { font: inherit; color: inherit; }
 .menu-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--hairline); }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; min-width: 0; }
 .brand span { overflow: hidden; text-overflow: ellipsis; }
+.brand.long { font-size: 16px; letter-spacing: -.02em; }
 .brand svg { flex: none; }
 .swap { width: var(--touch); height: var(--touch); border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 18px; }
 .nav-row { display: flex; justify-content: space-between; align-items: center; min-height: var(--touch); padding: 0 10px; border: none; border-radius: 10px; background: transparent; font-size: 15px; text-align: left; color: var(--ink); width: 100%; }
@@ -198,6 +199,22 @@ table.stack tr.group th > span:first-child { display: inline-block; }
 .col .card { padding: 10px 12px; gap: 10px; } .col .card-body { gap: 2px; }
 .col .card .num { font-size: 16px; } .col .card .title { font-size: 14px; }
 .col .card.quiet { background: var(--surface); }
+/* the rulebook */
+.rules-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 22px; padding-bottom: 24px; }
+.rules-block { background: var(--ground-2); border: 1px solid var(--hairline); border-radius: var(--r-l); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.rule-stages { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.rule-stages li { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-m); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.rs-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; } .rs-head b { font-size: 15px; }
+.rs-body { display: flex; gap: 6px; flex-wrap: wrap; } .rs-body .chip.auto { border-style: dashed; }
+.rules-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rules-table th, .rules-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+.rules-table th { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.rules-table .never { color: var(--ink-2); } .rules-table th.never { color: var(--your-move-ink); }
+.rules-table td small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.modules { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.module { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-m); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.module-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; } .module-head b { font-size: 14px; }
+.module-text { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
 .stack-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; background: var(--ground-2); border: 1px solid var(--hairline); border-radius: var(--r-l); }
 table.stack { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.stack th, table.stack td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
@@ -258,7 +275,7 @@ table.stack td.since, table.stack td.date { color: var(--ink-2); white-space: no
   .desk, .thread { padding: 14px; } .desk { padding-top: 14px; } .desk > .kicker:first-child { position: static; padding: 0; }
   .kanban { overflow-y: visible; } .col { flex-basis: 78vw; } .col-cards { overflow: visible; }
   .view-head { flex-wrap: wrap; gap: 8px 12px; } .view-head .filter { margin-left: 0; flex-basis: 100%; } .view-head .filter input { width: 100%; }
-  .stack-scroll { overflow: visible; } table.stack td.date, table.stack td.since, table.stack th:nth-child(5), table.stack th:nth-child(6) { display: none; }
+  .stack-scroll, .rules-scroll { overflow: visible; } table.stack td.date, table.stack td.since, table.stack th:nth-child(5), table.stack th:nth-child(6) { display: none; }
   .reader-body { min-height: 240px; } .reader-body iframe { height: 70dvh; }
   .bubble.you { max-width: 85%; }
   .foot { margin: 0 -20px; padding: 10px 20px; position: fixed; left: 0; right: 0; bottom: 76px; z-index: 9; justify-content: stretch; }

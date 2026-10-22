@@ -1,0 +1,128 @@
+{
+  "$comment": "The e-report (eGutachten) of a motor assessment organisation, as configuration (ADR-015): the assessor's report is an editorial file. Order → inspection → the AI's pre-check → a reviewer's check → dispatch → sent (follow-ups become new versions) → closed. Invented demo domain; every name fictional. `run` on an action orders a skill the moment the step lands; the prepared replies in replies/ play it in the demo.",
+  "name": "Gutachtenakte",
+  "lang": "de",
+  "configVersion": "1",
+  "stages": [
+    {
+      "folder": "10-auftrag",
+      "key": "order",
+      "group": "ideas",
+      "turn": "role:operator",
+      "actions": [
+        {
+          "id": "dispatch",
+          "label": "dispatch",
+          "to": "20-besichtigung",
+          "payload": ["date"]
+        }
+      ]
+    },
+    {
+      "folder": "20-besichtigung",
+      "key": "inspection",
+      "group": "others",
+      "turn": "role:assessor",
+      "actions": [
+        {
+          "id": "deliver_draft",
+          "label": "deliver_draft",
+          "to": "30-vorpruefung",
+          "run": "vorpruefung",
+          "requires": ["gutachten.md", "kalkulation.pdf", "shape:image"],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "30-vorpruefung",
+      "key": "precheck",
+      "group": "claude",
+      "turn": "claude"
+    },
+    {
+      "folder": "40-fachpruefung",
+      "key": "review",
+      "group": "you",
+      "turn": "role:approver",
+      "actions": [
+        {
+          "id": "approve_report",
+          "label": "approve_report",
+          "to": "50-versand",
+          "run": "anschreiben",
+          "requires": ["gutachten.md", "pruefbericht.md"],
+          "entry_status": "approved"
+        },
+        {
+          "id": "return_to_assessor",
+          "label": "return_to_assessor",
+          "to": "20-besichtigung",
+          "payload": ["note"],
+          "entry_status": "info",
+          "actor": "role:approver"
+        },
+        {
+          "id": "ask_assessor",
+          "label": "ask_assessor",
+          "payload": ["note"],
+          "entry_status": "open",
+          "actor": "role:approver"
+        }
+      ]
+    },
+    {
+      "folder": "50-versand",
+      "key": "dispatch",
+      "group": "others",
+      "turn": "role:operator",
+      "actions": [
+        {
+          "id": "send",
+          "label": "send",
+          "to": "60-versendet",
+          "requires": ["anschreiben.md"],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "60-versendet",
+      "key": "sent",
+      "group": "others",
+      "turn": "role:operator",
+      "actions": [
+        {
+          "id": "close",
+          "label": "close",
+          "to": "70-abgeschlossen",
+          "entry_status": "info"
+        },
+        {
+          "id": "ask_assessor",
+          "label": "ask_assessor",
+          "payload": ["note"],
+          "entry_status": "open",
+          "actor": "role:approver"
+        }
+      ],
+      "auto": [
+        {
+          "on_file": "gutachten.md",
+          "skill": "vorpruefung",
+          "note": "Nachtrag ist da."
+        },
+        {
+          "on_file": "rechnung.pdf",
+          "skill": "belegpruefung",
+          "note": "Rechnung ist da."
+        }
+      ]
+    },
+    {
+      "folder": "70-abgeschlossen",
+      "key": "closed",
+      "group": "out"
+    }
+  ]
+}

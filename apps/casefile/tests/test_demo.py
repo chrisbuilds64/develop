@@ -83,3 +83,38 @@ def test_the_pressroom_demo_has_the_two_people_story(tmp_path):
     r = stepping.step(store, config, "POD-ARC-02-the-arc-spoken", StepRequest(action="approve_to_visual", step_id="p1", payload={}), "chris")
     assert r.ok and r.to == "40-asset-generation"
     assert ("POD-ARC-02-the-arc-spoken", "deliver") in {(c.id, t.action) for c, t in whose.turns_for("akhil", cases.load_all(store, config), config)}
+
+
+def test_the_e_report_path_draft_precheck_approve_letter(tmp_path):
+    """The assessor's draft goes to the AI's pre-check, the reviewer approves, the letter is drafted from approved modules, the back office sends."""
+    from casefile.demo.worlds import build_egutachten
+    root = build_egutachten(tmp_path / "egut")
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "egutachten", root)
+    assert (root / "_bausteine" / "B-01-haftungshinweis.md").is_file()
+    # your move: approve the report that has draft + pre-check
+    cid = "KH-2026-1182-auffahrunfall-a3-kleinwagen"
+    t = whose.turn(cases.load(store, config, cid), config, "de")[0]
+    assert t.actor == "role:approver" and t.action == "approve_report" and t.blocked_by == []
+    r = stepping.step(store, config, cid, StepRequest(action="approve_report", step_id="g1", payload={}), "du")
+    assert r.ok and r.to == "50-versand" and r.run and "anschreiben" in r.run
+    played = play(store, config, r.run + ".json", HERE / "replies", wait=False)
+    assert played
+    case = cases.load(store, config, cid)
+    assert "anschreiben.md" in case.files and "B-01" in (root / "50-versand" / cid / "anschreiben.md").read_text(encoding="utf-8")
+    t = whose.turn(case, config, "de")[0]
+    assert t.actor == "role:operator" and t.action == "send" and t.blocked_by == []
+    # the assessor's draft: deliver_draft orders the pre-check, the replay moves it to the reviewer
+    cid2 = "KK-2026-1190-parkschaden-tiefgarage"
+    d = root / "20-besichtigung" / cid2
+    for name in ("gutachten.md", "fotos-1.jpg", "kalkulation.pdf"):
+        (d / name).write_bytes(b"x")
+    r = stepping.step(store, config, cid2, StepRequest(action="deliver_draft", step_id="g2", payload={}), "kaya")
+    assert r.ok and r.to == "30-vorpruefung" and r.run and "vorpruefung" in r.run
+    assert play(store, config, r.run + ".json", HERE / "replies", wait=False)
+    case2 = cases.load(store, config, cid2)
+    assert case2.stage == "40-fachpruefung" and "pruefbericht.md" in case2.files
+    # a follow-up in 60-versendet: a new report version triggers the pre-check again
+    cid3 = "KK-2026-0902-wildunfall-landstrasse"
+    (root / "60-versendet" / cid3 / "gutachten.v2.md").write_text("# Nachtrag\n", encoding="utf-8")
+    r = stepping.step(store, config, cid3, StepRequest(action="deliver", step_id="g3", payload={"files": ["gutachten.v2.md"]}), "lenz")
+    assert r.ok and r.run and "vorpruefung" in r.run

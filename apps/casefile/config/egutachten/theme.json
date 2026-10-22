@@ -1,0 +1,16 @@
+{
+  "name": "Gutachtenakte",
+  "lang": "de",
+  "accent": "your-move",
+  "$comment": "Same tokens as the other worlds; the one accent means only: this waits for you. external_url: a template with {external_id} turns the order number into a link into the organisation's order system; empty in the demo.",
+  "external_label": "Auftragsnummer",
+  "external_url": "",
+  "covers": {
+    "by": "label",
+    "colors": {
+      "KH": "#2f6fed",
+      "KK": "#2fa36b"
+    },
+    "fallback": "#5a6270"
+  }
+}

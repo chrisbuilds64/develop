@@ -15,5 +15,5 @@ def render(text: str, kind: str) -> str:
     if kind != "md":
         return "<pre>" + html.escape(text, quote=False) + "</pre>"
     _MD.reset()
-    out = _MD.convert(html.escape(text, quote=False))
+    out = _MD.convert(text.replace("&", "&amp;").replace("<", "&lt;"))     # tags are shown, not run; a line's leading > stays a quote
     return re.sub(r'(href|src)=(["\'])\s*(javascript|data|vbscript):', r"\1=\2#", out, flags=re.I)

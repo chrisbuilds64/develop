@@ -136,7 +136,56 @@ class StageOut(BaseModel):
     folder: str
     key: str
     word: str
+    station: str = ""                                     # the station's word, for column headers
     cases: list[views.CaseCard]
+
+
+class RuleAction(BaseModel):
+    id: str
+    word: str
+    to_word: str = ""
+    run: str = ""
+    requires: list[str] = []
+
+
+class RuleAuto(BaseModel):
+    on_file: str
+    skill: str
+
+
+class RuleStage(BaseModel):
+    folder: str
+    station: str
+    word: str
+    turn_word: str
+    actions: list[RuleAction]
+    auto: list[RuleAuto]
+
+
+class RuleSkill(BaseModel):
+    name: str
+    does: str = ""
+    never: str = ""
+    rules: list[str] = []
+    orderable_by: list[str] = []
+
+
+class RuleModule(BaseModel):
+    id: str
+    kind: str
+    title: str
+    version: int
+    status: str
+    approved_by: str
+    date: str
+    text: str
+
+
+class RulesOut(BaseModel):
+    """The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions."""
+    stages: list[RuleStage]
+    skills: list[RuleSkill]
+    modules: list[RuleModule]
 
 
 class AssetOut(BaseModel):
@@ -457,13 +506,60 @@ def create_app(settings: Settings) -> FastAPI:
         kind = "md" if ext == "md" else "plain"
         return {"name": name, "kind": kind, "html": render(p.read_text(encoding="utf-8", errors="replace"), kind)}
 
+    @app.get("/api/rules", response_model=RulesOut)
+    def get_rules(c: Ctx = Depends(ctx)):
+        """The rulebook of this world: read from the configuration and from `_bausteine/` at the pipeline root."""
+        lang = c.lang
+
+        def actor_word(actor: str | None) -> str:
+            if not actor:
+                return ""
+            if actor == "claude":
+                return next((p.name for p in c.config.people if p.kind == "agent"), "KI")
+            if actor.startswith("role:"):
+                return c.config.word("roles", actor[5:], lang, actor[5:])
+            return next((p.name for p in c.config.people if p.id == actor), actor)
+
+        stages = []
+        for st in c.config.stages:
+            if st.group == "archive":
+                continue
+            stages.append(RuleStage(folder=st.folder, station=c.config.word("stations", st.key, lang, "") if st.key else "", word=c.config.word("stages", st.folder, lang, st.folder),
+                                    turn_word=actor_word(st.turn),
+                                    actions=[RuleAction(id=a.id, word=c.config.word("actions", a.id, lang, a.id), to_word=c.config.word("stages", a.to, lang, a.to) if a.to else "",
+                                                        run=a.run or "", requires=[c.config.word("files", r, lang, r) if not r.startswith("shape:") else r for r in (a.requires or [])]) for a in st.actions],
+                                    auto=[RuleAuto(on_file=c.config.word("files", r.on_file, lang, r.on_file), skill=r.skill) for r in (st.auto or [])]))
+        policy = c.config.run_policy or {}
+        default = policy.get("default", {})
+        skills = [RuleSkill(name=name, does=str(spec.get("does", "")), never=str(spec.get("never", "")), rules=list(spec.get("rules", [])),
+                            orderable_by=[c.config.word("roles", r, lang, r) for r in spec.get("orderable_by", default.get("orderable_by", []))])
+                  for name, spec in policy.get("skills", {}).items() if not name.startswith("$")]
+        modules = []
+        folder = c.store.root / "_bausteine"
+        if folder.is_dir():
+            for f in sorted(folder.glob("*.md")):
+                text = f.read_text(encoding="utf-8")
+                head, body = {}, text
+                if text.startswith("---"):
+                    parts = text.split("---", 2)
+                    if len(parts) == 3:
+                        for line in parts[1].splitlines():
+                            if ":" in line:
+                                k, v = line.split(":", 1)
+                                head[k.strip()] = v.strip()
+                        body = parts[2]
+                modules.append(RuleModule(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), version=int(head.get("version", "1") or 1),
+                                          status=head.get("status", ""), approved_by=head.get("approved_by", ""), date=head.get("date", ""), text=body.strip()))
+        return RulesOut(stages=stages, skills=skills, modules=modules)
+
     @app.get("/api/stages", response_model=list[StageOut])
     def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         out = []
         for folder in c.store.stages():
             st = c.config.stage(folder)
             cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang) for cid in c.store.cases(folder)]
-            out.append(StageOut(folder=folder, key=st.key if st else "", word=c.config.word("stages", folder, c.lang, folder), cases=cards))
+            out.append(StageOut(folder=folder, key=st.key if st else "", word=c.config.word("stages", folder, c.lang, folder),
+                                station=c.config.word("stations", st.key, c.lang, "") if st and st.key else "", cases=cards))
         return out
 
     # ------------------------------------------------------------ writing: every write is a step
@@ -531,7 +627,7 @@ def create_app(settings: Settings) -> FastAPI:
 def app_from_env() -> FastAPI:
     """`uvicorn casefile.api.app:app_from_env --factory`.
 
-    One pipeline: CASEFILE_ROOT, CASEFILE_CONFIG. The demo: CASEFILE_DEMO_WORLDS=<dir with claims/ and pressroom/> (built by
+    One pipeline: CASEFILE_ROOT, CASEFILE_CONFIG. The demo: CASEFILE_DEMO_WORLDS=<dir with claims/, pressroom/ and egutachten/> (built by
     `python -m casefile.demo.worlds <dir>`), CASEFILE_SESSIONS=<dir>. Both: CASEFILE_WEB, CASEFILE_SECRET, CASEFILE_LANG.
     """
     here = Path(__file__).resolve().parents[2]
@@ -542,7 +638,8 @@ def app_from_env() -> FastAPI:
         return create_app(Settings(secret=secret, web_dist=web, demo=True, samples_dir=here / "casefile" / "demo" / "samples",
                                    replies_dir=here / "casefile" / "demo" / "replies",
                                    worlds={"claims": World(config_dir=here / "config" / "claims-demo", template=worlds_dir / "claims", person="du", lang="de"),
-                                           "pressroom": World(config_dir=here / "config" / "pressroom", template=worlds_dir / "pressroom", person="chris", lang="en")},
+                                           "pressroom": World(config_dir=here / "config" / "pressroom", template=worlds_dir / "pressroom", person="chris", lang="en"),
+                                           "egutachten": World(config_dir=here / "config" / "egutachten", template=worlds_dir / "egutachten", person="du", lang="de")},
                                    default_world=os.environ.get("CASEFILE_DEFAULT_WORLD", "claims"),
                                    sessions_dir=Path(os.environ.get("CASEFILE_SESSIONS") or worlds_dir / "sessions"),
                                    open_identity=True))

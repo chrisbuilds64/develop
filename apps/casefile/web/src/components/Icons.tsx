@@ -16,3 +16,4 @@ export const ViewCases = () => <svg {...base}><path d="M4 5h16v14H4zM4 10h16M9 1
 export const ViewBoard = () => <svg {...base}><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z" /></svg>;
 export const ViewList = () => <svg {...base}><path d="M4 6h16M4 12h16M4 18h16" /></svg>;
 export const Globe = () => <svg {...base}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>;
+export const Book = () => <svg {...base}><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z" /></svg>;

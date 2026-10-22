@@ -138,3 +138,33 @@ def test_a_text_file_is_rendered_for_the_viewer_with_raw_html_shown_not_run(api)
     r = client.get("/api/cases/FN-105-the-review-that-reads-itself/read/linkedin-post.txt")
     assert r.status_code == 200 and r.json()["html"].startswith("<pre>")
     assert client.get("/api/cases/POD-110-the-silent-failure/read/thumbnail-16x9.png").status_code == 415
+
+
+def test_the_rulebook_reads_configuration_and_modules(tmp_path):
+    """/api/rules: the stages with their gates, the skills with does/never, the modules from _bausteine/ with versions."""
+    from fastapi.testclient import TestClient
+    from casefile.api.app import Settings, create_app
+    from casefile.demo.worlds import CONFIG, build_egutachten
+    root = build_egutachten(tmp_path / "egut")
+    client = TestClient(create_app(Settings(root=root, config_dir=CONFIG / "egutachten", secret="t", demo=True, samples_dir=None, replies_dir=None)))
+    client.post("/api/session", json={"person": "du"})
+    r = client.get("/api/rules")
+    assert r.status_code == 200
+    body = r.json()
+    folders = [s["folder"] for s in body["stages"]]
+    assert folders[0] == "10-auftrag" and "70-abgeschlossen" in folders
+    review = next(s for s in body["stages"] if s["folder"] == "40-fachpruefung")
+    approve = next(a for a in review["actions"] if a["id"] == "approve_report")
+    assert approve["run"] == "anschreiben" and "Gutachten" in approve["requires"] and review["turn_word"] == "Prüfung"
+    sent = next(s for s in body["stages"] if s["folder"] == "60-versendet")
+    assert any(a["skill"] == "vorpruefung" for a in sent["auto"])
+    vor = next(s for s in body["skills"] if s["name"] == "vorpruefung")
+    assert vor["never"].startswith("Gibt ein Gutachten frei") and "R-02 Fotostandard" in vor["rules"]
+    ids = {m["id"]: m for m in body["modules"]}
+    assert ids["B-01"]["version"] == 3 and ids["B-01"]["kind"] == "Baustein" and ids["R-02"]["kind"] == "Regel" and "Pflichtansichten" in ids["R-02"]["text"]
+
+
+def test_a_quote_in_markdown_stays_a_quote_and_tags_stay_text():
+    from casefile.api.text import render
+    out = render("> **[B-01]** Zitat\n\n<script>x()</script>", "md")
+    assert "<blockquote>" in out and "<script>" not in out and "&lt;script&gt;" in out

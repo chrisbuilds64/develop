@@ -1,0 +1,13 @@
+{
+  "$comment": "A free question in the demo gets a prepared answer that fits the world; the question is quoted.",
+  "delay_s": 3,
+  "files": {},
+  "entry": {
+    "title": "Zu deiner Frage",
+    "text": "Du hast gefragt: „{note}“\n\nStand der Akte: Der Entwurf des Gutachtens und die Vorprüfung liegen vor. Freigeben heißt: das Anschreiben wird aus den Bausteinen entworfen und der Innendienst versendet. Zurückgeben heißt: der Gutachter überarbeitet, die neue Fassung geht wieder durch die Vorprüfung, Fassung 1 bleibt erhalten. Entscheiden tust du; ich bereite vor."
+  },
+  "to": null,
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

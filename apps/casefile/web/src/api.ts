@@ -7,6 +7,7 @@ export type Turn = components["schemas"]["Turn"];
 export type TurnOut = components["schemas"]["TurnOut"];
 export type GroupOut = components["schemas"]["GroupOut"];
 export type StageOut = components["schemas"]["StageOut"];
+export type RulesOut = components["schemas"]["RulesOut"];
 export type StepResult = components["schemas"]["StepResult"];
 export type MeOut = components["schemas"]["MeOut"];
 export type ConfigView = components["schemas"]["ConfigView"];
@@ -48,6 +49,7 @@ export const api = {
   turns: () => call<TurnOut[]>("GET", "/api/me/turns"),
   groups: () => call<GroupOut[]>("GET", "/api/cases"),
   stages: () => call<StageOut[]>("GET", "/api/stages"),
+  rules: () => call<RulesOut>("GET", "/api/rules"),
   case: (id: string) => call<CaseView>("GET", `/api/cases/${encodeURIComponent(id)}`),
   step: (id: string, action: string, step_id: string, payload: Record<string, unknown> = {}) =>
     call<StepResult>("POST", `/api/cases/${encodeURIComponent(id)}/steps`, { action, step_id, payload }),

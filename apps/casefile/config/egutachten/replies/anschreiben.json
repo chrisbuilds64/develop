@@ -1,0 +1,13 @@
+{
+  "$comment": "The prepared cover letter for the demo: drafted from approved text modules (_bausteine/) and the file. Nothing moves; a person sends.",
+  "delay_s": 4,
+  "files": {"anschreiben.md": "anschreiben-default.md"},
+  "entry": {
+    "title": "Anschreiben entworfen",
+    "text": "Anschreiben an den Versicherer aus den freigegebenen Bausteinen B-01, B-07 und B-08 entworfen, die Zahlen aus dem Gutachten übernommen. Keine fachliche Aussage außerhalb der Bausteine. Der Innendienst versendet.\n\nEntwurf · ein Mensch versendet."
+  },
+  "to": null,
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

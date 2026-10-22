@@ -184,6 +184,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rules
+         * @description The rulebook of this world: read from the configuration and from `_bausteine/` at the pipeline root.
+         */
+        get: operations["get_rules_api_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stages": {
         parameters: {
             query?: never;
@@ -596,6 +616,106 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /** RuleAction */
+        RuleAction: {
+            /** Id */
+            id: string;
+            /** Word */
+            word: string;
+            /**
+             * To Word
+             * @default
+             */
+            to_word: string;
+            /**
+             * Run
+             * @default
+             */
+            run: string;
+            /**
+             * Requires
+             * @default []
+             */
+            requires: string[];
+        };
+        /** RuleAuto */
+        RuleAuto: {
+            /** On File */
+            on_file: string;
+            /** Skill */
+            skill: string;
+        };
+        /** RuleModule */
+        RuleModule: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+            /** Status */
+            status: string;
+            /** Approved By */
+            approved_by: string;
+            /** Date */
+            date: string;
+            /** Text */
+            text: string;
+        };
+        /** RuleSkill */
+        RuleSkill: {
+            /** Name */
+            name: string;
+            /**
+             * Does
+             * @default
+             */
+            does: string;
+            /**
+             * Never
+             * @default
+             */
+            never: string;
+            /**
+             * Rules
+             * @default []
+             */
+            rules: string[];
+            /**
+             * Orderable By
+             * @default []
+             */
+            orderable_by: string[];
+        };
+        /** RuleStage */
+        RuleStage: {
+            /** Folder */
+            folder: string;
+            /** Station */
+            station: string;
+            /** Word */
+            word: string;
+            /** Turn Word */
+            turn_word: string;
+            /** Actions */
+            actions: components["schemas"]["RuleAction"][];
+            /** Auto */
+            auto: components["schemas"]["RuleAuto"][];
+        };
+        /**
+         * RulesOut
+         * @description The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions.
+         */
+        RulesOut: {
+            /** Stages */
+            stages: components["schemas"]["RuleStage"][];
+            /** Skills */
+            skills: components["schemas"]["RuleSkill"][];
+            /** Modules */
+            modules: components["schemas"]["RuleModule"][];
+        };
         /** Run */
         Run: {
             /** Id */
@@ -694,6 +814,11 @@ export interface components {
             key: string;
             /** Word */
             word: string;
+            /**
+             * Station
+             * @default
+             */
+            station: string;
             /** Cases */
             cases: components["schemas"]["CaseCard"][];
         };
@@ -1110,6 +1235,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rules_api_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulesOut"];
                 };
             };
         };
