@@ -509,6 +509,11 @@ export interface components {
         DemoSessionIn: {
             /** World */
             world?: string | null;
+            /**
+             * Fresh
+             * @default false
+             */
+            fresh: boolean;
         };
         /**
          * Entry

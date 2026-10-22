@@ -23,6 +23,7 @@ class Action(BaseModel):
     entry_status: str = "info"                   # the status the thread entry carries ("approved", "info", …)
     payload: list[str] = Field(default_factory=list)    # payload fields the surface must send, e.g. ["amount", "date"]
     actor: str | None = None                     # who may do it; None = the stage's turn
+    handover: dict | None = None                 # demo: after the step, files go to a partner world (world, match, files, action, by, note)
 
 
 class AutoRun(BaseModel):

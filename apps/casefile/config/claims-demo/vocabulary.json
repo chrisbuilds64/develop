@@ -16,7 +16,7 @@
       "closed": "Abschluss"
     },
     "stages": {
-      "10-meldung": "gemeldet, Besichtigung ausstehend",
+      "10-meldung": "gemeldet, Gutachten beauftragen",
       "20-besichtigung": "beim Gutachter",
       "25-abgleich": "KI gleicht ab",
       "30-pruefung": "Gutachten liegt vor",
@@ -44,7 +44,8 @@
       "done": "Erledigt",
       "deliver": "Ablegen",
       "see_failure": "Nachsehen, was schiefging",
-      "wait": "Warten"
+      "wait": "Warten",
+      "order_assessment": "Gutachten beauftragen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -79,7 +80,9 @@
       "feuerwehrbericht.pdf": "Einsatzbescheinigung Feuerwehr",
       "unfallbericht.pdf": "Schadenanzeige Kfz",
       "wildunfallbescheinigung.pdf": "Wildunfallbescheinigung",
-      "streuprotokoll.pdf": "Streuprotokoll"
+      "streuprotokoll.pdf": "Streuprotokoll",
+      "gutachten.md": "eGutachten",
+      "anschreiben.md": "Anschreiben Gutachter"
     },
     "roles": {
       "assessor": "Gutachter",
@@ -107,7 +110,7 @@
       "closed": "Closed"
     },
     "stages": {
-      "10-meldung": "reported, inspection pending",
+      "10-meldung": "reported, assessment to order",
       "20-besichtigung": "with the assessor",
       "25-abgleich": "AI reconciling",
       "30-pruefung": "assessment ready",
@@ -135,7 +138,8 @@
       "done": "Done",
       "deliver": "Add",
       "see_failure": "See what went wrong",
-      "wait": "Wait"
+      "wait": "Wait",
+      "order_assessment": "Order the assessment"
     },
     "reasons": {
       "running": "the AI is checking",
@@ -170,7 +174,9 @@
       "feuerwehrbericht.pdf": "Fire brigade certificate",
       "unfallbericht.pdf": "Motor claim form",
       "wildunfallbescheinigung.pdf": "Wildlife collision certificate",
-      "streuprotokoll.pdf": "Gritting log"
+      "streuprotokoll.pdf": "Gritting log",
+      "gutachten.md": "e-report",
+      "anschreiben.md": "Assessor's letter"
     },
     "roles": {
       "assessor": "assessor",

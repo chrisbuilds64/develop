@@ -22,7 +22,7 @@ def _label(config: DomainConfig, key: str, lang: str | None) -> str:
 
 
 def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
-    """Deliverables the action needs that are not in the case. Tokens: 'primary', 'required', 'shape:<prefix>', or a file name."""
+    """Deliverables the action needs that are not in the case. Tokens: 'primary', 'required', 'shape:<prefix>', a file name, or alternatives 'a.pdf|a.md'."""
     out: list[str] = []
     for req in action.requires:
         if req == "primary":
@@ -34,6 +34,10 @@ def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
         elif req.startswith("shape:"):
             if not any(s.present and s.shape.startswith(req[6:]) for s in case.slots):
                 out.append(req)
+        elif "|" in req:
+            alts = [case.slot(r) for r in req.split("|")]
+            if not any(a and a.present for a in alts):
+                out.append(req.split("|")[0])
         else:
             s = case.slot(req)
             if not (s and s.present):

@@ -1,5 +1,5 @@
 {
-  "$comment": "The e-report (eGutachten) of a motor assessment organisation, as configuration (ADR-015): the assessor's report is an editorial file. Order → inspection → the AI's pre-check → a reviewer's check → dispatch → sent (follow-ups become new versions) → closed. Invented demo domain; every name fictional. `run` on an action orders a skill the moment the step lands; the prepared replies in replies/ play it in the demo.",
+  "$comment": "The e-report (eGutachten) of a motor assessment organisation, as configuration (ADR-015): the assessor's report is an editorial file. Order → inspection → the AI's pre-check → a reviewer's check → dispatch → sent (follow-ups become new versions) → closed. Invented demo domain; every name fictional. `run` on an action orders a skill the moment the step lands; the prepared replies in replies/ play it in the demo. `handover` on send: in the demo, the visitor's claims sandbox stands in for the GDV connector — the sent report lands in the claim that waits for it.",
   "name": "Gutachtenakte",
   "lang": "de",
   "configVersion": "1",
@@ -104,7 +104,19 @@
           "requires": [
             "anschreiben.md"
           ],
-          "entry_status": "info"
+          "entry_status": "info",
+          "handover": {
+            "world": "claims",
+            "match": "gutachten_auftrag",
+            "files": [
+              "gutachten*.md",
+              "fotos-*.jpg",
+              "anschreiben*.md"
+            ],
+            "action": "deliver_report",
+            "by": "gutachter",
+            "note": "eGutachten über das GDV Schadennetz eingegangen"
+          }
         }
       ]
     },

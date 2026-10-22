@@ -77,7 +77,8 @@
       "belegpruefung.md": "Belegprüfung (KI)",
       "review.md": "Verlauf",
       "meta.json": "Steckbrief",
-      "fotohinweise.md": "Fotohinweise (KI)"
+      "fotohinweise.md": "Fotohinweise (KI)",
+      "auftrag.md": "Gutachtenauftrag (eGutachten)"
     },
     "roles": {
       "assessor": "Gutachter",
@@ -166,7 +167,8 @@
       "belegpruefung.md": "Receipt check (AI)",
       "review.md": "Thread",
       "meta.json": "Record",
-      "fotohinweise.md": "Photo hints (AI)"
+      "fotohinweise.md": "Photo hints (AI)",
+      "auftrag.md": "Assessment order (electronic)"
     },
     "roles": {
       "assessor": "Assessor",

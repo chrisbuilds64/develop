@@ -43,7 +43,8 @@ from . import views
 
 COOKIE = "cf_person"
 DEMO_COOKIE = "cf_demo"
-LANG_COOKIE = "cf_lang"           # the viewer's language, when it differs from the world's; plain, not secret
+LANG_COOKIE = "cf_lang"
+WORLDS_COOKIE = "cf_worlds"       # the visitor's sandbox per world, so a switch returns to where they were           # the viewer's language, when it differs from the world's; plain, not secret
 
 
 @dataclass
@@ -85,7 +86,8 @@ class LangIn(BaseModel):
 
 
 class DemoSessionIn(BaseModel):
-    world: str | None = None
+    world: str | None = None                                # switch to this world (the visitor's sandbox there is kept)
+    fresh: bool = False                                     # a new sandbox for that world (start over)
 
 
 class EntryIn(BaseModel):
@@ -358,6 +360,93 @@ def create_app(settings: Settings) -> FastAPI:
     def _set_session(response: Response, sid: str) -> None:
         response.set_cookie(DEMO_COOKIE, f"{sid}.{_sign(settings.secret, sid)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
 
+    def _read_worlds(request: Request) -> dict[str, str]:
+        """world → sandbox id, from the signed cookie; only sandboxes that still exist."""
+        raw = request.cookies.get(WORLDS_COOKIE, "")
+        if "." not in raw:
+            return {}
+        body, sig = raw.rsplit(".", 1)
+        if not hmac.compare_digest(sig, _sign(settings.secret, body)):
+            return {}
+        out = {}
+        for pair in body.split(","):
+            if ":" in pair:
+                w, sid = pair.split(":", 1)
+                if w in settings.worlds and (settings.sessions_dir / sid).is_dir():
+                    out[w] = sid
+        return out
+
+    def _set_worlds(response: Response, mapping: dict[str, str]) -> None:
+        body = ",".join(f"{w}:{sid}" for w, sid in mapping.items())
+        response.set_cookie(WORLDS_COOKIE, f"{body}.{_sign(settings.secret, body)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
+
+    def _handover(request: Request, response: Response, c: Ctx, case_id: str, spec: dict, step_id: str) -> None:
+        """Demo stand-in for a connector between two worlds (the GDV Schadennetz in the real thing): after the step, the
+        case's files travel to the visitor's sandbox of the partner world. Two modes: `create` opens a new case there (a
+        claim orders an assessment); `match` finds the case waiting for them (the e-report returns to its claim) and takes
+        the partner's step. A failed hand-over is logged; the visitor's own step stands."""
+        try:
+            world = str(spec.get("world", ""))
+            if world not in settings.worlds or not c.world:
+                return
+            mapping = _read_worlds(request)
+            if c.session:
+                mapping[c.world] = c.session
+            target = _session_ctx(mapping[world]) if world in mapping else None
+            if target is None:
+                target = _new_session(world)
+                mapping[world] = target.session
+            _set_worlds(response, mapping)
+            src_case = reading.load(c.store, c.config, case_id)
+            src_dir = c.store.case_dir(case_id)
+            rename = spec.get("rename", {})
+
+            def newest(patterns):
+                base_of = {}
+                for pattern in patterns:
+                    for h in sorted(src_dir.glob(pattern)):
+                        base, v = reading.split_version(h.name)
+                        if base not in base_of or v > base_of[base][1]:
+                            base_of[base] = (h, v)
+                return [(rename.get(base, base), h) for base, (h, _) in base_of.items()]
+
+            create = spec.get("create")
+            if create:
+                number = str(src_case.meta.get("number") or case_id)
+                ref = str(create.get("external_prefix", "")) + number.replace("2026-", "2026-0")
+                slug = "-".join(case_id.split("-")[3:]) or "auftrag"
+                new_id = f"{create.get('label', 'KH')}-{number}-{slug}"
+                stage = str(create.get("stage"))
+                d = target.store.root / stage / new_id
+                if d.exists():
+                    return
+                d.mkdir(parents=True)
+                meta = {"configVersion": "1", "fictional": True, "label": create.get("label", "KH"), "number": number, "title": str(src_case.meta.get("title") or case_id),
+                        "created": _now()[:10], "external_id": ref, "subtitle": str(src_case.meta.get("subtitle") or ""), "client": str(create.get("client", "")),
+                        "schaden_nr": str(src_case.meta.get("external_id") or case_id), "origin": f"{c.world}/{case_id}"}
+                (d / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                for name, h in newest(spec.get("files", [])):
+                    shutil.copy(h, d / name)
+                # the source case remembers which order it placed
+                src_meta = {**src_case.meta, str(spec.get("match", "gutachten_auftrag")): ref}
+                c.store.write_atomic(f"{src_case.stage}/{case_id}/meta.json", json.dumps(src_meta, ensure_ascii=False, indent=2) + "\n")
+                note = str(spec.get("note", "")).replace("{ref}", ref).replace("{claim}", meta["schaden_nr"])
+                stepping.step(target.store, target.config, new_id, StepRequest(action="note", step_id=f"{step_id}-handover", payload={"title": str(create.get("title", "")).replace("{claim}", meta["schaden_nr"]), "text": note, "files": [n for n, _ in newest(spec.get("files", []))]}), str(spec.get("by", "")))
+                return
+            key = str(spec.get("match", "external_id"))
+            ref = str(src_case.meta.get("external_id") or case_id)
+            partner = next((k for k in reading.load_all(target.store, target.config) if str(k.meta.get(key, "")) == ref), None)
+            if partner is None:
+                return
+            written = [assets.put(target.store, target.config, partner.id, name, h, h.name) for name, h in newest(spec.get("files", []))]
+            payload = {"files": written, "note": str(spec.get("note", ""))}
+            stepping.step(target.store, target.config, partner.id, StepRequest(action=str(spec.get("action", "deliver")), step_id=f"{step_id}-handover", payload=payload), str(spec.get("by", "")))
+        except Exception as exc:        # noqa: BLE001 — a failed hand-over must never break the visitor's own step
+            try:
+                (settings.sessions_dir / "handover-errors.log").open("a", encoding="utf-8").write(f"{_now()} {c.world}/{case_id} {step_id}: {exc!r}\n")
+            except OSError:
+                pass
+
     def ctx(request: Request, response: Response) -> Ctx:
         """The store and configuration this request works on, in the viewer's language if they chose one the domain speaks."""
         c = _ctx(request, response)
@@ -381,6 +470,7 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(429, "too many new sessions")
         c = _new_session(settings.default_world)
         _set_session(response, c.session)
+        _set_worlds(response, {**_read_worlds(request), c.world: c.session})
         _set_person(response, settings.worlds[c.world].person)
         request.state.fresh_person = settings.worlds[c.world].person
         return c
@@ -451,10 +541,22 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(404, "not a demo")
         if not limiter.allow("new:" + _client(request), settings.sessions_per_minute):
             raise HTTPException(429, "too many new sessions")
-        world = (body.world if body and body.world else None) or settings.default_world
+        mapping = _read_worlds(request)
+        current = None
+        raw = request.cookies.get(DEMO_COOKIE, "")
+        if "." in raw:
+            sid, sig = raw.rsplit(".", 1)
+            if hmac.compare_digest(sig, _sign(settings.secret, sid)):
+                current = _session_ctx(sid)
+        world = (body.world if body and body.world else None) or (current.world if current else None) or settings.default_world
         if world not in settings.worlds:
             raise HTTPException(404, f"no world '{world}'")
-        c = _new_session(world)
+        fresh = bool(body and body.fresh) or not (body and body.world)      # "start over" is fresh; a switch keeps the sandbox
+        c = None if fresh else (_session_ctx(mapping[world]) if world in mapping else None)
+        if c is None:
+            c = _new_session(world)
+        mapping[world] = c.session
+        _set_worlds(response, mapping)
         _set_session(response, c.session)
         _set_person(response, settings.worlds[world].person)
         return me_out(c, settings.worlds[world].person)
@@ -629,8 +731,17 @@ def create_app(settings: Settings) -> FastAPI:
         return JSONResponse(status_code=200 if result.ok else 409, content=result.model_dump(by_alias=True))
 
     @app.post("/api/cases/{case_id}/steps", response_model=StepResult)
-    def post_step(case_id: str, body: StepRequest, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        return _answer(stepping.step(c.store, c.config, case_id, body, who))
+    def post_step(case_id: str, body: StepRequest, request: Request, response: Response, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        result = stepping.step(c.store, c.config, case_id, body, who)
+        if result.ok and not result.replayed and settings.worlds:
+            action = next((a for st in c.config.stages for a in st.actions if a.id == body.action and a.handover), None)
+            if action:
+                _handover(request, response, c, case_id, action.handover, body.step_id)
+        answer = _answer(result)
+        for k, v in response.headers.items():        # cookies the hand-over set travel with the JSON answer
+            if k.lower() == "set-cookie":
+                answer.headers.append(k, v)
+        return answer
 
     @app.post("/api/cases/{case_id}/entries", response_model=StepResult)
     def post_entry(case_id: str, body: EntryIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

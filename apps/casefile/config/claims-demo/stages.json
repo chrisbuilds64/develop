@@ -1,5 +1,5 @@
 {
-  "$comment": "A claims file as configuration (ADR-015). Invented demo domain; every name fictional. Five stations: report, inspection, your check, settlement, closed.",
+  "$comment": "A claims file as configuration (ADR-015). Invented demo domain; every name fictional. Five stations: report, inspection, your check, settlement, closed. 10-meldung: the claims handler orders the assessment; in the demo the order opens a case in the visitor's e-report sandbox (handover create).",
   "name": "Schadenakte",
   "lang": "de",
   "configVersion": "1",
@@ -8,15 +8,35 @@
       "folder": "10-meldung",
       "key": "report",
       "group": "ideas",
-      "turn": "role:assessor",
+      "turn": "role:approver",
       "actions": [
         {
-          "id": "schedule_inspection",
-          "label": "schedule_inspection",
+          "id": "order_assessment",
+          "label": "order_assessment",
           "to": "20-besichtigung",
           "payload": [
             "date"
-          ]
+          ],
+          "handover": {
+            "world": "egutachten",
+            "create": {
+              "label": "KH",
+              "stage": "10-auftrag",
+              "external_prefix": "GA-",
+              "client": "Nordlicht Versicherung",
+              "title": "Auftrag von {claim}"
+            },
+            "match": "gutachten_auftrag",
+            "files": [
+              "meldung.md",
+              "fotos-*.jpg"
+            ],
+            "rename": {
+              "meldung.md": "auftrag.md"
+            },
+            "by": "innendienst",
+            "note": "Gutachtenauftrag {ref} zum Schaden {claim} über das GDV Schadennetz eingegangen. Schadenmeldung und Fotos des Versicherers liegen bei. Besichtigung einplanen."
+          }
         }
       ]
     },
@@ -31,10 +51,11 @@
           "label": "deliver_report",
           "to": "25-abgleich",
           "requires": [
-            "gutachten.pdf",
+            "gutachten.pdf|gutachten.md",
             "shape:image"
           ],
-          "entry_status": "info"
+          "entry_status": "info",
+          "run": "reconcile"
         }
       ]
     },

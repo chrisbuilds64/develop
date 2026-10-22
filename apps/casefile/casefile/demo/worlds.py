@@ -127,10 +127,14 @@ def build_claims(root: Path) -> Path:
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Scheibe im Wintergarten gesprungen, Ursache unklar.\n"},
           _entry(1, "Besichtigung angesetzt", "Du", stage="10-meldung", when=_stamp(1, 10), text="Termin Freitag.", step="demo-2", frm="10-meldung", to="20-besichtigung"))
     _case(root, "20-besichtigung", "KFZ-2026-0811-auffahrunfall-a3",
-          {"label": "KFZ", "number": "2026-0811", "title": "Auffahrunfall A3, Kleinwagen", "created": _stamp(3)[:10]},
+          {"label": "KFZ", "number": "2026-0811", "title": "Auffahrunfall A3, Kleinwagen", "created": _stamp(3)[:10], "gutachten_auftrag": "GA-2026-01182", "subtitle": "wartet auf das eGutachten GA-2026-01182"},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Auffahrunfall im Stau, Heck und Stoßfänger.\n", "fotos-1.jpg": photo})
 
-    # newly reported
+    # newly reported: a motor claim that orders its assessment (the hand-over into the e-report world)
+    _case(root, "10-meldung", "KFZ-2026-0815-parkschaden-tiefgarage",
+          {"label": "KFZ", "number": "2026-0815", "title": "Parkschaden Tiefgarage, Kleinwagen", "created": _stamp(0)[:10], "subtitle": "Fahrertür und Schweller, Vollkasko"},
+          {"meldung.md": "# Schadenmeldung\n\nFiktiv. Beim Ausparken in der Tiefgarage an einem Betonpfeiler entlanggeschrammt. Fahrertür und Schweller. Fahrzeug fahrbereit, Fotos liegen bei.\n", "fotos-1.jpg": photo},
+          _entry(1, "Schaden aufgenommen", "Du", stage="10-meldung", when=_stamp(0, 9), files=["meldung.md", "fotos-1.jpg"], text="Vollkasko, Fahrzeug fahrbereit. Gutachten beauftragen."))
     _case(root, "10-meldung", "HR-2026-0430-einbruch-wohnung",
           {"label": "HR", "number": "2026-0430", "title": "Einbruch Wohnung 2. OG", "created": _stamp(0)[:10]},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Balkontür aufgehebelt, Laptop und Schmuck fehlen. Polizeiliche Anzeige liegt vor.\n"})
@@ -277,7 +281,7 @@ def build_egutachten(root: Path) -> Path:
     # the demo path: draft and pre-check are in, you approve, the letter gets drafted, the back office sends
     c = "KH-2026-1182-auffahrunfall-a3-kleinwagen"
     _case(root, "40-fachpruefung", c,
-          {"label": "KH", "number": "2026-1182", "title": "Auffahrunfall A3, Kleinwagen", "created": _stamp(4)[:10], "external_id": "GA-2026-01182", "subtitle": "Heckschaden, Haftpflicht des Auffahrenden", "client": "Nordlicht Versicherung"},
+          {"label": "KH", "number": "2026-1182", "title": "Auffahrunfall A3, Kleinwagen", "created": _stamp(4)[:10], "external_id": "GA-2026-01182", "subtitle": "Heckschaden, Haftpflicht des Auffahrenden", "client": "Nordlicht Versicherung", "schaden_nr": "SN-2026-00811"},
           {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk,
            "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-01182", car="Kleinwagen, EZ 2022, 31.400 km", seen=_stamp(2)[:10], story="Auffahrunfall am Stauende der A3. Heck, Stoßfänger, Rückleuchte links.",
                                                finding="Stoßfänger hinten verformt, Heckklappe eingedrückt, Rückleuchte links gebrochen. Heckrahmen vermessen, ohne Befund. Airbags nicht ausgelöst.", amount="2.900 €", wm="Noch nicht ausgewiesen."),

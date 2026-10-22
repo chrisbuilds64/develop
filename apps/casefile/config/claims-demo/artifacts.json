@@ -87,6 +87,18 @@
           "required": true
         },
         {
+          "file": "gutachten.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
           "file": "feuchtemessung.pdf",
           "stage": "20-besichtigung",
           "by": "role:assessor",
@@ -152,6 +164,18 @@
           "by": "role:assessor",
           "shape": "pdf",
           "required": true
+        },
+        {
+          "file": "gutachten.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
         },
         {
           "file": "kostenvoranschlag.pdf",
@@ -227,6 +251,18 @@
           "required": true
         },
         {
+          "file": "gutachten.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
           "file": "kostenvoranschlag.pdf",
           "stage": "20-besichtigung",
           "by": "human",
@@ -294,6 +330,18 @@
           "required": true
         },
         {
+          "file": "gutachten.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
           "file": "abgleich.md",
           "stage": "25-abgleich",
           "by": "claude",
@@ -331,6 +379,8 @@
     "feuerwehrbericht.pdf",
     "unfallbericht.pdf",
     "wildunfallbescheinigung.pdf",
-    "streuprotokoll.pdf"
+    "streuprotokoll.pdf",
+    "gutachten.md",
+    "anschreiben.md"
   ]
 }

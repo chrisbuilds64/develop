@@ -136,3 +136,46 @@ def test_the_viewer_can_switch_the_language_the_world_speaks(demo):
     assert client.get("/api/config").json()["lang"] == "en"
     client.post("/api/session/lang", json={"lang": "de"})
     assert client.get("/api/me").json()["lang"] == "de"
+
+
+def test_the_round_trip_between_the_claim_and_the_e_report(tmp_path):
+    """One visitor, two sandboxes: the claim orders the assessment (a case appears in the e-report world), the e-report is
+    sent (the report lands in the claim that waits for it and the claim moves on); a world switch returns to the same sandbox."""
+    import json
+    from casefile.demo.worlds import build_egutachten
+    build_claims(tmp_path / "w" / "claims")
+    build_egutachten(tmp_path / "w" / "egutachten")
+    settings = Settings(secret="t", demo=True, samples_dir=HERE / "samples", replies_dir=None, sessions_dir=tmp_path / "sessions",
+                        worlds={"claims": World(config_dir=CONFIG / "claims-demo", template=tmp_path / "w" / "claims", person="du", lang="de"),
+                                "egutachten": World(config_dir=CONFIG / "egutachten", template=tmp_path / "w" / "egutachten", person="du", lang="de")})
+    client = TestClient(create_app(settings))
+    # the claim orders its assessment
+    me = client.post("/api/demo/session", json={"world": "claims"}).json()
+    claims_sid = client.cookies.get("cf_demo")
+    r = client.post("/api/cases/KFZ-2026-0815-parkschaden-tiefgarage/steps", json={"action": "order_assessment", "step_id": "o1", "payload": {"date": "2026-10-24"}})
+    assert r.status_code == 200 and r.json()["to"] == "20-besichtigung"
+    # … and it is there, in the e-report sandbox of the same visitor
+    client.post("/api/demo/session", json={"world": "egutachten"})
+    orders = {c["id"]: c for g in client.get("/api/cases").json() for c in g["cases"]}
+    new = next(c for c in orders.values() if c["id"].startswith("KH-2026-0815"))
+    assert new["stage"] == "10-auftrag" and new["external_id"] == "GA-2026-00815"
+    view = client.get(f"/api/cases/{new['id']}").json()
+    assert any(s["file"] == "auftrag.md" and s["present"] for s in view["slots"]) and any(s["file"] == "fotos-1.jpg" and s["present"] for s in view["slots"])
+    # the e-report that waits for approval goes out and lands in its claim
+    client.post("/api/cases/KH-2026-1182-auffahrunfall-a3-kleinwagen/steps", json={"action": "approve_report", "step_id": "a1", "payload": {}})
+    sid = client.cookies.get("cf_demo").rsplit(".", 1)[0]
+    (tmp_path / "sessions" / sid / "flow" / "50-versand" / "KH-2026-1182-auffahrunfall-a3-kleinwagen" / "anschreiben.md").write_text("# Anschreiben\n", encoding="utf-8")
+    r = client.post("/api/cases/KH-2026-1182-auffahrunfall-a3-kleinwagen/steps", json={"action": "send", "step_id": "s1", "payload": {}})
+    assert r.status_code == 200 and r.json()["to"] == "60-versendet"
+    # back in the claims sandbox (the same one), the claim has the report and moved on to the reconciliation
+    client.post("/api/demo/session", json={"world": "claims"})
+    assert client.cookies.get("cf_demo") == claims_sid
+    claim = client.get("/api/cases/KFZ-2026-0811-auffahrunfall-a3").json()
+    assert claim["stage"] == "25-abgleich" and any(s["file"] == "gutachten.md" and s["present"] for s in claim["slots"])
+    assert any("eGutachten" in (e["title"] + e["text"]) or "gutachten.md" in e.get("files", []) for e in claim["entries"])
+    # the claim that was reported stays where the order put it
+    assert client.get("/api/cases/KFZ-2026-0815-parkschaden-tiefgarage").json()["stage"] == "20-besichtigung"
+    # start over gives a fresh sandbox for the current world only
+    client.post("/api/demo/session", json={})
+    assert client.cookies.get("cf_demo") != claims_sid
+    assert json.loads("{}") == {}

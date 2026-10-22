@@ -8,6 +8,12 @@
       "shape": "pdf"
     },
     {
+      "file": "auftrag.md",
+      "stage": "10-auftrag",
+      "by": "human",
+      "shape": "text"
+    },
+    {
       "file": "meta.json",
       "stage": "10-auftrag",
       "by": "human",
@@ -204,6 +210,7 @@
   },
   "kinds": [
     "auftrag.pdf",
+    "auftrag.md",
     "fotos-1.jpg",
     "fotos-2.jpg",
     "fotos-3.jpg",
