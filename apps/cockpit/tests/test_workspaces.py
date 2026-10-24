@@ -90,6 +90,18 @@ def test_workspaces_are_served_behind_the_cockpit_login_with_its_identity(world)
     assert 'href="/w/shared/"' in home and "PressRoom shared" in home
 
 
+def test_under_a_prefix_the_mounted_surface_is_prefixed_once(world):
+    toml = (world / "cockpit.toml").read_text(encoding="utf-8")
+    (world / "cockpit.toml").write_text(toml.replace('bind = "127.0.0.1:8200"', 'bind = "127.0.0.1:8200"\nbase_path = "/test"\nenvironment = "test"'), encoding="utf-8")
+    client = TestClient(create_app(load(world / "cockpit.toml")), root_path="/test", follow_redirects=False)
+    client.get("/test/login")
+    client.post("/test/login", data={"name": "alex", "password": "cockpit-demo", "_csrf": client.cookies["csrf"]})
+    html = client.get("/test/w/shared/").text
+    assert '<meta name="cf-base" content="/test/w/shared" />' in html
+    assert 'src="/test/w/shared/assets/' in html and "/test/test/" not in html
+    assert client.get("/test/").status_code == 200 and 'href="/test/w/shared/"' in client.get("/test/").text
+
+
 def test_a_person_of_the_tree_works_in_it_and_a_clone_is_one_form_away(world):
     users = json.loads((world / "users.json").read_text())
     users["users"]["chris"] = dict(users["users"]["alex"], display="Chris", context="home/chris/context")

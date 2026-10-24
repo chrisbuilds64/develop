@@ -95,6 +95,9 @@ def create_app(config: Config) -> FastAPI:
             response = await call_next(request)
             if not response.headers.get("content-type", "").startswith("text/html"):
                 return response
+            parts = route_path(request).split("/")
+            if (len(parts) >= 3 and parts[1] == "w") or (len(parts) >= 4 and parts[1] == "m" and parts[3] == "app"):
+                return response                       # mounted apps build their links from root_path themselves — prefixing twice would break them
             body = b"".join([chunk async for chunk in response.body_iterator])
             body = _ATTR.sub(lambda m: m.group(1) + _prefix + b"/", body)
             headers = dict(response.headers)
