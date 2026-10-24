@@ -85,6 +85,7 @@ def test_workspaces_are_served_behind_the_cockpit_login_with_its_identity(world)
     assert '<meta name="cf-base" content="/w/shared" />' in html and 'src="/w/shared/assets/' in html
     me = client.get("/w/shared/api/me").json()
     assert me["identity"] == "alex" and me["open_identity"] is False                    # alex is signed in, but no person of this tree
+    assert me["shell"] == "/"                                                            # and the menu knows the way back to the cockpit
     assert client.get("/w/nothing/api/me").status_code == 404
     home = client.get("/").text
     assert 'href="/w/shared/"' in home and "PressRoom shared" in home
@@ -100,6 +101,7 @@ def test_under_a_prefix_the_mounted_surface_is_prefixed_once(world):
     assert '<meta name="cf-base" content="/test/w/shared" />' in html
     assert 'src="/test/w/shared/assets/' in html and "/test/test/" not in html
     assert '<meta name="cf-stage" content="test" />' in html and 'class="cf-stage-badge">TEST<' in html   # the stage shows inside the surface too
+    assert client.get("/test/w/shared/api/me").json()["shell"] == "/test/"
     assert 'data-env="test"' in client.get("/test/").text                                      # and on the shell's own pages
     assert client.get("/test/").status_code == 200 and 'href="/test/w/shared/"' in client.get("/test/").text
 

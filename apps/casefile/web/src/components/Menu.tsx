@@ -28,6 +28,9 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       <button type="button" className="drop-in phone-only" onClick={() => goClose("/")} aria-label={w.dropIn}>+</button>
       <button type="button" className="nav-row phone-only" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? <Close /> : <MenuIcon />}<span style={{ marginLeft: 8 }}>{w.menu}</span></button>
       <div className="sheet">
+      {me.shell && (
+        <a className="nav-row quiet shell-row" href={me.shell} title={w.backToShell}><span>← {w.backToShell}</span></a>
+      )}
       <div className="menu-head">
         <div className={`brand${config.product.length > 11 ? " long" : ""}`}>
           <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>

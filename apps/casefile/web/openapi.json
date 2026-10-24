@@ -1412,6 +1412,17 @@
               }
             ],
             "title": "Identity"
+          },
+          "shell": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shell"
           }
         },
         "type": "object",

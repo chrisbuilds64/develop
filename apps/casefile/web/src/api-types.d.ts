@@ -636,6 +636,8 @@ export interface components {
             open_identity: boolean;
             /** Identity */
             identity?: string | null;
+            /** Shell */
+            shell?: string | null;
         };
         /** PersonView */
         PersonView: {

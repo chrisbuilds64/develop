@@ -249,13 +249,14 @@ def web_dist_default() -> Path | None:
     return d if d.is_dir() else None
 
 
-def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: Path | None, stage: str | None = None):
-    """The casefile app for one workspace: its tree, its application, the cockpit's identity, the stage it is in."""
+def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell: str | None = None):
+    """The casefile app for one workspace: its tree, its application, the cockpit's identity, the stage it is in,
+    and where the shell lives — the menu offers the way back."""
     import casefile
     from casefile.api.app import Settings, create_app
     pkg = Path(casefile.__file__).resolve().parent
     settings = Settings(
-        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage,
+        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell,
         open_identity=w.open_identity, identity=None if w.open_identity else identity,
         secret=secret, web_dist=web_dist, demo=(w.mode == "replay"),
         samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies",
@@ -263,19 +264,19 @@ def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: P
     return create_app(settings)
 
 
-def mount_all(shell, workspaces: Workspaces, identity, secret: str, web_dist: Path | None, stage: str | None = None) -> dict[str, str]:
+def mount_all(shell, workspaces: Workspaces, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell_url: str | None = None) -> dict[str, str]:
     """Mount every workspace under /w/<id>. Returns {id: reason} for the ones that did not come up."""
     failures: dict[str, str] = {}
     if (missing := casefile_available()):
         return {w.id: missing for w in workspaces.items}
     for w in workspaces.items:
         try:
-            mount_one(shell, workspaces, w, identity, secret, web_dist, stage)
+            mount_one(shell, workspaces, w, identity, secret, web_dist, stage, shell_url)
         except Exception as exc:                 # noqa: BLE001 — one broken tree must not keep the shell down
             failures[w.id] = f"{type(exc).__name__}: {exc}"
     return failures
 
 
-def mount_one(shell, workspaces: Workspaces, w: Workspace, identity, secret: str, web_dist: Path | None, stage: str | None = None) -> None:
+def mount_one(shell, workspaces: Workspaces, w: Workspace, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell_url: str | None = None) -> None:
     app = workspaces.applications[w.application]
-    shell.mount(f"/w/{w.id}", build_app(w, app, identity, secret, web_dist, stage), name=f"ws-{w.id}")
+    shell.mount(f"/w/{w.id}", build_app(w, app, identity, secret, web_dist, stage, shell_url), name=f"ws-{w.id}")

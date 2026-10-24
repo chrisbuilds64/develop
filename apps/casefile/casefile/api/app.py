@@ -67,6 +67,7 @@ class Settings:
     identity: Callable[[Request], str | None] | None = None   # who is here, decided outside (the cockpit's login); then the own cookie is never read
     label: str | None = None                     # what the surface calls this workspace, when it differs from the domain's product name
     stage: str | None = None                     # "entw", "test": a stripe and a badge on every page of the surface; nothing for production
+    shell: str | None = None                     # where the shell that mounted this app lives ("/entw/"): the menu offers the way back
     secret: str = field(default_factory=lambda: secrets.token_hex(16))
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
@@ -129,6 +130,7 @@ class MeOut(BaseModel):
     worlds: list[str]
     open_identity: bool = True                              # false: who you are was decided outside; no person picker
     identity: str | None = None                             # the outside identity, even when it matches nobody in people.json
+    shell: str | None = None                                # the shell's URL, when this app runs inside one
 
 
 class TurnOut(BaseModel):
@@ -504,7 +506,7 @@ def create_app(settings: Settings) -> FastAPI:
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
         return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
                      demo=settings.demo, world=c.world, worlds=list(settings.worlds),
-                     open_identity=settings.open_identity and settings.identity is None, identity=outside)
+                     open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell)
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")
