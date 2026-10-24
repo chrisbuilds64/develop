@@ -69,7 +69,7 @@ export function App() {
   if (!config.data) return <div className="gate"><p className="empty">The core is not reachable.</p></div>;
   const lang = config.data.lang;
   if (!me.data?.person) {
-    return <Gate config={config.data} onSignedIn={() => qc.invalidateQueries()} />;
+    return <Gate config={config.data} me={me.data} onSignedIn={() => qc.invalidateQueries()} />;
   }
   // a fresh sandbox or the other world: the cookie changes, then every live query reloads against it (removing them instead left the observers on the old world for one round)
   const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries({ queryKey: ["case"] }); await Promise.all([qc.resetQueries({ queryKey: ["groups"] }), qc.resetQueries({ queryKey: ["turns"] }), qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["config"] })]); };

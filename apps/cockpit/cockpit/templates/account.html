@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="page-head">
+  <h1>{{ t('account.title') }}</h1>
+  <span class="stamp">{{ user.display }} · {{ user.role }}</span>
+</div>
+{% if ok %}<p class="notice">{{ ok }}</p>{% endif %}
+{% if err %}<p class="notice err">{{ err }}</p>{% endif %}
+
+<div class="form-card">
+  <h2>{{ t('account.billing') }}</h2>
+  <p class="hint">{{ t('account.billing_hint') }}</p>
+  <form method="post" action="/account" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="setting"><input type="hidden" name="key" value="billing">
+    <select name="value">{% for m in billing_modes %}<option value="{{ m }}" {% if status.billing == m %}selected{% endif %}>{{ t('account.billing_' ~ m) }}</option>{% endfor %}</select>
+    <button type="submit">{{ t('account.save') }}</button>
+  </form>
+</div>
+
+<div class="form-card" style="margin-top:16px">
+  <h2>{{ t('account.secrets') }}</h2>
+  <p class="hint">{{ t('account.secrets_hint') }}</p>
+  <div class="kv">
+    {% for key, v in status.secrets.items() %}
+    <span class="k mono">{{ key }}</span>
+    <span>{% if v.set %}{{ t('account.set_since', when=v.since[:16]) }}
+      <form method="post" action="/account" style="display:inline"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="clear"><input type="hidden" name="key" value="{{ key }}"><button type="submit" class="btn-quiet" style="margin-left:8px">{{ t('account.clear') }}</button></form>
+      {% else %}{{ t('account.not_set') }}{% endif %}</span>
+    {% endfor %}
+  </div>
+  <form method="post" action="/account" autocomplete="off">
+    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="secret">
+    <label>{{ t('account.secret_key') }}
+      <select name="key">{% for key in secret_keys %}<option value="{{ key }}">{{ key }}</option>{% endfor %}</select>
+    </label>
+    <label style="margin-top:10px">{{ t('account.secret_value') }}
+      <input type="password" name="value" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+    </label>
+    <button type="submit" style="margin-top:12px">{{ t('account.set') }}</button>
+  </form>
+  <p class="hint">{{ t('account.token_howto') }}</p>
+</div>
+{% endblock %}

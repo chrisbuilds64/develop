@@ -19,6 +19,10 @@
     cockpit account set-secret   <name> <KEY> [--stdin]            value asked for without echo (or read from stdin); never on the command line
     cockpit account clear-secret <name> <KEY>
 
+    cockpit workspace list                                        [cockpit.toml]
+    cockpit workspace create <id> --application <app> [--owner <name> | --shared] [--label …] [--from <workspace>] [--member <name>]…
+    cockpit workspace remove <id> [--delete-files]
+
 `--demo` runs against the fixtures shipped with the package: nothing from the
 real machine is read, so the surface can be shown before anything is installed.
 """
@@ -241,6 +245,32 @@ def cmd_account(args):
     return 0
 
 
+def cmd_workspace(args):
+    from .workspaces import WorkspaceError, Workspaces
+    config = _config(args)
+    try:
+        ws = Workspaces(config.workspaces_path, config.workspaces_path.parent)
+        if args.sub == "list":
+            for a in ws.applications.values():
+                print(f"application {a.id:14} {a.label:18} {a.config_dir}" + (f"  template {a.template}" if a.template else ""))
+            for w in ws.items:
+                who = "shared" if w.shared else f"owner {w.owner}"
+                print(f"workspace   {w.id:14} {w.label:18} {w.application:10} {who:16} {w.mode:6} {w.root}" + (f"  writes via {w.write_root}" if w.write_root else ""))
+            if not ws.items:
+                print(f"no workspaces in {ws.path}")
+        elif args.sub == "create":
+            if not args.shared and not args.owner:
+                sys.exit("a workspace is shared (--shared) or has an owner (--owner <name>)")
+            w = ws.create(args.id, args.application, None if args.shared else args.owner, label=args.label or "", source=getattr(args, 'from'),
+                          shared=args.shared, members=args.member or [])
+            print(f"workspace {w.id} ({w.application}) at {w.root}" + (f", copied from {w.cloned_from}" if w.cloned_from else "") + " — restart the cockpit to serve it")
+        elif args.sub == "remove":
+            print("removed" if ws.remove(args.id, delete_files=args.delete_files) else "no such workspace", args.id)
+    except WorkspaceError as exc:
+        sys.exit(str(exc))
+    return 0
+
+
 # ------------------------------------------------------------------- argv
 
 def main(argv=None) -> int:
@@ -277,6 +307,13 @@ def main(argv=None) -> int:
     s = acs.add_parser("set-secret"); s.add_argument("name"); s.add_argument("key"); s.add_argument("--stdin", action="store_true"); common(s)
     s = acs.add_parser("clear-secret"); s.add_argument("name"); s.add_argument("key"); common(s)
     ac.set_defaults(fn=cmd_account)
+
+    wsp = sub.add_parser("workspace"); wss = wsp.add_subparsers(dest="sub", required=True)
+    s = wss.add_parser("list"); common(s)
+    s = wss.add_parser("create"); s.add_argument("id"); s.add_argument("--application", required=True); s.add_argument("--owner")
+    s.add_argument("--shared", action="store_true"); s.add_argument("--label"); s.add_argument("--from", dest="from"); s.add_argument("--member", action="append"); common(s)
+    s = wss.add_parser("remove"); s.add_argument("id"); s.add_argument("--delete-files", action="store_true"); common(s)
+    wsp.set_defaults(fn=cmd_workspace)
 
     args = p.parse_args(argv)
     return args.fn(args) or 0

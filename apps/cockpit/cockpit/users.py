@@ -115,6 +115,10 @@ class Users:
             os.chmod(self._secret_path, 0o600)
         return self._secret_path.read_bytes()
 
+    def secret_text(self) -> str:
+        """The same secret as text, for the apps mounted inside the cockpit that sign their own cookies."""
+        return self._secret().hex()
+
     def issue(self, name: str, max_age: int = 12 * 3600) -> str:
         payload = f"{name}|{int(time.time()) + max_age}"
         sig = hmac.new(self._secret(), payload.encode(), "sha256").hexdigest()

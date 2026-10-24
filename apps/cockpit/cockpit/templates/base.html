@@ -2,11 +2,14 @@
 <html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }} · {{ t('app.title') }}</title>
 {% if export %}
 <style>{{ inline_css }}</style>
 {% else %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/cockpit.css">
 <script src="/static/htmx.min.js" defer></script>
 {% endif %}
@@ -14,50 +17,62 @@
 <body{% if not export and (user or not config.login_required) %} class="has-rail"{% endif %}>
 {% if not export and (user or not config.login_required) %}
 {% from "glyphs.html" import glyph %}
-<nav class="rail" aria-label="modules">
-  <a href="/?all=1" class="rail-home{% if not current %} on{% endif %}" title="{{ t('app.overview') }}">{{ glyph('box') }}</a>
-  {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
-  <a href="/m/{{ m.id }}" class="{% if current == m.id %}on{% endif %}" title="{{ t(m.id ~ '.title') }}" style="--m: {{ pl.accent if pl else '#3b82f6' }}">{{ glyph(pl.icon if pl else 'box') }}</a>
+<button type="button" class="menu-toggle" aria-label="{{ t('app.menu') }}" onclick="document.querySelector('.side').classList.toggle('open');document.querySelector('.scrim').classList.toggle('open')">☰</button>
+<button type="button" class="scrim" aria-label="{{ t('app.menu') }}" onclick="document.querySelector('.side').classList.remove('open');this.classList.remove('open')"></button>
+<nav class="side" aria-label="{{ t('app.menu') }}">
+  <div class="menu-head">
+    <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    <span class="brand-name">{{ config.name }}</span>
+    {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
+  </div>
+  <a href="/" class="nav-row{% if route == '/' %} on{% endif %}"><span>{{ t('app.dashboard') }}</span></a>
+
+  {% set ns = namespace(apps=[]) %}
+  {% for w in workspaces %}{% if w.application not in ns.apps %}{% set _ = ns.apps.append(w.application) %}{% endif %}{% endfor %}
+  {% for aid in ns.apps %}
+  <div class="section">{{ applications[aid].label if aid in applications else aid }}</div>
+    {% for w in workspaces if w.application == aid %}
+    <a href="/w/{{ w.id }}/" class="nav-row" title="{{ w.id }}">
+      <span>{{ w.label }}</span>
+      <span class="n">{% if w.shared %}{{ t('ws.shared') }}{% else %}{{ t('ws.mine') }}{% endif %}</span>
+    </a>
+    {% endfor %}
   {% endfor %}
-  {% if role.may_act('*') or role.may_act('setup.view') %}<a href="/setup" class="rail-setup{% if route.startswith('/setup') %} on{% endif %}" title="{{ t('setup.title') }}"><svg class="glyph" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>{% endif %}
+  {% if applications %}<a href="/workspaces/new" class="drop-in">{{ t('ws.new') }}</a>{% endif %}
+
+  {% if nav_modules %}
+  <div class="section">{{ t('app.workshop') }}</div>
+  {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
+  <a href="/m/{{ m.id }}" class="nav-row quiet{% if current == m.id %} on{% endif %}" style="--m: {{ pl.accent if pl else '#3b82f6' }}">
+    <span>{{ t(m.id ~ '.title') }}</span><span class="n">{{ glyph(pl.icon if pl else 'box', 16) }}</span>
+  </a>
+  {% endfor %}
+  {% endif %}
+  {% if role.may_act('*') or role.may_act('setup.view') %}
+  <a href="/setup" class="nav-row quiet{% if route.startswith('/setup') %} on{% endif %}"><span>{{ t('setup.title') }}</span></a>
+  {% endif %}
+
+  <div class="spacer"></div>
+  <div class="controls">
+    <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
+      {% for code, name in languages %}<option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+    {% if roles %}
+    <select onchange="location.href='/set?role='+this.value" aria-label="{{ t('app.role') }}">
+      {% for r in roles %}<option value="{{ r }}" {% if r == role.id %}selected{% endif %}>{{ r }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <button type="button" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'" aria-label="{{ t('app.theme') }}">◐</button>
+  </div>
+  {% if user %}
+  <a href="/account" class="who{% if route.startswith('/account') %} on{% endif %}" title="{{ t('account.title') }}">
+    <span class="avatar">{{ user.display[:2]|upper }}</span>
+    <span><span class="name">{{ user.display }}</span><br><span class="role">{{ user.role }} · {{ t('account.title') }}</span></span>
+  </a>
+  <a href="/logout" class="nav-row quiet"><span>{{ t('app.logout') }}</span></a>
+  {% endif %}
 </nav>
 {% endif %}
-<header class="top">
-  <div class="brand">
-    <h1>{{ config.name }}</h1>
-    {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
-    <span class="tag">{{ t('app.tagline') }}</span>
-  </div>
-  {% if not export %}
-  <div class="controls">
-    <label><span class="lbl">{{ t('app.language') }}</span>
-      <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
-        {% for code, name in languages %}
-        <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    {% if role.may_act('*') or role.may_act('setup.view') %}<a class="setuplink" href="/setup">{{ t('setup.title') }}</a>{% endif %}
-    {% if user %}
-    <span class="who" title="{{ t('app.context') }}: {{ user.context }}">
-      <span class="avatar">{{ user.display[:2]|upper }}</span>
-      <span>{{ user.display }} · {{ user.role }}</span>
-      <a href="/logout">{{ t('app.logout') }}</a>
-    </span>
-    {% endif %}
-    {% if roles %}
-    <label>{{ t('app.role') }}
-      <select onchange="location.href='/set?role='+this.value">
-        {% for r in roles %}
-        <option value="{{ r }}" {% if r == role.id %}selected{% endif %}>{{ r }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    {% endif %}
-    <button onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'">◐</button>
-  </div>
-  {% endif %}
-</header>
 <main>
 {% block main %}{% endblock %}
 </main>

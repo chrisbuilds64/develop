@@ -145,13 +145,13 @@ def test_every_piece_with_a_meta_gets_a_cover_drawn_from_it(client, world):
     assert 'class="doc-cover"' in page and 'aria-label="The Model Cannot Verify Itself"' in page
 
 
-def test_the_overview_greets_the_person_and_the_rail_lists_only_their_modules(client):
+def test_the_overview_greets_the_person_and_the_side_menu_lists_only_their_modules(client):
     sign_in(client, "sam")
     page = client.get("/").text
-    assert 'class="hello"' in page and ", Sam" in page and 'class="rail"' in page
-    rail = page.split('<nav class="rail"')[1].split("</nav>")[0]
-    assert 'href="/m/pipeline"' in rail and 'href="/m/audits"' not in rail       # sam may not open audits
-    assert 'class="card-glyph"' in page and 'href="/setup"' not in rail
+    assert 'class="page-head"' in page and ", Sam" in page and 'class="side"' in page
+    side = page.split('<nav class="side"')[1].split("</nav>")[0]
+    assert 'href="/m/pipeline"' in side and 'href="/m/audits"' not in side       # sam may not open audits
+    assert 'class="card-glyph"' in page and 'href="/setup"' not in side
 
 
 def test_the_series_block_and_page_show_where_the_pieces_stand(client, world):

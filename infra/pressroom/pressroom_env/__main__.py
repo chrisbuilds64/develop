@@ -64,6 +64,7 @@ def cmd_create(args):
     fid = folders.create(env.folder)
     workspace.deploy_code(st, env)
     workspace.write_cockpit_config(st, env, fid)
+    workspace.seed_workspaces(st, env, fid)
     workspace.build_home(st, env, trust_from=Path(f"/home/{st.server.runner_user}/.claude.json"))
     names = systemd.install(st, env, folders.dav_url(env.folder))
     if env.clone_from and not (folders.files(fid) / "flow").is_dir():
@@ -96,6 +97,7 @@ def cmd_deploy(args):
         raise OpsError(f"team folder {env.folder} missing — `create {env.name}` first")
     commit = workspace.deploy_code(st, env, args.ref)
     workspace.write_cockpit_config(st, env, ids[env.folder])
+    workspace.seed_workspaces(st, env, ids[env.folder])
     workspace.build_home(st, env, trust_from=Path(f"/home/{st.server.runner_user}/.claude.json"))
     systemd.install(st, env, folders.dav_url(env.folder))
     print(f"{env.name}: {commit} deployed and restarted")

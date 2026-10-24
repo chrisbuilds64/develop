@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }} · {{ t('app.login') }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/cockpit.css">
 </head>
 <body class="login-body">
@@ -16,7 +18,7 @@
         <path d="M18 31 l8 8 l16 -18" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <h1>{{ config.name }}</h1>
+    <h1>{{ config.name }}{% if config.environment and config.environment != 'prod' %} <span class="env env-{{ config.environment }}">{{ config.environment|upper }}</span>{% endif %}</h1>
     <p class="tag">{{ t('app.tagline') }}</p>
 
     <form method="post" action="/login" class="login-form" autocomplete="on">

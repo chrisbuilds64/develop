@@ -1,0 +1,81 @@
+/* tokens.css — every colour, size and radius of the surface lives here and nowhere else (Bauplan §2).
+ * The one accent is --your-move and means only: this waits for you. Light is the default; dark derives. */
+
+:root {
+  --ground: #F6F3EE;
+  --ground-2: #FBF9F6;
+  --surface: #FFFFFF;
+  --ink: #1B1916;
+  --ink-2: #4A453E;
+  --muted: #6E675D;
+  --hairline: #E3DDD2;
+  --hairline-2: #CFC7BA;
+  --dashed: #B9B0A2;
+  --chip: #F1ECE3;
+  --your-move: #1D4ED8;
+  --your-move-on: #FFFFFF;
+  --your-move-soft: #DCE6FF;
+  --your-move-ink: #1E3A8A;
+  --your-move-halo: rgba(29, 78, 216, 0.18);
+  --bubble-you: #1B1916;
+  --bubble-you-ink: #F6F3EE;
+  --bubble-you-muted: #CFC7BA;
+
+  --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  --r-s: 8px;
+  --r-m: 12px;
+  --r-l: 16px;
+  --r-pill: 999px;
+
+  --menu-w: 232px;
+  --list-w: 340px;
+  --thread-w: 380px;
+  --touch: 44px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --slide: 420ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #141516;
+    --ground-2: #191B1D;
+    --surface: #1D1F21;
+    --ink: #EDEAE4;
+    --ink-2: #C9C4BB;
+    --muted: #9A958C;
+    --hairline: #2C2E31;
+    --hairline-2: #3A3D41;
+    --dashed: #4A4E53;
+    --chip: #26282B;
+    --your-move: #7DA2FF;
+    --your-move-on: #141516;
+    --your-move-soft: #18233F;
+    --your-move-ink: #B9CCFF;
+    --your-move-halo: rgba(125, 162, 255, 0.22);
+    --bubble-you: #EDEAE4;
+    --bubble-you-ink: #141516;
+    --bubble-you-muted: #6E675D;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #141516;
+  --ground-2: #191B1D;
+  --surface: #1D1F21;
+  --ink: #EDEAE4;
+  --ink-2: #C9C4BB;
+  --muted: #9A958C;
+  --hairline: #2C2E31;
+  --hairline-2: #3A3D41;
+  --dashed: #4A4E53;
+  --chip: #26282B;
+  --your-move: #7DA2FF;
+  --your-move-on: #141516;
+  --your-move-soft: #18233F;
+  --your-move-ink: #B9CCFF;
+  --your-move-halo: rgba(125, 162, 255, 0.22);
+  --bubble-you: #EDEAE4;
+  --bubble-you-ink: #141516;
+  --bubble-you-muted: #6E675D;
+}

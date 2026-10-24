@@ -91,10 +91,60 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     if not (venv / "bin" / "python").exists():
         run(["python3", "-m", "venv", str(venv)], user=s.runner_user)
     run([str(venv / "bin" / "pip"), "install", "--quiet", "--upgrade", "pip"], user=s.runner_user, quiet=True)
+    run([str(venv / "bin" / "pip"), "install", "--quiet", "-e", str(dev / "apps" / "casefile")], user=s.runner_user)
     run([str(venv / "bin" / "pip"), "install", "--quiet", "-e", str(dev / "apps" / "cockpit")], user=s.runner_user)
-    version = run([str(venv / "bin" / "python"), "-c", "import cockpit; print(cockpit.__version__)"], user=s.runner_user, quiet=True).stdout.strip()
-    log.info("%s: cockpit %s installed", env.name, version)
+    version = run([str(venv / "bin" / "python"), "-c", "import cockpit, casefile; print(cockpit.__version__, casefile.__version__)"], user=s.runner_user, quiet=True).stdout.strip()
+    log.info("%s: cockpit + casefile %s installed", env.name, version)
+    worlds = d / "worlds"
+    if not (worlds / "claims").is_dir():                   # the sample worlds, once: the richer seed when it is on the machine, else the built-in ones
+        seeded = Path("/opt/casefile/demo/worlds")
+        if (seeded / "claims").is_dir():
+            run(["cp", "-a", str(seeded), str(worlds)])
+            run(["chown", "-R", f"{s.runner_user}:{s.runner_user}", str(worlds)])
+            log.info("%s: sample worlds copied from %s", env.name, seeded)
+        else:
+            run([str(venv / "bin" / "python"), "-m", "casefile.demo.worlds", str(worlds)], user=s.runner_user)
+            log.info("%s: sample worlds built", env.name)
     return commit
+
+
+def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
+    """The registry of this stage, written once: the applications from the checkout, the shared PressRoom on the
+    team folder (read from the disk, written through the mount), and two sample workspaces from the worlds."""
+    s = settings.server
+    d = env.dir(s)
+    cp = d / "cockpit"
+    reg = cp / "workspaces.json"
+    if reg.exists():
+        return reg
+    cfg = d / "develop" / "apps" / "casefile" / "config"
+    doc = {
+        "$comment": "Seeded by pressroom-env; from here on `cockpit workspace …` and the cockpit itself edit it.",
+        "applications": {
+            "pressroom": {"label": "PressRoom", "config_dir": str(cfg / "pressroom"), "mode": "live"},
+            "claims": {"label": "Schadenakte", "config_dir": str(cfg / "claims-demo"), "template": str(d / "worlds" / "claims"), "mode": "replay"},
+            "egutachten": {"label": "Gutachtenakte", "config_dir": str(cfg / "egutachten"), "template": str(d / "worlds" / "egutachten"), "mode": "replay"},
+        },
+        "workspaces": [
+            {"id": "pressroom", "application": "pressroom", "label": f"PressRoom {env.label}", "shared": True, "members": ["chris", "akhil"],
+             "root": str(s.groupfolders_data / str(folder_id) / "files" / "flow"), "write_root": str(env.mount / "flow"), "mode": "live"},
+        ],
+    }
+    reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
+    venv = cp / ".venv"
+    for wid, app, label in (("schadenakte-muster", "claims", "Schadenakte · Muster"), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster")):
+        r = run([str(venv / "bin" / "cockpit"), "workspace", "create", wid, "--application", app, "--shared", "--label", label, str(cp / "cockpit.toml")],
+                user=s.runner_user, check=False)
+        if r.returncode != 0:
+            log.warning("%s: sample workspace %s not created: %s", env.name, wid, (r.stderr or r.stdout).strip()[-200:])
+    # sample worlds keep the person picker: their people are invented
+    data = json.loads(reg.read_text(encoding="utf-8"))
+    for w in data["workspaces"]:
+        if w["id"].endswith("-muster"):
+            w["open_identity"] = True
+    reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    log.info("%s: workspaces seeded (%s)", env.name, ", ".join(w["id"] for w in data["workspaces"]))
+    return reg
 
 
 def write_cockpit_config(settings: Settings, env: Env, folder_id: int) -> Path:

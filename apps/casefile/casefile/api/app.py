@@ -22,11 +22,13 @@ import secrets
 import shutil
 
 from ..demo.sandbox import copy_world
+import re
 import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import Callable
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -58,9 +60,12 @@ class World:
 @dataclass
 class Settings:
     root: Path | None = None                     # one pipeline: the root
+    write_root: Path | None = None               # one pipeline: where writes go when that differs (a WebDAV mount of the same tree)
     config_dir: Path | None = None               # one pipeline: config/<domain>
     lang: str | None = None
     open_identity: bool = True                   # POST /api/session {person} without a password (development, demo)
+    identity: Callable[[Request], str | None] | None = None   # who is here, decided outside (the cockpit's login); then the own cookie is never read
+    label: str | None = None                     # what the surface calls this workspace, when it differs from the domain's product name
     secret: str = field(default_factory=lambda: secrets.token_hex(16))
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
@@ -121,6 +126,8 @@ class MeOut(BaseModel):
     demo: bool
     world: str | None
     worlds: list[str]
+    open_identity: bool = True                              # false: who you are was decided outside; no person picker
+    identity: str | None = None                             # the outside identity, even when it matches nobody in people.json
 
 
 class TurnOut(BaseModel):
@@ -266,7 +273,7 @@ def create_app(settings: Settings) -> FastAPI:
     limiter = Limiter()
     single: Ctx | None = None
     if settings.root is not None and settings.config_dir is not None:
-        store = FsStore(settings.root)
+        store = FsStore(settings.root, settings.write_root)
         config = DomainConfig.load(settings.config_dir, settings.root)
         single = Ctx(store=store, config=config, lang=settings.lang or config.lang)
         if settings.recover_on_start:
@@ -344,6 +351,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     # ------------------------------------------------------------ resolving a request
     def _who(request: Request, config: DomainConfig) -> str | None:
+        if settings.identity is not None:
+            outside = settings.identity(request)
+            p = config.person(outside) if outside else None
+            return p.id if p else None
         raw = request.cookies.get(COOKIE, "")
         if "." not in raw:
             return None
@@ -482,13 +493,17 @@ def create_app(settings: Settings) -> FastAPI:
         return who
 
     def product(c: Ctx) -> str:
+        if settings.label:
+            return settings.label
         v = c.config.vocabulary.get(c.lang) or c.config.vocabulary.get("en") or {}
         return str(v.get("product") or c.config.name)
 
-    def me_out(c: Ctx, person_id: str | None) -> MeOut:
+    def me_out(c: Ctx, person_id: str | None, request: Request | None = None) -> MeOut:
         p = c.config.person(person_id) if person_id else None
+        outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
         return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
-                     demo=settings.demo, world=c.world, worlds=list(settings.worlds))
+                     demo=settings.demo, world=c.world, worlds=list(settings.worlds),
+                     open_identity=settings.open_identity and settings.identity is None, identity=outside)
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")
@@ -513,7 +528,7 @@ def create_app(settings: Settings) -> FastAPI:
     # ------------------------------------------------------------ session
     @app.post("/api/session", response_model=MeOut)
     def session(body: SessionIn, response: Response, c: Ctx = Depends(ctx)):
-        if not settings.open_identity:
+        if not settings.open_identity or settings.identity is not None:
             raise HTTPException(403, "this deployment does not accept an open identity")
         p = c.config.person(body.person)
         if p is None or p.kind != "human":
@@ -563,7 +578,7 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.get("/api/me", response_model=MeOut)
     def me(request: Request, c: Ctx = Depends(ctx)):
-        return me_out(c, getattr(request.state, "fresh_person", None) or _who(request, c.config))
+        return me_out(c, getattr(request.state, "fresh_person", None) or _who(request, c.config), request)
 
     # ------------------------------------------------------------ reading
     @app.get("/api/config", response_model=views.ConfigView)
@@ -786,13 +801,22 @@ def create_app(settings: Settings) -> FastAPI:
     # ------------------------------------------------------------ the surface
     if settings.web_dist and settings.web_dist.is_dir():
         app.mount("/assets", StaticFiles(directory=settings.web_dist / "assets"), name="assets")
+        index_html = (settings.web_dist / "index.html").read_text(encoding="utf-8")
+        _ROOTED = re.compile(r'((?:src|href)=")/(?!/)')
+
+        def index_for(prefix: str) -> str:
+            """One build, served under any prefix: rooted asset paths get the prefix, and the surface learns its base
+            from a meta tag (api.ts reads it before it falls back to the build-time BASE_URL)."""
+            html = _ROOTED.sub(lambda m: m.group(1) + prefix + "/", index_html) if prefix else index_html
+            return html.replace("<head>", f'<head>\n    <meta name="cf-base" content="{prefix}" />', 1)
 
         @app.get("/{path:path}", include_in_schema=False)
-        def spa(path: str):
+        def spa(path: str, request: Request):
             candidate = settings.web_dist / path
             if path and ".." not in path and candidate.is_file():
                 return FileResponse(candidate)
-            return FileResponse(settings.web_dist / "index.html")
+            prefix = str(request.scope.get("root_path", "") or "").rstrip("/")
+            return Response(index_for(prefix), media_type="text/html")
 
     return app
 

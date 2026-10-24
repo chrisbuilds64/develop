@@ -25,7 +25,10 @@ export class ApiError extends Error {
   }
 }
 
-export const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+// Where this surface is served: the core writes it into index.html per mount (one build, many prefixes);
+// without the tag, the build-time BASE_URL.
+const metaBase = typeof document !== "undefined" ? document.querySelector<HTMLMetaElement>('meta[name="cf-base"]')?.content : undefined;
+export const BASE = (metaBase ?? import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
 
 async function call<T>(method: string, path: string, body?: unknown, form?: FormData): Promise<T> {
   const res = await fetch(BASE + path, {

@@ -194,3 +194,58 @@ def test_signals_are_hints_with_their_files(tmp_path):
     assert [s["id"] for s in body] == ["M-002", "M-001"]
     dup = next(s for s in body if s["id"] == "M-001")
     assert dup["kind"] == "Dublette" and len(dup["cases"]) == 2 and dup["cases"][0]["title"] == "Parkrempler Supermarkt" and "keine Feststellung" in dup["text"]
+
+
+# ------------------------------------------------------------------- identity from outside, writes through another path, any prefix
+
+def test_identity_from_outside_replaces_the_cookie_and_closes_the_picker(tmp_path):
+    from fastapi.testclient import TestClient
+    from tests.world import build
+    root = build(tmp_path / "flow")
+    who = {"name": None}
+    app = create_app(Settings(root=root, config_dir=root.parent / "config", lang="en", secret="t", identity=lambda request: who["name"], web_dist=None))
+    client = TestClient(app)
+    me = client.get("/api/me").json()
+    assert me["person"] is None and me["open_identity"] is False
+    assert client.post("/api/session", json={"person": "chris"}).status_code == 403     # nobody picks a person here
+    who["name"] = "chris"
+    me = client.get("/api/me").json()
+    assert me["person"] == "chris" and me["identity"] == "chris"
+    who["name"] = "stranger"
+    me = client.get("/api/me").json()
+    assert me["person"] is None and me["identity"] == "stranger"                        # the gate says so instead of a picker
+    assert client.get("/api/cases").status_code == 401
+
+
+def test_writes_go_through_the_write_root_and_reads_stay_on_the_root(tmp_path):
+    import os
+    from casefile.store import FsStore
+    from tests.world import build
+    root = build(tmp_path / "flow")
+    mirror = tmp_path / "mount"
+    os.symlink(root, mirror)                                   # the same tree through another path, as a WebDAV mount would be
+    store = FsStore(root, write_root=mirror)
+    store.write_json("_steps/x.json", {"a": 1})
+    assert (root / "_steps" / "x.json").is_file() and store.read_json("_steps/x.json") == {"a": 1}
+    case = store.cases(store.stages()[1])[0] if store.cases(store.stages()[1]) else None
+    if case:
+        frm, to = store.move(case, store.stages()[2])
+        assert (root / to / case).is_dir() and not (root / frm / case).exists()
+
+
+def test_the_surface_is_served_under_any_prefix(tmp_path):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from tests.world import build
+    root = build(tmp_path / "flow")
+    dist = tmp_path / "dist"; (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text('<!doctype html><html><head><title>x</title></head><body><script src="/assets/a.js"></script><link rel="manifest" href="/m.json"></body></html>')
+    (dist / "assets" / "a.js").write_text("1")
+    inner = create_app(Settings(root=root, config_dir=root.parent / "config", lang="en", secret="t", web_dist=dist))
+    shell = FastAPI(); shell.mount("/w/one", inner)
+    client = TestClient(shell)
+    html = client.get("/w/one/case/abc").text
+    assert '<meta name="cf-base" content="/w/one" />' in html and 'src="/w/one/assets/a.js"' in html and 'href="/w/one/m.json"' in html
+    assert client.get("/w/one/assets/a.js").text == "1"
+    plain = TestClient(inner).get("/").text
+    assert 'content=""' in plain and 'src="/assets/a.js"' in plain

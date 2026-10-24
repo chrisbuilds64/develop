@@ -40,6 +40,8 @@ from .i18n import I18n
 from .registry import build_cards, card_for, mount_apps, plugins_for, reader_for
 from .setup import add_attribute, schemas_for
 from .users import User, Users
+from .account import AccountError, Accounts, SECRETS, SETTINGS
+from .workspaces import WorkspaceError, Workspaces, mount_all, mount_one, web_dist_default
 
 HERE = Path(__file__).parent
 
@@ -69,6 +71,17 @@ def create_app(config: Config) -> FastAPI:
             i18n.merge(plugin.locales)
     audit = AuditLog(config.audit_path)
     users = Users(config.users_path, config.secret_path)
+    accounts = Accounts(config.accounts_path)
+    ws_error = None
+    try:
+        workspaces = Workspaces(config.workspaces_path, config.workspaces_path.parent)
+    except WorkspaceError as exc:                       # a broken registry is a line on the dashboard, not a shell that will not start
+        workspaces, ws_error = None, str(exc)
+    web_dist = config.casefile_web or web_dist_default()
+
+    def identity(request: Request) -> str | None:
+        """Who is signed in to the cockpit — the identity every mounted workspace works with."""
+        return users.redeem(request.cookies.get("session"))
 
     if base:
         # Readers, Markdown and templates all write root-relative paths ("/m/pipeline/…"); nobody downstream
@@ -154,6 +167,10 @@ def create_app(config: Config) -> FastAPI:
             "_actions": Actions(config, access, audit, plugins_for(config)),
             "csrf": csrf_token(request),
             "view": "werkstatt" if request.cookies.get("view") == "werkstatt" else "desk",
+            "workspaces": workspaces.for_user(user.name) if (workspaces and user) else (workspaces.for_user(None) if workspaces else []),
+            "applications": workspaces.applications if workspaces else {},
+            "ws_error": ws_error,
+            "ws_failures": getattr(app.state, "workspace_failures", {}),
         }
 
     def gate(request: Request):
@@ -162,6 +179,72 @@ def create_app(config: Config) -> FastAPI:
             seen = request.cookies.get("intro") == "1"
             return go("/login" if seen else "/intro")
         return None
+
+    # ---------------------------------------------------------------- account and workspaces
+    @app.get("/account", response_class=HTMLResponse)
+    def account_page(request: Request, ok: str | None = None, err: str | None = None):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        if not c["user"]:
+            return go("/")
+        return templates.TemplateResponse(request, "account.html", {**c, "status": accounts.status(c["user"].name), "ok": ok, "err": err,
+                                                                     "billing_modes": SETTINGS["billing"], "secret_keys": list(SECRETS)})
+
+    @app.post("/account", response_class=HTMLResponse)
+    async def account_post(request: Request):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or not csrf_ok(request, form):
+            return go("/account?err=" + quote("the form token did not match — reload the page and try again"))
+        name, what = c["user"].name, form.get("what", "")
+        try:
+            if what == "setting":
+                accounts.set(name, form.get("key", ""), form.get("value", ""))
+                msg = f"{form.get('key')} = {form.get('value')}"
+            elif what == "secret":
+                accounts.set_secret(name, form.get("key", ""), form.get("value", ""))
+                msg = f"{form.get('key')} set"
+            elif what == "clear":
+                accounts.clear_secret(name, form.get("key", ""))
+                msg = f"{form.get('key')} cleared"
+            else:
+                raise AccountError("unknown form")
+        except AccountError as exc:
+            return go("/account?err=" + quote(str(exc)))
+        return go("/account?ok=" + quote(msg))
+
+    @app.get("/workspaces/new", response_class=HTMLResponse)
+    def workspace_new(request: Request, err: str | None = None):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        if not c["user"] or workspaces is None:
+            return go("/")
+        return templates.TemplateResponse(request, "workspace_new.html", {**c, "err": err, "sources": workspaces.for_user(c["user"].name),
+                                                                           "may_share": c["role"].may_act("*") or c["role"].may_act("workspaces.shared")})
+
+    @app.post("/workspaces/new", response_class=HTMLResponse)
+    async def workspace_create(request: Request):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or workspaces is None or not csrf_ok(request, form):
+            return go("/workspaces/new?err=" + quote("the form token did not match — reload the page and try again"))
+        shared = form.get("shared") == "1" and (c["role"].may_act("*") or c["role"].may_act("workspaces.shared"))
+        w = None
+        try:
+            w = workspaces.create(form.get("id", "").strip().lower(), form.get("application", ""), None if shared else c["user"].name,
+                                  label=form.get("label", "").strip(), source=form.get("source") or None, shared=shared)
+            mount_one(app, workspaces, w, identity, users.secret_text(), web_dist)
+        except WorkspaceError as exc:
+            return go("/workspaces/new?err=" + quote(str(exc)))
+        except Exception as exc:                        # noqa: BLE001 — the entry stands, the mount did not come up: say so
+            return go("/?err=" + quote(f"{w.id if w else '?'}: {type(exc).__name__}: {exc}"))
+        return go(f"/w/{w.id}/")
 
     # ---------------------------------------------------------------- entry
     @app.get("/intro", response_class=HTMLResponse)
@@ -210,14 +293,14 @@ def create_app(config: Config) -> FastAPI:
 
     # ---------------------------------------------------------------- pages
     @app.get("/", response_class=HTMLResponse)
-    def overview(request: Request):
+    def overview(request: Request, err: str | None = None):
         if (r := gate(request)):
             return r
         c = ctx(request)
-        # `home` in the config: the desk lands on that module; the workshop and the rail still reach the overview
-        if config.home and c["view"] == "desk" and find_module(config.home) and c["role"].may_open(config.home) and not request.query_params.get("all"):
-            return go(f"/m/{config.home}")
+        # The dashboard is where one lands (Chris, 2026-10-24): workspaces first, then the workshop modules. `home` in the
+        # config still names the module the pipeline link points at, but nobody is forwarded past the dashboard any more.
         c["cards"] = build_cards(config, c["_access"], c["role"])
+        c["err"] = err
         return templates.TemplateResponse(request, "index.html", c)
 
     @app.get("/grid", response_class=HTMLResponse)
@@ -535,7 +618,7 @@ def create_app(config: Config) -> FastAPI:
             response.set_cookie("csrf", token, samesite="strict", httponly=False, secure=config.secure_cookies, path=cookie_path)
         return response
 
-    # Mounted plugin apps sit behind the same gate and the same role check as the pages.
+    # Mounted plugin apps and workspaces sit behind the same gate and the same role check as the pages.
     @app.middleware("http")
     async def guard_apps(request: Request, call_next):
         parts = route_path(request).split("/")
@@ -544,9 +627,18 @@ def create_app(config: Config) -> FastAPI:
                 return go("/login")
             if not ctx(request)["role"].may_open(parts[2]):
                 return go("/")
+        if len(parts) >= 3 and parts[1] == "w":
+            name = identity(request)
+            is_api = len(parts) >= 4 and parts[3] == "api"
+            if config.login_required and name is None:
+                return JSONResponse({"reason": "not signed in to the cockpit"}, status_code=401) if is_api else go("/login")
+            if workspaces is None or not workspaces.may_open(name, parts[2]):
+                return JSONResponse({"reason": "no such workspace"}, status_code=404) if is_api else go("/")
         return await call_next(request)
 
     app.state.app_failures = dict(mount_apps(app, config))
+    app.state.workspace_failures = mount_all(app, workspaces, identity, users.secret_text(), web_dist) if workspaces else {}
+    app.state.workspaces = workspaces
     app.state.i18n = i18n
     app.state.users = users
     return app

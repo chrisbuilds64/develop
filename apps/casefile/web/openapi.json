@@ -1396,6 +1396,22 @@
             },
             "type": "array",
             "title": "Worlds"
+          },
+          "open_identity": {
+            "type": "boolean",
+            "title": "Open Identity",
+            "default": true
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity"
           }
         },
         "type": "object",

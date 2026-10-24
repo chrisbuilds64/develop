@@ -25,12 +25,28 @@ class StoreError(Exception):
 
 
 class FsStore:
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, write_root: Path | None = None):
+        """`root` is where the tree is read. `write_root`, when given, is the same tree reached through another
+        path — a WebDAV mount of the folder Nextcloud serves — and every write goes there, so the sync server
+        sees the change. Reading stays on the disk, where it is fast. Without it, both are the same place."""
         self.root = Path(root).resolve()
         if not self.root.is_dir():
             raise StoreError(f"pipeline root {self.root} is not a directory")
+        self.write_root = Path(write_root).resolve() if write_root else self.root
+        if not self.write_root.is_dir():
+            raise StoreError(f"write root {self.write_root} is not a directory")
         self._locks: dict[str, threading.Lock] = {}
         self._locks_guard = threading.Lock()
+
+    def _w(self, rel_or_path) -> Path:
+        """The write-side path of something addressed relative to the root."""
+        p = Path(rel_or_path)
+        if p.is_absolute():
+            try:
+                p = p.relative_to(self.root)
+            except ValueError:
+                return p
+        return self.write_root / p
 
     # ------------------------------------------------------------------ layout
     def stages(self) -> list[str]:
@@ -82,7 +98,7 @@ class FsStore:
 
     # ------------------------------------------------------------------ writing
     def write_atomic(self, rel: str, text: str) -> None:
-        p = self.root / rel
+        p = self._w(rel)
         p.parent.mkdir(parents=True, exist_ok=True)
         tmp = p.with_name(f".{p.name}.tmp-{os.getpid()}")
         tmp.write_text(text, encoding="utf-8")
@@ -93,7 +109,7 @@ class FsStore:
 
     def append(self, rel: str, text: str, head: str = "") -> None:
         """A real append. `head` is written first when the file does not exist yet."""
-        p = self.root / rel
+        p = self._w(rel)
         p.parent.mkdir(parents=True, exist_ok=True)
         if not p.exists() and head:
             p.write_text(head, encoding="utf-8")
@@ -105,14 +121,14 @@ class FsStore:
         target = self.case_dir(case_id) / name
         if target.exists():
             raise StoreError(f"{target.name} already exists — nothing overwritten")
-        shutil.copyfile(src, target)
-        return target.stat().st_size
+        shutil.copyfile(src, self._w(target))
+        return self._w(target).stat().st_size
 
     def put_bytes(self, case_id: str, name: str, data: bytes) -> int:
         target = self.case_dir(case_id) / name
         if target.exists():
             raise StoreError(f"{target.name} already exists — nothing overwritten")
-        target.write_bytes(data)
+        self._w(target).write_bytes(data)
         return len(data)
 
     def move(self, case_id: str, to_stage: str) -> tuple[str, str]:
@@ -125,14 +141,14 @@ class FsStore:
             raise StoreError(f"'{case_id}' is already in {to_stage}")
         if dst.exists():
             raise StoreError(f"{to_stage}/{case_id} already exists — nothing overwritten")
-        src.rename(dst)
+        self._w(src).rename(self._w(dst))
         return src.parent.name, to_stage
 
     def mkcase(self, stage: str, case_id: str) -> Path:
         if self.find(case_id) is not None:
             raise StoreError(f"'{case_id}' already exists")
         d = self.root / stage / case_id
-        d.mkdir(parents=True, exist_ok=False)
+        self._w(d).mkdir(parents=True, exist_ok=False)
         return d
 
     # ------------------------------------------------------------------ journals and runs

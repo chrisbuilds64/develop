@@ -2,6 +2,7 @@
 """The runner: takes queued skill runs from _runs/ and executes them in a headless agent session.
 
     runner.py --workspace ~/work --data ~/mnt/pressroom/flow [--claude /path/to/claude] [--once] [--interval 10]
+    runner.py --workspace ~/work --workspaces /path/to/workspaces.json …      every workspace's queue, one runner
 
 What a run may do — where it may write, which tools, how long, the web or not —
 comes from `run-policy.json` at the pipeline root, per skill. The runner carries
@@ -33,6 +34,7 @@ import datetime as dt
 import json
 import logging
 import os
+import shutil
 import platform
 import socket
 import subprocess
@@ -81,8 +83,8 @@ def accounting(data: dict) -> dict:
     return out
 
 
-def context_file(run: dict, env: dict, args) -> Path | None:
-    """The operating context for this run, written by the context script into the workspace's tmp/.
+def context_file(run: dict, env: dict, args, ws: Path) -> Path | None:
+    """The operating context for this run, written by the context script into the run's workspace tmp/.
 
     Returns None when there is no script or it fails — the run then goes on with CLAUDE.md and the canon,
     and the log says so. A missing context is a worse run, not a refused one.
@@ -90,10 +92,10 @@ def context_file(run: dict, env: dict, args) -> Path | None:
     script = args.context_script
     if not script or not script.is_file():
         return None
-    out = args.workspace / "tmp" / f"run-context_{run['id']}.md"
+    out = ws / "tmp" / f"run-context_{run['id']}.md"
     try:
         out.parent.mkdir(exist_ok=True)
-        r = subprocess.run([sys.executable, str(script), "--plain"], cwd=args.workspace, env=env, capture_output=True, text=True, timeout=60)
+        r = subprocess.run([sys.executable, str(script), "--plain"], cwd=ws, env=env, capture_output=True, text=True, timeout=60)
     except (OSError, subprocess.TimeoutExpired) as exc:
         log.warning("context script failed: %s", exc)
         return None
@@ -106,12 +108,12 @@ def context_file(run: dict, env: dict, args) -> Path | None:
     return out
 
 
-def command_for(run: dict, rules: dict, args, context: Path | None = None) -> list[str]:
+def command_for(run: dict, rules: dict, args, data: Path, context: Path | None = None) -> list[str]:
     """The headless session, shaped by the policy: what it may write, which tools, how long.
 
     Every right the session gets is a line in run-policy.json — nothing here by default.
     """
-    subst = {"{data}": str(args.data), "{container}": str(args.data / run["container"])}
+    subst = {"{data}": str(data), "{container}": str(data / run["container"])}
     cmd = [args.claude, "-p", prompt_for(run, rules.get("agent", "the agent")), "--output-format", "json",
            "--permission-mode", rules.get("permission_mode", "acceptEdits")]
     if context:
@@ -174,10 +176,12 @@ def refresh(repos: list[Path]) -> None:
             log.info("pull %s: %s", repo.name, head[:80])
 
 
-def session_env(run: dict, rules: dict, args) -> dict:
-    """What the headless session learns about its order, for the SessionStart hook and the skills."""
+def session_env(run: dict, rules: dict, args, data: Path, workspace_id: str, home: Path | None) -> dict:
+    """What the headless session learns about its order, for the context script and the skills."""
     return dict(os.environ,
-                COCKPIT_DATA_DIR=str(args.data), CONTEXT_LOOP_DIR=str(args.data),
+                **({"HOME": str(home)} if home else {}),
+                COCKPIT_DATA_DIR=str(data), CONTEXT_LOOP_DIR=str(data),
+                PRESSROOM_WORKSPACE=workspace_id,
                 PRESSROOM_ENV=os.environ.get("PRESSROOM_ENV", "local"),
                 PRESSROOM_SKILL=str(run["skill"]), PRESSROOM_CONTAINER=str(run["container"]),
                 PRESSROOM_ORDERED_BY=str(run.get("requested_by", "")), PRESSROOM_AGENT=str(rules.get("agent", "agent")),
@@ -202,6 +206,46 @@ def billing_for(run: dict, rules: dict, env: dict, args) -> tuple[dict, str, str
     return b.env, b.mode, b.source
 
 
+def run_home(args, data: Path, workspace_id: str, run_id: str) -> tuple[Path, Path]:
+    """A HOME for this one run, so that `~/ChrisBuilds64/pressroom` points at the workspace the order belongs to.
+
+    The skills address the pipeline as ~/ChrisBuilds64/pressroom/flow and are the same files the person uses at
+    the keyboard; they are not rewritten per workspace. Instead every run gets a small HOME under the stage
+    workspace's tmp/: a ChrisBuilds64/ with links to the shared canon, control and develop, `pressroom` → the
+    workspace's tree, CLAUDE.md and .claude/ copied from the stage workspace, trust for that path. Removed after
+    the run. Returns (home, workspace dir inside it).
+    """
+    base = args.workspace
+    home = base / "tmp" / "homes" / run_id
+    ws = home / "ChrisBuilds64"
+    (ws / "tmp").mkdir(parents=True, exist_ok=True)
+    (ws / ".claude").mkdir(exist_ok=True)
+    (home / ".claude").mkdir(exist_ok=True)
+    for name in ("canon", "control", "develop"):
+        if (base / name).exists():
+            (ws / name).symlink_to((base / name).resolve())
+    (ws / "pressroom").symlink_to(data.parent if data.name == "flow" else data)
+    for name in ("skills", "agents"):
+        src = base / ".claude" / name
+        if src.exists():
+            (ws / ".claude" / name).symlink_to(src.resolve())
+    if (base / ".claude" / "settings.json").is_file():
+        shutil.copy(base / ".claude" / "settings.json", ws / ".claude" / "settings.json")
+    text = (base / "CLAUDE.md").read_text(encoding="utf-8") if (base / "CLAUDE.md").is_file() else ""
+    text += f"\n- **Workspace of this run:** `{workspace_id}` — its pipeline is `~/ChrisBuilds64/pressroom/flow/` here ({data}). Nothing else is this run's.\n"
+    (ws / "CLAUDE.md").write_text(text, encoding="utf-8")
+    trust: dict = {}
+    real = Path(os.environ.get("HOME", str(Path.home()))) / ".claude.json"
+    if real.is_file():
+        try:
+            trust = {k: v for k, v in json.loads(real.read_text(encoding="utf-8")).items() if k != "projects"}
+        except ValueError:
+            trust = {}
+    trust["projects"] = {str(ws): {"hasTrustDialogAccepted": True}}
+    (home / ".claude.json").write_text(json.dumps(trust) + "\n", encoding="utf-8")
+    return home, ws
+
+
 def refuse(f: Path, run: dict, rules: dict, why: str, env_for_tools: dict) -> None:
     """An order that cannot be billed to anybody does not run. The record says why, and the orderer reads it
     where they look anyway: as a review entry in the container, addressed to them."""
@@ -214,25 +258,27 @@ def refuse(f: Path, run: dict, rules: dict, why: str, env_for_tools: dict) -> No
                     "--for", str(run.get("requested_by", ""))], input=text, capture_output=True, text=True, env=env_for_tools)
 
 
-def execute(f: Path, run: dict, rules: dict, args) -> None:
+def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str = "default") -> None:
     queue = f.parent
     transcript = queue / (f.stem + ".log")
     if args.pull:
         refresh(args.pull)
-    env = session_env(run, rules, args)
-    env, billing, billed_by = billing_for(run, rules, env, args)
+    plain_env = session_env(run, rules, args, data, workspace_id, None)
+    env, billing, billed_by = billing_for(run, rules, plain_env, args)
     log.info("billing: %s", billed_by)
     if billing == "none":
-        refuse(f, run, rules, billed_by, env_for_tools=session_env(run, rules, args))
+        refuse(f, run, rules, billed_by, env_for_tools=plain_env)
         return
-    context = context_file(run, env, args)
-    cmd = command_for(run, rules, args, context)
+    home, ws = run_home(args, data, workspace_id, run["id"])
+    env["HOME"] = str(home)
+    context = context_file(run, env, args, ws)
+    cmd = command_for(run, rules, args, data, context)
     timeout = int(rules.get("timeout", 1800))
     with transcript.open("w", encoding="utf-8") as out:
-        out.write(f"# {run['id']} — started {run['started']} by {run['taken_by']}\n$ {' '.join(cmd[:2])} … {' '.join(cmd[3:])}\n\n")
+        out.write(f"# {run['id']} — started {run['started']} by {run['taken_by']} in workspace {workspace_id}\n$ {' '.join(cmd[:2])} … {' '.join(cmd[3:])}\n\n")
         out.flush()
         try:
-            r = subprocess.run(cmd, cwd=args.workspace, env=env, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+            r = subprocess.run(cmd, cwd=ws, env=env, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
             code, stdout, stderr = r.returncode, r.stdout, r.stderr
         except subprocess.TimeoutExpired as exc:
             code, stdout, stderr = 124, (exc.stdout or ""), f"timed out after {timeout}s"
@@ -245,7 +291,8 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
             result = stdout.strip()[-1500:]
         out.write(result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
     run.update(status="done" if code == 0 else "failed", finished=now(), exit=code, log=f"_runs/{transcript.name}",
-               result=result.strip()[:4000], stage=env["PRESSROOM_ENV"], billing=billing)
+               result=result.strip()[:4000], stage=env["PRESSROOM_ENV"], billing=billing, workspace=workspace_id)
+    shutil.rmtree(home, ignore_errors=True)                  # the run's HOME was for this run only; the transcript stays in _runs
     if session:
         run["session"] = session
     run.update(spent)
@@ -256,13 +303,14 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
     body = (result.strip() or "(no output)")
     text = (body[:1800] + (" …" if len(body) > 1800 else "")) + f"\n\n*Run {run['id']}, transcript in `{run['log']}`.*"
     subprocess.run([sys.executable, str(HERE / "review_append.py"), run["container"], "--by", rules.get("agent", "agent"), "--title", title,
-                    "--status", "info"], input=text, capture_output=True, text=True, env=env)
+                    "--status", "info"], input=text, capture_output=True, text=True, env=plain_env)
 
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="runner.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--workspace", required=True, help="where the skills and CLAUDE.md live — the session's cwd")
-    p.add_argument("--data", required=True, help="the pipeline root with _runs/")
+    p.add_argument("--data", help="one pipeline root with _runs/")
+    p.add_argument("--workspaces", help="the cockpit's workspaces.json: every workspace's queue is served (write_root wins over root)")
     p.add_argument("--claude", default=os.environ.get("CLAUDE_BIN", "claude"))
     p.add_argument("--interval", type=int, default=10)
     p.add_argument("--once", action="store_true", help="process what is queued, then exit")
@@ -276,49 +324,79 @@ def main(argv=None) -> int:
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level.upper(), format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S", stream=sys.stdout)
     args.workspace = Path(args.workspace).expanduser().resolve()
-    args.data = Path(args.data).expanduser().resolve()
+    if not args.data and not args.workspaces:
+        p.error("--data or --workspaces is required")
+    args.data = Path(args.data).expanduser().resolve() if args.data else None
+    args.workspaces = Path(args.workspaces).expanduser() if args.workspaces else None
     args.pull = [Path(x.strip()).expanduser() for x in args.pull.split(",") if x.strip()]
     args.add_dir = [Path(x).expanduser().resolve() for x in args.add_dir]
     args.accounts = Path(args.accounts).expanduser() if args.accounts else None
     args.context_script = (args.workspace / args.context_script) if args.context_script else None
     if args.context_script and not args.context_script.is_file():
         log.warning("no context script at %s — runs get CLAUDE.md and the canon only", args.context_script)
-    queue = args.data / "_runs"
     stage = os.environ.get("PRESSROOM_ENV", "local")
     me = f"{os.environ.get('USER', 'runner')}@{socket.gethostname().split('.')[0]}/{stage}"
-    log.info("runner %s (%s) — queue %s, workspace %s, %s%s", me, KIND, queue, args.workspace, platform.system(),
+    log.info("runner %s (%s) — %s, workspace %s, %s%s", me, KIND,
+             f"registry {args.workspaces}" if args.workspaces else f"queue {args.data / '_runs'}", args.workspace, platform.system(),
              f", pull {', '.join(p.name for p in args.pull)}" if args.pull else "")
-    warned = False
+    warned: set[str] = set()
     while True:
-        policy = load_policy(args.data)                   # re-read every round: a changed line applies to the next run
-        if policy is None:
-            if not warned:
-                log.error("no run-policy.json at %s — nothing runs without a declared policy", args.data)
-                warned = True
-            if args.once:
-                return 1
-            time.sleep(args.interval)
-            continue
-        if warned:
-            log.info("run-policy.json found at %s — runs resume", args.data)
-            warned = False
-        queue.mkdir(exist_ok=True)
-        job = take(queue, me)
-        if job:
+        roots = queues(args)                               # re-read every round: a new workspace is served from its next order on
+        took = False
+        for wid, data in roots:
+            policy = load_policy(data)                     # re-read every round: a changed line applies to the next run
+            if policy is None:
+                if wid not in warned:
+                    log.error("%s: no run-policy.json at %s — nothing runs there without a declared policy", wid, data)
+                    warned.add(wid)
+                continue
+            if wid in warned:
+                log.info("%s: run-policy.json found — runs resume", wid)
+                warned.discard(wid)
+            queue = data / "_runs"
+            queue.mkdir(exist_ok=True)
+            job = take(queue, me)
+            if not job:
+                continue
+            took = True
             f, run = job
-            log.info("taking %s (by %s)", run["id"], run.get("requested_by", "?"))
+            log.info("taking %s in %s (by %s)", run["id"], wid, run.get("requested_by", "?"))
             try:
-                execute(f, run, policy_for(policy, run["skill"]), args)
+                execute(f, run, policy_for(policy, run["skill"]), args, data, wid)
             except Exception as exc:                      # the loop survives one broken order; the order records why
                 log.exception("run %s crashed in the runner itself", run["id"])
                 run.update(status="failed", finished=now(), exit=-1, result=f"runner error: {exc}")
                 f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             log.info("%s %s (exit %s, %s turns, %s USD, %s s)", run["status"], run["id"], run.get("exit"),
                      run.get("turns", "?"), run.get("cost_usd", "?"), run.get("duration_s", "?"))
+            break                                          # one run, then look at every queue again
+        if took:
             continue
         if args.once:
-            return 0
+            return 1 if (warned or not roots) else 0      # --once says in its exit code whether anything could run at all
         time.sleep(args.interval)
+
+
+def queues(args) -> list[tuple[str, Path]]:
+    """(workspace id, pipeline root) for every queue this runner serves. The registry wins when both are given."""
+    if args.workspaces:
+        try:
+            doc = json.loads(args.workspaces.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            log.warning("workspaces registry unreadable: %s", exc)
+            return [("default", args.data)] if args.data else []
+        base = args.workspaces.parent
+        out = []
+        for w in doc.get("workspaces", []):
+            if w.get("mode", "live") != "live":            # replay worlds are served by their own app, never by Claude
+                continue
+            raw = w.get("write_root") or w.get("root")
+            if not raw:
+                continue
+            p = Path(raw).expanduser()
+            out.append((str(w.get("id", "?")), p if p.is_absolute() else (base / p)))
+        return out
+    return [("default", args.data)]
 
 
 if __name__ == "__main__":

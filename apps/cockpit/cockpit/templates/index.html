@@ -1,19 +1,34 @@
 {% extends "base.html" %}
 {% block main %}
 {% set hour = now[11:13]|int %}
-{% set ns = namespace(attention=[], blocked=[]) %}
-{% for c in cards if c.shown %}
-  {% if c.panel.state == 'blocked' %}{% set _ = ns.blocked.append(t(c.panel.title)) %}
-  {% elif c.panel.state == 'attention' %}{% set _ = ns.attention.append(t(c.panel.title)) %}{% endif %}
-{% endfor %}
-<section class="hello">
-  <h2>{{ t('home.morning' if hour < 11 else 'home.afternoon' if hour < 18 else 'home.evening', name=(', ' ~ user.display.split(' ')[0]) if user else '') }}</h2>
-  <p class="hello-line">
-    {% if ns.blocked %}<span class="dot bad"></span>{{ t('home.blocked', n=ns.blocked|length, list=ns.blocked|join(', ')) }}
-    {% elif ns.attention %}<span class="dot warn"></span>{{ t('home.attention', n=ns.attention|length, list=ns.attention|join(', ')) }}
-    {% else %}<span class="dot ok"></span>{{ t('home.all_good') }}{% endif %}
-  </p>
-  <p class="stamp">{{ t('app.as_of', when=now) }} · {{ t('app.role') }} <strong>{{ role.id }}</strong> · {{ cards|length }} {{ t('app.modules') }}</p>
-</section>
+<div class="page-head">
+  <h1>{{ t('home.morning' if hour < 11 else 'home.afternoon' if hour < 18 else 'home.evening', name=(', ' ~ user.display.split(' ')[0]) if user else '') }}</h1>
+  <span class="stamp">{{ t('app.as_of', when=now) }}{% if user %} · {{ user.role }}{% endif %}</span>
+</div>
+{% if err %}<p class="notice err">{{ err }}</p>{% endif %}
+{% if ws_error %}<p class="notice err">{{ t('ws.registry_broken') }}: {{ ws_error }}</p>{% endif %}
+
+{% if applications %}
+<h2 class="section" style="margin:0 0 10px">{{ t('ws.title') }}</h2>
+<div class="ws-grid">
+  {% for w in workspaces %}
+  <a class="ws-card" href="/w/{{ w.id }}/">
+    <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
+    <span class="title">{{ w.label }}</span>
+    <span class="meta">
+      <span>{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}</span>
+      {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
+      {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
+    </span>
+    {% if w.id in ws_failures %}<span class="fail">{{ ws_failures[w.id] }}</span>{% endif %}
+  </a>
+  {% endfor %}
+  <a class="ws-card new" href="/workspaces/new">{{ t('ws.new') }}</a>
+</div>
+{% endif %}
+
+{% if cards %}
+<h2 class="section" style="margin:0 0 10px">{{ t('app.workshop') }}</h2>
 {% include "grid.html" %}
+{% endif %}
 {% endblock %}

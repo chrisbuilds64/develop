@@ -3,5 +3,5 @@ __pycache__/
 *.pyc
 *.egg-info/
 web/node_modules/
-web/dist/
+# web/dist/ is checked in for now: scriptorium has no Node, the stage tool installs from the checkout (SYS: CI build later)
 .pytest_cache/

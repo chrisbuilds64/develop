@@ -629,6 +629,13 @@ export interface components {
             world: string | null;
             /** Worlds */
             worlds: string[];
+            /**
+             * Open Identity
+             * @default true
+             */
+            open_identity: boolean;
+            /** Identity */
+            identity?: string | null;
         };
         /** PersonView */
         PersonView: {

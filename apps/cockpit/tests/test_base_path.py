@@ -52,9 +52,7 @@ def test_sign_in_and_navigation_stay_inside_the_prefix(staged):
     staged.get("/test/login")
     r = staged.post("/test/login", data={"name": "alex", "password": "cockpit-demo", "_csrf": staged.cookies["csrf"]})
     assert r.status_code == 303 and r.headers["location"] == "/test/"
-    r = staged.get("/test/")                             # the desk lands on the home module
-    assert r.status_code == 303 and r.headers["location"] == "/test/m/pipeline"
-    page = staged.get(r.headers["location"])
+    page = staged.get("/test/")                          # the dashboard, with every link carrying the prefix
     assert page.status_code == 200
     assert 'href="/test/m/' in page.text and 'class="env env-test"' in page.text
     assert 'href="/m/' not in page.text and 'action="/m/' not in page.text   # reader links and forms carry the prefix too

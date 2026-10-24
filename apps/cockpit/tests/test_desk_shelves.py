@@ -40,8 +40,8 @@ def sign_in(client, name="alex", password="cockpit-demo"):
 def test_the_desk_lands_on_the_home_module_and_speaks_in_one_sentence(client):
     sign_in(client)
     r = client.get("/")
-    assert r.status_code == 303 and r.headers["location"] == "/m/pipeline"          # home = "pipeline" in the demo config
-    assert client.get("/?all=1").status_code == 200                                   # the overview is still one click away
+    assert r.status_code == 200 and 'href="/m/pipeline"' in r.text                   # the dashboard first (2026-10-24); the desk is one click away
+    assert client.get("/?all=1").status_code == 200
     desk = client.get("/m/pipeline").text
     assert "waiting for you" in desk and 'class="path ' in desk and "Waiting for you" in desk
     assert 'li class="current"' in desk and 'class="shelf shelf-you"' in desk

@@ -115,6 +115,8 @@ class Config:
     audit_path: Path
     users_path: Path
     accounts_path: Path             # one directory per person: settings and the secrets they bring
+    workspaces_path: Path           # the registry of applications and workspaces (casefile trees served under /w/<id>)
+    casefile_web: Path | None       # the built casefile surface; None = the one beside the installed package
     secret_path: Path
     plugins_dir: Path
     login_required: bool
@@ -341,6 +343,8 @@ def load(path: Path) -> Config:
         audit_path=_path(top.get("audit", "cockpit-audit.jsonl"), base),
         users_path=_path(top.get("users", "users.json"), base),
         accounts_path=_path(top.get("accounts", str(Path(top.get("users", "users.json")).parent / "accounts")), base),
+        workspaces_path=_path(top.get("workspaces", "workspaces.json"), base),
+        casefile_web=_path(top["casefile_web"], base) if top.get("casefile_web") else None,
         secret_path=_path(top.get("secret", ".cockpit-secret"), base),
         plugins_dir=_path(top.get("plugins", "plugins"), base),
         # With users on file, sign-in is required unless the config says otherwise.

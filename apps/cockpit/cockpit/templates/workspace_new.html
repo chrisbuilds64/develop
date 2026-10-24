@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="page-head">
+  <h1>{{ t('ws.new') }}</h1>
+</div>
+{% if err %}<p class="notice err">{{ err }}</p>{% endif %}
+<form class="form-card" method="post" action="/workspaces/new">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <label>{{ t('ws.application') }}
+    <select name="application" id="ws-app" onchange="for (const o of document.querySelectorAll('#ws-source option[data-app]')) o.hidden = o.dataset.app !== this.value; document.querySelector('#ws-source').value = ''">
+      {% for aid, a in applications.items() %}<option value="{{ aid }}">{{ a.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ t('ws.id') }}
+    <input type="text" name="id" required pattern="[a-z0-9][a-z0-9_-]{1,47}" placeholder="mein-pressroom" autocapitalize="off" spellcheck="false">
+  </label>
+  <label>{{ t('ws.label') }}
+    <input type="text" name="label" placeholder="{{ t('ws.label_hint') }}">
+  </label>
+  <label>{{ t('ws.source') }}
+    <select name="source" id="ws-source">
+      <option value="">{{ t('ws.source_fresh') }}</option>
+      {% set first = applications.keys()|list|first %}
+      {% for s in sources %}<option value="{{ s.id }}" data-app="{{ s.application }}" {% if s.application != first %}hidden{% endif %}>{{ s.label }} ({{ s.id }})</option>{% endfor %}
+    </select>
+  </label>
+  {% if may_share %}
+  <label class="row" style="flex-direction:row;align-items:center"><input type="checkbox" name="shared" value="1" style="width:auto"> {{ t('ws.make_shared') }}</label>
+  {% endif %}
+  <button type="submit">{{ t('ws.create') }}</button>
+  <p class="hint">{{ t('ws.create_hint') }}</p>
+</form>
+{% endblock %}
