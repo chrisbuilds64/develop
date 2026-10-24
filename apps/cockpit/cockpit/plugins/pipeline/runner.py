@@ -432,6 +432,8 @@ def execute_openai(f: Path, order: dict, s, agent, store, rules: dict, context: 
     if not text:
         store.add_turn(s.id, "system", f"no answer — {err or 'no model configured'}")
         finish("failed", err or "no model configured", exit=1, billing="api-key")
+        if order.get("type") == "end":
+            store.close(s.id, None)                        # an end that cannot write its log still releases the lease
         return
     spent = {"model": usage.get("model"), "turns": 1}
     if isinstance(usage.get("input_tokens"), int):
