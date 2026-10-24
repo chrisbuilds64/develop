@@ -359,3 +359,57 @@ def test_what_an_agent_learns_is_committed_to_the_notes_branch_and_never_to_main
     (work / "README.md").write_text("x"); git(work, "add", "-A"); git(work, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "main moves"); git(work, "push", "-q", "origin", "HEAD:main")
     runner.notes_sync(args)
     assert git(tree, "log", "--format=%s", "-2").splitlines() == ["notes(local): Atlas — Strategie", "main moves"]
+
+
+def test_a_codex_agent_runs_on_the_persons_plan_resumes_its_thread_and_writes_its_log(tmp_path):
+    import subprocess
+    import sys
+    calls = tmp_path / "codex-calls.jsonl"
+    stub = tmp_path / "codex"
+    stub.write_text(f"""#!{sys.executable}
+import json, os, re, sys
+a = sys.argv[1:]
+open({str(calls)!r}, "a").write(json.dumps({{"args": a, "home": os.environ.get("CODEX_HOME"), "key": "CODEX_API_KEY" in os.environ, "cwd": os.getcwd()}}) + "\\n")
+prompt = a[-1]
+m = re.search(r"log to `([^`]+)`", prompt)
+if m:
+    open(m.group(1), "w").write("# Session\\n## Continuation Thread\\nweiter\\n")
+open(a[a.index("-o") + 1], "w").write("Codex-Atlas: " + prompt[-30:])
+print(json.dumps({{"type": "thread.started", "thread_id": "th-42"}}))
+print(json.dumps({{"type": "turn.completed", "usage": {{"input_tokens": 7, "output_tokens": 3}}}}))
+""")
+    stub.chmod(0o755)
+    agents = tmp_path / "agents"
+    agent_dir(agents, "atlas", {"label": "Atlas", "engine": "codex", "model": "gpt-5.5"})
+    (tmp_path / "flow").mkdir()
+    reg = {"applications": {"pressroom": {"label": "PressRoom", "config_dir": "config"}},
+           "workspaces": [{"id": "lab", "application": "pressroom", "owner": "chris", "root": "flow", "components": {"agents": {"path": str(agents)}}}]}
+    (tmp_path / "workspaces.json").write_text(json.dumps(reg))
+    plan = tmp_path / "accounts" / "chris" / "codex"
+    plan.mkdir(parents=True)
+    (plan / "auth.json").write_text("{}")
+    ws = Workspaces(tmp_path / "workspaces.json", tmp_path)
+    store = ws.sessions(ws.get("lab"))
+    s, _ = store.start("lab", "atlas", "chris", "Codex")
+    store.say(s.id, "chris", "Erste Frage")
+    runner = Path(__file__).resolve().parents[1] / "cockpit" / "plugins" / "pipeline" / "runner.py"
+
+    def run_once():
+        r = subprocess.run([sys.executable, str(runner), "--workspace", str(tmp_path), "--workspaces", str(tmp_path / "workspaces.json"),
+                            "--accounts", str(tmp_path / "accounts"), "--codex", str(stub), "--context-script", "", "--once"], capture_output=True, text=True)
+        assert "Traceback" not in r.stdout + r.stderr, r.stdout + r.stderr
+
+    run_once()
+    store.say(s.id, "chris", "Zweite Frage")
+    run_once()
+    c = [json.loads(l) for l in calls.read_text().splitlines()]
+    assert c[0]["home"] == str(plan) and not c[0]["key"]                                     # the ChatGPT plan, not a key
+    assert "resume" not in c[0]["args"] and c[1]["args"][c[1]["args"].index("resume") + 1] == "th-42"
+    assert 'sandbox_mode="read-only"' in c[0]["args"] and c[0]["args"][c[0]["args"].index("-m") + 1] == "gpt-5.5"
+    assert c[0]["cwd"] == c[1]["cwd"]                                                         # one session home for the thread
+    assert store.transcript(s.id)[-1]["text"] == "Codex-Atlas: Zweite Frage"
+    store.end(s.id, "chris")
+    run_once()
+    closed = store.get(s.id)
+    assert closed.status == "closed" and "Continuation Thread" in (store.dir / closed.log).read_text()
+    assert 'sandbox_mode="workspace-write"' in json.loads(calls.read_text().splitlines()[-1])["args"]

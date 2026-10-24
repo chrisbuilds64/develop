@@ -154,10 +154,20 @@ class Accounts:
             "billing": data.get("billing", "auto"),
             "locale": data.get("locale"),
             "secrets": {k: {"set": k in present, "since": data.get("secrets", {}).get(k)} for k in SECRETS},
+            "codex": self.codex_home(name) is not None,
             "updated": data.get("updated"),
         }
 
     # --------------------------------------------------------------- billing
+    def codex_home(self, name: str | None) -> Path | None:
+        """The person's Codex sign-in (`codex login --device-auth` with CODEX_HOME here): their ChatGPT plan pays.
+        The directory also keeps their Codex sessions, which is what makes a conversation resumable."""
+        if name and NAME.match(name):
+            d = self.dir(name) / "codex"
+            if (d / "auth.json").is_file():
+                return d
+        return None
+
     def openai_key(self, name: str | None) -> str | None:
         """The person's own OpenAI key, for agents on the openai engine. There is no shared one."""
         if name and NAME.match(name) and self.dir(name).exists():

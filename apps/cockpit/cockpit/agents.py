@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
-ENGINES = ("claude-code", "openai")            # claude-code: a full session with tools; openai: conversation only, no tools
+ENGINES = ("claude-code", "codex", "openai")   # claude-code / codex: a session with tools on the person's subscription; openai: API, conversation only
 READ_ONLY = ("Read", "Grep", "Glob")
 
 

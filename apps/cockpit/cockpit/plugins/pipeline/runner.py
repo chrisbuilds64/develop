@@ -455,6 +455,92 @@ def execute_openai(f: Path, order: dict, s, agent, store, rules: dict, context: 
     finish("done", text, exit=0, billing="api-key", **spent)
 
 
+def codex_events(stdout: str) -> tuple[str, dict]:
+    """The thread id and the usage from `codex exec --json` (one JSON event per line)."""
+    thread, usage = "", {}
+    for line in stdout.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if ev.get("type") == "thread.started":
+            thread = str(ev.get("thread_id", ""))
+        elif ev.get("type") == "turn.completed" and isinstance(ev.get("usage"), dict):
+            usage = ev["usage"]
+    return thread, usage
+
+
+def execute_codex(f: Path, order: dict, s, agent, store, rules: dict, context: Path | None, args, finish, wsdir: Path,
+                  env: dict, log_path: Path | None, notes: Path | None) -> None:
+    """A turn on the codex engine: `codex exec` in the session's HOME, resumed by thread id, signed in with the person's
+    ChatGPT plan (their CODEX_HOME) — or, without one, their own OpenAI key. The context goes with the first message;
+    the resumed thread keeps it."""
+    acc = _accounts(args) if args.accounts else None
+    home = acc.codex_home(s.user) if acc else None
+    key = acc.openai_key(s.user) if acc else None
+    env = {k: v for k, v in env.items() if k not in ("OPENAI_API_KEY", "CODEX_API_KEY")}
+    if home:
+        env["CODEX_HOME"], billing = str(home), "subscription"
+    elif key:
+        env["CODEX_HOME"], env["CODEX_API_KEY"], billing = str(wsdir.parent / ".codex"), key, "api-key"
+        Path(env["CODEX_HOME"]).mkdir(exist_ok=True)
+    else:
+        text = (f"This message was not answered: {s.user} has no Codex sign-in and no OpenAI API key. {agent.label} runs on Codex; "
+                "sign in once with `codex login --device-auth` for your account, or add OPENAI_API_KEY on your account page.")
+        store.add_turn(s.id, "system", text)
+        finish("failed", text, exit=78, billing="none")
+        if order.get("type") == "end":
+            store.close(s.id, None)
+        return
+    end = order.get("type") == "end"
+    if end:
+        prompt = end_prompt(log_path, notes, s) + (f"\n\nNote from {s.user}: {order['text']}" if order.get("text") else "")
+    else:
+        prompt = order["text"]
+    if not s.claude_session and context:                  # the thread starts with the operating context, as Claude's system prompt does
+        prompt = f"<operating-context>\n{context.read_text(encoding='utf-8')}\n</operating-context>\n\n{prompt}"
+    writes = "Edit" in rules.get("tools", []) or "Write" in rules.get("tools", []) or end
+    roots = [str(log_path.parent)] if end and log_path else []
+    if end and notes:
+        roots.append(str(notes.parent))
+    out = f.parent / (f.stem + ".answer.txt")
+    conf = ["-c", f'sandbox_mode="{"workspace-write" if writes else "read-only"}"']
+    if roots:
+        conf += ["-c", "sandbox_workspace_write.writable_roots=" + json.dumps(roots)]
+    timeout = int(rules.get("timeout", 1800))
+    code, stdout, stderr, model_used = 1, "", "", None
+    for model in [m for m in (rules.get("model"), rules.get("fallback_model")) if m] or [None]:
+        cmd = [args.codex, "exec", "--json", "--skip-git-repo-check", "-o", str(out), *conf, *(["-m", model] if model else [])]
+        cmd += (["resume", s.claude_session, prompt] if s.claude_session else [prompt])
+        try:
+            r = subprocess.run(cmd, cwd=wsdir, env=env, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+            code, stdout, stderr = r.returncode, r.stdout, r.stderr
+        except subprocess.TimeoutExpired as exc:
+            code, stdout, stderr = 124, (exc.stdout or ""), f"timed out after {timeout}s"
+        model_used = model
+        if code == 0:
+            break
+        log.warning("codex %s failed (%s): %s", model, code, (stderr or stdout).strip()[-200:])
+    (f.parent / (f.stem + ".log")).write_text(f"# {order['id']}\n$ codex exec … ({billing})\n\n{stdout}\n[stderr]\n{stderr}\n", encoding="utf-8")
+    thread, usage = codex_events(stdout)
+    text = out.read_text(encoding="utf-8").strip() if out.is_file() else ""
+    if code != 0 or not text:
+        why = (stderr or stdout).strip()[-600:] or "no answer"
+        store.add_turn(s.id, "system", f"no answer — {why}")
+        finish("failed", why, exit=code or 1, billing=billing)
+        if end:
+            store.close(s.id, None)
+        return
+    spent = {k: v for k, v in {"model": model_used, "turns": 1, "input_tokens": usage.get("input_tokens"),
+                                "output_tokens": usage.get("output_tokens")}.items() if v is not None}
+    store.add_turn(s.id, "assistant", text, by=agent.id, model=model_used)
+    if not end:
+        store.update(s.id, claude_session=thread or s.claude_session, turns=s.turns + 1)
+    finish("done", text, exit=0, billing=billing, **spent)
+    if end:
+        store.close(s.id, log_path)
+
+
 def notes_sync(args) -> None:
     """Before a turn: the notes worktree follows control's main, so an agent learns on top of today's rules.
     A rebase that does not apply is aborted and logged; the agent then works on the notes it has."""
@@ -532,6 +618,21 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
                      PRESSROOM_SESSION_LOG=str(store.dir / s.starts_from) if s.starts_from else "",
                      PRESSROOM_RUN_ID=order["id"])
     notes_writable = bool(agents_c and agents_c.writable and agent.notes_path)
+    if agent.engine == "codex":
+        home, wsdir = run_home(args, data, w.id, f"session-{sid}")
+        cenv = dict(plain_env, HOME=str(home))
+        context = context_file(order, cenv, args, wsdir) if not s.claude_session else None
+        log_path = store.log_path(s) if kind == "end" else None
+        if log_path:
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+        log.info("session %s %s — codex engine, %s", sid, kind, rules.get("model"))
+        execute_codex(f, order, s, agent, store, rules, context, args, finish, wsdir, cenv, log_path,
+                      agent.notes_path if notes_writable else None)
+        if kind == "end":
+            shutil.rmtree(home, ignore_errors=True)
+            if notes_writable:
+                notes_commit(args, agent, s)
+        return
     if agent.engine == "openai":
         home, wsdir = run_home(args, data, w.id, f"session-{sid}")
         context = context_file(order, dict(plain_env, HOME=str(home)), args, wsdir)
@@ -618,6 +719,7 @@ def main(argv=None) -> int:
     p.add_argument("--data", help="one pipeline root with _runs/")
     p.add_argument("--workspaces", help="the cockpit's workspaces.json: every workspace's queue is served (write_root wins over root)")
     p.add_argument("--claude", default=os.environ.get("CLAUDE_BIN", "claude"))
+    p.add_argument("--codex", default=os.environ.get("CODEX_BIN", str(Path.home() / ".local" / "bin" / "codex")))
     p.add_argument("--interval", type=int, default=10)
     p.add_argument("--once", action="store_true", help="process what is queued, then exit")
     p.add_argument("--pull", default="", help="comma-separated git checkouts to `pull --ff-only` before every run (canon, control)")
