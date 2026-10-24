@@ -132,6 +132,10 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
         }
         reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     data = json.loads(reg.read_text(encoding="utf-8"))
+    if "defaults" not in data:                         # ADR-019: every workspace of the stage offers the agents of the shared control,
+        data["defaults"] = {"agents": {"path": str(s.shared / "control" / "shared-context" / "agents"),   # read, never committed
+                                       "shared": True, "writable": False}}
+        reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     have = {w["id"] for w in data["workspaces"]}
     venv = cp / ".venv"
     added = []
