@@ -51,6 +51,8 @@ def create_app(config: Config) -> FastAPI:
     app = FastAPI(title=config.name, version=__version__, docs_url=None, redoc_url=None, openapi_url=None)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=HERE / "templates")
+    from .detail import render_md_safe
+    templates.env.filters["md"] = render_md_safe       # an agent's answer is Markdown; shown rendered, raw HTML as text
 
     # Served under a prefix ("/test"), every link and redirect carries it; at the root it is empty.
     # Templates write `{{ base }}/m/…`; the code goes through `go()` and `route_path()`.
@@ -330,6 +332,14 @@ def create_app(config: Config) -> FastAPI:
         except SessionError as exc:
             return go(f"/sessions/{wid}/{sid}?err=" + quote(str(exc)))
         return go(f"/sessions/{wid}/{sid}")
+
+    @app.get("/sessions/{wid}/agent/{aid}/avatar")
+    def agent_avatar(request: Request, wid: str, aid: str):
+        c, w = ws_for(request, wid)
+        a = workspaces.agents(w).get(aid) if w is not None else None
+        if a is None or a.avatar_path is None:
+            return Response(status_code=404)
+        return FileResponse(a.avatar_path, headers={"Cache-Control": "private, max-age=3600"})
 
     @app.get("/sessions/{wid}/{sid}/state")
     def session_state(request: Request, wid: str, sid: str):

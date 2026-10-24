@@ -423,5 +423,7 @@
   "ag.send": "Senden",
   "ag.end_note": "Notiz zum Abschluss (optional)",
   "ag.end_button": "Session beenden",
-  "ag.log": "Session-Log"
+  "ag.log": "Session-Log",
+  "ag.dictate": "Diktieren",
+  "ag.keys": "Return sendet · Shift+Return neue Zeile · Mikrofon zum Diktieren"
 }

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% macro avatar(a, w, size='') %}{% if a and a.avatar_path %}<img class="agent-av {{ size }}" src="/sessions/{{ w.id }}/agent/{{ a.id }}/avatar" alt="">{% else %}<span class="agent-av {{ size }}">{{ a.initials if a else '?' }}</span>{% endif %}{% endmacro %}
 {% block main %}
 <div class="page-head">
   <h1>{{ t('ag.title') }} · {{ w.label }}</h1>
@@ -27,6 +28,7 @@
     {% for a in agents %}
     <label class="agent-card">
       <input type="radio" name="agent" value="{{ a.id }}" {% if loop.first %}checked{% endif %}>
+      {{ avatar(a, w) }}
       <span class="agent-name">{{ a.label }}</span>
       <span class="hint">{{ a.role }}</span>
       <span class="agent-rights mono">{% if a.skills %}{{ t('ag.skills') }}: {{ a.skills|join(', ') }} · {% endif %}{{ t('ag.writes') if ('Edit' in a.tools or 'Write' in a.tools) else t('ag.reads') }}{% if a.web %} · web{% endif %}</span>

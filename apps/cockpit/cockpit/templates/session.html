@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% macro avatar(a, w, size='') %}{% if a and a.avatar_path %}<img class="agent-av {{ size }}" src="/sessions/{{ w.id }}/agent/{{ a.id }}/avatar" alt="">{% else %}<span class="agent-av {{ size }}">{{ a.initials if a else '?' }}</span>{% endif %}{% endmacro %}
 {% block main %}
 <div class="page-head">
-  <h1>{{ agent.label if agent else s.agent }} · {{ s.topic }}</h1>
+  <h1 class="with-av">{{ avatar(agent, w, 'lg') }}<span>{{ agent.label if agent else s.agent }} · {{ s.topic }}</span></h1>
   <span class="stamp"><a href="/sessions/{{ w.id }}">{{ w.label }}</a> · {{ t('ag.since', when=s.started[:16].replace('T', ' ')) }}{% if s.starts_from %} · {{ t('ag.starts_from') }} <span class="mono">{{ s.starts_from }}</span>{% endif %}</span>
 </div>
 {% if err %}<p class="notice err">{{ err }}</p>{% endif %}
@@ -11,20 +12,26 @@
   <a id="state-url" href="/sessions/{{ w.id }}/{{ s.id }}/state" hidden></a>
   {% for m in turns %}
   <div class="msg {{ m.role }}">
-    <div class="who">{% if m.role == 'user' %}{{ user.display }}{% elif m.role == 'assistant' %}{{ agent.label if agent else s.agent }}{% else %}{{ t('ag.system') }}{% endif %}
+    <div class="who">{% if m.role == 'assistant' %}{{ avatar(agent, w, 'sm') }}{% endif %}{% if m.role == 'user' %}{{ user.display }}{% elif m.role == 'assistant' %}{{ agent.label if agent else s.agent }}{% else %}{{ t('ag.system') }}{% endif %}
       <span class="hint">{{ m.at[11:16] }}{% if m.cost_usd %} · {{ '%.2f'|format(m.cost_usd) }} $ {% endif %}</span></div>
-    <div class="body">{{ m.text }}</div>
+    {% if m.role == 'assistant' %}<div class="body md">{{ m.text|md|safe }}</div>{% else %}<div class="body">{{ m.text }}</div>{% endif %}
   </div>
   {% endfor %}
-  {% if pending %}<div class="msg assistant waiting"><div class="who">{{ agent.label if agent else s.agent }}</div><div class="body">{{ t('ag.thinking') if pending.type == 'chat' else t('ag.writing_log') }}</div></div>{% endif %}
+  {% if pending %}<div class="msg assistant waiting"><div class="who">{{ avatar(agent, w, 'sm') }}{{ agent.label if agent else s.agent }}</div><div class="body">{{ t('ag.thinking') if pending.type == 'chat' else t('ag.writing_log') }}</div></div>{% endif %}
 </div>
 
 {% if s.status == 'active' %}
-<form method="post" action="/sessions/{{ w.id }}/{{ s.id }}" class="chat-input">
+<form method="post" action="/sessions/{{ w.id }}/{{ s.id }}" class="chat-input" id="chat-form">
   <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="say">
-  <textarea name="text" rows="3" required placeholder="{{ t('ag.message') }}" {% if pending %}disabled{% endif %}></textarea>
-  <button type="submit" {% if pending %}disabled{% endif %}>{{ t('ag.send') }}</button>
+  <textarea name="text" id="chat-text" rows="3" required placeholder="{{ t('ag.message') }}" {% if pending %}disabled{% endif %}></textarea>
+  <div class="chat-buttons">
+    <button type="button" id="mic" class="btn-quiet mic" hidden title="{{ t('ag.dictate') }}" aria-label="{{ t('ag.dictate') }}" aria-pressed="false" {% if pending %}disabled{% endif %}>
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.07A7 7 0 0 1 5 12a1 1 0 1 1 2 0 5 5 0 0 0 10 0Z"/></svg>
+    </button>
+    <button type="submit" {% if pending %}disabled{% endif %}>{{ t('ag.send') }}</button>
+  </div>
 </form>
+<p class="hint chat-keys">{{ t('ag.keys') }}</p>
 <form method="post" action="/sessions/{{ w.id }}/{{ s.id }}" class="chat-end">
   <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="end">
   <input type="text" name="note" placeholder="{{ t('ag.end_note') }}">
@@ -33,12 +40,46 @@
 {% elif s.status == 'closed' %}
 <div class="form-card" style="margin-top:16px">
   <h2>{{ t('ag.log') }}</h2>
-  {% if log_text %}<pre class="log">{{ log_text }}</pre>{% else %}<p class="hint">{{ t('ag.no_log') }}</p>{% endif %}
+  {% if log_text %}<div class="md log">{{ log_text|md|safe }}</div>{% else %}<p class="hint">{{ t('ag.no_log') }}</p>{% endif %}
 </div>
 {% endif %}
 
 <script>
 (function () {
+  // Return sends, Shift+Return breaks the line; not while an input method is composing a character
+  var text = document.getElementById('chat-text'), form = document.getElementById('chat-form');
+  if (text && form) {
+    text.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+        e.preventDefault();
+        if (text.value.trim()) { form.requestSubmit ? form.requestSubmit() : form.submit(); }
+      }
+    });
+    if (!text.disabled) text.focus();
+  }
+  // Dictation through the browser's speech recognition, where it has one (Chrome, Safari); the button stays hidden otherwise
+  var Rec = window.SpeechRecognition || window.webkitSpeechRecognition, mic = document.getElementById('mic');
+  if (Rec && mic && text) {
+    mic.hidden = false;
+    var rec = null, base = '';
+    mic.addEventListener('click', function () {
+      if (rec) { rec.stop(); return; }
+      rec = new Rec();
+      rec.lang = (document.documentElement.lang || 'de') === 'en' ? 'en-US' : 'de-DE';
+      rec.interimResults = true; rec.continuous = true;
+      base = text.value ? text.value.replace(/\s*$/, ' ') : '';
+      rec.onresult = function (ev) {
+        var said = '';
+        for (var i = 0; i < ev.results.length; i++) said += ev.results[i][0].transcript;
+        text.value = base + said;
+      };
+      rec.onend = function () { rec = null; mic.classList.remove('on'); mic.setAttribute('aria-pressed', 'false'); text.focus(); };
+      rec.onerror = function () { if (rec) rec.stop(); };
+      rec.start();
+      mic.classList.add('on'); mic.setAttribute('aria-pressed', 'true');
+    });
+  }
+
   var chat = document.getElementById('chat');
   if (!chat || chat.dataset.pending !== '1') { if (chat) window.scrollTo(0, document.body.scrollHeight); return; }
   var url = document.getElementById('state-url').getAttribute('href');   // prefixed by the stage like every link

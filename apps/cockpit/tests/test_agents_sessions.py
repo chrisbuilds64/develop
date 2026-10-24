@@ -241,3 +241,27 @@ def test_a_person_picks_an_agent_starts_talks_and_ends_from_the_cockpit(world):
     sign_in(other, "sam")
     assert other.get(loc + "/state").status_code == 404 and "no%20such%20session" in other.get(loc).headers["location"]
     assert client.get("/sessions/shared/../../etc/state").status_code in (404, 303, 307)
+
+
+def test_the_conversation_shows_avatars_and_renders_answers_safely(world):
+    from fastapi.testclient import TestClient
+    from cockpit.app import create_app
+    from cockpit.config import load
+    agents = world / "agents"
+    d = agent_dir(agents, "axel", {"label": "Axel"})
+    (d / "axel-avatar.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    agent_dir(agents, "scout", {"label": "Field Scout"})                              # no image: initials
+    reg = json.loads((world / "workspaces.json").read_text())
+    reg["defaults"] = {"agents": {"path": str(agents)}}
+    (world / "workspaces.json").write_text(json.dumps(reg))
+    client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
+    sign_in(client)
+    page = client.get("/sessions/shared").text
+    assert 'src="/sessions/shared/agent/axel/avatar"' in page and ">FS</span>" in page
+    assert client.get("/sessions/shared/agent/axel/avatar").status_code == 200
+    assert client.get("/sessions/shared/agent/scout/avatar").status_code == 404
+    loc = client.post("/sessions/shared", data={"agent": "axel", "topic": "md", "_csrf": client.cookies["csrf"]}).headers["location"]
+    store = Workspaces(world / "workspaces.json", world).sessions(Workspaces(world / "workspaces.json", world).get("shared"))
+    store.add_turn(loc.rsplit("/", 1)[1], "assistant", "**fett** und <script>alert(1)</script>")
+    html = client.get(loc).text
+    assert "<strong>fett</strong>" in html and "<script>alert(1)" not in html and 'id="mic"' in html

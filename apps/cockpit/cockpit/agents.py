@@ -48,6 +48,7 @@ class Agent:
     model: str | None = None
     signature: str | None = None
     notes: str | None = None
+    avatar: str | None = None                  # an image in the agent's folder; without one the page shows initials
     context: str | None = None                 # the instance in context-manifest.json whose general context it loads
     skills: tuple[str, ...] = ()
     tools: tuple[str, ...] = READ_ONLY
@@ -59,6 +60,15 @@ class Agent:
     @property
     def signature_path(self) -> Path | None:
         return self.dir / self.signature if self.signature else None
+
+    @property
+    def avatar_path(self) -> Path | None:
+        p = self.dir / self.avatar if self.avatar else None
+        return p if p and p.is_file() and p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp") else None
+
+    @property
+    def initials(self) -> str:
+        return "".join(w[0] for w in self.label.split()[:2]).upper() or self.id[:2].upper()
 
     @property
     def notes_path(self) -> Path | None:
@@ -120,7 +130,7 @@ def load_agent(folder: Path) -> Agent | None:
     engine = raw.get("engine", "claude-code")
     if engine not in ENGINES:
         raise AgentError(f"{where}: engine '{engine}' — the runner drives {', '.join(ENGINES)}")
-    for key in ("signature", "notes"):
+    for key in ("signature", "notes", "avatar"):
         name = raw.get(key)
         if name and ("/" in name or name.startswith(".")):
             raise AgentError(f"{where}: '{key}' is a file name inside the agent's folder, not a path")
@@ -128,6 +138,7 @@ def load_agent(folder: Path) -> Agent | None:
         id=aid, label=str(raw.get("label") or aid.capitalize()), dir=folder, role=str(raw.get("role", "")),
         engine=engine, model=raw.get("model"), signature=raw.get("signature", f"{aid}-signature.md"),
         notes=raw.get("notes", "working-notes.md"), context=raw.get("context", aid),
+        avatar=raw.get("avatar", f"{aid}-avatar.png"),
         skills=_tuple(raw.get("skills"), where, "skills"),
         tools=_tuple(raw.get("tools"), where, "tools") if "tools" in raw else READ_ONLY,
         web=bool(raw.get("web", False)), write=_tuple(raw.get("write"), where, "write"),
