@@ -219,7 +219,9 @@ def main(argv=None) -> int:
                 return 1
             time.sleep(args.interval)
             continue
-        warned = False
+        if warned:
+            log.info("run-policy.json found at %s — runs resume", args.data)
+            warned = False
         queue.mkdir(exist_ok=True)
         job = take(queue, me)
         if job:

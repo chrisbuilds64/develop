@@ -54,7 +54,8 @@ def cmd_run(args):
     for mid, err in app.state.app_failures.items():
         print(f"  plugin app '{mid}' did not start: {err}")
     print(f"http://{config.host}:{config.port}{config.base_path}" + (f"  ({config.environment})" if config.environment else ""))
-    # root_path: the reverse proxy passes the prefix through unchanged, uvicorn tells the app about it
+    # root_path: the reverse proxy strips the prefix, uvicorn prepends it again and tells the app — so links,
+    # redirects and cookies come out with the prefix while the routes stay what they are
     uvicorn.run(app, host=config.host, port=config.port, log_level="warning", root_path=config.base_path)
 
 

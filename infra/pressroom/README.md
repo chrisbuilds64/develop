@@ -69,8 +69,9 @@ The vhost keeps `location /` for production and includes the generated snippet o
 include /etc/nginx/pressroom-envs.conf;
 ```
 
-Each prefixed stage is one `location /test/ { proxy_pass http://127.0.0.1:8201; … }` — the prefix is
-passed through unchanged and the cockpit runs with `base_path = "/test"` (uvicorn `root_path`).
+Each prefixed stage is one `location /test/ { proxy_pass http://127.0.0.1:8201/; … }` — nginx strips the
+prefix, and uvicorn puts it back as `root_path` (`base_path = "/test"` in the cockpit's configuration).
+Uvicorn prepends `root_path` to every path it receives, so the proxy must not send the prefix twice.
 
 ## How a run from the button knows what a keyboard session knows
 

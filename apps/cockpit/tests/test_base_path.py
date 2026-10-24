@@ -1,7 +1,9 @@
 """Served under a prefix (/test): links, redirects and cookies carry it, and the stage shows in the header.
 
-The reverse proxy passes the prefix through unchanged; uvicorn hands it to the app as root_path. The
-TestClient's root_path does the same, so a request here looks exactly like one from nginx."""
+In production nginx strips the prefix and uvicorn puts it back as root_path, so the app sees the full
+path and the browser's cookies are scoped to the prefix. The TestClient has no nginx in front: requests
+here carry the prefix like the browser's do, and root_path tells the app where it is served — Starlette
+routes on the path without the root_path either way."""
 
 import shutil
 from pathlib import Path
@@ -50,7 +52,7 @@ def test_sign_in_and_navigation_stay_inside_the_prefix(staged):
     staged.get("/test/login")
     r = staged.post("/test/login", data={"name": "alex", "password": "cockpit-demo", "_csrf": staged.cookies["csrf"]})
     assert r.status_code == 303 and r.headers["location"] == "/test/"
-    r = staged.get("/test/")                                  # the desk lands on the home module
+    r = staged.get("/test/")                             # the desk lands on the home module
     assert r.status_code == 303 and r.headers["location"] == "/test/m/pipeline"
     page = staged.get(r.headers["location"])
     assert page.status_code == 200
