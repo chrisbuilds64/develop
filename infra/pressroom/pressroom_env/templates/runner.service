@@ -11,7 +11,7 @@ Environment=PRESSROOM_ENV={{env}}
 Environment=PYTHONUNBUFFERED=1
 EnvironmentFile={{env_file}}
 WorkingDirectory={{ws}}
-ExecStart={{dir}}/cockpit/.venv/bin/python {{dir}}/develop/apps/cockpit/cockpit/plugins/pipeline/runner.py --workspace {{ws}} --workspaces {{dir}}/cockpit/workspaces.json --claude {{claude}} --interval 10 --pull {{pull}} --add-dir {{shared}} --accounts {{accounts}}
+ExecStart={{dir}}/cockpit/.venv/bin/python {{dir}}/develop/apps/cockpit/cockpit/plugins/pipeline/runner.py --workspace {{ws}} --workspaces {{dir}}/cockpit/workspaces.json --claude {{claude}} --interval 10 --pull {{pull}} --add-dir {{shared}} --accounts {{accounts}}{{notes}}
 Restart=always
 RestartSec=10
 NoNewPrivileges=true

@@ -36,6 +36,7 @@ class Server:
     runner_env_file: Path       # ANTHROPIC_API_KEY for the runners
     nginx_snippet: Path         # the location blocks, included by the vhost
     host: str
+    notes_remote: str = ""      # where the stages' notes branches are pushed — a repo of its own, never control (ADR-019)
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,7 @@ class Env:
     base_path: str              # "" for the root, "/test" for a prefix
     ref: str                    # git ref of develop deployed to this stage
     clone_from: str             # the stage this one is cloned from; "" = never a clone target
+    notes_branch: str = ""      # agents learn on this branch of control (a worktree per stage); "" = agents read control, never write
 
     def dir(self, server: Server) -> Path:
         return server.envs_root / self.name
@@ -101,6 +103,7 @@ def load(path: Path) -> Settings:
         users_json=Path(_need(s, "users_json", w)), cookie_secret=Path(_need(s, "cookie_secret", w)),
         runner_env_file=Path(_need(s, "runner_env_file", w)),
         nginx_snippet=Path(_need(s, "nginx_snippet", w)), host=str(_need(s, "host", w)),
+        notes_remote=str(s.get("notes_remote", "")),
     )
 
     envs: dict[str, Env] = {}
@@ -120,6 +123,7 @@ def load(path: Path) -> Settings:
             name=name, label=str(e.get("label", name.upper())), folder=str(_need(e, "folder", w)),
             mount=Path(_need(e, "mount", w)), port=port, base_path=base_path,
             ref=str(e.get("ref", "main")), clone_from=str(e.get("clone_from", "")),
+            notes_branch=str(e.get("notes_branch", "")),
         )
     if not envs:
         raise OpsError(f"{path.name}: no [env.<name>] tables — nothing to manage")

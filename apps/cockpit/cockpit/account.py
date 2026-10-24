@@ -29,6 +29,7 @@ SETTINGS = {"billing": BILLING, "locale": ("de", "en")}
 SECRETS = {
     "CLAUDE_CODE_OAUTH_TOKEN": re.compile(r"^sk-ant-oat01-[A-Za-z0-9_-]{40,}$"),   # `claude setup-token`, one year
     "ANTHROPIC_API_KEY": re.compile(r"^sk-ant-api03-[A-Za-z0-9_-]{40,}$"),        # a personal key, if someone prefers one
+    "OPENAI_API_KEY": re.compile(r"^sk-(proj-|svcacct-)?[A-Za-z0-9_-]{20,}$"),     # for agents on the openai engine; billed by OpenAI's API, not a ChatGPT plan
 }
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
@@ -157,6 +158,12 @@ class Accounts:
         }
 
     # --------------------------------------------------------------- billing
+    def openai_key(self, name: str | None) -> str | None:
+        """The person's own OpenAI key, for agents on the openai engine. There is no shared one."""
+        if name and NAME.match(name) and self.dir(name).exists():
+            return self._read_secrets(name).get("OPENAI_API_KEY")
+        return None
+
     def billing(self, name: str | None, base_env: dict, allow_shared: bool = False) -> Billing:
         """The environment for one run, chosen by the orderer's account.
 

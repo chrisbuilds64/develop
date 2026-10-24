@@ -108,6 +108,31 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     return commit
 
 
+def notes_worktree(settings: Settings, env: Env) -> Path | None:
+    """The stage's notes branch as a worktree of the shared control (ADR-019): the agents' folders the stage writes
+    into. Built once; from then on the runner keeps it on top of main and pushes what agents learn to the notes
+    remote. Control's main is never written from here. None when the stage has no notes branch."""
+    s = settings.server
+    if not env.notes_branch:
+        return None
+    tree = env.dir(s) / "notes"
+    control = s.shared / "control"
+    if s.notes_remote:
+        if run(["git", "-C", str(control), "remote", "get-url", "notes"], user=s.runner_user, check=False).returncode != 0:
+            run(["git", "-C", str(control), "remote", "add", "notes", s.notes_remote], user=s.runner_user)
+        else:
+            run(["git", "-C", str(control), "remote", "set-url", "notes", s.notes_remote], user=s.runner_user)
+    if (tree / ".git").exists():
+        return tree
+    run(["git", "-C", str(control), "fetch", "--quiet", "origin", "main"], user=s.runner_user)
+    start = "origin/main"
+    if s.notes_remote and run(["git", "-C", str(control), "fetch", "--quiet", "notes", env.notes_branch], user=s.runner_user, check=False).returncode == 0:
+        start = "FETCH_HEAD"                           # what this stage learned before survives a rebuilt worktree
+    run(["git", "-C", str(control), "worktree", "add", "--quiet", "-B", env.notes_branch, str(tree), start], user=s.runner_user)
+    log.info("%s: notes worktree %s on %s (from %s)", env.name, tree, env.notes_branch, start)
+    return tree
+
+
 def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     """The registry of this stage: the applications from the checkout, the shared PressRoom on the team folder
     (read from the disk, written through the mount), and two sample workspaces from the worlds. Written once;
@@ -132,9 +157,11 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
         }
         reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     data = json.loads(reg.read_text(encoding="utf-8"))
-    if "defaults" not in data:                         # ADR-019: every workspace of the stage offers the agents of the shared control,
-        data["defaults"] = {"agents": {"path": str(s.shared / "control" / "shared-context" / "agents"),   # read, never committed
-                                       "shared": True, "writable": False}}
+    tree = env.dir(s) / "notes" if env.notes_branch else None
+    agents = ({"path": str(tree / "shared-context" / "agents"), "shared": True, "writable": True} if tree else    # learns on the notes branch
+              {"path": str(s.shared / "control" / "shared-context" / "agents"), "shared": True, "writable": False})  # reads control, never commits
+    if (data.get("defaults") or {}).get("agents") != agents:  # ADR-019: every workspace of the stage offers these agents
+        data.setdefault("defaults", {})["agents"] = agents
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     have = {w["id"] for w in data["workspaces"]}
     venv = cp / ".venv"

@@ -321,6 +321,15 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
 
 # -------------------------------------------------------------------- sessions (ADR-019)
 
+def _accounts(args):
+    try:
+        from cockpit.account import Accounts
+    except ImportError:                                   # run from the source tree, outside the cockpit's interpreter
+        sys.path.insert(0, str(HERE.parents[2]))
+        from cockpit.account import Accounts
+    return Accounts(args.accounts)
+
+
 def _cockpit():
     try:
         from cockpit.workspaces import Workspaces
@@ -360,6 +369,135 @@ def end_prompt(log_path: Path, notes: Path | None, s) -> str:
             f"{notes_line}Touch no other file. Then answer in two lines: the log's path and the next natural sentence.")
 
 
+OPENAI_BASE = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
+
+def openai_call(key: str, model: str, instructions: str, messages: list[dict], timeout: int) -> tuple[str, dict]:
+    """One answer from the Responses API: the text and the usage. Raises RuntimeError with the API's sentence."""
+    import urllib.error
+    import urllib.request
+    body = json.dumps({"model": model, "instructions": instructions,
+                       "input": [{"role": m["role"], "content": m["content"]} for m in messages]}).encode()
+    req = urllib.request.Request(f"{OPENAI_BASE}/responses", data=body, method="POST",
+                                 headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode())
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode(errors="replace")[:400]
+        raise RuntimeError(f"{exc.code} {detail}") from exc
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise RuntimeError(f"no answer from the API: {exc}") from exc
+    text = data.get("output_text") or "".join(
+        c.get("text", "") for o in data.get("output", []) if o.get("type") == "message" for c in o.get("content", []) if c.get("type") == "output_text")
+    return text.strip(), dict(data.get("usage") or {}, model=data.get("model", model))
+
+
+NOTES_HEAD = "## Für die Working Notes"
+
+
+def openai_end_prompt(s) -> str:
+    return (f"End this session now and write its log. Answer with the log only, Markdown, in German (internal documentation). "
+            f"Structure: `# Session {s.started[:10]} — <title>`, then Datum, Instanz, Workspace `{s.workspace}`, Thema „{s.topic}“; "
+            "`## Was wurde gemacht`; `## Entscheidungen`; `## Offene Punkte`; `## Continuation Thread` with the open tension and the "
+            f"next natural sentence; last `{NOTES_HEAD}` with one dated observation about how the collaboration works, if this "
+            "session taught you one, otherwise a single dash. Only what this conversation contains — no invented work.")
+
+
+def execute_openai(f: Path, order: dict, s, agent, store, rules: dict, context: Path | None, args, finish, notes: Path | None) -> None:
+    """A turn on the openai engine: the conversation so far as input, the context as instructions, no tools. The closing
+    turn's answer is the log; its last section goes into the working notes when they are writable."""
+    key = _accounts(args).openai_key(s.user) if args.accounts else None
+    if not key:
+        text = (f"This message was not answered: {s.user} has no OpenAI API key on their account. {agent.label} runs on OpenAI; "
+                "add OPENAI_API_KEY on your account page (it is billed by OpenAI's API, not by a ChatGPT plan).")
+        store.add_turn(s.id, "system", text)
+        finish("failed", text, exit=78, billing="none")
+        if order.get("type") == "end":
+            store.close(s.id, None)
+        return
+    messages = [{"role": t["role"], "content": t["text"]} for t in store.transcript(s.id) if t["role"] in ("user", "assistant")]
+    if order.get("type") == "end":
+        messages.append({"role": "user", "content": openai_end_prompt(s) + (f"\n\nNote from {s.user}: {order['text']}" if order.get("text") else "")})
+    instructions = context.read_text(encoding="utf-8") if context else f"You are {agent.label}."
+    timeout = int(rules.get("timeout", 600))
+    text, usage, err = "", {}, ""
+    for model in [m for m in (rules.get("model"), rules.get("fallback_model")) if m]:
+        try:
+            text, usage = openai_call(key, model, instructions, messages, timeout)
+            break
+        except RuntimeError as exc:
+            err = f"{model}: {exc}"
+            log.warning("openai %s failed: %s", model, str(exc)[:200])
+    if not text:
+        store.add_turn(s.id, "system", f"no answer — {err or 'no model configured'}")
+        finish("failed", err or "no model configured", exit=1, billing="api-key")
+        return
+    spent = {"model": usage.get("model"), "turns": 1}
+    if isinstance(usage.get("input_tokens"), int):
+        spent.update(input_tokens=usage["input_tokens"], output_tokens=usage.get("output_tokens"))
+    if order.get("type") == "end":
+        log_path = store.log_path(s)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(text + "\n", encoding="utf-8")
+        learned = text.split(NOTES_HEAD, 1)[1].strip() if NOTES_HEAD in text else ""
+        if notes and learned and learned.strip("-– ").strip():
+            with notes.open("a", encoding="utf-8") as fh:
+                fh.write(f"\n### {s.started[:10]} — {s.topic} (Session im Cockpit)\n\n{learned}\n")
+        store.add_turn(s.id, "assistant", f"Log geschrieben: `{log_path.name}`", by=agent.id, model=spent.get("model"))
+        finish("done", text, exit=0, billing="api-key", **spent)
+        store.close(s.id, log_path)
+        return
+    store.add_turn(s.id, "assistant", text, by=agent.id, model=spent.get("model"))
+    store.update(s.id, turns=s.turns + 1)
+    finish("done", text, exit=0, billing="api-key", **spent)
+
+
+def notes_sync(args) -> None:
+    """Before a turn: the notes worktree follows control's main, so an agent learns on top of today's rules.
+    A rebase that does not apply is aborted and logged; the agent then works on the notes it has."""
+    repo = args.notes_repo
+    if not repo:
+        return
+    r = subprocess.run(["git", "-C", str(repo), "fetch", "--quiet", "origin", "main"], capture_output=True, text=True, timeout=120)
+    if r.returncode == 0:
+        r = subprocess.run(["git", "-C", str(repo), "rebase", "--quiet", "origin/main"], capture_output=True, text=True, timeout=120)
+        if r.returncode != 0:
+            subprocess.run(["git", "-C", str(repo), "rebase", "--abort"], capture_output=True)
+    if r.returncode != 0:
+        log.warning("notes: could not follow main: %s", (r.stderr or r.stdout).strip()[-200:])
+
+
+def notes_commit(args, agent, s) -> str | None:
+    """After the closing turn: what the agent wrote into its folder becomes one commit on the stage's notes branch,
+    pushed to the notes remote. Nothing reaches control's main without Chris' merge. Returns the commit, or None."""
+    repo = args.notes_repo
+    if not repo:
+        return None
+    try:
+        rel = str(agent.dir.resolve().relative_to(repo.resolve()))
+    except ValueError:
+        log.warning("notes: %s is not inside the notes worktree %s", agent.dir, repo)
+        return None
+    if not subprocess.run(["git", "-C", str(repo), "status", "--porcelain", "--", rel], capture_output=True, text=True).stdout.strip():
+        return None
+    branch = subprocess.run(["git", "-C", str(repo), "branch", "--show-current"], capture_output=True, text=True).stdout.strip()
+    msg = f"notes({os.environ.get('PRESSROOM_ENV', 'local')}): {agent.label} — {s.topic}\n\nSession {s.id}, for {s.user}. Learned in a cockpit session; reaches main only by merge."
+    run = lambda *c: subprocess.run(["git", "-C", str(repo), *c], capture_output=True, text=True, timeout=120)
+    run("add", "--", rel)
+    r = run("-c", f"user.name={agent.label} (cockpit)", "-c", "user.email=agents@chrisbuilds64.com", "commit", "--quiet", "-m", msg)
+    if r.returncode != 0:
+        log.warning("notes: commit failed: %s", (r.stderr or r.stdout).strip()[-200:])
+        return None
+    sha = run("rev-parse", "--short", "HEAD").stdout.strip()
+    r = run("push", "--quiet", "--force-with-lease", args.notes_remote, f"HEAD:refs/heads/{branch}")
+    if r.returncode != 0:
+        log.warning("notes: %s committed but not pushed: %s", sha, (r.stderr or r.stdout).strip()[-200:])
+    else:
+        log.info("notes: %s pushed to %s %s", sha, args.notes_remote, branch)
+    return sha
+
+
 def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
     """One turn of a session: a message, or the closing turn that writes the log and releases the lease."""
     sid, kind = order["session"], order.get("type")
@@ -381,6 +519,7 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
     rules = {**policy.get("default", {}), **agent.rules_for(None)}       # the agent's ceiling is the conversation's rule
     if args.pull:
         refresh(args.pull)
+    notes_sync(args)
     agents_c = ws.component(w, "agents")
     plain_env = dict(os.environ, COCKPIT_DATA_DIR=str(data), CONTEXT_LOOP_DIR=str(data), PRESSROOM_WORKSPACE=w.id,
                      PRESSROOM_ENV=os.environ.get("PRESSROOM_ENV", "local"), PRESSROOM_SKILL="",
@@ -390,6 +529,17 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
                      PRESSROOM_AGENT_SIGNATURE=str(agent.signature_path or ""), PRESSROOM_AGENT_NOTES=str(agent.notes_path or ""),
                      PRESSROOM_SESSION_LOG=str(store.dir / s.starts_from) if s.starts_from else "",
                      PRESSROOM_RUN_ID=order["id"])
+    notes_writable = bool(agents_c and agents_c.writable and agent.notes_path)
+    if agent.engine == "openai":
+        home, wsdir = run_home(args, data, w.id, f"session-{sid}")
+        context = context_file(order, dict(plain_env, HOME=str(home)), args, wsdir)
+        log.info("session %s %s — openai engine, %s", sid, kind, rules.get("model"))
+        execute_openai(f, order, s, agent, store, rules, context, args, finish, agent.notes_path if notes_writable else None)
+        if kind == "end":
+            shutil.rmtree(home, ignore_errors=True)
+            if notes_writable:
+                notes_commit(args, agent, s)
+        return
     env, billing, billed_by = billing_for(order, rules, plain_env, args)
     log.info("session %s %s — billing: %s", sid, kind, billed_by)
     if billing == "none":
@@ -408,7 +558,7 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
     if kind == "end":
         log_path = store.log_path(s)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        notes = agent.notes_path if (agents_c and agents_c.writable and agent.notes_path) else None
+        notes = agent.notes_path if notes_writable else None
         prompt = end_prompt(log_path, notes, s) + (f"\n\nNote from {s.user}: {order['text']}" if order.get("text") else "")
     else:
         prompt = order["text"]
@@ -418,7 +568,9 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
     if context:
         cmd += ["--append-system-prompt-file", str(context)]
     if rules.get("model"):
-        cmd += ["--model", rules["model"]]
+        cmd += ["--model", rules["model"]]                # assigned to the agent, else the stage's default from run-policy.json
+    if rules.get("fallback_model") and rules.get("fallback_model") != rules.get("model"):
+        cmd += ["--fallback-model", rules["fallback_model"]]
     subst = {"{data}": str(data), "{container}": str(data)}
     dirs = [subst.get(x, x) for x in rules.get("write", [])] + [str(d) for d in args.add_dir]
     tools = list(rules.get("tools", [])) + (WEB_TOOLS if rules.get("web") else [])
@@ -452,7 +604,9 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
     finish("done" if code == 0 else "failed", result, exit=code, billing=billing, log=f"queue/{transcript.name}", **spent)
     if kind == "end":
         closed = store.close(sid, log_path)
-        shutil.rmtree(home, ignore_errors=True)            # the session's HOME ends with the session; the log and transcript stay
+        shutil.rmtree(home, ignore_errors=True)
+        if notes:
+            notes_commit(args, agent, s)            # the session's HOME ends with the session; the log and transcript stay
         log.info("session %s closed — log %s", sid, closed.log or "not written")
 
 
@@ -469,6 +623,9 @@ def main(argv=None) -> int:
     p.add_argument("--add-dir", action="append", default=[],
                    help="a directory the session may read beyond the workspace — the shared checkouts the workspace links to")
     p.add_argument("--accounts", default="", help="the cockpit's accounts directory — the orderer's token decides the billing; '' = always the shared key")
+    p.add_argument("--notes-repo", default="", help="a git worktree on the stage's notes branch that holds the agents' folders; "
+                   "what an agent learns is committed there and pushed to --notes-remote ('' = notes are not committed)")
+    p.add_argument("--notes-remote", default="notes", help="the remote the notes branch is pushed to — never control's main")
     p.add_argument("--context-script", default="control/claude/hooks/runner-context.py",
                    help="script (relative to the workspace) that prints the run's operating context; '' for none")
     args = p.parse_args(argv)
@@ -481,6 +638,7 @@ def main(argv=None) -> int:
     args.pull = [Path(x.strip()).expanduser() for x in args.pull.split(",") if x.strip()]
     args.add_dir = [Path(x).expanduser().resolve() for x in args.add_dir]
     args.accounts = Path(args.accounts).expanduser() if args.accounts else None
+    args.notes_repo = Path(args.notes_repo).expanduser() if args.notes_repo else None
     args.context_script = (args.workspace / args.context_script) if args.context_script else None
     if args.context_script and not args.context_script.is_file():
         log.warning("no context script at %s — runs get CLAUDE.md and the canon only", args.context_script)

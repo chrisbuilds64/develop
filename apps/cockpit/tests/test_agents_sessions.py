@@ -265,3 +265,97 @@ def test_the_conversation_shows_avatars_and_renders_answers_safely(world):
     store.add_turn(loc.rsplit("/", 1)[1], "assistant", "**fett** und <script>alert(1)</script>")
     html = client.get(loc).text
     assert "<strong>fett</strong>" in html and "<script>alert(1)" not in html and 'id="mic"' in html
+
+
+def test_an_openai_agent_answers_falls_back_and_learns_into_its_notes(tmp_path):
+    import http.server
+    import subprocess
+    import sys
+    import threading
+    from cockpit.account import Accounts
+    seen = []
+
+    class API(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            seen.append({"model": body["model"], "auth": self.headers["Authorization"], "n": len(body["input"]), "instructions": body["instructions"][:40]})
+            if body["model"] == "big":
+                self.send_response(503); self.end_headers(); self.wfile.write(b'{"error": "overloaded"}'); return
+            last = body["input"][-1]["content"]
+            text = ("# Session\n## Continuation Thread\nweiter\n## Für die Working Notes\nKurze Fragen kurz beantworten." if "End this session" in last
+                    else "Hier Atlas: " + last)
+            out = {"model": body["model"], "output": [{"type": "message", "content": [{"type": "output_text", "text": text}]}],
+                   "usage": {"input_tokens": 10, "output_tokens": 5}}
+            self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(json.dumps(out).encode())
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), API)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    agents = tmp_path / "agents"
+    d = agent_dir(agents, "atlas", {"label": "Atlas", "engine": "openai", "model": "big", "fallback_model": "small"})
+    (d / "working-notes.md").write_text("# Atlas — Working Notes\n", encoding="utf-8")
+    (tmp_path / "flow").mkdir()
+    reg = {"applications": {"pressroom": {"label": "PressRoom", "config_dir": "config"}},
+           "workspaces": [{"id": "lab", "application": "pressroom", "owner": "alex", "root": "flow",
+                           "components": {"agents": {"path": str(agents)}}}]}
+    (tmp_path / "workspaces.json").write_text(json.dumps(reg))
+    Accounts(tmp_path / "accounts").set_secret("alex", "OPENAI_API_KEY", "sk-proj-" + "y" * 40)
+    ws = Workspaces(tmp_path / "workspaces.json", tmp_path)
+    store = ws.sessions(ws.get("lab"))
+    s, _ = store.start("lab", "atlas", "alex", "Strategie")
+    store.say(s.id, "alex", "Wo stehen wir?")
+    runner = Path(__file__).resolve().parents[1] / "cockpit" / "plugins" / "pipeline" / "runner.py"
+    env = dict(__import__("os").environ, OPENAI_BASE_URL=f"http://127.0.0.1:{srv.server_port}")
+
+    def run_once():
+        r = subprocess.run([sys.executable, str(runner), "--workspace", str(tmp_path), "--workspaces", str(tmp_path / "workspaces.json"),
+                            "--accounts", str(tmp_path / "accounts"), "--context-script", "", "--once"], capture_output=True, text=True, env=env)
+        assert "Traceback" not in r.stdout + r.stderr, r.stdout + r.stderr
+
+    run_once()
+    assert [x["model"] for x in seen] == ["big", "small"] and seen[0]["auth"] == "Bearer sk-proj-" + "y" * 40
+    assert store.transcript(s.id)[-1]["text"] == "Hier Atlas: Wo stehen wir?" and store.transcript(s.id)[-1]["model"] == "small"
+    store.end(s.id, "alex")
+    run_once()
+    closed = store.get(s.id)
+    assert closed.status == "closed" and "Continuation Thread" in (store.dir / closed.log).read_text()
+    assert "Kurze Fragen kurz beantworten." in (d / "working-notes.md").read_text()          # learned, because the component is writable
+    # without a key of their own, nobody's key is used
+    s2, _ = store.start("lab", "atlas", "sam", "Ohne Key")
+    store.say(s2.id, "sam", "Hallo")
+    run_once()
+    assert "no OpenAI API key" in store.transcript(s2.id)[-1]["text"] and len(seen) == 4
+    srv.shutdown()
+
+
+def test_what_an_agent_learns_is_committed_to_the_notes_branch_and_never_to_main(tmp_path):
+    import importlib.util
+    import subprocess
+    from types import SimpleNamespace
+    git = lambda cwd, *a: subprocess.run(["git", "-C", str(cwd), *a], capture_output=True, text=True, check=True).stdout.strip()
+    origin, notes_remote = tmp_path / "control.git", tmp_path / "control-notes.git"
+    git(tmp_path, "init", "-q", "--bare", "-b", "main", str(origin)); git(tmp_path, "init", "-q", "--bare", "-b", "main", str(notes_remote))
+    work = tmp_path / "control"
+    git(tmp_path, "clone", "-q", str(origin), str(work))
+    d = agent_dir(work / "agents", "atlas", {"label": "Atlas"})
+    (d / "working-notes.md").write_text("# notes\n")
+    git(work, "add", "-A"); git(work, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base"); git(work, "push", "-q", "origin", "HEAD:main")
+    git(work, "remote", "add", "notes", str(notes_remote))
+    tree = tmp_path / "notes-entw"
+    git(work, "worktree", "add", "-q", "-b", "notes/entw", str(tree), "origin/main")
+    spec = importlib.util.spec_from_file_location("runner", Path(__file__).resolve().parents[1] / "cockpit" / "plugins" / "pipeline" / "runner.py")
+    runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
+    args = SimpleNamespace(notes_repo=tree, notes_remote="notes")
+    agent = load_agent(tree / "agents" / "atlas")
+    s = SimpleNamespace(id="20261024-170000_atlas_x", topic="Strategie", user="chris")
+    assert runner.notes_commit(args, agent, s) is None                                   # nothing learned, nothing committed
+    (tree / "agents" / "atlas" / "working-notes.md").write_text("# notes\n### 2026-10-24 — kurz antworten\n")
+    sha = runner.notes_commit(args, agent, s)
+    assert sha and git(notes_remote, "log", "--format=%an|%s", "notes/entw", "-1") == "Atlas (cockpit)|notes(local): Atlas — Strategie"
+    assert git(origin, "log", "--format=%s", "main") == "base"                           # control's main is untouched
+    # main moves on; the next turn's sync puts the notes on top of it
+    (work / "README.md").write_text("x"); git(work, "add", "-A"); git(work, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "main moves"); git(work, "push", "-q", "origin", "HEAD:main")
+    runner.notes_sync(args)
+    assert git(tree, "log", "--format=%s", "-2").splitlines() == ["notes(local): Atlas — Strategie", "main moves"]

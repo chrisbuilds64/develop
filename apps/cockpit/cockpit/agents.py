@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
-ENGINES = ("claude-code",)                     # the one engine the runner can drive today; `openai` would be the next
+ENGINES = ("claude-code", "openai")            # claude-code: a full session with tools; openai: conversation only, no tools
 READ_ONLY = ("Read", "Grep", "Glob")
 
 
@@ -45,7 +45,8 @@ class Agent:
     dir: Path
     role: str = ""
     engine: str = "claude-code"
-    model: str | None = None
+    model: str | None = None                   # the model assigned to this agent; without one, the stage's default
+    fallback_model: str | None = None          # taken when the assigned one is overloaded or not available
     signature: str | None = None
     notes: str | None = None
     avatar: str | None = None                  # an image in the agent's folder; without one the page shows initials
@@ -88,6 +89,8 @@ class Agent:
         mine = {"tools": list(self.tools), "web": self.web, "write": list(self.write), "agent": self.label}
         if self.model:
             mine["model"] = self.model
+        if self.fallback_model:
+            mine["fallback_model"] = self.fallback_model
         if skill_rules is None:
             return mine
         out = dict(skill_rules)
@@ -97,6 +100,8 @@ class Agent:
         out["agent"] = self.label
         if self.model and not skill_rules.get("model"):
             out["model"] = self.model
+        if self.fallback_model:
+            out["fallback_model"] = self.fallback_model
         return out
 
     def summary(self) -> dict:
@@ -136,7 +141,7 @@ def load_agent(folder: Path) -> Agent | None:
             raise AgentError(f"{where}: '{key}' is a file name inside the agent's folder, not a path")
     return Agent(
         id=aid, label=str(raw.get("label") or aid.capitalize()), dir=folder, role=str(raw.get("role", "")),
-        engine=engine, model=raw.get("model"), signature=raw.get("signature", f"{aid}-signature.md"),
+        engine=engine, model=raw.get("model"), fallback_model=raw.get("fallback_model"), signature=raw.get("signature", f"{aid}-signature.md"),
         notes=raw.get("notes", "working-notes.md"), context=raw.get("context", aid),
         avatar=raw.get("avatar", f"{aid}-avatar.png"),
         skills=_tuple(raw.get("skills"), where, "skills"),

@@ -59,7 +59,8 @@ def install(settings: Settings, env: Env, dav_url: str) -> dict[str, str]:
                                  mount_unit=names["mount"], user=s.runner_user, data=env.mount / "flow",
                                  claude=s.claude_bin, env_file=s.runner_env_file,
                                  pull=f"{s.shared / 'canon'},{s.shared / 'control'}", shared=s.shared,
-                                 accounts=s.users_json.parent / "accounts"),
+                                 accounts=s.users_json.parent / "accounts",
+                                 notes=f" --notes-repo {d / 'notes'}" if env.notes_branch else ""),
     }
     for name, text in units.items():
         p = SYSTEMD / name
