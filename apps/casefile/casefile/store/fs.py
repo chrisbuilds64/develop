@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import hashlib
 import json
 import os
 import re
 import shutil
+import tempfile
 import threading
 from pathlib import Path
 
@@ -161,14 +163,25 @@ class FsStore:
         return sorted(p.name for p in d.glob("*.json")) if d.is_dir() else []
 
     # ------------------------------------------------------------------ locking
+    def _lock_dir(self) -> Path:
+        """Where the advisory lock files live. Beside the journals when the tree is written where it is read; on
+        the local disk when writes go through a mount — the read side may be read-only for this process, and a
+        WebDAV mount does not hold a flock. One cockpit per tree holds the thread lock anyway; the file lock is
+        for a second process on the same machine."""
+        if self.write_root == self.root:
+            d = self.root / "_steps"
+        else:
+            d = Path(tempfile.gettempdir()) / ("casefile-locks-" + hashlib.sha1(str(self.root).encode()).hexdigest()[:12])
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
     @contextlib.contextmanager
     def lock(self, case_id: str):
         """One step at a time per case: a thread lock in the process, an advisory lock across processes."""
         with self._locks_guard:
             tl = self._locks.setdefault(case_id, threading.Lock())
         with tl:
-            d = self.root / "_steps"
-            d.mkdir(exist_ok=True)
+            d = self._lock_dir()
             lock_path = d / f".lock-{case_id}"
             with lock_path.open("a+") as fh:
                 fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
