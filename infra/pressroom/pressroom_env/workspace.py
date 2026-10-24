@@ -7,7 +7,8 @@
         .claude.json             trust for the workspace below
         ChrisBuilds64/           the workspace a headless session starts in
           CLAUDE.md              the slim runner instructions, with the stage named
-          .claude/settings.json  permissions + the SessionStart hook that loads the context manifest
+          .claude/settings.json  permissions (the operating context arrives as an appended system prompt, built
+                                 by the runner from control/shared-context/context-manifest.json)
           .claude/skills, .claude/agents  → shared control/claude
           canon, control         → shared checkouts (rules and state are not staged)
           develop                → ../../develop

@@ -8,8 +8,9 @@ started by `runner.py` with one order: run one skill on one container. Do that, 
 - **PressRoom:** `~/ChrisBuilds64/pressroom/flow/` (a WebDAV mount of the stage's Nextcloud team folder,
   `{{mount}}`). Stage folders are the status. Write only inside the ordered container, or where the skill says.
 - **Canon:** `~/ChrisBuilds64/canon/` — binding editorial and brand rules; the skills load what they need.
-- **Context:** the SessionStart hook has put the operating context in front of you — signature, governance,
-  project state, the latest session log, current intent. Work from it as the person at the keyboard would.
+- **Context:** the runner has put the operating context in front of you as part of your system prompt (RUN
+  CONTEXT) — signature, governance, project state, the latest session log, current intent. Work from it as the
+  person at the keyboard would; do not re-read those files.
 - **Skills and agents:** `.claude/skills/`, `.claude/agents/` (fact-checker, boundaries-reviewer).
 - **Temporary files:** `~/ChrisBuilds64/tmp/`, never /tmp.
 - **Language:** public content English; internal notes, review entries and your closing report German.

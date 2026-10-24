@@ -43,7 +43,7 @@ state, the same for everyone, and always current.
     .claude.json              trust for the workspace
     ChrisBuilds64/            the workspace a headless session starts in
       CLAUDE.md               slim runner instructions, stage named
-      .claude/settings.json   permissions + SessionStart hook (runner-context.py)
+      .claude/settings.json   permissions (the context comes as system prompt, see below)
       .claude/skills, agents  → ../control/claude/…
       canon, control          → /home/runner/ChrisBuilds64/… (shared)
       develop                 → ../../develop
@@ -76,7 +76,10 @@ Uvicorn prepends `root_path` to every path it receives, so the proxy must not se
 ## How a run from the button knows what a keyboard session knows
 
 The runner hands the order to the session as environment (`PRESSROOM_ENV`, `PRESSROOM_SKILL`,
-`PRESSROOM_CONTAINER`, `PRESSROOM_ORDERED_BY`, `PRESSROOM_AGENT`). The workspace's SessionStart hook
-(`control/claude/hooks/runner-context.py`) reads `control/shared-context/context-manifest.json` — the
-list of files an instance knows before it works, curated in one place — and inlines them. Same files
-as `/session-start` at the keyboard, chosen by instance and by the skill's domain.
+`PRESSROOM_CONTAINER`, `PRESSROOM_ORDERED_BY`, `PRESSROOM_AGENT`), runs the context script
+(`control/claude/hooks/runner-context.py --plain`), and gives the session the result as an appended
+system prompt file. The script reads `control/shared-context/context-manifest.json` — the list of files
+an instance knows before it works, curated in one place — and inlines them: the same files
+`/session-start` reads at the keyboard, chosen by instance and by the skill's domain. A SessionStart
+hook cannot carry this: Claude Code keeps hook output above a few kilobytes out of the context
+(observed 2026-10-24, 110 KB saved to a file with a 2 KB preview), so the system prompt is the path.

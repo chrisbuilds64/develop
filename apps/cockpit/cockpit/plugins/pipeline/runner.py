@@ -16,9 +16,13 @@ may be off, and the order waits.
 
 What the session knows beyond the skill: `--pull` refreshes the shared
 checkouts (canon, control) before every run, so the rules are today's; the
-order's stage, skill, container and orderer travel as PRESSROOM_* variables,
-and the workspace's SessionStart hook turns them into loaded context. That is
-how a run from the button knows what a session at the keyboard knows.
+order's stage, skill, container and orderer travel as PRESSROOM_* variables;
+and `--context-script` (control/claude/hooks/runner-context.py) turns the
+context manifest into a file that goes to the session as an appended system
+prompt — the same files /session-start reads at the keyboard. That is how a
+run from the button knows what a session at the keyboard knows. (A SessionStart
+hook cannot carry it: Claude Code keeps hook output above a few kilobytes out
+of the context, observed 2026-10-24.)
 
 Claiming is a `mkdir` next to the order — atomic on a network mount, so two
 runners never take the same job. The transcript goes to _runs/<id>.log, the
@@ -77,7 +81,32 @@ def accounting(data: dict) -> dict:
     return out
 
 
-def command_for(run: dict, rules: dict, args) -> list[str]:
+def context_file(run: dict, env: dict, args) -> Path | None:
+    """The operating context for this run, written by the context script into the workspace's tmp/.
+
+    Returns None when there is no script or it fails — the run then goes on with CLAUDE.md and the canon,
+    and the log says so. A missing context is a worse run, not a refused one.
+    """
+    script = args.context_script
+    if not script or not script.is_file():
+        return None
+    out = args.workspace / "tmp" / f"run-context_{run['id']}.md"
+    try:
+        out.parent.mkdir(exist_ok=True)
+        r = subprocess.run([sys.executable, str(script), "--plain"], cwd=args.workspace, env=env, capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        log.warning("context script failed: %s", exc)
+        return None
+    if r.returncode != 0 or not r.stdout.strip():
+        log.warning("context script returned %s: %s", r.returncode, (r.stderr or "").strip()[-200:])
+        return None
+    out.write_text(r.stdout, encoding="utf-8")
+    first = r.stdout.splitlines()[:3]
+    log.info("context: %s chars → %s (%s)", len(r.stdout), out.name, next((l for l in first if l.startswith("Domain")), "")[:80])
+    return out
+
+
+def command_for(run: dict, rules: dict, args, context: Path | None = None) -> list[str]:
     """The headless session, shaped by the policy: what it may write, which tools, how long.
 
     Every right the session gets is a line in run-policy.json — nothing here by default.
@@ -85,6 +114,8 @@ def command_for(run: dict, rules: dict, args) -> list[str]:
     subst = {"{data}": str(args.data), "{container}": str(args.data / run["container"])}
     cmd = [args.claude, "-p", prompt_for(run, rules.get("agent", "the agent")), "--output-format", "json",
            "--permission-mode", rules.get("permission_mode", "acceptEdits")]
+    if context:
+        cmd += ["--append-system-prompt-file", str(context)]
     if rules.get("model"):
         cmd += ["--model", rules["model"]]                # the policy's choice per skill; without it, Claude Code's default
     for w in rules.get("write", []):
@@ -155,9 +186,10 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
     transcript = queue / (f.stem + ".log")
     if args.pull:
         refresh(args.pull)
-    cmd = command_for(run, rules, args)
-    timeout = int(rules.get("timeout", 1800))
     env = session_env(run, rules, args)
+    context = context_file(run, env, args)
+    cmd = command_for(run, rules, args, context)
+    timeout = int(rules.get("timeout", 1800))
     with transcript.open("w", encoding="utf-8") as out:
         out.write(f"# {run['id']} — started {run['started']} by {run['taken_by']}\n$ {' '.join(cmd[:2])} … {' '.join(cmd[3:])}\n\n")
         out.flush()
@@ -198,11 +230,16 @@ def main(argv=None) -> int:
     p.add_argument("--once", action="store_true", help="process what is queued, then exit")
     p.add_argument("--pull", default="", help="comma-separated git checkouts to `pull --ff-only` before every run (canon, control)")
     p.add_argument("--log-level", default=os.environ.get("RUNNER_LOG_LEVEL", "INFO"))
+    p.add_argument("--context-script", default="control/claude/hooks/runner-context.py",
+                   help="script (relative to the workspace) that prints the run's operating context; '' for none")
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level.upper(), format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S", stream=sys.stdout)
     args.workspace = Path(args.workspace).expanduser().resolve()
     args.data = Path(args.data).expanduser().resolve()
     args.pull = [Path(x.strip()).expanduser() for x in args.pull.split(",") if x.strip()]
+    args.context_script = (args.workspace / args.context_script) if args.context_script else None
+    if args.context_script and not args.context_script.is_file():
+        log.warning("no context script at %s — runs get CLAUDE.md and the canon only", args.context_script)
     queue = args.data / "_runs"
     stage = os.environ.get("PRESSROOM_ENV", "local")
     me = f"{os.environ.get('USER', 'runner')}@{socket.gethostname().split('.')[0]}/{stage}"
