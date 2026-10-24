@@ -249,3 +249,18 @@ def test_the_surface_is_served_under_any_prefix(tmp_path):
     assert client.get("/w/one/assets/a.js").text == "1"
     plain = TestClient(inner).get("/").text
     assert 'content=""' in plain and 'src="/assets/a.js"' in plain
+
+
+def test_roles_missing_at_the_root_are_lent_by_the_domain(tmp_path):
+    import json
+    from casefile.config import DomainConfig
+    from tests.world import build
+    root = build(tmp_path / "flow")
+    people = json.loads((root / "people.json").read_text())
+    for p in people["people"]:
+        p.pop("roles", None)                                   # the production file: persons, no roles
+    (root / "people.json").write_text(json.dumps(people))
+    cfg = DomainConfig.load(root.parent / "config", root)
+    chris = cfg.person("chris")
+    assert chris is not None and chris.roles                   # lent by config/people.json
+    assert cfg.may_act("chris", "role:" + chris.roles[0])

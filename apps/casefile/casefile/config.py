@@ -46,6 +46,13 @@ class DomainConfig:
             doc = (_read(root / name) if root else None) or _read(domain_dir / name)
             docs[name] = doc or {}
         people = [Person(**p) for p in docs["people.json"].get("people", [])]
+        # A running pipeline's people.json may know the persons but not their roles (the PressRoom's did, 2026-10-24);
+        # the domain's own people.json then lends the roles to the same ids, so the gates know whose move it is.
+        own = _read(domain_dir / "people.json") or {}
+        lent = {p["id"]: p.get("roles", []) for p in own.get("people", []) if isinstance(p, dict) and p.get("id")}
+        for person in people:
+            if not person.roles and lent.get(person.id):
+                person.roles = list(lent[person.id])
         return cls(
             name=theme.get("name") or stages_doc.get("name") or domain_dir.name,
             stages=[Stage(**s) for s in stages_doc.get("stages", [])],
