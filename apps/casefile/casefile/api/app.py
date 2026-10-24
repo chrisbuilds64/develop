@@ -66,6 +66,7 @@ class Settings:
     open_identity: bool = True                   # POST /api/session {person} without a password (development, demo)
     identity: Callable[[Request], str | None] | None = None   # who is here, decided outside (the cockpit's login); then the own cookie is never read
     label: str | None = None                     # what the surface calls this workspace, when it differs from the domain's product name
+    stage: str | None = None                     # "entw", "test": a stripe and a badge on every page of the surface; nothing for production
     secret: str = field(default_factory=lambda: secrets.token_hex(16))
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
@@ -804,11 +805,24 @@ def create_app(settings: Settings) -> FastAPI:
         index_html = (settings.web_dist / "index.html").read_text(encoding="utf-8")
         _ROOTED = re.compile(r'((?:src|href)=")/(?!/)')
 
+        STAGE_COLOR = {"entw": "#c62828", "test": "#1d4ed8"}
+
         def index_for(prefix: str) -> str:
             """One build, served under any prefix: rooted asset paths get the prefix, and the surface learns its base
-            from a meta tag (api.ts reads it before it falls back to the build-time BASE_URL)."""
+            from a meta tag (api.ts reads it before it falls back to the build-time BASE_URL). A stage other than
+            production gets a stripe along the top and a badge, injected here so the build stays one build."""
             html = _ROOTED.sub(lambda m: m.group(1) + prefix + "/", index_html) if prefix else index_html
-            return html.replace("<head>", f'<head>\n    <meta name="cf-base" content="{prefix}" />', 1)
+            html = html.replace("<head>", f'<head>\n    <meta name="cf-base" content="{prefix}" />', 1)
+            stage = (settings.stage or "").lower()
+            if stage and stage != "prod":
+                color = STAGE_COLOR.get(stage, "#1d4ed8")
+                mark = (f'<style>.cf-stage{{position:fixed;top:0;left:0;right:0;height:4px;background:{color};z-index:9999}}'
+                        f'.cf-stage-badge{{position:fixed;top:8px;right:12px;z-index:9999;font:700 11px/1 system-ui,sans-serif;letter-spacing:.08em;'
+                        f'color:#fff;background:{color};padding:4px 8px;border-radius:999px;pointer-events:none}}</style>\n'
+                        f'    <meta name="cf-stage" content="{stage}" />')
+                html = html.replace("</head>", mark + "\n  </head>", 1)
+                html = html.replace("<body>", f'<body>\n    <div class="cf-stage" aria-hidden="true"></div><div class="cf-stage-badge">{stage.upper()}</div>', 1)
+            return html
 
         @app.get("/{path:path}", include_in_schema=False)
         def spa(path: str, request: Request):

@@ -242,7 +242,7 @@ def create_app(config: Config) -> FastAPI:
         try:
             w = workspaces.create(form.get("id", "").strip().lower(), form.get("application", ""), None if shared else c["user"].name,
                                   label=form.get("label", "").strip(), source=form.get("source") or None, shared=shared)
-            mount_one(app, workspaces, w, identity, users.secret_text(), web_dist)
+            mount_one(app, workspaces, w, identity, users.secret_text(), web_dist, config.environment)
         except WorkspaceError as exc:
             return go("/workspaces/new?err=" + quote(str(exc)))
         except Exception as exc:                        # noqa: BLE001 — the entry stands, the mount did not come up: say so
@@ -640,7 +640,7 @@ def create_app(config: Config) -> FastAPI:
         return await call_next(request)
 
     app.state.app_failures = dict(mount_apps(app, config))
-    app.state.workspace_failures = mount_all(app, workspaces, identity, users.secret_text(), web_dist) if workspaces else {}
+    app.state.workspace_failures = mount_all(app, workspaces, identity, users.secret_text(), web_dist, config.environment) if workspaces else {}
     app.state.workspaces = workspaces
     app.state.i18n = i18n
     app.state.users = users

@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/cockpit.css">
 </head>
-<body class="login-body">
+<body{% if config.environment and config.environment != 'prod' %} data-env="{{ config.environment }}"{% endif %} class="login-body">
 <main class="login">
   <div class="login-card">
     <div class="login-mark">

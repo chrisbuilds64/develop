@@ -6,7 +6,7 @@
 <title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }}</title>
 <link rel="stylesheet" href="/static/cockpit.css">
 </head>
-<body class="intro-body">
+<body{% if config.environment and config.environment != 'prod' %} data-env="{{ config.environment }}"{% endif %} class="intro-body">
 <div class="intro" id="intro">
   <svg class="intro-svg" viewBox="0 0 480 300" role="img" aria-label="{{ config.name }}">
     <defs>

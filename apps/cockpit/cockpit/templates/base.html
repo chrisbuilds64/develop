@@ -14,7 +14,7 @@
 <script src="/static/htmx.min.js" defer></script>
 {% endif %}
 </head>
-<body{% if not export and (user or not config.login_required) %} class="has-rail"{% endif %}>
+<body{% if config.environment and config.environment != 'prod' %} data-env="{{ config.environment }}"{% endif %}{% if not export and (user or not config.login_required) %} class="has-rail"{% endif %}>
 {% if not export and (user or not config.login_required) %}
 {% from "glyphs.html" import glyph %}
 <button type="button" class="menu-toggle" aria-label="{{ t('app.menu') }}" onclick="document.querySelector('.side').classList.toggle('open');document.querySelector('.scrim').classList.toggle('open')">☰</button>

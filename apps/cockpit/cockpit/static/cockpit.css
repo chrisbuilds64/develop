@@ -54,9 +54,16 @@ h1, h2, h3 { margin: 0; font-weight: 650; letter-spacing: -.01em; }
 .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
 .brand h1 em { font-style: normal; color: var(--accent-soft); }
 .brand .tag { color: var(--ink-3); font-size: 13px; }
-/* the stage this instance serves — loud on purpose, so TEST is never mistaken for PROD */
-.brand .env { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; color: #fff; background: #b45309; }
-.brand .env-entw { background: #15803d; }
+/* the stage this instance serves — loud on purpose, so a stage is never mistaken for production (Chris, 24.10.:
+   red for ENTW, blue for TEST, production keeps the plain layout). The badge sits by the name, the stripe along the top. */
+:root { --stage-entw: #c62828; --stage-test: #1d4ed8; }
+.env { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; color: #fff; background: var(--stage-test); vertical-align: middle; }
+.env-entw { background: var(--stage-entw); }
+.env-test { background: var(--stage-test); }
+body[data-env="entw"]::before, body[data-env="test"]::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 100; background: var(--stage-test); }
+body[data-env="entw"]::before { background: var(--stage-entw); }
+body[data-env="entw"] .side .menu-head, body[data-env="test"] .side .menu-head { border-bottom-color: var(--stage-test); }
+body[data-env="entw"] .side .menu-head { border-bottom-color: var(--stage-entw); }
 .controls { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
 .controls select, .controls button {
   font: inherit; color: var(--ink); background: var(--surface-2);

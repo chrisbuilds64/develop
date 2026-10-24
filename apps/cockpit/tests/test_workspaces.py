@@ -99,6 +99,8 @@ def test_under_a_prefix_the_mounted_surface_is_prefixed_once(world):
     html = client.get("/test/w/shared/").text
     assert '<meta name="cf-base" content="/test/w/shared" />' in html
     assert 'src="/test/w/shared/assets/' in html and "/test/test/" not in html
+    assert '<meta name="cf-stage" content="test" />' in html and 'class="cf-stage-badge">TEST<' in html   # the stage shows inside the surface too
+    assert 'data-env="test"' in client.get("/test/").text                                      # and on the shell's own pages
     assert client.get("/test/").status_code == 200 and 'href="/test/w/shared/"' in client.get("/test/").text
 
 
