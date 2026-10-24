@@ -120,6 +120,9 @@ def command_for(run: dict, rules: dict, args, context: Path | None = None) -> li
         cmd += ["--model", rules["model"]]                # the policy's choice per skill; without it, Claude Code's default
     for w in rules.get("write", []):
         cmd += ["--add-dir", subst.get(w, w)]           # writable beyond the workspace: named, per skill
+    for d in args.add_dir:
+        cmd += ["--add-dir", str(d)]                    # the shared checkouts (canon, control): the skills and rules the
+                                                        # workspace links to resolve there, and a link outside is refused
     tools = list(rules.get("tools", [])) + (WEB_TOOLS if rules.get("web") else [])
     if tools:
         cmd += ["--allowedTools", ",".join(tools)]
@@ -230,6 +233,8 @@ def main(argv=None) -> int:
     p.add_argument("--once", action="store_true", help="process what is queued, then exit")
     p.add_argument("--pull", default="", help="comma-separated git checkouts to `pull --ff-only` before every run (canon, control)")
     p.add_argument("--log-level", default=os.environ.get("RUNNER_LOG_LEVEL", "INFO"))
+    p.add_argument("--add-dir", action="append", default=[],
+                   help="a directory the session may read beyond the workspace — the shared checkouts the workspace links to")
     p.add_argument("--context-script", default="control/claude/hooks/runner-context.py",
                    help="script (relative to the workspace) that prints the run's operating context; '' for none")
     args = p.parse_args(argv)
@@ -237,6 +242,7 @@ def main(argv=None) -> int:
     args.workspace = Path(args.workspace).expanduser().resolve()
     args.data = Path(args.data).expanduser().resolve()
     args.pull = [Path(x.strip()).expanduser() for x in args.pull.split(",") if x.strip()]
+    args.add_dir = [Path(x).expanduser().resolve() for x in args.add_dir]
     args.context_script = (args.workspace / args.context_script) if args.context_script else None
     if args.context_script and not args.context_script.is_file():
         log.warning("no context script at %s — runs get CLAUDE.md and the canon only", args.context_script)

@@ -58,7 +58,7 @@ def install(settings: Settings, env: Env, dav_url: str) -> dict[str, str]:
         names["runner"]: _render("runner.service", env=env.name, label=env.label, dir=d, home=d / "home", ws=ws,
                                  mount_unit=names["mount"], user=s.runner_user, data=env.mount / "flow",
                                  claude=s.claude_bin, env_file=s.runner_env_file,
-                                 pull=f"{s.shared / 'canon'},{s.shared / 'control'}"),
+                                 pull=f"{s.shared / 'canon'},{s.shared / 'control'}", shared=s.shared),
     }
     for name, text in units.items():
         p = SYSTEMD / name
