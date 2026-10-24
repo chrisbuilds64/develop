@@ -21,40 +21,65 @@
 <button type="button" class="scrim" aria-label="{{ t('app.menu') }}" onclick="document.querySelector('.side').classList.remove('open');this.classList.remove('open')"></button>
 <nav class="side" aria-label="{{ t('app.menu') }}">
   <div class="menu-head">
-    <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
     <span class="brand-name">{{ config.name }}</span>
     {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
+    <button type="button" class="rail-toggle" onclick="cockpitRail()" aria-label="{{ t('app.collapse') }}" title="{{ t('app.collapse') }}">{{ glyph('rail', 18) }}</button>
   </div>
-  <a href="/" class="nav-row{% if route == '/' %} on{% endif %}"><span>{{ t('app.dashboard') }}</span></a>
+  <a href="/" class="nav-row{% if route == '/' %} on{% endif %}" title="{{ t('app.dashboard') }}"><span class="ic">{{ glyph('home', 18) }}</span><span class="tx">{{ t('app.dashboard') }}</span></a>
 
-  {% set ns = namespace(apps=[]) %}
-  {% for w in workspaces %}{% if w.application not in ns.apps %}{% set _ = ns.apps.append(w.application) %}{% endif %}{% endfor %}
-  {% for aid in ns.apps %}
-  <div class="section">{{ applications[aid].label if aid in applications else aid }}</div>
-    {% for w in workspaces if w.application == aid %}
-    <a href="/w/{{ w.id }}/" class="nav-row" title="{{ w.id }}">
-      <span>{{ w.label }}</span>
-      <span class="n">{% if w.shared %}{{ t('ws.shared') }}{% else %}{{ t('ws.mine') }}{% endif %}</span>
+  {% set live = workspaces|selectattr('mode', 'equalto', 'live')|list %}
+  {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
+  {% set dots = ['#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#ef4444', '#14b8a6'] %}
+  {% set appix = applications.keys()|list %}
+  {% if live %}<div class="section">{{ t('ws.title') }}</div>{% endif %}
+  {% for w in live %}
+  <div class="ws-item{% if route.startswith('/sessions/' ~ w.id) %} here{% endif %}">
+    <a href="/w/{{ w.id }}/" class="nav-row ws-row" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
+      <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
+      <span class="tx">{{ w.label }}</span>
+      {% if w.shared %}<span class="n tx" title="{{ t('ws.shared') }}">{{ glyph('users', 15) }}</span>{% endif %}
     </a>
-    {% if w.mode == 'live' %}<a href="/sessions/{{ w.id }}" class="nav-row sub{% if route.startswith('/sessions/' ~ w.id) %} on{% endif %}"><span>{{ t('ag.nav') }}</span></a>{% endif %}
-    {% endfor %}
+    {% set ags = nav_agents.get(w.id, []) %}
+    {% if ags %}
+    <div class="nav-agents">
+      {% for a in ags %}
+      <a href="/sessions/{{ w.id }}?agent={{ a.id }}" class="nav-av{% if a.running %} running{% endif %}" title="{{ a.label }}{% if a.running %} · {{ t('ag.running') }}{% endif %}">
+        {% if a.img %}<img src="/sessions/{{ w.id }}/agent/{{ a.id }}/avatar" alt="{{ a.label }}">{% else %}<span>{{ a.initials }}</span>{% endif %}
+      </a>
+      {% endfor %}
+      <a href="/sessions/{{ w.id }}" class="nav-av more tx" title="{{ t('ag.title') }}">{{ t('ag.sessions') }}</a>
+    </div>
+    {% endif %}
+  </div>
   {% endfor %}
-  {% if applications %}<a href="/workspaces/new" class="drop-in">{{ t('ws.new') }}</a>{% endif %}
+  {% if samples %}
+  <details class="nav-group">
+    <summary class="nav-row quiet"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('ws.samples') }}</span><span class="n tx">{{ samples|length }}</span></summary>
+    {% for w in samples %}
+    <a href="/w/{{ w.id }}/" class="nav-row ws-row quiet" title="{{ w.label }}">
+      <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
+      <span class="tx">{{ w.label }}</span>
+    </a>
+    {% endfor %}
+  </details>
+  {% endif %}
+  {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
 
   {% if nav_modules %}
   <div class="section">{{ t('app.workshop') }}</div>
   {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
-  <a href="/m/{{ m.id }}" class="nav-row quiet{% if current == m.id %} on{% endif %}" style="--m: {{ pl.accent if pl else '#3b82f6' }}">
-    <span>{{ t(m.id ~ '.title') }}</span><span class="n">{{ glyph(pl.icon if pl else 'box', 16) }}</span>
+  <a href="/m/{{ m.id }}" class="nav-row quiet{% if current == m.id %} on{% endif %}" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
+    <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
   </a>
   {% endfor %}
   {% endif %}
   {% if role.may_act('*') or role.may_act('setup.view') %}
-  <a href="/setup" class="nav-row quiet{% if route.startswith('/setup') %} on{% endif %}"><span>{{ t('setup.title') }}</span></a>
+  <a href="/setup" class="nav-row quiet{% if route.startswith('/setup') %} on{% endif %}" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
   {% endif %}
 
   <div class="spacer"></div>
-  <div class="controls">
+  <div class="controls tx">
     <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
       {% for code, name in languages %}<option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>{% endfor %}
     </select>
@@ -68,11 +93,19 @@
   {% if user %}
   <a href="/account" class="who{% if route.startswith('/account') %} on{% endif %}" title="{{ t('account.title') }}">
     <span class="avatar">{{ user.display[:2]|upper }}</span>
-    <span><span class="name">{{ user.display }}</span><br><span class="role">{{ user.role }} · {{ t('account.title') }}</span></span>
+    <span class="tx"><span class="name">{{ user.display }}</span><br><span class="role">{{ user.role }} · {{ t('account.title') }}</span></span>
   </a>
-  <a href="/logout" class="nav-row quiet"><span>{{ t('app.logout') }}</span></a>
+  <a href="/logout" class="nav-row quiet" title="{{ t('app.logout') }}"><span class="ic">{{ glyph('out', 18) }}</span><span class="tx">{{ t('app.logout') }}</span></a>
   {% endif %}
 </nav>
+<script>
+  // The rail folds to icons and avatars on wide screens; the choice is this browser's, not the account's.
+  function cockpitRail() {
+    var on = document.body.classList.toggle('rail-folded');
+    try { localStorage.setItem('cockpit-rail', on ? 'folded' : 'open'); } catch (e) {}
+  }
+  try { if (localStorage.getItem('cockpit-rail') === 'folded') document.body.classList.add('rail-folded'); } catch (e) {}
+</script>
 {% endif %}
 <main>
 {% block main %}{% endblock %}

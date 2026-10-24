@@ -174,9 +174,27 @@ def create_app(config: Config) -> FastAPI:
             "view": "werkstatt" if request.cookies.get("view") == "werkstatt" else "desk",
             "workspaces": workspaces.for_user(user.name) if (workspaces and user) else (workspaces.for_user(None) if workspaces else []),
             "applications": workspaces.applications if workspaces else {},
+            "nav_agents": nav_agents(user, role),
             "ws_error": ws_error,
             "ws_failures": getattr(app.state, "workspace_failures", {}),
         }
+
+    def nav_agents(user, role) -> dict:
+        """The menu's avatar row: per live workspace the agents this person may choose, and which of them has a
+        session of theirs running. A broken agents directory costs the row, never the page."""
+        out = {}
+        if not (workspaces and user):
+            return out
+        for w in workspaces.for_user(user.name):
+            if w.mode != "live":
+                continue
+            try:
+                running = {s.agent for s in workspaces.sessions(w).active(user.name)}
+                out[w.id] = [{"id": a.id, "label": a.label, "initials": a.initials, "img": a.avatar_path is not None,
+                              "running": a.id in running} for a in workspaces.agents(w).for_user(user.name, role.id)]
+            except Exception:                            # noqa: BLE001
+                out[w.id] = []
+        return out
 
     def gate(request: Request):
         """Redirect to the intro or the sign-in when users exist and nobody is signed in."""
@@ -260,7 +278,7 @@ def create_app(config: Config) -> FastAPI:
         return c, workspaces.get(wid)
 
     @app.get("/sessions/{wid}", response_class=HTMLResponse)
-    def sessions_page(request: Request, wid: str, err: str | None = None, warn: str | None = None):
+    def sessions_page(request: Request, wid: str, err: str | None = None, warn: str | None = None, agent: str | None = None):
         if (r := gate(request)):
             return r
         c, w = ws_for(request, wid)
@@ -268,7 +286,7 @@ def create_app(config: Config) -> FastAPI:
             return go("/")
         cat, store = workspaces.agents(w), workspaces.sessions(w)
         return templates.TemplateResponse(request, "sessions.html", {
-            **c, "w": w, "err": err, "warn": warn, "agents": cat.for_user(c["user"].name, c["role"].id),
+            **c, "w": w, "err": err, "warn": warn, "chosen": agent, "agents": cat.for_user(c["user"].name, c["role"].id),
             "problems": cat.problems, "active": store.active(), "closed": list(reversed(store.closed()))[:20],
             "agents_component": workspaces.component(w, "agents")})
 

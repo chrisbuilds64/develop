@@ -425,5 +425,9 @@
   "ag.end_button": "End session",
   "ag.log": "Session log",
   "ag.dictate": "Dictate",
-  "ag.keys": "Return sends · Shift+Return new line · microphone to dictate"
+  "ag.keys": "Return sends · Shift+Return new line · microphone to dictate",
+  "app.collapse": "Fold or unfold the menu",
+  "ag.sessions": "Sessions",
+  "ws.samples": "Samples",
+  "ws.new_short": "New workspace"
 }

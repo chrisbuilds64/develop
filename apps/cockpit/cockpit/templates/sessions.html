@@ -27,7 +27,7 @@
     <input type="hidden" name="_csrf" value="{{ csrf }}">
     {% for a in agents %}
     <label class="agent-card">
-      <input type="radio" name="agent" value="{{ a.id }}" {% if loop.first %}checked{% endif %}>
+      <input type="radio" name="agent" value="{{ a.id }}" {% if (chosen and chosen == a.id) or (not chosen and loop.first) %}checked{% endif %}>
       {{ avatar(a, w) }}
       <span class="agent-name">{{ a.label }}</span>
       <span class="hint">{{ a.role }}</span>
