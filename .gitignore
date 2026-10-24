@@ -73,3 +73,7 @@ services/backend/data/
 node_modules/
 
 infra/ansible/inventory.local.yml
+
+# the casefile surface is checked in for now: the stages have no Node (SYS-71)
+!apps/casefile/web/dist/
+!apps/casefile/web/dist/**
