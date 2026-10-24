@@ -549,7 +549,8 @@ def notes_sync(args) -> None:
         return
     r = subprocess.run(["git", "-C", str(repo), "fetch", "--quiet", "origin", "main"], capture_output=True, text=True, timeout=120)
     if r.returncode == 0:
-        r = subprocess.run(["git", "-C", str(repo), "rebase", "--quiet", "origin/main"], capture_output=True, text=True, timeout=120)
+        r = subprocess.run(["git", "-C", str(repo), "-c", "user.name=cockpit runner", "-c", "user.email=agents@chrisbuilds64.com",
+                            "rebase", "--quiet", "origin/main"], capture_output=True, text=True, timeout=120)   # the runner user has no git identity
         if r.returncode != 0:
             subprocess.run(["git", "-C", str(repo), "rebase", "--abort"], capture_output=True)
     if r.returncode != 0:
