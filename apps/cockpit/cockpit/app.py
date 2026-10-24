@@ -366,7 +366,12 @@ def create_app(config: Config) -> FastAPI:
         a = workspaces.agents(w).get(aid) if w is not None else None
         if a is None or a.avatar_path is None:
             return Response(status_code=404)
-        return FileResponse(a.avatar_path, headers={"Cache-Control": "private, max-age=3600"})
+        try:
+            thumb = a.thumbnail(workspaces.path.parent / "cache" / "avatars")
+        except Exception:                                # noqa: BLE001 — a picture Pillow cannot read is served as it is
+            thumb = None
+        return FileResponse(thumb or a.avatar_path, media_type="image/webp" if thumb else None,
+                            headers={"Cache-Control": "private, max-age=86400"})
 
     @app.get("/sessions/{wid}/{sid}/state")
     def session_state(request: Request, wid: str, sid: str):

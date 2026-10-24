@@ -249,7 +249,8 @@ def test_the_conversation_shows_avatars_and_renders_answers_safely(world):
     from cockpit.config import load
     agents = world / "agents"
     d = agent_dir(agents, "axel", {"label": "Axel"})
-    (d / "axel-avatar.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    from PIL import Image
+    Image.new("RGB", (600, 400), "red").save(d / "axel-avatar.png")
     agent_dir(agents, "scout", {"label": "Field Scout"})                              # no image: initials
     reg = json.loads((world / "workspaces.json").read_text())
     reg["defaults"] = {"agents": {"path": str(agents)}}
@@ -258,7 +259,9 @@ def test_the_conversation_shows_avatars_and_renders_answers_safely(world):
     sign_in(client)
     page = client.get("/sessions/shared").text
     assert 'src="/sessions/shared/agent/axel/avatar"' in page and ">FS</span>" in page
-    assert client.get("/sessions/shared/agent/axel/avatar").status_code == 200
+    r = client.get("/sessions/shared/agent/axel/avatar")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/webp" and len(r.content) < 5000   # a thumbnail, not the original
+    assert list((world / "cache" / "avatars").glob("axel-*-128.webp"))
     assert client.get("/sessions/shared/agent/scout/avatar").status_code == 404
     loc = client.post("/sessions/shared", data={"agent": "axel", "topic": "md", "_csrf": client.cookies["csrf"]}).headers["location"]
     store = Workspaces(world / "workspaces.json", world).sessions(Workspaces(world / "workspaces.json", world).get("shared"))

@@ -67,6 +67,30 @@ class Agent:
         p = self.dir / self.avatar if self.avatar else None
         return p if p and p.is_file() and p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp") else None
 
+    def thumbnail(self, cache: Path, size: int = 128) -> Path | None:
+        """The avatar at `size` pixels as WebP, made once and kept in `cache` — the originals are photographs of
+        several megabytes, shown at 22 to 44 pixels. Keyed by the original's mtime, so a new picture is picked up."""
+        src = self.avatar_path
+        if src is None:
+            return None
+        out = cache / f"{self.id}-{src.stat().st_mtime_ns}-{size}.webp"
+        if out.is_file():
+            return out
+        from PIL import Image
+        cache.mkdir(parents=True, exist_ok=True)
+        with Image.open(src) as im:
+            im = im.convert("RGB")
+            side = min(im.size)                          # square from the centre, then down to size
+            left, top = (im.width - side) // 2, (im.height - side) // 2
+            im = im.crop((left, top, left + side, top + side)).resize((size, size), Image.LANCZOS)
+            tmp = out.with_suffix(".tmp")
+            im.save(tmp, "WEBP", quality=82, method=6)
+            tmp.replace(out)
+        for old in cache.glob(f"{self.id}-*-{size}.webp"):
+            if old != out:
+                old.unlink(missing_ok=True)
+        return out
+
     @property
     def initials(self) -> str:
         return "".join(w[0] for w in self.label.split()[:2]).upper() or self.id[:2].upper()
