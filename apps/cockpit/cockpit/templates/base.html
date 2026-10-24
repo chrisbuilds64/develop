@@ -11,6 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/cockpit.css">
+<script>
+  // Theme, look and transparency are this browser's choice (the person menu sets them); restored before the first paint.
+  try {
+    var d = document.documentElement, t = localStorage.getItem('cockpit-theme'), l = localStorage.getItem('cockpit-look'), g = localStorage.getItem('cockpit-glass');
+    if (t === 'light' || t === 'dark') d.dataset.theme = t;
+    if (l === 'glass') d.dataset.look = 'glass';
+    if (g) d.style.setProperty('--glass-t', Math.min(0.6, Math.max(0, Number(g) / 100)));
+  } catch (e) {}
+</script>
 <script src="/static/htmx.min.js" defer></script>
 {% endif %}
 </head>
@@ -22,63 +31,75 @@
 <nav class="side" aria-label="{{ t('app.menu') }}">
   <div class="menu-head">
     <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-    <span class="brand-name">{{ config.name }}</span>
+    <span class="brand-name tx">{{ config.name }}</span>
     {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
-    <button type="button" class="rail-toggle" onclick="cockpitRail()" aria-label="{{ t('app.collapse') }}" title="{{ t('app.collapse') }}">{{ glyph('rail', 18) }}</button>
+    <button type="button" class="rail-toggle tx" onclick="cockpitRail()" aria-label="{{ t('app.pin') }}" title="{{ t('app.pin') }}">{{ glyph('pin', 17) }}</button>
   </div>
+  <div class="side-scroll">
   <a href="/" class="nav-row{% if route == '/' %} on{% endif %}" title="{{ t('app.dashboard') }}"><span class="ic">{{ glyph('home', 18) }}</span><span class="tx">{{ t('app.dashboard') }}</span></a>
 
   {% set live = workspaces|selectattr('mode', 'equalto', 'live')|list %}
   {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
   {% set dots = ['#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#ef4444', '#14b8a6'] %}
   {% set appix = applications.keys()|list %}
-  {% if live %}<div class="section">{{ t('ws.title') }}</div>{% endif %}
-  {% for w in live %}
-  <div class="ws-item{% if route.startswith('/sessions/' ~ w.id) %} here{% endif %}">
-    <a href="/w/{{ w.id }}/" class="nav-row ws-row" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
-      <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
-      <span class="tx">{{ w.label }}</span>
-      {% if w.shared %}<span class="n tx" title="{{ t('ws.shared') }}">{{ glyph('users', 15) }}</span>{% endif %}
-    </a>
-    {% set ags = nav_agents.get(w.id, []) %}
-    {% if ags %}
-    <div class="nav-agents">
-      {% for a in ags %}
-      <a href="/sessions/{{ w.id }}?agent={{ a.id }}" class="nav-av{% if a.running %} running{% endif %}" title="{{ a.label }}{% if a.running %} · {{ t('ag.running') }}{% endif %}">
-        {% if a.img %}<img src="/sessions/{{ w.id }}/agent/{{ a.id }}/avatar" alt="{{ a.label }}">{% else %}<span>{{ a.initials }}</span>{% endif %}
+  <details class="nav-sec" data-key="ws" open>
+    <summary class="section"><span class="tx">{{ t('ws.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
+    {% for w in live %}
+    <div class="ws-item{% if route.startswith('/sessions/' ~ w.id) %} here{% endif %}">
+      <a href="/w/{{ w.id }}/" class="nav-row ws-row" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
+        <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
+        <span class="tx">{{ w.label }}</span>
+        {% if w.shared %}<span class="n tx" title="{{ t('ws.shared') }}">{{ glyph('users', 15) }}</span>{% endif %}
+      </a>
+      {% set ags = nav_agents.get(w.id, []) %}
+      {% if ags %}
+      <div class="nav-agents">
+        {% for a in ags %}
+        <a href="/sessions/{{ w.id }}?agent={{ a.id }}" class="nav-av{% if a.running %} running{% endif %}" title="{{ a.label }}{% if a.running %} · {{ t('ag.running') }}{% endif %}">
+          {% if a.img %}<img src="/sessions/{{ w.id }}/agent/{{ a.id }}/avatar" alt="{{ a.label }}">{% else %}<span>{{ a.initials }}</span>{% endif %}
+        </a>
+        {% endfor %}
+        <a href="/sessions/{{ w.id }}" class="nav-av more tx" title="{{ t('ag.title') }}">{{ t('ag.sessions') }}</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% if samples %}
+    <details class="nav-group" data-key="samples">
+      <summary class="nav-row quiet"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('ws.samples') }}</span><span class="n tx">{{ samples|length }}</span></summary>
+      {% for w in samples %}
+      <a href="/w/{{ w.id }}/" class="nav-row ws-row quiet" title="{{ w.label }}">
+        <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
+        <span class="tx">{{ w.label }}</span>
       </a>
       {% endfor %}
-      <a href="/sessions/{{ w.id }}" class="nav-av more tx" title="{{ t('ag.title') }}">{{ t('ag.sessions') }}</a>
-    </div>
+    </details>
     {% endif %}
-  </div>
-  {% endfor %}
-  {% if samples %}
-  <details class="nav-group">
-    <summary class="nav-row quiet"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('ws.samples') }}</span><span class="n tx">{{ samples|length }}</span></summary>
-    {% for w in samples %}
-    <a href="/w/{{ w.id }}/" class="nav-row ws-row quiet" title="{{ w.label }}">
-      <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
-      <span class="tx">{{ w.label }}</span>
-    </a>
-    {% endfor %}
+    {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
   </details>
-  {% endif %}
-  {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
 
   {% if nav_modules %}
-  <div class="section">{{ t('app.workshop') }}</div>
-  {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
-  <a href="/m/{{ m.id }}" class="nav-row quiet{% if current == m.id %} on{% endif %}" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
-    <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
-  </a>
-  {% endfor %}
-  {% endif %}
-  {% if role.may_act('*') or role.may_act('setup.view') %}
-  <a href="/setup" class="nav-row quiet{% if route.startswith('/setup') %} on{% endif %}" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
+  <details class="nav-sec" data-key="workshop" open>
+    <summary class="section"><span class="tx">{{ t('app.workshop') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
+    {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
+    <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
+      <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
+    </a>
+    {% endfor %}
+    {% if role.may_act('*') or role.may_act('setup.view') %}
+    <a href="/setup" class="nav-row{% if route.startswith('/setup') %} on{% endif %}" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
+    {% endif %}
+  </details>
   {% endif %}
 
-  <div class="spacer"></div>
+  </div>
+  {% if user %}
+  <button type="button" class="who{% if route.startswith('/account') %} on{% endif %}" aria-haspopup="true" aria-expanded="false" aria-controls="me-pop" id="me-btn">
+    <span class="avatar">{{ user.display[:2]|upper }}</span>
+    <span class="tx"><span class="name">{{ user.display }}</span><span class="role-pill">{{ user.role }}</span></span>
+  </button>
+  {% else %}
+
   <div class="controls tx">
     <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
       {% for code, name in languages %}<option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>{% endfor %}
@@ -88,23 +109,107 @@
       {% for r in roles %}<option value="{{ r }}" {% if r == role.id %}selected{% endif %}>{{ r }}</option>{% endfor %}
     </select>
     {% endif %}
-    <button type="button" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'" aria-label="{{ t('app.theme') }}">◐</button>
   </div>
-  {% if user %}
-  <a href="/account" class="who{% if route.startswith('/account') %} on{% endif %}" title="{{ t('account.title') }}">
-    <span class="avatar">{{ user.display[:2]|upper }}</span>
-    <span class="tx"><span class="name">{{ user.display }}</span><br><span class="role">{{ user.role }} · {{ t('account.title') }}</span></span>
-  </a>
-  <a href="/logout" class="nav-row quiet" title="{{ t('app.logout') }}"><span class="ic">{{ glyph('out', 18) }}</span><span class="tx">{{ t('app.logout') }}</span></a>
   {% endif %}
+  <div class="version tx">{{ t('app.version') }} {{ version }}</div>
 </nav>
+{% if user %}
+<div class="me-pop pop" id="me-pop" hidden>
+      <div class="me-head"><span class="avatar lg">{{ user.display[:2]|upper }}</span><span><span class="name">{{ user.display }}</span><span class="role-pill">{{ user.role }}</span></span></div>
+      <div class="pop-label">{{ t('me.design') }}</div>
+      <div class="seg" role="group" aria-label="{{ t('me.design') }}">
+        <button type="button" data-theme-set="light">{{ t('me.light') }}</button>
+        <button type="button" data-theme-set="dark">{{ t('me.dark') }}</button>
+        <button type="button" data-theme-set="auto">{{ t('me.auto') }}</button>
+      </div>
+      <div class="pop-label">{{ t('me.look') }}</div>
+      <div class="look-pick">
+        <button type="button" data-look-set="standard"><b>{{ t('me.standard') }}</b><span>{{ t('me.standard_hint') }}</span></button>
+        <button type="button" data-look-set="glass"><b>{{ t('me.glass') }}</b><span>{{ t('me.glass_hint') }}</span></button>
+      </div>
+      <label class="glass-range"><span>{{ t('me.transparency') }} <output id="glass-out"></output></span>
+        <input type="range" min="0" max="60" step="1" id="glass-t">
+        <small>{{ t('me.transparency_hint') }}</small>
+      </label>
+      <div class="pop-label">{{ t('app.language') }}</div>
+      <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
+        {% for code, name in languages %}<option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+      {% if roles %}
+      <select onchange="location.href='/set?role='+this.value" aria-label="{{ t('app.role') }}">
+        {% for r in roles %}<option value="{{ r }}" {% if r == role.id %}selected{% endif %}>{{ r }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <hr>
+      <a href="/account" class="pop-row">{{ glyph('users', 18) }}<span><b>{{ t('account.title') }}</b><small>{{ t('me.account_hint') }}</small></span></a>
+      <a href="/logout" class="pop-row">{{ glyph('out', 18) }}<span><b>{{ t('app.logout') }}</b></span></a>
+</div>
+<div class="topbar">
+  <details class="switch">
+    <summary class="pill">{% set here = (workspaces|selectattr('id', 'equalto', route.split('/')[2])|first) if route.startswith('/sessions/') else none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
+    <div class="pop right">
+      <div class="pop-title">{{ t('ws.mine_all') }}</div>
+      {% for w in workspaces %}
+      <a href="/w/{{ w.id }}/" class="pop-row">{% if here and here.id == w.id %}{{ glyph('check-mark', 16) }}{% else %}<span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span>{% endif %}<span>{{ w.label }}</span></a>
+      {% endfor %}
+      {% if applications %}<hr><a href="/workspaces/new" class="pop-row">{{ glyph('plus', 16) }}<span>{{ t('ws.new_short') }}</span></a>{% endif %}
+    </div>
+  </details>
+  <details class="bell">
+    <summary class="pill icon" aria-label="{{ t('note.title') }}">{{ glyph('bell', 17) }}{% if notes %}<span class="bell-dot">{{ notes|length }}</span>{% endif %}</summary>
+    <div class="pop right">
+      <div class="pop-title">{{ t('note.title') }}</div>
+      {% for n in notes %}
+      <a href="/sessions/{{ n.workspace }}/{{ n.session }}" class="pop-row"><span class="nav-av sm">{{ n.initials }}</span><span><b>{{ n.agent }} · {{ n.topic }}</b><small>{{ t('note.' ~ n.kind) }} · {{ n.workspace_label }}</small></span></a>
+      {% else %}
+      <p class="pop-empty">{{ t('note.none') }}</p>
+      {% endfor %}
+    </div>
+  </details>
+</div>
+{% endif %}
 <script>
-  // The rail folds to icons and avatars on wide screens; the choice is this browser's, not the account's.
-  function cockpitRail() {
-    var on = document.body.classList.toggle('rail-folded');
-    try { localStorage.setItem('cockpit-rail', on ? 'folded' : 'open'); } catch (e) {}
-  }
-  try { if (localStorage.getItem('cockpit-rail') === 'folded') document.body.classList.add('rail-folded'); } catch (e) {}
+  (function () {
+    var d = document.documentElement, b = document.body;
+    function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    // the rail: pinned open, or folded to icons that unfold while the pointer is over it
+    window.cockpitRail = function () { store('cockpit-rail', b.classList.toggle('rail-folded') ? 'folded' : 'open'); if (document.activeElement) document.activeElement.blur(); };
+    if (read('cockpit-rail') === 'folded') b.classList.add('rail-folded');
+    // sections remember whether they are open
+    document.querySelectorAll('details[data-key]').forEach(function (el) {
+      var v = read('cockpit-sec-' + el.dataset.key);
+      if (v === 'closed') el.open = false; else if (v === 'open') el.open = true;
+      el.addEventListener('toggle', function () { store('cockpit-sec-' + el.dataset.key, el.open ? 'open' : 'closed'); });
+    });
+    // popovers close on a click elsewhere and on Escape
+    var pops = document.querySelectorAll('details.switch, details.bell'), me = document.getElementById('me-pop'), meBtn = document.getElementById('me-btn');
+    function meShow(on) { if (!me) return; me.hidden = !on; meBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); meBtn.classList.toggle('open', on); }
+    if (meBtn) meBtn.addEventListener('click', function (e) { e.stopPropagation(); meShow(me.hidden); });
+    document.addEventListener('click', function (e) {
+      pops.forEach(function (p) { if (p.open && !p.contains(e.target)) p.open = false; });
+      if (me && !me.hidden && !me.contains(e.target)) meShow(false);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { pops.forEach(function (p) { p.open = false; }); meShow(false); } });
+    // design, look, transparency
+    function mark() {
+      var th = read('cockpit-theme') || 'auto', lk = d.dataset.look === 'glass' ? 'glass' : 'standard';
+      document.querySelectorAll('[data-theme-set]').forEach(function (x) { x.classList.toggle('on', x.dataset.themeSet === th); });
+      document.querySelectorAll('[data-look-set]').forEach(function (x) { x.classList.toggle('on', x.dataset.lookSet === lk); });
+      var r = document.getElementById('glass-t'); if (r) { r.closest('label').hidden = lk !== 'glass'; }
+    }
+    document.querySelectorAll('[data-theme-set]').forEach(function (x) { x.addEventListener('click', function () {
+      var v = x.dataset.themeSet; if (v === 'auto') delete d.dataset.theme; else d.dataset.theme = v; store('cockpit-theme', v); mark(); }); });
+    document.querySelectorAll('[data-look-set]').forEach(function (x) { x.addEventListener('click', function () {
+      if (x.dataset.lookSet === 'glass') d.dataset.look = 'glass'; else delete d.dataset.look; store('cockpit-look', x.dataset.lookSet); mark(); }); });
+    var r = document.getElementById('glass-t'), o = document.getElementById('glass-out');
+    if (r) {
+      r.value = Math.round((parseFloat(getComputedStyle(d).getPropertyValue('--glass-t')) || 0.3) * 100);
+      o.textContent = r.value + ' %';
+      r.addEventListener('input', function () { d.style.setProperty('--glass-t', r.value / 100); o.textContent = r.value + ' %'; store('cockpit-glass', r.value); });
+    }
+    mark();
+  })();
 </script>
 {% endif %}
 <main>

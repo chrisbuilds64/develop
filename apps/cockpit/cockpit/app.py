@@ -174,27 +174,36 @@ def create_app(config: Config) -> FastAPI:
             "view": "werkstatt" if request.cookies.get("view") == "werkstatt" else "desk",
             "workspaces": workspaces.for_user(user.name) if (workspaces and user) else (workspaces.for_user(None) if workspaces else []),
             "applications": workspaces.applications if workspaces else {},
-            "nav_agents": nav_agents(user, role),
+            **nav_state(user, role),
             "ws_error": ws_error,
             "ws_failures": getattr(app.state, "workspace_failures", {}),
         }
 
-    def nav_agents(user, role) -> dict:
-        """The menu's avatar row: per live workspace the agents this person may choose, and which of them has a
-        session of theirs running. A broken agents directory costs the row, never the page."""
-        out = {}
+    def nav_state(user, role) -> dict:
+        """The menu's avatar row — per live workspace the agents this person may choose, and which of them has a
+        session of theirs running — and the bell: their running sessions, answered or still thinking. A broken
+        agents directory costs the row, never the page."""
+        agents, notes = {}, []
         if not (workspaces and user):
-            return out
+            return {"nav_agents": agents, "notes": notes}
         for w in workspaces.for_user(user.name):
             if w.mode != "live":
                 continue
             try:
-                running = {s.agent for s in workspaces.sessions(w).active(user.name)}
-                out[w.id] = [{"id": a.id, "label": a.label, "initials": a.initials, "img": a.avatar_path is not None,
-                              "running": a.id in running} for a in workspaces.agents(w).for_user(user.name, role.id)]
+                store, cat = workspaces.sessions(w), workspaces.agents(w)
+                mine = store.active(user.name)
+                running = {s.agent for s in mine}
+                agents[w.id] = [{"id": a.id, "label": a.label, "initials": a.initials, "img": a.avatar_path is not None,
+                                 "running": a.id in running} for a in cat.for_user(user.name, role.id)]
+                for s in mine:
+                    turns = store.transcript(s.id)
+                    kind = "thinking" if store.pending(s.id) else ("answered" if turns and turns[-1]["role"] != "user" else "open")
+                    a = cat.get(s.agent)
+                    notes.append({"workspace": w.id, "workspace_label": w.label, "session": s.id, "topic": s.topic, "kind": kind,
+                                  "agent": a.label if a else s.agent, "initials": a.initials if a else s.agent[:2].upper()})
             except Exception:                            # noqa: BLE001
-                out[w.id] = []
-        return out
+                agents.setdefault(w.id, [])
+        return {"nav_agents": agents, "notes": notes}
 
     def gate(request: Request):
         """Redirect to the intro or the sign-in when users exist and nobody is signed in."""
