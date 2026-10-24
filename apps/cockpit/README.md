@@ -208,6 +208,26 @@ Before the cockpit faces the internet: `secure_cookies = true` (behind TLS), `lo
 = true` written down rather than inferred, and `uvicorn --proxy-headers` so the address in
 the audit is the client's, not the proxy's. `/docs` and `/openapi.json` sit behind the sign-in.
 
+
+## Accounts
+
+A user is a login. An account is what the person configures for themselves and the secrets they bring:
+one directory per person under `accounts/` (beside `users.json`, shared by every stage), with
+`settings.json` for visible settings and `secrets.env` (mode 600) for secrets. The cockpit shows a
+secret as *set since …* or *not set* and never its value.
+
+```bash
+cockpit account show chris                               # billing, locale, which secrets are set
+cockpit account set chris billing subscription          # auto | subscription | api-key
+cockpit account set-secret chris CLAUDE_CODE_OAUTH_TOKEN  # asked for without echo; from `claude setup-token`
+cockpit account clear-secret chris CLAUDE_CODE_OAUTH_TOKEN
+```
+
+The runner reads the orderer's account for every run: with a subscription token the run is billed to
+that person's own plan and the shared API key leaves the environment (Claude Code prefers a key
+whenever it sees one); without a token the shared key is used. The run record says which
+(`billing`). An account page in the cockpit calls the same tool; it is the next step.
+
 ## Plugins
 
 ```bash

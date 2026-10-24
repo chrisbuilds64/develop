@@ -101,7 +101,7 @@ def write_cockpit_config(settings: Settings, env: Env, folder_id: int) -> Path:
     s = settings.server
     cp = env.dir(s) / "cockpit"
     toml = _render("cockpit.toml", env=env.name, label=env.label, port=env.port, base_path=env.base_path,
-                   users_json=s.users_json, cookie_secret=s.cookie_secret,
+                   users_json=s.users_json, cookie_secret=s.cookie_secret, accounts=s.users_json.parent / "accounts",
                    data=s.groupfolders_data / str(folder_id) / "files" / "flow", mount=env.mount / "flow")
     p = cp / "cockpit.toml"
     p.write_text(toml, encoding="utf-8"); _own(p, s.runner_user)

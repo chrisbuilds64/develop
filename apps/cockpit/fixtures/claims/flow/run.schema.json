@@ -107,6 +107,14 @@
     "stage": {
       "type": "string",
       "description": "The stage the runner that executed this order serves (prod, test, entw; local for a runner on a person's machine). Written by the runner with the outcome."
+    },
+    "billing": {
+      "type": "string",
+      "enum": [
+        "subscription",
+        "api-key"
+      ],
+      "description": "How the run was billed: the orderer's own subscription token, or the shared API key. Written by the runner."
     }
   }
 }

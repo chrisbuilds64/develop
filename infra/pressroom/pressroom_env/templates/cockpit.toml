@@ -11,6 +11,7 @@ environment = "{{env}}"
 default_role = "guest"
 audit = "cockpit-audit.jsonl"
 users = "{{users_json}}"
+accounts = "{{accounts}}"      # one directory per person, shared by all stages: settings and the secrets they bring
 secret = "{{cookie_secret}}"
 people = "pipeline:people.json"
 plugins = "plugins"

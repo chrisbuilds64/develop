@@ -14,6 +14,11 @@
     cockpit user list      [cockpit.toml]
     cockpit user remove    <name> [cockpit.toml]
 
+    cockpit account show         <name> [cockpit.toml]            settings, and per secret: set since … or not set
+    cockpit account set          <name> <key> <value>              billing = auto | subscription | api-key · locale = de | en
+    cockpit account set-secret   <name> <KEY> [--stdin]            value asked for without echo (or read from stdin); never on the command line
+    cockpit account clear-secret <name> <KEY>
+
 `--demo` runs against the fixtures shipped with the package: nothing from the
 real machine is read, so the surface can be shown before anything is installed.
 """
@@ -210,6 +215,32 @@ def cmd_user(args):
         return 0
 
 
+def cmd_account(args):
+    from .account import AccountError, Accounts, SECRETS
+    config = _config(args)
+    accounts = Accounts(config.accounts_path)
+    try:
+        if args.sub == "show":
+            st = accounts.status(args.name)
+            print(f"{st['name']}: billing {st['billing']}" + (f", locale {st['locale']}" if st['locale'] else ""))
+            for k, v in st["secrets"].items():
+                print(f"  {k:26} {'set since ' + v['since'][:16] if v['set'] else 'not set'}")
+        elif args.sub == "set":
+            accounts.set(args.name, args.key, args.value)
+            print(f"{args.name}: {args.key} = {args.value}")
+        elif args.sub == "set-secret":
+            if args.key not in SECRETS:
+                sys.exit(f"'{args.key}' is not a secret an account can hold — one of: {', '.join(SECRETS)}")
+            value = sys.stdin.readline() if args.stdin else getpass.getpass(f"{args.key} for {args.name}: ")
+            accounts.set_secret(args.name, args.key, value)
+            print(f"{args.name}: {args.key} set")
+        elif args.sub == "clear-secret":
+            print(f"{args.name}: {args.key} " + ("cleared" if accounts.clear_secret(args.name, args.key) else "was not set"))
+    except AccountError as exc:
+        sys.exit(str(exc))
+    return 0
+
+
 # ------------------------------------------------------------------- argv
 
 def main(argv=None) -> int:
@@ -239,6 +270,13 @@ def main(argv=None) -> int:
     s = uss.add_parser("list"); common(s)
     s = uss.add_parser("remove"); s.add_argument("name"); common(s)
     us.set_defaults(fn=cmd_user)
+
+    ac = sub.add_parser("account"); acs = ac.add_subparsers(dest="sub", required=True)
+    s = acs.add_parser("show"); s.add_argument("name"); common(s)
+    s = acs.add_parser("set"); s.add_argument("name"); s.add_argument("key"); s.add_argument("value"); common(s)
+    s = acs.add_parser("set-secret"); s.add_argument("name"); s.add_argument("key"); s.add_argument("--stdin", action="store_true"); common(s)
+    s = acs.add_parser("clear-secret"); s.add_argument("name"); s.add_argument("key"); common(s)
+    ac.set_defaults(fn=cmd_account)
 
     args = p.parse_args(argv)
     return args.fn(args) or 0

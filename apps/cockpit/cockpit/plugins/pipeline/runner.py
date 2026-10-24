@@ -184,12 +184,28 @@ def session_env(run: dict, rules: dict, args) -> dict:
                 PRESSROOM_RUN_ID=str(run["id"]))
 
 
+def billing_for(run: dict, env: dict, args) -> tuple[dict, str, str]:
+    """The orderer's account decides how the run is billed: their subscription token when they brought one,
+    the shared API key otherwise. Returns the environment, the mode, and one line for the log."""
+    if not args.accounts:
+        return env, "api-key", "shared API key (no accounts directory)"
+    try:
+        from cockpit.account import Accounts
+    except ImportError:                                   # run from the source tree, outside the cockpit's interpreter
+        sys.path.insert(0, str(HERE.parents[2]))
+        from cockpit.account import Accounts
+    b = Accounts(args.accounts).billing(str(run.get("requested_by", "")).lower(), env)
+    return b.env, b.mode, b.source
+
+
 def execute(f: Path, run: dict, rules: dict, args) -> None:
     queue = f.parent
     transcript = queue / (f.stem + ".log")
     if args.pull:
         refresh(args.pull)
     env = session_env(run, rules, args)
+    env, billing, billed_by = billing_for(run, env, args)
+    log.info("billing: %s", billed_by)
     context = context_file(run, env, args)
     cmd = command_for(run, rules, args, context)
     timeout = int(rules.get("timeout", 1800))
@@ -210,7 +226,7 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
             result = stdout.strip()[-1500:]
         out.write(result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
     run.update(status="done" if code == 0 else "failed", finished=now(), exit=code, log=f"_runs/{transcript.name}",
-               result=result.strip()[:4000], stage=env["PRESSROOM_ENV"])
+               result=result.strip()[:4000], stage=env["PRESSROOM_ENV"], billing=billing)
     if session:
         run["session"] = session
     run.update(spent)
@@ -235,6 +251,7 @@ def main(argv=None) -> int:
     p.add_argument("--log-level", default=os.environ.get("RUNNER_LOG_LEVEL", "INFO"))
     p.add_argument("--add-dir", action="append", default=[],
                    help="a directory the session may read beyond the workspace — the shared checkouts the workspace links to")
+    p.add_argument("--accounts", default="", help="the cockpit's accounts directory — the orderer's token decides the billing; '' = always the shared key")
     p.add_argument("--context-script", default="control/claude/hooks/runner-context.py",
                    help="script (relative to the workspace) that prints the run's operating context; '' for none")
     args = p.parse_args(argv)
@@ -243,6 +260,7 @@ def main(argv=None) -> int:
     args.data = Path(args.data).expanduser().resolve()
     args.pull = [Path(x.strip()).expanduser() for x in args.pull.split(",") if x.strip()]
     args.add_dir = [Path(x).expanduser().resolve() for x in args.add_dir]
+    args.accounts = Path(args.accounts).expanduser() if args.accounts else None
     args.context_script = (args.workspace / args.context_script) if args.context_script else None
     if args.context_script and not args.context_script.is_file():
         log.warning("no context script at %s — runs get CLAUDE.md and the canon only", args.context_script)

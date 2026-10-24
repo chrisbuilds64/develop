@@ -114,6 +114,7 @@ class Config:
     role_switch: bool
     audit_path: Path
     users_path: Path
+    accounts_path: Path             # one directory per person: settings and the secrets they bring
     secret_path: Path
     plugins_dir: Path
     login_required: bool
@@ -339,6 +340,7 @@ def load(path: Path) -> Config:
         role_switch=bool(top.get("role_switch", False)),
         audit_path=_path(top.get("audit", "cockpit-audit.jsonl"), base),
         users_path=_path(top.get("users", "users.json"), base),
+        accounts_path=_path(top.get("accounts", str(Path(top.get("users", "users.json")).parent / "accounts")), base),
         secret_path=_path(top.get("secret", ".cockpit-secret"), base),
         plugins_dir=_path(top.get("plugins", "plugins"), base),
         # With users on file, sign-in is required unless the config says otherwise.
