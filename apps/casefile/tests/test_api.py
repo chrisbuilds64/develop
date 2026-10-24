@@ -254,13 +254,13 @@ def test_the_surface_is_served_under_any_prefix(tmp_path):
 def test_roles_missing_at_the_root_are_lent_by_the_domain(tmp_path):
     import json
     from casefile.config import DomainConfig
-    from tests.world import build
+    from tests.world import CONFIG, build
     root = build(tmp_path / "flow")
     people = json.loads((root / "people.json").read_text())
     for p in people["people"]:
         p.pop("roles", None)                                   # the production file: persons, no roles
     (root / "people.json").write_text(json.dumps(people))
-    cfg = DomainConfig.load(root.parent / "config", root)
+    cfg = DomainConfig.load(CONFIG, root)                      # the PressRoom domain knows chris's roles
     chris = cfg.person("chris")
     assert chris is not None and chris.roles                   # lent by config/people.json
     assert cfg.may_act("chris", "role:" + chris.roles[0])
