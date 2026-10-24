@@ -653,3 +653,26 @@ main { padding: 28px 32px; max-width: 1400px; }
   main { padding: 68px 16px 24px; }
   .page-head { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
+
+/* agents and sessions (ADR-019) */
+.nav-row.sub { padding-left: 28px; font-size: 13px; color: var(--ink-2); }
+.agent-pick { display: flex; flex-direction: column; gap: 8px; }
+.agent-card { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface-2); cursor: pointer; }
+.agent-card input { grid-row: span 3; }
+.agent-card .agent-name { font-weight: 600; }
+.agent-card .agent-rights { font-size: 12px; color: var(--ink-3); }
+.chat { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.msg { max-width: 760px; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+.msg.user { align-self: flex-end; background: var(--surface-2); }
+.msg.system { border-style: dashed; color: var(--ink-2); }
+.msg.waiting .body { color: var(--ink-3); font-style: italic; }
+.msg .who { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.msg .body { white-space: pre-wrap; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.chat-input { display: flex; gap: 10px; align-items: flex-end; }
+.chat-input textarea { flex: 1; font: inherit; font-size: 14px; color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 10px; }
+.chat-end { display: flex; gap: 10px; margin-top: 10px; }
+.chat-end input { flex: 1; }
+pre.log { white-space: pre-wrap; font-size: 13px; }
+@media (max-width: 640px) { .chat-input, .chat-end { flex-direction: column; align-items: stretch; } }

@@ -36,6 +36,7 @@
       <span>{{ w.label }}</span>
       <span class="n">{% if w.shared %}{{ t('ws.shared') }}{% else %}{{ t('ws.mine') }}{% endif %}</span>
     </a>
+    {% if w.mode == 'live' %}<a href="/sessions/{{ w.id }}" class="nav-row sub{% if route.startswith('/sessions/' ~ w.id) %} on{% endif %}"><span>{{ t('ag.nav') }}</span></a>{% endif %}
     {% endfor %}
   {% endfor %}
   {% if applications %}<a href="/workspaces/new" class="drop-in">{{ t('ws.new') }}</a>{% endif %}

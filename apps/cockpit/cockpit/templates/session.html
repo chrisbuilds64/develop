@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="page-head">
+  <h1>{{ agent.label if agent else s.agent }} · {{ s.topic }}</h1>
+  <span class="stamp"><a href="/sessions/{{ w.id }}">{{ w.label }}</a> · {{ t('ag.since', when=s.started[:16].replace('T', ' ')) }}{% if s.starts_from %} · {{ t('ag.starts_from') }} <span class="mono">{{ s.starts_from }}</span>{% endif %}</span>
+</div>
+{% if err %}<p class="notice err">{{ err }}</p>{% endif %}
+{% if warn %}<p class="notice">{{ t('ag.overlap', ids=warn) }}</p>{% endif %}
+
+<div class="chat" id="chat" data-turns="{{ turns|length }}" data-pending="{{ 1 if pending else 0 }}">
+  <a id="state-url" href="/sessions/{{ w.id }}/{{ s.id }}/state" hidden></a>
+  {% for m in turns %}
+  <div class="msg {{ m.role }}">
+    <div class="who">{% if m.role == 'user' %}{{ user.display }}{% elif m.role == 'assistant' %}{{ agent.label if agent else s.agent }}{% else %}{{ t('ag.system') }}{% endif %}
+      <span class="hint">{{ m.at[11:16] }}{% if m.cost_usd %} · {{ '%.2f'|format(m.cost_usd) }} $ {% endif %}</span></div>
+    <div class="body">{{ m.text }}</div>
+  </div>
+  {% endfor %}
+  {% if pending %}<div class="msg assistant waiting"><div class="who">{{ agent.label if agent else s.agent }}</div><div class="body">{{ t('ag.thinking') if pending.type == 'chat' else t('ag.writing_log') }}</div></div>{% endif %}
+</div>
+
+{% if s.status == 'active' %}
+<form method="post" action="/sessions/{{ w.id }}/{{ s.id }}" class="chat-input">
+  <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="say">
+  <textarea name="text" rows="3" required placeholder="{{ t('ag.message') }}" {% if pending %}disabled{% endif %}></textarea>
+  <button type="submit" {% if pending %}disabled{% endif %}>{{ t('ag.send') }}</button>
+</form>
+<form method="post" action="/sessions/{{ w.id }}/{{ s.id }}" class="chat-end">
+  <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="end">
+  <input type="text" name="note" placeholder="{{ t('ag.end_note') }}">
+  <button type="submit" class="btn-quiet" {% if pending %}disabled{% endif %}>{{ t('ag.end_button') }}</button>
+</form>
+{% elif s.status == 'closed' %}
+<div class="form-card" style="margin-top:16px">
+  <h2>{{ t('ag.log') }}</h2>
+  {% if log_text %}<pre class="log">{{ log_text }}</pre>{% else %}<p class="hint">{{ t('ag.no_log') }}</p>{% endif %}
+</div>
+{% endif %}
+
+<script>
+(function () {
+  var chat = document.getElementById('chat');
+  if (!chat || chat.dataset.pending !== '1') { if (chat) window.scrollTo(0, document.body.scrollHeight); return; }
+  var url = document.getElementById('state-url').getAttribute('href');   // prefixed by the stage like every link
+  function poll() {
+    fetch(url, {credentials: 'same-origin'}).then(function (r) { return r.json(); }).then(function (st) {
+      if (!st.pending || st.turns !== Number(chat.dataset.turns)) { location.reload(); } else { setTimeout(poll, 3000); }
+    }).catch(function () { setTimeout(poll, 6000); });
+  }
+  window.scrollTo(0, document.body.scrollHeight);
+  setTimeout(poll, 3000);
+})();
+</script>
+{% endblock %}

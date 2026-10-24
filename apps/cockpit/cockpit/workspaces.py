@@ -11,6 +11,11 @@ The registry is one file beside `users.json`:
      "workspaces": [{"id": "pressroom", "application": "pressroom", "label": "PressRoom", "shared": true,
                      "members": ["chris", "akhil"], "root": "…/flow", "write_root": "…/flow", "mode": "live"}]}
 
+A workspace carries **components** — named paths, each its own or shared with other workspaces: `pipeline`
+(the tree; `root`/`write_root` are its older spelling and still read), `agents` (the agents one may choose
+here, see agents.py) and `sessions` (leases, transcripts and logs, see sessions.py). Pointing two workspaces'
+`agents` at one directory is how an agent takes what it learned from one into the other.
+
 Creating one copies a source (the application's template, or a workspace the person may see; documents as
 hard links, as in the demo sandbox), empties the queue and the journals, writes the entry, mounts at once.
 Nothing here names a domain; the words come from the application's configuration.
@@ -28,6 +33,7 @@ from pathlib import Path
 NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{1,47}$")
 MODES = ("live", "replay")
 CLEARED = ("_runs", "_steps", "_audit")        # a copy starts without the source's orders, journals and audit
+COMPONENTS = ("pipeline", "agents", "sessions")
 
 
 class WorkspaceError(Exception):
@@ -41,6 +47,14 @@ class Application:
     config_dir: Path
     template: Path | None = None               # a built tree to copy for a new workspace; None = start empty
     mode: str = "live"                         # the mode a new workspace of this application gets
+
+
+@dataclass(frozen=True)
+class Component:
+    path: Path
+    write_path: Path | None = None             # the same files through a mount, when writes must go that way
+    shared: bool = False                       # other workspaces point here too: what is written here, they see
+    writable: bool = True                      # false: read, never written (a git checkout the server does not commit)
 
 
 @dataclass
@@ -57,6 +71,7 @@ class Workspace:
     open_identity: bool = False                # true: a person picker instead of the cockpit's login (sample worlds)
     created: str = ""
     cloned_from: str | None = None
+    components: dict[str, Component] = field(default_factory=dict)   # declared ones only; component() fills the defaults
 
     def visible_to(self, user: str | None) -> bool:
         return self.shared or (user is not None and (user == self.owner or user in self.members))
@@ -68,7 +83,46 @@ class Workspaces:
         self.base = Path(base)
         self.applications: dict[str, Application] = {}
         self.items: list[Workspace] = []
+        self.defaults: dict[str, Component] = {}   # the stage's default per component (an `agents` directory for all)
         self.load()
+
+    def component(self, w: Workspace, name: str) -> Component | None:
+        """A workspace's component: declared, else the stage default, else the built-in place. `pipeline` is the tree;
+        `sessions` falls back to `<registry dir>/sessions/<id>/` — server-local, never in a synced team folder."""
+        if name not in COMPONENTS:
+            raise WorkspaceError(f"'{name}' is not a component — one of: {', '.join(COMPONENTS)}")
+        if name in w.components:
+            return w.components[name]
+        if name == "pipeline":
+            return Component(path=w.root, write_path=w.write_root, shared=w.shared)
+        if name in self.defaults:
+            return self.defaults[name]
+        if name == "sessions":
+            return Component(path=self.path.parent / "sessions" / w.id)
+        return None
+
+    def agents(self, w: Workspace):
+        """The agents one may choose in this workspace (agents.Catalog; empty without an `agents` component)."""
+        from .agents import Catalog
+        c = self.component(w, "agents")
+        return Catalog.load(c.path if c else None)
+
+    def sessions(self, w: Workspace):
+        """The workspace's session store (sessions.Store), written where the component says writes go."""
+        from .sessions import Store
+        c = self.component(w, "sessions")
+        return Store(c.write_path or c.path)
+
+    def _components(self, raw: dict, where: str) -> dict[str, Component]:
+        out = {}
+        for name, c in (raw or {}).items():
+            if name not in COMPONENTS:
+                raise WorkspaceError(f"{where}: '{name}' is not a component — one of: {', '.join(COMPONENTS)}")
+            if not isinstance(c, dict) or not c.get("path"):
+                raise WorkspaceError(f"{where}: component '{name}' needs a path")
+            out[name] = Component(path=self._abs(c["path"]), write_path=self._abs(c.get("write_path")),
+                                  shared=bool(c.get("shared", False)), writable=bool(c.get("writable", True)))
+        return out
 
     # ---------------------------------------------------------------- file
     def _abs(self, value) -> Path | None:
@@ -78,7 +132,7 @@ class Workspaces:
         return p if p.is_absolute() else (self.base / p)
 
     def load(self) -> None:
-        self.applications, self.items = {}, []
+        self.applications, self.items, self.defaults = {}, [], {}
         if not self.path.exists():
             return
         try:
@@ -92,6 +146,7 @@ class Workspaces:
                 raise WorkspaceError(f"application '{aid}': config_dir is missing")
             self.applications[aid] = Application(id=aid, label=str(a.get("label", aid)), config_dir=self._abs(a["config_dir"]),
                                                  template=self._abs(a.get("template")), mode=str(a.get("mode", "live")))
+        self.defaults = self._components(raw.get("defaults") or {}, "defaults")
         seen = set()
         for w in raw.get("workspaces") or []:
             wid = str(w.get("id", ""))
@@ -109,6 +164,7 @@ class Workspaces:
                 write_root=self._abs(w.get("write_root")), shared=bool(w.get("shared", False)), owner=w.get("owner"),
                 members=[str(m) for m in w.get("members", [])], mode=str(w.get("mode", "live")),
                 open_identity=bool(w.get("open_identity", False)), created=str(w.get("created", "")), cloned_from=w.get("cloned_from"),
+                components=self._components(w.get("components") or {}, f"workspace '{wid}'"),
             ))
 
     def save(self) -> None:
@@ -119,10 +175,16 @@ class Workspaces:
                 return str(p.relative_to(self.base))
             except ValueError:
                 return str(p)
+
+        def comps(cs: dict[str, Component]) -> dict:
+            return {n: {k: v for k, v in {"path": rel(c.path), "write_path": rel(c.write_path), "shared": c.shared or None,
+                                          "writable": None if c.writable else False}.items() if v is not None} for n, c in cs.items()}
         doc = {
             "$comment": "The cockpit's workspaces: applications (a casefile domain configuration) and the trees that run under them. Edited by `cockpit workspace …` and the cockpit itself; paths relative to this file's directory or absolute.",
             "applications": {a.id: {k: v for k, v in {"label": a.label, "config_dir": rel(a.config_dir), "template": rel(a.template), "mode": a.mode}.items() if v is not None} for a in self.applications.values()},
-            "workspaces": [{k: v for k, v in {**asdict(w), "root": rel(w.root), "write_root": rel(w.write_root)}.items() if v not in (None, "", [], False) or k in ("shared", "members")} for w in self.items],
+            **({"defaults": comps(self.defaults)} if self.defaults else {}),
+            "workspaces": [{k: v for k, v in {**asdict(w), "root": rel(w.root), "write_root": rel(w.write_root), "components": comps(w.components)}.items()
+                            if v not in (None, "", [], False, {}) or k in ("shared", "members")} for w in self.items],
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -25,6 +25,12 @@ run from the button knows what a session at the keyboard knows. (A SessionStart
 hook cannot carry it: Claude Code keeps hook output above a few kilobytes out
 of the context, observed 2026-10-24.)
 
+Sessions (ADR-019): with `--workspaces` the runner also serves every workspace's session queue —
+a message (`chat`) or the closing turn (`end`) of one agent's session. The agent's agent.json sets
+the rights, its folder the identity and memory; the conversation is a chain of `--resume` in a HOME
+that lives as long as the session, because Claude Code keeps a session's transcript under HOME.
+The closing turn writes the session log; then the lease is released.
+
 Claiming is a `mkdir` next to the order — atomic on a network mount, so two
 runners never take the same job. The transcript goes to _runs/<id>.log, the
 outcome back into the order file, and a review entry into the container.
@@ -207,6 +213,13 @@ def billing_for(run: dict, rules: dict, env: dict, args) -> tuple[dict, str, str
 
 
 def run_home(args, data: Path, workspace_id: str, run_id: str) -> tuple[Path, Path]:
+    home = args.workspace / "tmp" / "homes" / run_id
+    if (home / "ChrisBuilds64" / "CLAUDE.md").is_file():
+        return home, home / "ChrisBuilds64"           # a session's HOME, built at its first turn and kept until its end
+    return _build_home(args, data, workspace_id, run_id)
+
+
+def _build_home(args, data: Path, workspace_id: str, run_id: str) -> tuple[Path, Path]:
     """A HOME for this one run, so that `~/ChrisBuilds64/pressroom` points at the workspace the order belongs to.
 
     The skills address the pipeline as ~/ChrisBuilds64/pressroom/flow and are the same files the person uses at
@@ -306,6 +319,143 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
                     "--status", "info"], input=text, capture_output=True, text=True, env=plain_env)
 
 
+# -------------------------------------------------------------------- sessions (ADR-019)
+
+def _cockpit():
+    try:
+        from cockpit.workspaces import Workspaces
+    except ImportError:                                   # run from the source tree, outside the cockpit's interpreter
+        sys.path.insert(0, str(HERE.parents[2]))
+        from cockpit.workspaces import Workspaces
+    return Workspaces
+
+
+def session_queues(args) -> list[tuple]:
+    """(registry, workspace) for every live workspace whose session store has a queue."""
+    if not args.workspaces:
+        return []
+    try:
+        ws = _cockpit()(args.workspaces, args.workspaces.parent)
+    except Exception as exc:                              # noqa: BLE001 — a broken registry is logged by queues() already
+        log.debug("sessions: registry unreadable: %s", exc)
+        return []
+    out = []
+    for w in ws.items:
+        if w.mode != "live":
+            continue
+        store = ws.sessions(w)
+        if (store.dir / "queue").is_dir():
+            out.append((ws, w, store))
+    return out
+
+
+def end_prompt(log_path: Path, notes: Path | None, s) -> str:
+    notes_line = (f"If this session taught you something about how the collaboration works, add one dated observation to "
+                  f"your working notes at `{notes}` in their format; otherwise leave them untouched. " if notes else
+                  "Your working notes are read-only here; put what you learned into the log's last section instead. ")
+    return (f"End this session now. Write the session log to `{log_path}` — Markdown, in German (internal documentation). "
+            f"Structure: `# Session {s.started[:10]} — <title>`, then Datum, Instanz, Workspace `{s.workspace}`, Thema "
+            f"„{s.topic}“; `## Was wurde gemacht`; `## Entscheidungen`; `## Offene Punkte`; `## Continuation Thread` with "
+            "the open tension and the next natural sentence. Only what this conversation contains — no invented work. "
+            f"{notes_line}Touch no other file. Then answer in two lines: the log's path and the next natural sentence.")
+
+
+def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
+    """One turn of a session: a message, or the closing turn that writes the log and releases the lease."""
+    sid, kind = order["session"], order.get("type")
+
+    def finish(status: str, text: str, **extra) -> None:
+        order.update(status=status, finished=now(), result=text[:4000], **extra)
+        f.write_text(json.dumps(order, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    s = store.get(sid)
+    agent = ws.agents(w).get(order.get("agent", ""))
+    if s is None or s.status == "closed" or agent is None or kind not in ("chat", "end"):
+        why = "the session is not running" if s is None or s.status == "closed" else (
+            f"no agent '{order.get('agent')}' in this workspace" if agent is None else f"unknown order type '{kind}'")
+        finish("failed", why, exit=78)
+        return
+    pipe = ws.component(w, "pipeline")
+    data = pipe.write_path or pipe.path
+    policy = load_policy(data) or {}
+    rules = {**policy.get("default", {}), **agent.rules_for(None)}       # the agent's ceiling is the conversation's rule
+    if args.pull:
+        refresh(args.pull)
+    agents_c = ws.component(w, "agents")
+    plain_env = dict(os.environ, COCKPIT_DATA_DIR=str(data), CONTEXT_LOOP_DIR=str(data), PRESSROOM_WORKSPACE=w.id,
+                     PRESSROOM_ENV=os.environ.get("PRESSROOM_ENV", "local"), PRESSROOM_SKILL="",
+                     PRESSROOM_SESSION=sid, PRESSROOM_TOPIC=s.topic, PRESSROOM_ORDERED_BY=s.user,
+                     PRESSROOM_AGENT=agent.context or agent.id, PRESSROOM_AGENT_LABEL=agent.label,
+                     PRESSROOM_AGENT_DIR=str(agent.dir),
+                     PRESSROOM_AGENT_SIGNATURE=str(agent.signature_path or ""), PRESSROOM_AGENT_NOTES=str(agent.notes_path or ""),
+                     PRESSROOM_SESSION_LOG=str(store.dir / s.starts_from) if s.starts_from else "",
+                     PRESSROOM_RUN_ID=order["id"])
+    env, billing, billed_by = billing_for(order, rules, plain_env, args)
+    log.info("session %s %s — billing: %s", sid, kind, billed_by)
+    if billing == "none":
+        text = (f"This message was not answered: {billed_by}. Add a subscription token (`claude setup-token`) or a personal "
+                "API key on your account page, then send it again.")
+        store.add_turn(sid, "system", text)
+        finish("failed", text, exit=78, billing="none")
+        if kind == "end":
+            store.close(sid, None)
+        return
+
+    home, wsdir = run_home(args, data, w.id, f"session-{sid}")
+    env["HOME"] = str(home)
+    context = context_file(order, env, args, wsdir)
+    log_path, notes = None, None
+    if kind == "end":
+        log_path = store.log_path(s)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        notes = agent.notes_path if (agents_c and agents_c.writable and agent.notes_path) else None
+        prompt = end_prompt(log_path, notes, s) + (f"\n\nNote from {s.user}: {order['text']}" if order.get("text") else "")
+    else:
+        prompt = order["text"]
+    cmd = [args.claude, "-p", prompt, "--output-format", "json", "--permission-mode", rules.get("permission_mode", "acceptEdits")]
+    if s.claude_session:
+        cmd += ["--resume", s.claude_session]
+    if context:
+        cmd += ["--append-system-prompt-file", str(context)]
+    if rules.get("model"):
+        cmd += ["--model", rules["model"]]
+    subst = {"{data}": str(data), "{container}": str(data)}
+    dirs = [subst.get(x, x) for x in rules.get("write", [])] + [str(d) for d in args.add_dir]
+    tools = list(rules.get("tools", [])) + (WEB_TOOLS if rules.get("web") else [])
+    if kind == "end":
+        dirs.append(str(log_path.parent))
+        if notes:
+            dirs.append(str(notes.parent))
+        tools += [t for t in ("Write", "Edit") if t not in tools]       # the log has to be written, whatever the ceiling
+    for d in dict.fromkeys(dirs):
+        cmd += ["--add-dir", d]
+    if tools:
+        cmd += ["--allowedTools", ",".join(dict.fromkeys(tools))]
+    transcript = f.parent / (f.stem + ".log")
+    timeout = int(rules.get("timeout", 1800))
+    try:
+        r = subprocess.run(cmd, cwd=wsdir, env=env, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+        code, stdout, stderr = r.returncode, r.stdout, r.stderr
+    except subprocess.TimeoutExpired as exc:
+        code, stdout, stderr = 124, (exc.stdout or ""), f"timed out after {timeout}s"
+    transcript.write_text(f"# {order['id']}\n$ {' '.join(cmd[:2])} … {' '.join(cmd[3:])}\n\n{stdout}\n[stderr]\n{stderr}\n", encoding="utf-8")
+    result, session, spent = "", "", {}
+    try:
+        out = json.loads(stdout)
+        result, session, spent = str(out.get("result", "")), str(out.get("session_id", "")), accounting(out)
+    except Exception:
+        result = (stdout.strip() or stderr.strip())[-1500:]
+    store.add_turn(sid, "assistant" if code == 0 else "system", result or "(no answer)", by=agent.id,
+                   cost_usd=spent.get("cost_usd"), model=spent.get("model"))
+    if code == 0 and session:
+        store.update(sid, claude_session=session, turns=s.turns + 1)
+    finish("done" if code == 0 else "failed", result, exit=code, billing=billing, log=f"queue/{transcript.name}", **spent)
+    if kind == "end":
+        closed = store.close(sid, log_path)
+        shutil.rmtree(home, ignore_errors=True)            # the session's HOME ends with the session; the log and transcript stay
+        log.info("session %s closed — log %s", sid, closed.log or "not written")
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="runner.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--workspace", required=True, help="where the skills and CLAUDE.md live — the session's cwd")
@@ -370,6 +520,22 @@ def main(argv=None) -> int:
             log.info("%s %s (exit %s, %s turns, %s USD, %s s)", run["status"], run["id"], run.get("exit"),
                      run.get("turns", "?"), run.get("cost_usd", "?"), run.get("duration_s", "?"))
             break                                          # one run, then look at every queue again
+        if not took:
+            for ws_reg, w, store in session_queues(args):
+                job = take(store.dir / "queue", me)
+                if not job:
+                    continue
+                took = True
+                f, order = job
+                log.info("taking %s %s in %s (by %s)", order.get("type"), order["session"], w.id, order.get("requested_by", "?"))
+                try:
+                    execute_session(f, order, ws_reg, w, store, args)
+                except Exception as exc:                  # noqa: BLE001 — the loop survives one broken turn
+                    log.exception("session order %s crashed in the runner itself", order["id"])
+                    order.update(status="failed", finished=now(), exit=-1, result=f"runner error: {exc}")
+                    f.write_text(json.dumps(order, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    store.add_turn(order["session"], "system", f"runner error: {exc}")
+                break
         if took:
             continue
         if args.once:

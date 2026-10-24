@@ -249,6 +249,103 @@ def create_app(config: Config) -> FastAPI:
             return go("/?err=" + quote(f"{w.id if w else '?'}: {type(exc).__name__}: {exc}"))
         return go(f"/w/{w.id}/")
 
+    # ---------------------------------------------------------------- agents and sessions (ADR-019)
+    def ws_for(request: Request, wid: str):
+        """(context, workspace) when the signed-in person may open it, else None."""
+        c = ctx(request)
+        if not c["user"] or workspaces is None or not workspaces.may_open(c["user"].name, wid):
+            return c, None
+        return c, workspaces.get(wid)
+
+    @app.get("/sessions/{wid}", response_class=HTMLResponse)
+    def sessions_page(request: Request, wid: str, err: str | None = None, warn: str | None = None):
+        if (r := gate(request)):
+            return r
+        c, w = ws_for(request, wid)
+        if w is None:
+            return go("/")
+        cat, store = workspaces.agents(w), workspaces.sessions(w)
+        return templates.TemplateResponse(request, "sessions.html", {
+            **c, "w": w, "err": err, "warn": warn, "agents": cat.for_user(c["user"].name, c["role"].id),
+            "problems": cat.problems, "active": store.active(), "closed": list(reversed(store.closed()))[:20],
+            "agents_component": workspaces.component(w, "agents")})
+
+    @app.post("/sessions/{wid}", response_class=HTMLResponse)
+    async def session_start(request: Request, wid: str):
+        if (r := gate(request)):
+            return r
+        c, w = ws_for(request, wid)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if w is None or not csrf_ok(request, form):
+            return go(f"/sessions/{wid}?err=" + quote("the form token did not match — reload the page and try again"))
+        from .sessions import SessionError
+        agent = workspaces.agents(w).get(form.get("agent", ""))
+        if agent is None or not agent.may_be_chosen_by(c["user"].name, c["role"].id):
+            return go(f"/sessions/{wid}?err=" + quote("this agent is not one you may choose here"))
+        try:
+            s, overlapping = workspaces.sessions(w).start(w.id, agent.id, c["user"].name, form.get("topic", ""))
+        except SessionError as exc:
+            return go(f"/sessions/{wid}?err=" + quote(str(exc)))
+        audit.record(c["user"].name, f"workspace:{w.id}", s.id, "agent-session.start")
+        warn = ("" if not overlapping else "?warn=" + quote(", ".join(o.id for o in overlapping)))
+        return go(f"/sessions/{wid}/{s.id}{warn}")
+
+    @app.get("/sessions/{wid}/{sid}", response_class=HTMLResponse)
+    def session_page(request: Request, wid: str, sid: str, err: str | None = None, warn: str | None = None):
+        if (r := gate(request)):
+            return r
+        c, w = ws_for(request, wid)
+        if w is None:
+            return go("/")
+        from .sessions import SessionError
+        store = workspaces.sessions(w)
+        try:
+            s = store.get(sid)
+        except SessionError:
+            s = None
+        if s is None or s.user != c["user"].name:
+            return go(f"/sessions/{wid}?err=" + quote("no such session of yours"))
+        agent = workspaces.agents(w).get(s.agent)
+        log_text = (store.dir / s.log).read_text(encoding="utf-8") if s.log and (store.dir / s.log).is_file() else None
+        return templates.TemplateResponse(request, "session.html", {
+            **c, "w": w, "s": s, "agent": agent, "turns": store.transcript(s.id), "pending": store.pending(s.id),
+            "err": err, "warn": warn, "log_text": log_text})
+
+    @app.post("/sessions/{wid}/{sid}", response_class=HTMLResponse)
+    async def session_act(request: Request, wid: str, sid: str):
+        if (r := gate(request)):
+            return r
+        c, w = ws_for(request, wid)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if w is None or not csrf_ok(request, form):
+            return go(f"/sessions/{wid}/{sid}?err=" + quote("the form token did not match — reload the page and try again"))
+        from .sessions import SessionError
+        store = workspaces.sessions(w)
+        try:
+            if form.get("what") == "end":
+                store.end(sid, c["user"].name, form.get("note", ""))
+                audit.record(c["user"].name, f"workspace:{w.id}", sid, "agent-session.end")
+            else:
+                store.say(sid, c["user"].name, form.get("text", ""))
+        except SessionError as exc:
+            return go(f"/sessions/{wid}/{sid}?err=" + quote(str(exc)))
+        return go(f"/sessions/{wid}/{sid}")
+
+    @app.get("/sessions/{wid}/{sid}/state")
+    def session_state(request: Request, wid: str, sid: str):
+        """For the page's poll: how many turns there are and whether an answer is still coming."""
+        c, w = ws_for(request, wid)
+        if w is None:
+            return JSONResponse({"error": "not found"}, status_code=404)
+        store = workspaces.sessions(w)
+        try:
+            s = store.get(sid)
+        except Exception:                                # noqa: BLE001 — a bad id is a 404, not a trace
+            s = None
+        if s is None or s.user != c["user"].name:
+            return JSONResponse({"error": "not found"}, status_code=404)
+        return JSONResponse({"turns": len(store.transcript(sid)), "pending": store.pending(sid) is not None, "status": s.status})
+
     # ---------------------------------------------------------------- entry
     @app.get("/intro", response_class=HTMLResponse)
     def intro(request: Request):

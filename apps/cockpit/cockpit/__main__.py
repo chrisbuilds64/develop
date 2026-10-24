@@ -23,6 +23,13 @@
     cockpit workspace create <id> --application <app> [--owner <name> | --shared] [--label …] [--from <workspace>] [--member <name>]…
     cockpit workspace remove <id> [--delete-files]
 
+    cockpit agent list     <workspace>                            the agents one may choose there, with skills and rights
+    cockpit session list   <workspace> [--all]                    running sessions (leases); --all adds the closed ones
+    cockpit session start  <workspace> <agent> --user <name> --topic "…"
+    cockpit session say    <workspace> <session> --user <name> "message"    queued for the runner
+    cockpit session end    <workspace> <session> --user <name> [--note "…"]   the agent writes the log, the lease is released
+    cockpit session show   <workspace> <session>                  the record and the conversation
+
 `--demo` runs against the fixtures shipped with the package: nothing from the
 real machine is read, so the surface can be shown before anything is installed.
 """
@@ -271,6 +278,70 @@ def cmd_workspace(args):
     return 0
 
 
+def _workspace(args):
+    from .workspaces import WorkspaceError, Workspaces
+    config = _config(args)
+    ws = Workspaces(config.workspaces_path, config.workspaces_path.parent)
+    w = ws.get(args.workspace)
+    if w is None:
+        raise WorkspaceError(f"no workspace '{args.workspace}' in {ws.path}")
+    return ws, w
+
+
+def cmd_agent(args):
+    from .workspaces import WorkspaceError
+    try:
+        ws, w = _workspace(args)
+    except WorkspaceError as exc:
+        sys.exit(str(exc))
+    cat = ws.agents(w)
+    if cat.dir is None:
+        sys.exit(f"workspace {w.id} has no agents component")
+    for a in cat.agents.values():
+        print(f"{a.id:12} {a.label:12} {a.engine:12} skills: {', '.join(a.skills) or '-':30} tools: {', '.join(a.tools)}{' +web' if a.web else ''}")
+    for name, why in cat.problems.items():
+        print(f"{name:12} BROKEN — {why}")
+    if not cat.agents and not cat.problems:
+        print(f"no agents in {cat.dir}")
+    return 0
+
+
+def cmd_session(args):
+    from .sessions import SessionError
+    from .workspaces import WorkspaceError
+    try:
+        ws, w = _workspace(args)
+        store = ws.sessions(w)
+        if args.sub == "list":
+            rows = store.active() + (store.closed() if args.all else [])
+            for s in rows:
+                print(f"{s.status:7} {s.id:56} {s.user:10} {s.topic}")
+            if not rows:
+                print("no sessions")
+        elif args.sub == "start":
+            agent = ws.agents(w).get(args.agent)
+            if agent is None:
+                sys.exit(f"no agent '{args.agent}' in workspace {w.id}")
+            s, overlapping = store.start(w.id, agent.id, args.user, args.topic)
+            print(f"started {s.id}" + (f" — starts from {s.starts_from}" if s.starts_from else ""))
+            for o in overlapping:
+                print(f"warning: {o.id} is running with the same agent, person and topic (since {o.started})")
+        elif args.sub == "say":
+            print("queued", store.say(args.session, args.user, args.text)["id"])
+        elif args.sub == "end":
+            print("queued", store.end(args.session, args.user, args.note or "")["id"])
+        elif args.sub == "show":
+            s = store.get(args.session)
+            if s is None:
+                sys.exit("no such session")
+            print(f"{s.id} — {s.status}, {s.agent} for {s.user}, since {s.started}" + (f", log {s.log}" if s.log else ""))
+            for t in store.transcript(s.id):
+                print(f"\n[{t['at']}] {t['role']}:\n{t['text']}")
+    except (SessionError, WorkspaceError) as exc:
+        sys.exit(str(exc))
+    return 0
+
+
 # ------------------------------------------------------------------- argv
 
 def main(argv=None) -> int:
@@ -314,6 +385,19 @@ def main(argv=None) -> int:
     s.add_argument("--shared", action="store_true"); s.add_argument("--label"); s.add_argument("--from", dest="from"); s.add_argument("--member", action="append"); common(s)
     s = wss.add_parser("remove"); s.add_argument("id"); s.add_argument("--delete-files", action="store_true"); common(s)
     wsp.set_defaults(fn=cmd_workspace)
+
+    ag = sub.add_parser("agent"); ags = ag.add_subparsers(dest="sub", required=True)
+    s = ags.add_parser("list"); s.add_argument("workspace"); common(s)
+    ag.set_defaults(fn=cmd_agent)
+
+    se = sub.add_parser("session"); ses = se.add_subparsers(dest="sub", required=True)
+    s = ses.add_parser("list"); s.add_argument("workspace"); s.add_argument("--all", action="store_true"); common(s)
+    s = ses.add_parser("start"); s.add_argument("workspace"); s.add_argument("agent"); s.add_argument("--user", required=True)
+    s.add_argument("--topic", required=True); common(s)
+    s = ses.add_parser("say"); s.add_argument("workspace"); s.add_argument("session"); s.add_argument("text"); s.add_argument("--user", required=True); common(s)
+    s = ses.add_parser("end"); s.add_argument("workspace"); s.add_argument("session"); s.add_argument("--user", required=True); s.add_argument("--note"); common(s)
+    s = ses.add_parser("show"); s.add_argument("workspace"); s.add_argument("session"); common(s)
+    se.set_defaults(fn=cmd_session)
 
     args = p.parse_args(argv)
     return args.fn(args) or 0
