@@ -594,6 +594,7 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
         order.update(status=status, finished=now(), result=text[:4000], **extra)
         f.write_text(json.dumps(order, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    notes_sync(args)                                       # the agents' folders follow main before the agent is read
     s = store.get(sid)
     agent = ws.agents(w).get(order.get("agent", ""))
     if s is None or s.status == "closed" or agent is None or kind not in ("chat", "end"):
@@ -607,7 +608,6 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
     rules = {**policy.get("default", {}), **agent.rules_for(None)}       # the agent's ceiling is the conversation's rule
     if args.pull:
         refresh(args.pull)
-    notes_sync(args)
     agents_c = ws.component(w, "agents")
     plain_env = dict(os.environ, COCKPIT_DATA_DIR=str(data), CONTEXT_LOOP_DIR=str(data), PRESSROOM_WORKSPACE=w.id,
                      PRESSROOM_ENV=os.environ.get("PRESSROOM_ENV", "local"), PRESSROOM_SKILL="",
