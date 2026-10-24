@@ -16,7 +16,8 @@
     "web": false,
     "timeout": 1800,
     "agent": "Nova",
-    "model": "claude-sonnet-5-5"
+    "model": "claude-sonnet-5-5",
+    "shared_billing": true
   },
   "skills": {
     "interpret": {

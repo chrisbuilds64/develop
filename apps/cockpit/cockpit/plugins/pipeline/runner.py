@@ -184,18 +184,34 @@ def session_env(run: dict, rules: dict, args) -> dict:
                 PRESSROOM_RUN_ID=str(run["id"]))
 
 
-def billing_for(run: dict, env: dict, args) -> tuple[dict, str, str]:
-    """The orderer's account decides how the run is billed: their subscription token when they brought one,
-    the shared API key otherwise. Returns the environment, the mode, and one line for the log."""
+def billing_for(run: dict, rules: dict, env: dict, args) -> tuple[dict, str, str]:
+    """The orderer's account decides how the run is billed: their subscription token or their own API key.
+    Nothing of their own and no `shared_billing: true` in the policy → mode "none", and the run does not start.
+    Returns the environment, the mode, and one line for the log."""
+    allow_shared = bool(rules.get("shared_billing", False))
     if not args.accounts:
-        return env, "api-key", "shared API key (no accounts directory)"
+        if allow_shared:
+            return env, "api-key", "shared API key (no accounts directory, allowed by policy)"
+        return {}, "none", "no accounts directory and the shared key is not allowed"
     try:
         from cockpit.account import Accounts
     except ImportError:                                   # run from the source tree, outside the cockpit's interpreter
         sys.path.insert(0, str(HERE.parents[2]))
         from cockpit.account import Accounts
-    b = Accounts(args.accounts).billing(str(run.get("requested_by", "")).lower(), env)
+    b = Accounts(args.accounts).billing(str(run.get("requested_by", "")).lower(), env, allow_shared=allow_shared)
     return b.env, b.mode, b.source
+
+
+def refuse(f: Path, run: dict, rules: dict, why: str, env_for_tools: dict) -> None:
+    """An order that cannot be billed to anybody does not run. The record says why, and the orderer reads it
+    where they look anyway: as a review entry in the container, addressed to them."""
+    text = (f"This run did not start: {why}.\n\nAdd a subscription token (`claude setup-token`) or a personal API key to your "
+            f"account — `cockpit account set-secret <you> CLAUDE_CODE_OAUTH_TOKEN` — and order the run again.")
+    run.update(status="failed", finished=now(), exit=78, result=text, billing="none", stage=os.environ.get("PRESSROOM_ENV", "local"))
+    f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    subprocess.run([sys.executable, str(HERE / "review_append.py"), run["container"], "--by", rules.get("agent", "agent"),
+                    "--title", f"Run /{run['skill']}: not started — no billing on your account", "--status", "open",
+                    "--for", str(run.get("requested_by", ""))], input=text, capture_output=True, text=True, env=env_for_tools)
 
 
 def execute(f: Path, run: dict, rules: dict, args) -> None:
@@ -204,8 +220,11 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
     if args.pull:
         refresh(args.pull)
     env = session_env(run, rules, args)
-    env, billing, billed_by = billing_for(run, env, args)
+    env, billing, billed_by = billing_for(run, rules, env, args)
     log.info("billing: %s", billed_by)
+    if billing == "none":
+        refuse(f, run, rules, billed_by, env_for_tools=session_env(run, rules, args))
+        return
     context = context_file(run, env, args)
     cmd = command_for(run, rules, args, context)
     timeout = int(rules.get("timeout", 1800))

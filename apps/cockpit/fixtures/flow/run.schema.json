@@ -112,9 +112,10 @@
       "type": "string",
       "enum": [
         "subscription",
-        "api-key"
+        "api-key",
+        "none"
       ],
-      "description": "How the run was billed: the orderer's own subscription token, or the shared API key. Written by the runner."
+      "description": "How the run was billed: the orderer's own subscription token, their own or the shared API key, or none — then the run did not start. Written by the runner."
     }
   }
 }

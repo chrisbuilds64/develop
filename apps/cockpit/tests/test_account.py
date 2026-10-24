@@ -41,14 +41,16 @@ def test_a_malformed_secret_or_unknown_key_is_refused_before_anything_is_written
 
 def test_billing_picks_the_subscription_and_removes_the_shared_key(accounts):
     base = {"ANTHROPIC_API_KEY": "shared", "PATH": "/usr/bin"}
-    assert accounts.billing("chris", base).mode == "api-key"               # no account yet: the shared key
+    assert accounts.billing("chris", base).mode == "none"                  # no account yet, no guest path: nobody pays
+    assert accounts.billing("chris", base, allow_shared=True).mode == "api-key"
     accounts.set_secret("chris", "CLAUDE_CODE_OAUTH_TOKEN", TOKEN)
     b = accounts.billing("chris", base)
     assert b.mode == "subscription" and b.env["CLAUDE_CODE_OAUTH_TOKEN"] == TOKEN
     assert "ANTHROPIC_API_KEY" not in b.env and b.env["PATH"] == "/usr/bin"
     assert base["ANTHROPIC_API_KEY"] == "shared"                            # the caller's environment is untouched
-    accounts.set("chris", "billing", "api-key")                             # the person can insist on the key
-    b = accounts.billing("chris", base)
+    accounts.set("chris", "billing", "api-key")                             # the person can insist on a key …
+    assert accounts.billing("chris", base).mode == "none"                  # … but without one of their own nobody pays
+    b = accounts.billing("chris", base, allow_shared=True)
     assert b.mode == "api-key" and b.env["ANTHROPIC_API_KEY"] == "shared" and "CLAUDE_CODE_OAUTH_TOKEN" not in b.env
 
 
@@ -58,12 +60,13 @@ def test_a_personal_key_replaces_the_shared_one_and_clearing_a_secret_falls_back
     assert accounts.billing("akhil", base).env["ANTHROPIC_API_KEY"] == KEY
     assert accounts.clear_secret("akhil", "ANTHROPIC_API_KEY") is True
     assert accounts.clear_secret("akhil", "ANTHROPIC_API_KEY") is False
-    assert accounts.billing("akhil", base).source == "shared API key"
+    assert accounts.billing("akhil", base).mode == "none"
+    assert accounts.billing("akhil", base, allow_shared=True).source == "shared API key (allowed by policy)"
     assert accounts.status("akhil")["secrets"]["ANTHROPIC_API_KEY"]["set"] is False
 
 
-def test_unknown_or_missing_orderer_gets_the_shared_key(accounts):
+def test_unknown_or_missing_orderer_is_refused_unless_the_policy_allows_the_shared_key(accounts):
     base = {"ANTHROPIC_API_KEY": "shared"}
-    assert accounts.billing(None, base).mode == "api-key"
-    assert accounts.billing("", base).mode == "api-key"
-    assert accounts.billing("../etc", base).mode == "api-key"
+    for who in (None, "", "../etc"):
+        assert accounts.billing(who, base).mode == "none" and accounts.billing(who, base).env == {}
+        assert accounts.billing(who, base, allow_shared=True).mode == "api-key"

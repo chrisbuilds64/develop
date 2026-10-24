@@ -39,7 +39,7 @@ class AccountError(Exception):
 
 @dataclass(frozen=True)
 class Billing:
-    mode: str              # "subscription" | "api-key"
+    mode: str              # "subscription" | "api-key" | "none" (nothing of the person's own, and the shared key is not allowed)
     env: dict              # the environment the run gets: the token set and the shared key removed, or untouched
     source: str            # one line for the log and the run record
 
@@ -157,12 +157,14 @@ class Accounts:
         }
 
     # --------------------------------------------------------------- billing
-    def billing(self, name: str | None, base_env: dict) -> Billing:
+    def billing(self, name: str | None, base_env: dict, allow_shared: bool = False) -> Billing:
         """The environment for one run, chosen by the orderer's account.
 
         Subscription when the person has a token and has not said otherwise; the shared API key then
-        leaves the environment, because Claude Code prefers the key whenever it sees one. Without a
-        token, or with `billing = api-key`, the environment stays as it is.
+        leaves the environment, because Claude Code prefers the key whenever it sees one. A personal
+        API key replaces the shared one. Without anything of their own the run is billed to nobody —
+        mode "none" — unless the policy allows the shared key (`allow_shared`, a guest path that is
+        off by default: everything runs on somebody's own account, never silently on the operator's).
         """
         if name and NAME.match(name) and self.dir(name).exists():
             data, secrets = self.settings(name), self._read_secrets(name)
@@ -178,4 +180,7 @@ class Accounts:
                 env = dict(base_env, ANTHROPIC_API_KEY=secrets["ANTHROPIC_API_KEY"])
                 env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
                 return Billing("api-key", env, f"personal API key of {name}")
-        return Billing("api-key", dict(base_env), "shared API key")
+        if allow_shared:
+            return Billing("api-key", dict(base_env), "shared API key (allowed by policy)")
+        who = name or "the orderer"
+        return Billing("none", {}, f"{who} has no subscription token and no personal API key — the shared key is not allowed")
