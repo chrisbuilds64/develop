@@ -109,41 +109,49 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
 
 
 def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
-    """The registry of this stage, written once: the applications from the checkout, the shared PressRoom on the
-    team folder (read from the disk, written through the mount), and two sample workspaces from the worlds."""
+    """The registry of this stage: the applications from the checkout, the shared PressRoom on the team folder
+    (read from the disk, written through the mount), and two sample workspaces from the worlds. Written once;
+    the sample workspaces are added whenever they are missing (idempotent)."""
     s = settings.server
     d = env.dir(s)
     cp = d / "cockpit"
     reg = cp / "workspaces.json"
-    if reg.exists():
-        return reg
     cfg = d / "develop" / "apps" / "casefile" / "config"
-    doc = {
-        "$comment": "Seeded by pressroom-env; from here on `cockpit workspace …` and the cockpit itself edit it.",
-        "applications": {
-            "pressroom": {"label": "PressRoom", "config_dir": str(cfg / "pressroom"), "mode": "live"},
-            "claims": {"label": "Schadenakte", "config_dir": str(cfg / "claims-demo"), "template": str(d / "worlds" / "claims"), "mode": "replay"},
-            "egutachten": {"label": "Gutachtenakte", "config_dir": str(cfg / "egutachten"), "template": str(d / "worlds" / "egutachten"), "mode": "replay"},
-        },
-        "workspaces": [
-            {"id": "pressroom", "application": "pressroom", "label": f"PressRoom {env.label}", "shared": True, "members": ["chris", "akhil"],
-             "root": str(s.groupfolders_data / str(folder_id) / "files" / "flow"), "write_root": str(env.mount / "flow"), "mode": "live"},
-        ],
-    }
-    reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
-    venv = cp / ".venv"
-    for wid, app, label in (("schadenakte-muster", "claims", "Schadenakte · Muster"), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster")):
-        r = run([str(venv / "bin" / "cockpit"), "workspace", "create", wid, "--application", app, "--shared", "--label", label, str(cp / "cockpit.toml")],
-                user=s.runner_user, check=False)
-        if r.returncode != 0:
-            log.warning("%s: sample workspace %s not created: %s", env.name, wid, (r.stderr or r.stdout).strip()[-200:])
-    # sample worlds keep the person picker: their people are invented
+    if not reg.exists():
+        doc = {
+            "$comment": "Seeded by pressroom-env; from here on `cockpit workspace …` and the cockpit itself edit it.",
+            "applications": {
+                "pressroom": {"label": "PressRoom", "config_dir": str(cfg / "pressroom"), "mode": "live"},
+                "claims": {"label": "Schadenakte", "config_dir": str(cfg / "claims-demo"), "template": str(d / "worlds" / "claims"), "mode": "replay"},
+                "egutachten": {"label": "Gutachtenakte", "config_dir": str(cfg / "egutachten"), "template": str(d / "worlds" / "egutachten"), "mode": "replay"},
+            },
+            "workspaces": [
+                {"id": "pressroom", "application": "pressroom", "label": f"PressRoom {env.label}", "shared": True, "members": ["chris", "akhil"],
+                 "root": str(s.groupfolders_data / str(folder_id) / "files" / "flow"), "write_root": str(env.mount / "flow"), "mode": "live"},
+            ],
+        }
+        reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     data = json.loads(reg.read_text(encoding="utf-8"))
-    for w in data["workspaces"]:
-        if w["id"].endswith("-muster"):
-            w["open_identity"] = True
-    reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    log.info("%s: workspaces seeded (%s)", env.name, ", ".join(w["id"] for w in data["workspaces"]))
+    have = {w["id"] for w in data["workspaces"]}
+    venv = cp / ".venv"
+    added = []
+    for wid, app, label in (("schadenakte-muster", "claims", "Schadenakte · Muster"), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster")):
+        if wid in have:
+            continue
+        # argparse takes the config as a positional after the id, which the options swallow: run from the cockpit dir instead
+        r = run([str(venv / "bin" / "cockpit"), "workspace", "create", wid, "--application", app, "--shared", "--label", label],
+                user=s.runner_user, cwd=str(cp), check=False)
+        if r.returncode != 0:
+            log.warning("%s: sample workspace %s not created: %s", env.name, wid, (r.stderr or r.stdout).strip()[-300:])
+        else:
+            added.append(wid)
+    if added:
+        data = json.loads(reg.read_text(encoding="utf-8"))
+        for w in data["workspaces"]:
+            if w["id"] in added:
+                w["open_identity"] = True              # sample worlds keep the person picker: their people are invented
+        reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    log.info("%s: workspaces: %s", env.name, ", ".join(w["id"] for w in data["workspaces"]))
     return reg
 
 
