@@ -20,6 +20,8 @@ log = logging.getLogger("pressroom-env")
 def run(cmd: list[str], *, user: str | None = None, cwd: str | None = None, check: bool = True,
         env: dict | None = None, timeout: int = 1800, quiet: bool = False) -> subprocess.CompletedProcess:
     full = (["sudo", "-n", "-u", user, "-H"] + cmd) if user else cmd
+    if user and cwd is None:
+        cwd = "/"          # never root's own cwd: pip's editable finder stats every sys.path entry, including '' (the cwd)
     if not quiet:
         log.info("$ %s%s", f"[{user}] " if user else "", " ".join(shlex.quote(c) for c in cmd))
     try:
