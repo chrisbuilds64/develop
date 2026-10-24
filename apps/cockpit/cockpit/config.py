@@ -128,6 +128,8 @@ class Config:
     sources: dict[str, Source]
     modules: list[Module]
     roles: dict[str, Role]
+    base_path: str = ""               # the URL prefix this instance is served under ("/test"); "" at the root
+    environment: str = ""             # a stage label shown in the header ("test", "entw"); "" or "prod" shows nothing
     base_dir: Path = field(default_factory=Path.cwd)
     def bind_path(self, p: Path) -> Path:
         p = Path(p).expanduser()
@@ -320,6 +322,9 @@ def load(path: Path) -> Config:
         people = (sid, file)
 
     default_role = top.get("default_role", next(iter(roles)))
+    base_path = str(top.get("base_path", "")).rstrip("/")
+    if base_path and (not base_path.startswith("/") or " " in base_path):
+        raise ConfigError(f"[cockpit] base_path = '{base_path}' — expected a path like '/test', or nothing for the root")
     if default_role not in roles:
         raise ConfigError(f"[cockpit] default_role = '{default_role}' is not a defined role")
 
@@ -345,6 +350,8 @@ def load(path: Path) -> Config:
         cache_seconds=int(top.get("cache_seconds", 15)),          # listings and small reads over a slow mount; 0 = off
         stale_after_hours=int(top.get("stale_after_hours", 24)),
         home=(str(top["home"]) if top.get("home") else None),   # a module id: the desk lands there instead of the overview
+        base_path=base_path,
+        environment=str(top.get("environment", "")).strip().lower(),
         people=people,
         sources=sources,
         modules=modules,

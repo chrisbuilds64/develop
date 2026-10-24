@@ -1,6 +1,7 @@
 {
   "_name": "English",
   "app.title": "Cockpit",
+  "app.environment": "Stage",
   "app.tagline": "What the tools know, in one place.",
   "app.as_of": "as of {when}",
   "app.language": "Language",

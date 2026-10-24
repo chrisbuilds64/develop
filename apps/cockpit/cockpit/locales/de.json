@@ -1,6 +1,7 @@
 {
   "_name": "Deutsch",
   "app.title": "Cockpit",
+  "app.environment": "Stufe",
   "app.tagline": "Was die Werkzeuge wissen, an einem Ort.",
   "app.as_of": "Stand {when}",
   "app.language": "Sprache",

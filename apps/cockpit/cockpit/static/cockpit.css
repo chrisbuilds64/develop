@@ -73,6 +73,9 @@ h1, h2, h3 { margin: 0; font-weight: 650; letter-spacing: -.01em; }
 .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
 .brand h1 em { font-style: normal; color: var(--accent-soft); }
 .brand .tag { color: var(--ink-3); font-size: 13px; }
+/* the stage this instance serves — loud on purpose, so TEST is never mistaken for PROD */
+.brand .env { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; color: #fff; background: #b45309; }
+.brand .env-entw { background: #15803d; }
 .controls { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
 .controls select, .controls button {
   font: inherit; color: var(--ink); background: var(--surface-2);

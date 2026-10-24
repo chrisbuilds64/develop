@@ -1,0 +1,40 @@
+# pressroom-env — stages of a PressRoom on one server. Copy to /etc/pressroom/envs.toml and fill in.
+# One table per stage. Exactly one stage serves the root (base_path = ""); that one is production and
+# is never a clone target. Every other stage is reached under its prefix and cloned from production.
+
+[server]
+occ = "/path/to/nextcloud/occ"
+php = "php8.5"
+nextcloud_user = "nextcloud-site-user"
+groupfolders_data = "/path/to/nextcloud/data/__groupfolders"
+nextcloud_group = "pressroom"
+dav_base = "https://cloud.example.com/remote.php/dav/files/runner"
+davfs_secrets = "/etc/davfs2/secrets"
+runner_user = "runner"
+shared = "/home/runner/ChrisBuilds64"
+envs_root = "/home/runner/envs"
+claude_bin = "/home/runner/.local/bin/claude"
+develop_repo = "https://github.com/chrisbuilds64/develop.git"
+users_json = "/home/runner/cockpit/users.json"
+cookie_secret = "/home/runner/cockpit/.cockpit-secret"
+runner_env_file = "/home/runner/.config/pressroom-runner.env"
+nginx_snippet = "/etc/nginx/pressroom-envs.conf"
+host = "pressroom.example.com"
+
+[env.prod]
+label = "PROD"
+folder = "pressroom"
+mount = "/srv/pressroom"
+port = 8200
+base_path = ""
+ref = "main"
+clone_from = ""
+
+[env.test]
+label = "TEST"
+folder = "pressroom-test"
+mount = "/srv/pressroom-test"
+port = 8201
+base_path = "/test"
+ref = "main"
+clone_from = "prod"

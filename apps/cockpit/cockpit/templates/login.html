@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ config.name }} · {{ t('app.login') }}</title>
+<title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }} · {{ t('app.login') }}</title>
 <link rel="stylesheet" href="/static/cockpit.css">
 </head>
 <body class="login-body">

@@ -1,0 +1,17 @@
+[Unit]
+Description=PressRoom cockpit {{label}} (web surface over the stage's Nextcloud team folder)
+After=network-online.target {{mount_unit}}
+Requires={{mount_unit}}
+
+[Service]
+User={{user}}
+WorkingDirectory={{dir}}/cockpit
+Environment=PYTHONUNBUFFERED=1
+Environment=PRESSROOM_ENV={{env}}
+ExecStart={{dir}}/cockpit/.venv/bin/cockpit run
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

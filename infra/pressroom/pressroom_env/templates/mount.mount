@@ -1,0 +1,13 @@
+[Unit]
+Description=PressRoom {{label}} team folder via WebDAV (Nextcloud on this host)
+After=network-online.target
+Wants=network-online.target
+
+[Mount]
+What={{what}}
+Where={{where}}
+Type=davfs
+Options=uid={{user}},gid={{user}},file_mode=0660,dir_mode=0770,_netdev
+
+[Install]
+WantedBy=multi-user.target

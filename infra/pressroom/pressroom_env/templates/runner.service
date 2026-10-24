@@ -1,0 +1,20 @@
+[Unit]
+Description=PressRoom skill runner {{label}} (headless Claude Code, orders from the stage's team folder)
+After=network-online.target {{mount_unit}}
+Requires={{mount_unit}}
+
+[Service]
+User={{user}}
+# Its own HOME: the skills say ~/ChrisBuilds64/pressroom/flow, and here that is this stage's pipeline.
+Environment=HOME={{home}}
+Environment=PRESSROOM_ENV={{env}}
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile={{env_file}}
+WorkingDirectory={{ws}}
+ExecStart={{dir}}/cockpit/.venv/bin/python {{dir}}/develop/apps/cockpit/cockpit/plugins/pipeline/runner.py --workspace {{ws}} --data {{data}} --claude {{claude}} --interval 10 --pull {{pull}}
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

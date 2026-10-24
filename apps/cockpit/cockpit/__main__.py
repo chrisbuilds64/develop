@@ -53,8 +53,9 @@ def cmd_run(args):
           + (" (demo)" if args.demo else ""))
     for mid, err in app.state.app_failures.items():
         print(f"  plugin app '{mid}' did not start: {err}")
-    print(f"http://{config.host}:{config.port}")
-    uvicorn.run(app, host=config.host, port=config.port, log_level="warning")
+    print(f"http://{config.host}:{config.port}{config.base_path}" + (f"  ({config.environment})" if config.environment else ""))
+    # root_path: the reverse proxy passes the prefix through unchanged, uvicorn tells the app about it
+    uvicorn.run(app, host=config.host, port=config.port, log_level="warning", root_path=config.base_path)
 
 
 def cmd_check(args):

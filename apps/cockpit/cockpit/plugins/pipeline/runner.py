@@ -10,8 +10,15 @@ no rights of its own; without the policy it runs nothing.
 Kind `claude-code`: the skill runs as `claude -p "/<skill> <container>"` in the
 workspace — the same session type, the same skills and canon the person uses
 at the keyboard, started by a file instead of a prompt. It runs on the person's
-own machine with their own subscription; that is why the queue is a directory
-and not a service: the runner may be off, and the order waits.
+own machine with their own subscription, or as a service per stage on the
+server; that is why the queue is a directory and not a service: the runner
+may be off, and the order waits.
+
+What the session knows beyond the skill: `--pull` refreshes the shared
+checkouts (canon, control) before every run, so the rules are today's; the
+order's stage, skill, container and orderer travel as PRESSROOM_* variables,
+and the workspace's SessionStart hook turns them into loaded context. That is
+how a run from the button knows what a session at the keyboard knows.
 
 Claiming is a `mkdir` next to the order — atomic on a network mount, so two
 runners never take the same job. The transcript goes to _runs/<id>.log, the
@@ -20,6 +27,7 @@ outcome back into the order file, and a review entry into the container.
 import argparse
 import datetime as dt
 import json
+import logging
 import os
 import platform
 import socket
@@ -30,6 +38,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 KIND = "claude-code"
+log = logging.getLogger("pressroom-runner")
 
 
 def now() -> str:
@@ -116,13 +125,40 @@ def prompt_for(run: dict, agent: str) -> str:
     return head + line
 
 
+def refresh(repos: list[Path]) -> None:
+    """`git pull --ff-only` on the shared checkouts. A failure is logged and the run goes on with what is there:
+    stale rules are a worse outcome than no run only when they are silently stale, and this is not silent."""
+    for repo in repos:
+        if not (repo / ".git").exists():
+            log.warning("pull: %s is not a git checkout", repo)
+            continue
+        r = subprocess.run(["git", "-C", str(repo), "pull", "--ff-only", "--quiet"], capture_output=True, text=True, timeout=120)
+        if r.returncode != 0:
+            log.warning("pull %s failed: %s", repo.name, (r.stderr or r.stdout).strip().splitlines()[-1:] or "?")
+        else:
+            head = subprocess.run(["git", "-C", str(repo), "log", "-1", "--format=%h %s"], capture_output=True, text=True).stdout.strip()
+            log.info("pull %s: %s", repo.name, head[:80])
+
+
+def session_env(run: dict, rules: dict, args) -> dict:
+    """What the headless session learns about its order, for the SessionStart hook and the skills."""
+    return dict(os.environ,
+                COCKPIT_DATA_DIR=str(args.data), CONTEXT_LOOP_DIR=str(args.data),
+                PRESSROOM_ENV=os.environ.get("PRESSROOM_ENV", "local"),
+                PRESSROOM_SKILL=str(run["skill"]), PRESSROOM_CONTAINER=str(run["container"]),
+                PRESSROOM_ORDERED_BY=str(run.get("requested_by", "")), PRESSROOM_AGENT=str(rules.get("agent", "agent")),
+                PRESSROOM_RUN_ID=str(run["id"]))
+
+
 def execute(f: Path, run: dict, rules: dict, args) -> None:
     queue = f.parent
-    log = queue / (f.stem + ".log")
+    transcript = queue / (f.stem + ".log")
+    if args.pull:
+        refresh(args.pull)
     cmd = command_for(run, rules, args)
     timeout = int(rules.get("timeout", 1800))
-    env = dict(os.environ, COCKPIT_DATA_DIR=str(args.data), CONTEXT_LOOP_DIR=str(args.data))
-    with log.open("w", encoding="utf-8") as out:
+    env = session_env(run, rules, args)
+    with transcript.open("w", encoding="utf-8") as out:
         out.write(f"# {run['id']} — started {run['started']} by {run['taken_by']}\n$ {' '.join(cmd[:2])} … {' '.join(cmd[3:])}\n\n")
         out.flush()
         try:
@@ -138,8 +174,8 @@ def execute(f: Path, run: dict, rules: dict, args) -> None:
         except Exception:
             result = stdout.strip()[-1500:]
         out.write(result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
-    run.update(status="done" if code == 0 else "failed", finished=now(), exit=code, log=f"_runs/{log.name}",
-               result=result.strip()[:4000])
+    run.update(status="done" if code == 0 else "failed", finished=now(), exit=code, log=f"_runs/{transcript.name}",
+               result=result.strip()[:4000], stage=env["PRESSROOM_ENV"])
     if session:
         run["session"] = session
     run.update(spent)
@@ -160,27 +196,43 @@ def main(argv=None) -> int:
     p.add_argument("--claude", default=os.environ.get("CLAUDE_BIN", "claude"))
     p.add_argument("--interval", type=int, default=10)
     p.add_argument("--once", action="store_true", help="process what is queued, then exit")
+    p.add_argument("--pull", default="", help="comma-separated git checkouts to `pull --ff-only` before every run (canon, control)")
+    p.add_argument("--log-level", default=os.environ.get("RUNNER_LOG_LEVEL", "INFO"))
     args = p.parse_args(argv)
+    logging.basicConfig(level=args.log_level.upper(), format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S", stream=sys.stdout)
     args.workspace = Path(args.workspace).expanduser().resolve()
     args.data = Path(args.data).expanduser().resolve()
+    args.pull = [Path(x.strip()).expanduser() for x in args.pull.split(",") if x.strip()]
     queue = args.data / "_runs"
-    me = f"{os.environ.get('USER', 'runner')}@{socket.gethostname().split('.')[0]}"
-    print(f"runner {me} ({KIND}) — queue {queue}, workspace {args.workspace}, {platform.system()}")
+    stage = os.environ.get("PRESSROOM_ENV", "local")
+    me = f"{os.environ.get('USER', 'runner')}@{socket.gethostname().split('.')[0]}/{stage}"
+    log.info("runner %s (%s) — queue %s, workspace %s, %s%s", me, KIND, queue, args.workspace, platform.system(),
+             f", pull {', '.join(p.name for p in args.pull)}" if args.pull else "")
+    warned = False
     while True:
         policy = load_policy(args.data)                   # re-read every round: a changed line applies to the next run
         if policy is None:
-            print(f"{now()} no run-policy.json at {args.data} — nothing runs without a declared policy")
+            if not warned:
+                log.error("no run-policy.json at %s — nothing runs without a declared policy", args.data)
+                warned = True
             if args.once:
                 return 1
             time.sleep(args.interval)
             continue
+        warned = False
         queue.mkdir(exist_ok=True)
         job = take(queue, me)
         if job:
             f, run = job
-            print(f"{now()} taking {run['id']}")
-            execute(f, run, policy_for(policy, run["skill"]), args)
-            print(f"{now()} {run['status']} {run['id']} (exit {run.get('exit')})")
+            log.info("taking %s (by %s)", run["id"], run.get("requested_by", "?"))
+            try:
+                execute(f, run, policy_for(policy, run["skill"]), args)
+            except Exception as exc:                      # the loop survives one broken order; the order records why
+                log.exception("run %s crashed in the runner itself", run["id"])
+                run.update(status="failed", finished=now(), exit=-1, result=f"runner error: {exc}")
+                f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            log.info("%s %s (exit %s, %s turns, %s USD, %s s)", run["status"], run["id"], run.get("exit"),
+                     run.get("turns", "?"), run.get("cost_usd", "?"), run.get("duration_s", "?"))
             continue
         if args.once:
             return 0

@@ -45,7 +45,7 @@ def render(config: Config, lang: str | None = None, role_id: str | None = None, 
     return tpl.render(
         config=config, lang=lang, languages=i18n.languages(), role=role, roles=[],
         t=lambda key, **kw: i18n.t(lang, key, **kw), version=__version__,
-        export=True, user=None, inline_css=(HERE / "static" / "cockpit.css").read_text(encoding="utf-8"),
+        export=True, user=None, base="", inline_css=(HERE / "static" / "cockpit.css").read_text(encoding="utf-8"),
         cards=cards, modules_by_id={m.id: m for m in config.modules},
         now=dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
     )

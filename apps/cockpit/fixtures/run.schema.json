@@ -103,6 +103,10 @@
     "duration_s": {
       "type": "number",
       "description": "Wall-clock seconds of the session (duration_ms / 1000)."
+    },
+    "stage": {
+      "type": "string",
+      "description": "The stage the runner that executed this order serves (prod, test, entw; local for a runner on a person's machine). Written by the runner with the outcome."
     }
   }
 }
