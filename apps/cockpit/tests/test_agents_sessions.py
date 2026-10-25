@@ -403,3 +403,38 @@ def _restart(world):
     from cockpit.app import create_app
     from cockpit.config import load
     return TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
+
+
+def test_the_case_on_screen_goes_with_a_message_once_and_the_reference_can_be_switched_off(org):
+    registry(org)
+    box = org / "flow" / "10-ideas" / "SP-xxx"
+    box.mkdir(parents=True)
+    (box / "meta.json").write_text(json.dumps({"label": "SP", "title": "The Instrument That Cannot See Its Own Errors"}))
+    (box / "review.md").write_text("## REV-001 — Hook schärfen\n**Status:** open\n")
+    (box / "post.v1.md").write_text("The instrument cannot see its own errors.\n")
+    (org / "flow" / "secret.md").write_text("outside the case")
+    accounts = Accounts(org / "accounts")
+    accounts.set_secret("chris", "CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-" + "x" * 48)
+    accounts.team("chris", Catalog.load(org / "org-agents"), "entw").hire("axel", role="operator")
+    prompts = org / "prompts.jsonl"
+    stub = org / "claude"
+    stub.write_text(f"""#!{sys.executable}
+import json, sys
+a = sys.argv[1:]
+open({str(prompts)!r}, "a").write(json.dumps(a[a.index("-p") + 1]) + "\\n")
+print(json.dumps({{"result": "ok", "session_id": "cs-1"}}))
+""")
+    stub.chmod(0o755)
+    store = accounts.store("chris", "entw")
+    s, _ = store.start("axel", "chris", "Content", {"workspace": "lab"})
+    focus = {"workspace": "lab", "case": "SP-xxx", "item": "10-ideas/SP-xxx", "label": "SP", "title": "The Instrument", "stage": "idea"}
+    for text, f in (("Was ist hier als Nächstes zu tun?", focus), ("Und danach?", focus), ("Allgemein: wie geht es Ray?", None),
+                    ("Zurück zum Fall", dict(focus, item="../../flow"))):
+        store.say(s.id, "chris", text, f)
+        runner(org, "--claude", str(stub))
+    p = [json.loads(l) for l in prompts.read_text().splitlines()]
+    assert "<case-on-screen>" in p[0] and "REV-001" in p[0] and "The instrument cannot see" in p[0] and p[0].endswith("Was ist hier als Nächstes zu tun?")
+    assert p[1] == "Und danach?"                                                  # the same case is not laid down twice
+    assert "switched the case reference off" in p[2]
+    assert "<case-on-screen>" in p[3] and "outside the case" not in p[3]          # a path out of the pipeline is not followed
+    assert store.transcript(s.id)[0]["text"] == "Was ist hier als Nächstes zu tun?"   # the transcript keeps the person's words

@@ -58,3 +58,17 @@ html[data-look="glass"] .ap-panel, html[data-look="glass"] .ap-launch {
 @media (max-width: 640px) { .ap-panel { top: auto; height: 78vh; bottom: 72px; } .ap-launch { right: 12px; bottom: 12px; } }
 @media (prefers-reduced-motion: no-preference) { .ap-panel:not([hidden]) { animation: ap-in .18s ease-out; } }
 @keyframes ap-in { from { transform: translateY(8px); opacity: 0; } }
+.ap-chips { display: flex; }
+.ap-chip { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 8px 6px 10px; border-radius: 10px; font-size: 12px;
+  background: var(--your-move-soft, #dce6ff); color: var(--your-move-ink, #1e3a8a); }
+.ap-chip.off { background: var(--ground-2, #fbf9f6); color: var(--muted, #6e675d); border: 1px dashed var(--hairline, #e3ddd2); }
+.ap-chip-k { font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; flex: none; }
+.ap-chip-v { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap-chip-x, .ap-chip-on { border: none; background: none; color: inherit; cursor: pointer; font: inherit; padding: 0 2px; }
+.ap-chip-x { font-size: 16px; line-height: 1; flex: none; }
+.ap-chip-on { text-decoration: underline; text-align: left; }
+/* inside an application the launcher is a tab on the right edge — the application's own corner buttons stay free */
+.ap-in-app .ap-launch { top: 50%; bottom: auto; right: 0; transform: translateY(-50%); height: auto; flex-direction: column; padding: 10px 6px 10px 8px; border-radius: 16px 0 0 16px; border-right: none; }
+.ap-in-app .ap-stack { flex-direction: column; }
+.ap-in-app .ap-stack .ap-av + .ap-av { margin-left: 0; margin-top: -8px; }
+.ap-in-app .ap-panel { bottom: 12px; right: 56px; }

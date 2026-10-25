@@ -13,13 +13,15 @@
     endNote: 'Notiz zum Abschluss (optional)', thinking: 'denkt nach …', writing: 'schreibt das Session-Log …', full: 'Vollansicht',
     back: '← Team', place: 'Ort', none: 'Noch niemand im Team. Stell auf der Seite „Mein Team“ einen Agenten ein.',
     manage: 'Team verwalten', running: 'läuft', closed: 'Session beendet.', log: 'Log', keys: 'Return sendet · Shift+Return neue Zeile',
-    dictate: 'Diktieren', close: 'Schließen', stale: 'Die Seite ist veraltet — bitte neu laden.'
+    dictate: 'Diktieren', close: 'Schließen', stale: 'Die Seite ist veraltet — bitte neu laden.',
+    ref: 'Bezug', refOff: 'Ohne Bezug — allgemeine Frage', refOn: 'Bezug einschalten', refNone: 'Kein Fall geöffnet — allgemeine Frage'
   } : {
     team: 'My team', start: 'Start session', topic: 'Topic — one line', send: 'Send', end: 'End session',
     endNote: 'Closing note (optional)', thinking: 'thinking …', writing: 'writing the session log …', full: 'Full view',
     back: '← Team', place: 'Place', none: 'Nobody on your team yet. Hire an agent on the “My team” page.',
     manage: 'Manage team', running: 'running', closed: 'Session ended.', log: 'Log', keys: 'Return sends · Shift+Return new line',
-    dictate: 'Dictate', close: 'Close', stale: 'The page is stale — please reload.'
+    dictate: 'Dictate', close: 'Close', stale: 'The page is stale — please reload.',
+    ref: 'About', refOff: 'No reference — a general question', refOn: 'Switch the reference on', refNone: 'No case open — a general question'
   };
   function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -34,6 +36,40 @@
     if (app) p.application = app.content;
     return p;
   }
+  // what the application reports as open (casefile: 'casefile:focus'); the workspace comes from the address
+  var appFocus = window.casefileFocus || null;
+  window.addEventListener('casefile:focus', function (e) { appFocus = e.detail || null; drawChip(); });
+  function focus() {
+    var p = place();
+    if (!appFocus || !appFocus.case) return null;
+    var f = {}; for (var k in appFocus) if (appFocus[k] != null) f[k] = appFocus[k];
+    if (p.workspace) f.workspace = p.workspace;
+    return f;
+  }
+  function focusOn() { return read('ap-ref-off') !== '1'; }
+  var chipHost = null;
+  function drawChip() {
+    if (!chipHost) return;
+    chipHost.innerHTML = '';
+    var f = focus(), on = focusOn();
+    var chip = el('div', 'ap-chip' + (f && on ? '' : ' off'));
+    if (f && on) {
+      chip.appendChild(el('span', 'ap-chip-k', T.ref));
+      chip.appendChild(el('span', 'ap-chip-v', [f.label, f.case].filter(Boolean).join(' ') + (f.title ? ' · ' + f.title : '') + (f.document ? ' · ' + f.document : '')));
+      var x = el('button', 'ap-chip-x', '×'); x.type = 'button'; x.title = T.refOff;
+      x.onclick = function () { store('ap-ref-off', '1'); drawChip(); };
+      chip.appendChild(x);
+    } else if (f) {
+      var b = el('button', 'ap-chip-on', T.refOn + ': ' + [f.label, f.case].filter(Boolean).join(' ')); b.type = 'button';
+      b.onclick = function () { store('ap-ref-off', null); drawChip(); };
+      chip.appendChild(b);
+    } else {
+      chip.appendChild(el('span', 'ap-chip-v', T.refNone));
+    }
+    chipHost.appendChild(chip);
+  }
+  if (/\/w\/[a-z0-9]/.test(location.pathname.slice(BASE.length))) document.documentElement.classList.add('ap-in-app');
+
   function api(method, path, body) {
     var opt = { method: method, credentials: 'same-origin', headers: { 'X-CSRF': csrf } };
     if (body) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
@@ -119,7 +155,9 @@
     function start() {
       if (!input.value.trim()) { input.focus(); return; }
       go.disabled = true;
-      api('POST', '/api/sessions', { agent: a.id, topic: input.value, place: place() })
+      var pl = place(), f = focus();
+      if (f) { for (var k in f) pl[k] = f[k]; }
+      api('POST', '/api/sessions', { agent: a.id, topic: input.value, place: pl })
         .then(function (j) { return refresh().then(function () { showSession(j.id); }); })
         .catch(function (e) { go.disabled = false; showTeam(e.message); });
     }
@@ -156,6 +194,7 @@
     if (v.status === 'closed') log.appendChild(el('p', 'ap-hint', T.closed + (v.log ? ' ' + T.log + ': ' + v.log : '')));
     body.appendChild(log);
     if (v.status === 'active') {
+      chipHost = el('div', 'ap-chips'); body.appendChild(chipHost); drawChip();
       var text = el('textarea', 'ap-text'); text.rows = 3; text.placeholder = T.keys; text.value = draft; text.disabled = !!v.pending;
       var row = el('div', 'ap-row');
       var send = el('button', 'ap-primary', T.send); send.type = 'button'; send.disabled = !!v.pending;
@@ -176,7 +215,7 @@
       function say() {
         if (!text.value.trim()) return;
         send.disabled = true;
-        api('POST', '/api/sessions/' + v.id + '/say', { text: text.value }).then(function () { text.value = ''; return showSession(v.id); })
+        api('POST', '/api/sessions/' + v.id + '/say', { text: text.value, focus: focusOn() ? focus() : null }).then(function () { text.value = ''; return showSession(v.id); })
           .catch(function (e) { send.disabled = false; body.insertBefore(el('p', 'ap-err', e.message), log); });
       }
       send.onclick = say;

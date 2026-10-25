@@ -365,9 +365,9 @@ def session_queues(args) -> list[tuple]:
     return out
 
 
-def session_place(args, person: str, s):
-    """(workspace id, pipeline root) for the session's place — only a live workspace the person may open."""
-    wid = s.place.get("workspace") if s.place else None
+def session_place(args, person: str, s, wid: str | None = None):
+    """(workspace id, pipeline root) for the session's place, or for `wid` — only a live workspace the person may open."""
+    wid = wid or (s.place.get("workspace") if s.place else None)
     if not wid or not args.workspaces:
         return "", None
     try:
@@ -379,6 +379,56 @@ def session_place(args, person: str, s):
         return "", None
     pipe = reg.component(w, "pipeline")
     return w.id, (pipe.write_path or pipe.path)
+
+
+FOCUS_BUDGET = 30000                                  # characters of one case laid before the agent
+TEXT = (".md", ".txt", ".json", ".yaml", ".yml", ".csv")
+
+
+def case_files(container: Path) -> str:
+    """The case on the person's screen, as the agent should see it: meta, the open review entries, the newest working
+    documents — cut to a budget, the newest first. Read only; the folder stays the truth."""
+    parts, used = [], 0
+
+    def add(title: str, text: str, cap: int) -> None:
+        nonlocal used
+        text = text[-cap:] if title.startswith("review") else text[:cap]
+        if used + len(text) > FOCUS_BUDGET:
+            text = text[: max(0, FOCUS_BUDGET - used)]
+        if text:
+            parts.append(f"--- {title} ---\n{text.rstrip()}")
+            used += len(text)
+
+    files = sorted((p for p in container.rglob("*") if p.is_file() and not any(x.startswith(("_", ".")) for x in p.relative_to(container).parts)),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
+    parts.append("Files: " + ", ".join(str(p.relative_to(container)) for p in files[:40]))
+    for name, cap in (("meta.json", 4000), ("review.md", 6000)):
+        if (container / name).is_file():
+            add(name, (container / name).read_text(encoding="utf-8", errors="replace"), cap)
+    for p in [p for p in files if p.suffix.lower() in TEXT and p.name not in ("meta.json", "review.md")][:3]:
+        add(str(p.relative_to(container)), p.read_text(encoding="utf-8", errors="replace"), 10000)
+    return "\n\n".join(parts)
+
+
+def focus_block(args, person: str, order: dict, s) -> tuple[str, dict | None]:
+    """What to lay before the agent with this message: the case the person has open, when it is new to the agent;
+    a short line when the person switched the reference off. Returns (text, the focus to remember, None = unchanged)."""
+    f = order.get("focus") or {}
+    last = s.focus or {}
+    if not f:
+        return ("<case-on-screen>The person has switched the case reference off: answer generally, not about a case.</case-on-screen>\n\n", {}) if last else ("", None)
+    if f.get("case") == last.get("case") and f.get("document") == last.get("document"):
+        return "", None
+    wid, data = session_place(args, person, s, f.get("workspace"))
+    head = (f"<case-on-screen>\nThe person has this open right now: {f.get('label', '')} {f.get('case', '')} — {f.get('title', '')} "
+            f"({f.get('stage', '')}){', document ' + f['document'] if f.get('document') else ''}, in {f.get('application') or wid or 'the cockpit'}.\n"
+            "Their question is about this case unless they say otherwise. Answer about it first; your general context is background.\n")
+    body = ""
+    if data and f.get("item"):
+        container = (data / f["item"]).resolve()
+        if container.is_dir() and str(container).startswith(str(data.resolve()) + os.sep):
+            body = case_files(container)
+    return head + (f"\n{body}\n" if body else "") + "</case-on-screen>\n\n", f
 
 
 def place_text(s) -> str:
@@ -445,6 +495,8 @@ def execute_openai(f: Path, order: dict, s, agent, store, rules: dict, context: 
             store.close(s.id, None)
         return
     messages = [{"role": t["role"], "content": t["text"]} for t in store.transcript(s.id) if t["role"] in ("user", "assistant")]
+    if order.get("type") == "chat" and messages and messages[-1]["role"] == "user":
+        messages[-1]["content"] = order["text"]           # this message with the case laid before it
     if order.get("type") == "end":
         messages.append({"role": "user", "content": openai_end_prompt(s) + (f"\n\nNote from {s.user}: {order['text']}" if order.get("text") else "")})
     instructions = context.read_text(encoding="utf-8") if context else f"You are {agent.label}."
@@ -650,6 +702,13 @@ def execute_session(f: Path, order: dict, person: str, store, args) -> None:
                      PRESSROOM_AGENT_SIGNATURE=str(agent.signature_path or ""), PRESSROOM_AGENT_NOTES=str(agent.notes_path or ""),
                      PRESSROOM_SESSION_LOG=s.starts_from or "",
                      PRESSROOM_RUN_ID=order["id"])
+    focus_text = ""
+    if kind == "chat":
+        focus_text, new_focus = focus_block(args, person, order, s)
+        if new_focus is not None:
+            s = store.update(sid, focus=new_focus)
+        if focus_text:
+            order["text"] = focus_text + order["text"]           # the case goes with this message; the transcript keeps the words
     memory = agent.notes_path.parent if agent.notes_path else None
     if memory is not None:
         memory.mkdir(parents=True, exist_ok=True)

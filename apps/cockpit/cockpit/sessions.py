@@ -61,6 +61,7 @@ class Session:
     log: str | None = None                     # the written log, an absolute path in the person's folder
     starts_from: str | None = None             # the log of this agent's previous session
     place: dict = field(default_factory=dict)  # where it was opened: {"workspace", "application", "item", "url"}
+    focus: dict = field(default_factory=dict)  # the case the agent last had laid before it (the runner keeps this)
 
     @property
     def workspace(self) -> str | None:
@@ -71,7 +72,7 @@ class Session:
         return (self.agent, self.user, slug(self.topic))
 
 
-PLACE_KEYS = ("workspace", "application", "item", "url", "title")
+PLACE_KEYS = ("workspace", "application", "item", "url", "title", "case", "stage", "label", "view", "document")
 
 
 def clean_place(place: dict | None) -> dict:
@@ -169,13 +170,13 @@ class Store:
         self._write(self._p("active", f"{sid}.json"), asdict(s))
         return s, overlapping
 
-    def _order(self, s: Session, kind: str, text: str) -> dict:
+    def _order(self, s: Session, kind: str, text: str, focus: dict | None = None) -> dict:
         if kind not in KINDS:
             raise SessionError(f"'{kind}' is not an order kind")
         now = _now()
         order = {"id": f"{now.strftime('%Y%m%d-%H%M%S-%f')}_{kind}_{s.id}", "type": kind, "session": s.id,
                  "place": s.place, "agent": s.agent, "requested_by": s.user, "runner": "claude-code",
-                 "status": "queued", "created": now.isoformat(timespec="seconds"), "text": text}
+                 "status": "queued", "created": now.isoformat(timespec="seconds"), "text": text, "focus": focus or {}}
         self._write(self._p("queue", f"{order['id']}.json"), order)
         return order
 
@@ -187,8 +188,9 @@ class Store:
             raise SessionError("this session belongs to someone else")
         return s
 
-    def say(self, sid: str, user: str, text: str) -> dict:
-        """One message into the session. The runner answers it; the page shows the answer when it is there."""
+    def say(self, sid: str, user: str, text: str, focus: dict | None = None) -> dict:
+        """One message into the session. The runner answers it; the page shows the answer when it is there.
+        `focus` is what the person has open at the moment they send — the case the question is about."""
         s = self._mine(sid, user)
         text = text.strip()
         if not text:
@@ -199,8 +201,10 @@ class Store:
             raise SessionError("this session is ending — no more messages")
         if self.pending(sid):
             raise SessionError("the agent is still answering the last message")
-        self.add_turn(sid, "user", text, by=user)
-        return self._order(s, "chat", text)
+        focus = clean_place(focus)
+        self.add_turn(sid, "user", text, by=user, focus=focus.get("case"))
+        order = self._order(s, "chat", text, focus)
+        return order
 
     def end(self, sid: str, user: str, note: str = "") -> dict:
         """The closing turn: the agent writes the session log; the runner releases the lease after it."""

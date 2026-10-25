@@ -65,6 +65,23 @@ export function App() {
   useEffect(() => { try { localStorage.setItem("cf.side", side); } catch { /* private window */ } }, [side]);
   useEffect(() => { if (config.data) { document.title = config.data.product; document.documentElement.lang = config.data.lang; } }, [config.data]);
 
+  // What is open right now, for whoever stands beside the person (the cockpit's side panel, ADR-020): the case on
+  // the screen — chosen in the URL or, on the start page, the first one of the group — and the document if one is open.
+  const wide = !window.matchMedia("(max-width: 900px)").matches;
+  const focusId = route.name === "case" || route.name === "doc" ? route.id
+    : (route.name === "home" || route.name === "group") && wide
+      ? (route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id)
+      : undefined;
+  const focusCard = focusId ? groups.data?.flatMap((g) => g.cases).find((c) => c.id === focusId) : undefined;
+  useEffect(() => {
+    const detail = focusCard
+      ? { case: focusCard.id, item: `${focusCard.stage}/${focusCard.id}`, title: focusCard.title, stage: focusCard.stage_word,
+          label: focusCard.label_word, view: route.name, document: route.name === "doc" ? route.file : undefined, application: config.data?.product }
+      : { view: route.name, application: config.data?.product };
+    (window as unknown as { casefileFocus?: unknown }).casefileFocus = detail;
+    window.dispatchEvent(new CustomEvent("casefile:focus", { detail }));
+  }, [focusCard?.id, focusCard?.stage, focusCard?.title, route.name, route.name === "doc" ? route.file : "", config.data?.product]);
+
   if (me.isLoading || config.isLoading) return null;
   if (!config.data) return <div className="gate"><p className="empty">The core is not reachable.</p></div>;
   const lang = config.data.lang;

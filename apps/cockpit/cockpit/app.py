@@ -428,7 +428,7 @@ def create_app(config: Config) -> FastAPI:
         store = store_of(c["user"])
         try:
             if what == "say":
-                store.say(sid, c["user"].name, str(body.get("text", "")))
+                store.say(sid, c["user"].name, str(body.get("text", "")), place_for(c["user"], body.get("focus") or {}) if body.get("focus") else None)
             elif what == "end":
                 store.end(sid, c["user"].name, str(body.get("note", "")))
                 audit.record(c["user"].name, "team", sid, "agent-session.end")
