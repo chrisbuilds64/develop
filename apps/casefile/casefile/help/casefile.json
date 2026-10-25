@@ -137,6 +137,42 @@
         "de": "Die Regeln und Bausteine, nach denen die Fälle geprüft werden.",
         "en": "The rules and building blocks the cases are checked against."
       }
+    },
+    {
+      "key": "cf.back",
+      "since": "0.17.1",
+      "title": {
+        "de": "Zurück ins Cockpit",
+        "en": "Back to the cockpit"
+      },
+      "text": {
+        "de": "Verlässt die Anwendung und bringt dich zu Dashboard, Workspaces und Team.",
+        "en": "Leaves the application for your dashboard, workspaces and team."
+      }
+    },
+    {
+      "key": "cf.language",
+      "since": "0.17.1",
+      "title": {
+        "de": "Sprache",
+        "en": "Language"
+      },
+      "text": {
+        "de": "Schaltet die Oberfläche zwischen Deutsch und Englisch um.",
+        "en": "Switches the surface between German and English."
+      }
+    },
+    {
+      "key": "cf.theme",
+      "since": "0.17.1",
+      "title": {
+        "de": "Hell oder dunkel",
+        "en": "Light or dark"
+      },
+      "text": {
+        "de": "Schaltet zwischen heller und dunkler Darstellung um.",
+        "en": "Switches between the light and the dark look."
+      }
     }
   ]
 }

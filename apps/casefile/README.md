@@ -21,6 +21,19 @@ Nothing in the code names a domain. Stages, deliverables, words and people are f
 (`config/<domain>/`, ADR-015); a pipeline root may carry its own `artifacts.json`, `vocabulary.json`
 and `people.json`, which win.
 
+## Help for the page (required)
+
+Every element people navigate with or act on — a menu row, a menu section, a view switch, a top-bar pill,
+the drop-in, the pin — carries `data-help="<key>"`, and the key has a topic in a catalog next to the code:
+`cockpit/cockpit/help/shell.json` for the shell and the side panel, `casefile/casefile/help/casefile.json` for
+casefile. A topic has a title and a text in German and English and `since`, the version that brought it; the
+side panel marks topics newer than the person's last visit. Where an element needs no text of its own, say why:
+`data-help-skip="explained by shell.workspaces"`.
+
+`cockpit help check` holds both sides together: an anchor without a topic, a topic without an anchor, a required
+element with neither anchor nor reason, a topic without `since` or a language — each is a finding. The tests run
+it and `pressroom-env deploy` stops on it. **Change the element and its help in the same commit.**
+
 ## Run
 
 ```bash

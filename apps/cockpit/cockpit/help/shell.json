@@ -7,6 +7,18 @@
   },
   "topics": [
     {
+      "key": "shell.dashboard",
+      "since": "0.10.1",
+      "title": {
+        "de": "Dashboard",
+        "en": "Dashboard"
+      },
+      "text": {
+        "de": "Der Überblick: deine Workspaces auf einen Blick.",
+        "en": "The overview: your workspaces at a glance."
+      }
+    },
+    {
       "key": "shell.workspaces",
       "since": "0.11.2",
       "title": {
@@ -112,6 +124,54 @@
       "text": {
         "de": "Zeigt, was auf dieser Seite möglich ist, führt mit einer Tour hindurch und markiert, was neu ist. „Frag nach“ gibt deine Frage samt dieser Hilfe an dein Team.",
         "en": "Shows what this page can do, takes you through it in a tour and marks what is new. “Ask” hands your question with this help to your team."
+      }
+    },
+    {
+      "key": "shell.samples",
+      "since": "0.12.0",
+      "title": {
+        "de": "Muster",
+        "en": "Samples"
+      },
+      "text": {
+        "de": "Workspaces mit vorbereiteten Beispielfällen zum Ausprobieren — nichts davon ist echt, alles darf geklickt werden.",
+        "en": "Workspaces with prepared example cases to try out — nothing in them is real, everything may be clicked."
+      }
+    },
+    {
+      "key": "shell.new-workspace",
+      "since": "0.10.1",
+      "title": {
+        "de": "Neuer Workspace",
+        "en": "New workspace"
+      },
+      "text": {
+        "de": "Legt einen eigenen Arbeitsbereich an, leer oder als Kopie eines bestehenden.",
+        "en": "Creates a work area of your own, empty or as a copy of an existing one."
+      }
+    },
+    {
+      "key": "shell.team-page",
+      "since": "0.15.0",
+      "title": {
+        "de": "Team & Sessions",
+        "en": "Team & sessions"
+      },
+      "text": {
+        "de": "Hier stellst du Agenten ein oder entlässt sie, legst den Ordner für Session-Logs fest und siehst alle Sessions.",
+        "en": "Hire or dismiss agents, set the folder for session logs and see all sessions."
+      }
+    },
+    {
+      "key": "shell.setup",
+      "since": "0.8.0",
+      "title": {
+        "de": "Einrichtung",
+        "en": "Setup"
+      },
+      "text": {
+        "de": "Wie das Cockpit konfiguriert ist: Quellen, Module, Rollen.",
+        "en": "How the cockpit is configured: sources, modules, roles."
       }
     }
   ]

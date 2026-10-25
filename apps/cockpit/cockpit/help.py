@@ -6,6 +6,12 @@ anchor: title and text in each language, and `since` — the version that brough
 new. The side panel shows the topics whose anchors are on the page, walks through them as a tour, and hands a
 question with the page's help to the person's team.
 
+Anchors are not optional where people navigate or act: every element whose class names it a menu row, a menu
+section, a view switch, a top-bar pill, the drop-in or the pin (REQUIRED) must carry `data-help`, or say
+`data-help-skip="<why>"` — a visible decision instead of a silent omission (Chris, 2026-10-25: "wenn wir das nicht
+machen, werden wir es irgendwann vergessen"). One place in the source counts once, so a row drawn in a loop
+needs one anchor.
+
 `check()` compares anchors and topics in both directions. An anchor without a topic, a topic without an anchor, a
 topic without `since` or without a language: each is a finding. The tests run it and pressroom-env runs it before
 a deploy, so the help cannot drift from what is on the screen — change both in the same commit.
@@ -48,6 +54,44 @@ def sources() -> list[Path]:
     return out
 
 
+REQUIRED = ("nav-row", "nav-sec", "views", "pill", "drop-in", "rail-toggle")
+CLASS_AT = re.compile(r"""class(?:Name)?=""")
+
+
+def _tag_around(text: str, i: int) -> str:
+    """The opening tag that contains position i: back to its '<', forward to its '>' outside of {…} expressions."""
+    start = text.rfind("<", 0, i)
+    depth, j = 0, i
+    while j < len(text):
+        ch = text[j]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+        elif ch == ">" and depth <= 0 and text[j - 1] != "=":
+            break
+        j += 1
+    return text[start:j + 1]
+
+
+def unanchored() -> list[str]:
+    """Places in the source where a required element has neither an anchor nor a reason to have none."""
+    out = []
+    for p in sources():
+        if p.suffix == ".js":
+            continue                                       # the panel builds its elements in code; its anchors are set explicitly
+        text = p.read_text(encoding="utf-8", errors="replace")
+        for m in CLASS_AT.finditer(text):
+            tag = _tag_around(text, m.start())
+            value = tag[tag.find("=", m.start() - text.rfind("<", 0, m.start())) + 1:]
+            classes = re.split(r"""[^a-z0-9-]+""", value.split(" data-", 1)[0].split(" on", 1)[0])
+            hit = next((c for c in REQUIRED if c in classes), None)
+            if hit and "data-help" not in tag:
+                line = text.count("\n", 0, m.start()) + 1
+                out.append(f"{p.name}:{line}: a '{hit}' without data-help (or data-help-skip=\"why\")")
+    return out
+
+
 def anchors() -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for p in sources():
@@ -67,7 +111,7 @@ def topics() -> dict[str, dict]:
 
 def check() -> list[str]:
     """Findings, one sentence each. Empty means the help matches the screen."""
-    found, docs, problems = anchors(), topics(), []
+    found, docs, problems = anchors(), topics(), list(unanchored())
     for key in sorted(set(found) - set(docs)):
         problems.append(f"anchor '{key}' ({', '.join(sorted(set(found[key])))}) has no help topic")
     for key in sorted(set(docs) - set(found)):

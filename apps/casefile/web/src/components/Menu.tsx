@@ -21,15 +21,15 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
   return (
     <nav className={`menu${open ? " open" : ""}`} aria-label={w.menu}>
-      <button type="button" className={`nav-row phone-only${route.name === "home" ? " on" : ""}`} onClick={() => goClose("/")}>
+      <button type="button" className={`nav-row phone-only${route.name === "home" ? " on" : ""}`} data-help-skip="phone copy of cf.groups" onClick={() => goClose("/")}>
         <span>{(config.groups.find((g) => g.key === "you")?.word) ?? w.yourMove}</span>
         {(counts.get("you") ?? 0) > 0 ? <span className="badge">{counts.get("you")}</span> : null}
       </button>
-      <button type="button" className="drop-in phone-only" onClick={() => goClose("/")} aria-label={w.dropIn}>+</button>
-      <button type="button" className="nav-row phone-only" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? <Close /> : <MenuIcon />}<span style={{ marginLeft: 8 }}>{w.menu}</span></button>
+      <button type="button" className="drop-in phone-only" data-help-skip="phone copy of cf.drop-in" onClick={() => goClose("/")} aria-label={w.dropIn}>+</button>
+      <button type="button" className="nav-row phone-only" data-help-skip="opens this menu on a phone" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? <Close /> : <MenuIcon />}<span style={{ marginLeft: 8 }}>{w.menu}</span></button>
       <div className="sheet">
       {me.shell && (
-        <a className="nav-row quiet shell-row" href={me.shell} title={w.backToShell}><span>← {w.backToShell}</span></a>
+        <a className="nav-row quiet shell-row" data-help="cf.back" href={me.shell} title={w.backToShell}><span>← {w.backToShell}</span></a>
       )}
       <div className="menu-head">
         <div className={`brand${config.product.length > 11 ? " long" : ""}`}>
@@ -70,14 +70,14 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
 
       {me.demo && (
         <div className="demo-row">
-          {otherWorlds.map((x) => <button key={x} type="button" className="nav-row quiet" onClick={() => onFresh(x)}><span>{w.world(x)}</span><span className="n"><Worlds /></span></button>)}
-          <button type="button" className="nav-row quiet" onClick={() => onFresh()}><span>{w.startOver}</span><span className="n"><Restart /></span></button>
+          {otherWorlds.map((x) => <button key={x} type="button" className="nav-row quiet" data-help-skip="public demo only" onClick={() => onFresh(x)}><span>{w.world(x)}</span><span className="n"><Worlds /></span></button>)}
+          <button type="button" className="nav-row quiet" data-help-skip="public demo only" onClick={() => onFresh()}><span>{w.startOver}</span><span className="n"><Restart /></span></button>
         </div>
       )}
-      <button type="button" className="nav-row quiet" onClick={() => onLang(config.lang === "de" ? "en" : "de")} title={w.language} lang={config.lang === "de" ? "en" : "de"}>
+      <button type="button" className="nav-row quiet" data-help="cf.language" onClick={() => onLang(config.lang === "de" ? "en" : "de")} title={w.language} lang={config.lang === "de" ? "en" : "de"}>
         <span>{w.otherLang}</span><span className="n"><Globe /></span>
       </button>
-      <button type="button" className="nav-row quiet" onClick={() => onTheme(dark ? "light" : "dark")} aria-label={w.theme}>
+      <button type="button" className="nav-row quiet" data-help="cf.theme" onClick={() => onTheme(dark ? "light" : "dark")} aria-label={w.theme}>
         <span>{dark ? w.light : w.dark}</span><span className="n">{dark ? <Sun /> : <Moon />}</span>
       </button>
       <div className="who">

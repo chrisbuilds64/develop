@@ -32,3 +32,19 @@ def test_the_panel_gets_the_help_in_the_persons_language():
     de, en = page_help.view("de"), page_help.view("en")
     assert {t["key"] for t in de["topics"]} == {t["key"] for t in en["topics"]} and "cf.desk" in {t["key"] for t in de["topics"]}
     assert "Schreibtisch" in page_help.as_text("de", ["cf.desk"]) and "Muster" not in page_help.as_text("de", ["cf.desk"])
+
+
+def test_a_menu_row_or_action_without_an_anchor_is_a_finding_unless_it_says_why(tmp_path, monkeypatch):
+    (tmp_path / "base.html").write_text(
+        '<a href="/" class="nav-row{% if on %} on{% endif %}" title="x">Home</a>\n'
+        '<a class="nav-row" data-help="x.ok">Ok</a>\n'
+        '<a class="nav-row ws-row" data-help-skip="explained by x.ok">Row</a>\n'
+        '<div class="card">no rule for this</div>\n')
+    (tmp_path / "Menu.tsx").write_text(
+        '<button type="button" className={`nav-row${a ? " on" : ""}`} onClick={() => go("/")}>Go</button>\n'
+        '<div className="views" role="tablist">\n')
+    monkeypatch.setattr(page_help, "sources", lambda: [tmp_path / "base.html", tmp_path / "Menu.tsx"])
+    assert page_help.unanchored() == [
+        "base.html:1: a 'nav-row' without data-help (or data-help-skip=\"why\")",
+        "Menu.tsx:1: a 'nav-row' without data-help (or data-help-skip=\"why\")",
+        "Menu.tsx:2: a 'views' without data-help (or data-help-skip=\"why\")"]

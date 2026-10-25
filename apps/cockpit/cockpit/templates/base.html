@@ -37,7 +37,7 @@
     <button type="button" class="rail-toggle tx" data-help="shell.pin" onclick="cockpitRail()" aria-label="{{ t('app.pin') }}" title="{{ t('app.pin') }}">{{ glyph('pin', 17) }}</button>
   </div>
   <div class="side-scroll">
-  <a href="/" class="nav-row{% if route == '/' %} on{% endif %}" title="{{ t('app.dashboard') }}"><span class="ic">{{ glyph('home', 18) }}</span><span class="tx">{{ t('app.dashboard') }}</span></a>
+  <a href="/" class="nav-row{% if route == '/' %} on{% endif %}" data-help="shell.dashboard" title="{{ t('app.dashboard') }}"><span class="ic">{{ glyph('home', 18) }}</span><span class="tx">{{ t('app.dashboard') }}</span></a>
 
   {% set live = workspaces|selectattr('mode', 'equalto', 'live')|list %}
   {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
@@ -47,7 +47,7 @@
     <summary class="section"><span class="tx">{{ t('ws.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
     {% for w in live %}
     <div class="ws-item">
-      <a href="/w/{{ w.id }}/" class="nav-row ws-row" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
+      <a href="/w/{{ w.id }}/" class="nav-row ws-row" data-help-skip="explained by shell.workspaces" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
         <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
         <span class="tx">{{ w.label }}</span>
         {% if w.shared %}<span class="n tx" title="{{ t('ws.shared') }}">{{ glyph('users', 15) }}</span>{% endif %}
@@ -56,16 +56,16 @@
     {% endfor %}
     {% if samples %}
     <details class="nav-group" data-key="samples">
-      <summary class="nav-row quiet"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('ws.samples') }}</span><span class="n tx">{{ samples|length }}</span></summary>
+      <summary class="nav-row quiet" data-help="shell.samples"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('ws.samples') }}</span><span class="n tx">{{ samples|length }}</span></summary>
       {% for w in samples %}
-      <a href="/w/{{ w.id }}/" class="nav-row ws-row quiet" title="{{ w.label }}">
+      <a href="/w/{{ w.id }}/" class="nav-row ws-row quiet" data-help-skip="explained by shell.samples" title="{{ w.label }}">
         <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
         <span class="tx">{{ w.label }}</span>
       </a>
       {% endfor %}
     </details>
     {% endif %}
-    {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
+    {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" data-help="shell.new-workspace" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
   </details>
 
   {% if user %}
@@ -80,7 +80,7 @@
       {% endfor %}
     </div>
     {% endif %}
-    <a href="/team" class="nav-row{% if route.startswith('/team') or route.startswith('/sessions') %} on{% endif %}" title="{{ t('team.manage') }}"><span class="ic">{{ glyph('users', 18) }}</span><span class="tx">{{ t('team.manage') }}</span></a>
+    <a href="/team" class="nav-row{% if route.startswith('/team') or route.startswith('/sessions') %} on{% endif %}" data-help="shell.team-page" title="{{ t('team.manage') }}"><span class="ic">{{ glyph('users', 18) }}</span><span class="tx">{{ t('team.manage') }}</span></a>
   </details>
   {% endif %}
 
@@ -88,12 +88,12 @@
   <details class="nav-sec" data-key="workshop" data-help="shell.workshop" open>
     <summary class="section"><span class="tx">{{ t('app.workshop') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
     {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
-    <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
+    <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" data-help-skip="explained by shell.workshop" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
       <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
     </a>
     {% endfor %}
     {% if role.may_act('*') or role.may_act('setup.view') %}
-    <a href="/setup" class="nav-row{% if route.startswith('/setup') %} on{% endif %}" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
+    <a href="/setup" class="nav-row{% if route.startswith('/setup') %} on{% endif %}" data-help="shell.setup" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
     {% endif %}
   </details>
   {% endif %}
@@ -153,7 +153,7 @@
 </div>
 <div class="topbar">
   <details class="switch" data-help="shell.switch">
-    <summary class="pill">{% set here = none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
+    <summary class="pill" data-help-skip="explained by shell.switch">{% set here = none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
     <div class="pop right">
       <div class="pop-title">{{ t('ws.mine_all') }}</div>
       {% for w in workspaces %}
@@ -163,7 +163,7 @@
     </div>
   </details>
   <details class="bell" data-help="shell.bell">
-    <summary class="pill icon" aria-label="{{ t('note.title') }}">{{ glyph('bell', 17) }}{% if notes %}<span class="bell-dot">{{ notes|length }}</span>{% endif %}</summary>
+    <summary class="pill icon" data-help-skip="explained by shell.bell" aria-label="{{ t('note.title') }}">{{ glyph('bell', 17) }}{% if notes %}<span class="bell-dot">{{ notes|length }}</span>{% endif %}</summary>
     <div class="pop right">
       <div class="pop-title">{{ t('note.title') }}</div>
       {% for n in notes %}
