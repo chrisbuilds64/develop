@@ -95,6 +95,11 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     run([str(venv / "bin" / "pip"), "install", "--quiet", "-e", str(dev / "apps" / "cockpit")], user=s.runner_user)
     version = run([str(venv / "bin" / "python"), "-c", "import cockpit, casefile; print(cockpit.__version__, casefile.__version__)"], user=s.runner_user, quiet=True).stdout.strip()
     log.info("%s: cockpit + casefile %s installed", env.name, version)
+    # the help must match the screen before the stage serves it: an anchor without a topic, or the other way round, stops here
+    r = run([str(venv / "bin" / "cockpit"), "help", "check"], user=s.runner_user, check=False)
+    if r.returncode != 0:
+        raise OpsError(f"{env.name}: the help does not match the screen — fix it in the same commit:\n{(r.stdout or r.stderr).strip()}")
+    log.info("%s: help in step with the screen", env.name)
     worlds = d / "worlds"
     if not (worlds / "claims").is_dir():                   # the sample worlds, once: the richer seed when it is on the machine, else the built-in ones
         seeded = Path("/opt/casefile/demo/worlds")

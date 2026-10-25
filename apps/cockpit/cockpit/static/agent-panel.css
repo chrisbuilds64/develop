@@ -72,3 +72,21 @@ html[data-look="glass"] .ap-panel, html[data-look="glass"] .ap-launch {
 .ap-in-app .ap-stack { flex-direction: column; }
 .ap-in-app .ap-stack .ap-av + .ap-av { margin-left: 0; margin-top: -8px; }
 .ap-in-app .ap-panel { bottom: 12px; right: 56px; }
+.ap-head .ap-help { font-size: 15px; font-weight: 700; margin-left: auto; }
+.ap-topic { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--hairline, #e3ddd2);
+  background: var(--ground-2, #fbf9f6); color: inherit; font: inherit; cursor: pointer; }
+.ap-topic:hover { border-color: var(--your-move, #1d4ed8); }
+.ap-topic span { color: var(--muted, #6e675d); font-size: 13px; }
+.ap-new { margin-left: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 1px 6px; border-radius: 6px;
+  background: var(--your-move, #1d4ed8); color: var(--your-move-on, #fff); }
+.ap-row { flex-wrap: wrap; }
+.ap-row .ap-quiet { gap: 6px; }
+.ap-spot { position: fixed; z-index: 70; border-radius: 12px; pointer-events: none; transition: all .2s ease;
+  box-shadow: 0 0 0 3px var(--your-move, #1d4ed8), 0 0 0 9999px rgba(0,0,0,.45); }
+.ap-tip { position: fixed; z-index: 71; padding: 14px 16px; border-radius: 14px; background: var(--surface, #fff); color: var(--ink, #1b1916);
+  border: 1px solid var(--hairline, #e3ddd2); box-shadow: 0 18px 50px rgba(0,0,0,.3); font: 14px/1.45 "Instrument Sans", system-ui, sans-serif;
+  display: flex; flex-direction: column; gap: 6px; }
+.ap-tip small { color: var(--muted, #6e675d); }
+.ap-tip p { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .ap-spot { transition: none; } }
+.ap-back { align-self: flex-start; }

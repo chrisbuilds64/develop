@@ -72,7 +72,7 @@ class Session:
         return (self.agent, self.user, slug(self.topic))
 
 
-PLACE_KEYS = ("workspace", "application", "item", "url", "title", "case", "stage", "label", "view", "document")
+PLACE_KEYS = ("workspace", "application", "item", "url", "title", "case", "stage", "label", "view", "document", "help")
 
 
 def clean_place(place: dict | None) -> dict:

@@ -34,7 +34,7 @@
     <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
     <span class="brand-name tx">{{ config.name }}</span>
     {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
-    <button type="button" class="rail-toggle tx" onclick="cockpitRail()" aria-label="{{ t('app.pin') }}" title="{{ t('app.pin') }}">{{ glyph('pin', 17) }}</button>
+    <button type="button" class="rail-toggle tx" data-help="shell.pin" onclick="cockpitRail()" aria-label="{{ t('app.pin') }}" title="{{ t('app.pin') }}">{{ glyph('pin', 17) }}</button>
   </div>
   <div class="side-scroll">
   <a href="/" class="nav-row{% if route == '/' %} on{% endif %}" title="{{ t('app.dashboard') }}"><span class="ic">{{ glyph('home', 18) }}</span><span class="tx">{{ t('app.dashboard') }}</span></a>
@@ -43,7 +43,7 @@
   {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
   {% set dots = ['#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#ef4444', '#14b8a6'] %}
   {% set appix = applications.keys()|list %}
-  <details class="nav-sec" data-key="ws" open>
+  <details class="nav-sec" data-key="ws" data-help="shell.workspaces" open>
     <summary class="section"><span class="tx">{{ t('ws.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
     {% for w in live %}
     <div class="ws-item">
@@ -69,7 +69,7 @@
   </details>
 
   {% if user %}
-  <details class="nav-sec" data-key="team" open>
+  <details class="nav-sec" data-key="team" data-help="shell.team" open>
     <summary class="section"><span class="tx">{{ t('team.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
     {% if team %}
     <div class="nav-agents team">
@@ -85,7 +85,7 @@
   {% endif %}
 
   {% if nav_modules %}
-  <details class="nav-sec" data-key="workshop" open>
+  <details class="nav-sec" data-key="workshop" data-help="shell.workshop" open>
     <summary class="section"><span class="tx">{{ t('app.workshop') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
     {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
     <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
@@ -100,7 +100,7 @@
 
   </div>
   {% if user %}
-  <button type="button" class="who{% if route.startswith('/account') %} on{% endif %}" aria-haspopup="true" aria-expanded="false" aria-controls="me-pop" id="me-btn">
+  <button type="button" class="who{% if route.startswith('/account') %} on{% endif %}" aria-haspopup="true" aria-expanded="false" aria-controls="me-pop" id="me-btn" data-help="shell.me">
     <span class="avatar">{{ user.display[:2]|upper }}</span>
     <span class="tx"><span class="name">{{ user.display }}</span><span class="role-pill">{{ user.role }}</span></span>
   </button>
@@ -152,7 +152,7 @@
       <a href="/logout" class="pop-row">{{ glyph('out', 18) }}<span><b>{{ t('app.logout') }}</b></span></a>
 </div>
 <div class="topbar">
-  <details class="switch">
+  <details class="switch" data-help="shell.switch">
     <summary class="pill">{% set here = none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
     <div class="pop right">
       <div class="pop-title">{{ t('ws.mine_all') }}</div>
@@ -162,7 +162,7 @@
       {% if applications %}<hr><a href="/workspaces/new" class="pop-row">{{ glyph('plus', 16) }}<span>{{ t('ws.new_short') }}</span></a>{% endif %}
     </div>
   </details>
-  <details class="bell">
+  <details class="bell" data-help="shell.bell">
     <summary class="pill icon" aria-label="{{ t('note.title') }}">{{ glyph('bell', 17) }}{% if notes %}<span class="bell-dot">{{ notes|length }}</span>{% endif %}</summary>
     <div class="pop right">
       <div class="pop-title">{{ t('note.title') }}</div>

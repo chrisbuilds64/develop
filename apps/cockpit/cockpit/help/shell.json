@@ -1,0 +1,118 @@
+{
+  "$comment": "Help for the cockpit shell and the side panel: one topic per data-help anchor in templates/ and static/*.js. `cockpit help check` keeps them in step.",
+  "surface": "shell",
+  "intro": {
+    "de": "Das Cockpit ist dein Arbeitsplatz: links Workspaces und dein Team, oben rechts Umschalter und Meldungen, rechts unten dein Team im Gespräch.",
+    "en": "The cockpit is your workplace: workspaces and your team on the left, switch and notifications top right, your team in conversation bottom right."
+  },
+  "topics": [
+    {
+      "key": "shell.workspaces",
+      "since": "0.11.2",
+      "title": {
+        "de": "Workspaces",
+        "en": "Workspaces"
+      },
+      "text": {
+        "de": "Deine Arbeitsbereiche mit ihren Daten. Der Punkt zeigt die Anwendung, das Personen-Symbol einen gemeinsamen Bereich.",
+        "en": "Your work areas with their data. The dot shows the application, the people icon a shared area."
+      }
+    },
+    {
+      "key": "shell.team",
+      "since": "0.15.0",
+      "title": {
+        "de": "Mein Team",
+        "en": "My team"
+      },
+      "text": {
+        "de": "Deine Agenten. Ein Klick auf einen Kopf öffnet das Gespräch mit ihm; ein grüner Punkt heißt, ihr seid mitten in einer Session.",
+        "en": "Your agents. A click on a face opens the conversation; a green dot means you are in a session with them."
+      }
+    },
+    {
+      "key": "shell.workshop",
+      "since": "0.12.0",
+      "title": {
+        "de": "Werkstatt",
+        "en": "Workshop"
+      },
+      "text": {
+        "de": "Die Werkzeuge hinter den Anwendungen: Arbeitsliste, Entscheidungen, Kanon, Pipeline, Audits.",
+        "en": "The tools behind the applications: work list, decisions, canon, pipeline, audits."
+      }
+    },
+    {
+      "key": "shell.pin",
+      "since": "0.12.0",
+      "title": {
+        "de": "Menü anpinnen",
+        "en": "Pin the menu"
+      },
+      "text": {
+        "de": "Klappt das Menü zu einer schmalen Leiste ein. Fährst du darüber, geht es auf.",
+        "en": "Folds the menu to a narrow rail. Hover over it and it opens."
+      }
+    },
+    {
+      "key": "shell.switch",
+      "since": "0.12.0",
+      "title": {
+        "de": "Workspace wechseln",
+        "en": "Switch workspace"
+      },
+      "text": {
+        "de": "Springt in einen anderen deiner Workspaces.",
+        "en": "Jumps to another of your workspaces."
+      }
+    },
+    {
+      "key": "shell.bell",
+      "since": "0.12.0",
+      "title": {
+        "de": "Meldungen",
+        "en": "Notifications"
+      },
+      "text": {
+        "de": "Deine laufenden Sessions: wer gerade nachdenkt und wo eine Antwort auf dich wartet.",
+        "en": "Your running sessions: who is thinking and where an answer waits for you."
+      }
+    },
+    {
+      "key": "shell.me",
+      "since": "0.12.0",
+      "title": {
+        "de": "Du",
+        "en": "You"
+      },
+      "text": {
+        "de": "Hell oder dunkel, Standard oder Glas, Sprache, dein Konto, Abmelden.",
+        "en": "Light or dark, standard or glass, language, your account, sign out."
+      }
+    },
+    {
+      "key": "panel.launcher",
+      "since": "0.16.0",
+      "title": {
+        "de": "Dein Team im Gespräch",
+        "en": "Your team in conversation"
+      },
+      "text": {
+        "de": "Öffnet das Gespräch mit deinem Team — auf jeder Seite. Was du gerade offen hast, geht als Bezug mit; abschalten kannst du ihn am Chip über dem Eingabefeld.",
+        "en": "Opens the conversation with your team — on every page. What you have open goes along as the reference; switch it off at the chip above the input."
+      }
+    },
+    {
+      "key": "panel.help",
+      "since": "0.17.0",
+      "title": {
+        "de": "Hilfe zur Seite",
+        "en": "Help for this page"
+      },
+      "text": {
+        "de": "Zeigt, was auf dieser Seite möglich ist, führt mit einer Tour hindurch und markiert, was neu ist. „Frag nach“ gibt deine Frage samt dieser Hilfe an dein Team.",
+        "en": "Shows what this page can do, takes you through it in a tour and marks what is new. “Ask” hands your question with this help to your team."
+      }
+    }
+  ]
+}

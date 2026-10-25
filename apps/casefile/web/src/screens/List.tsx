@@ -45,7 +45,7 @@ export function List({ config, route, go, w }: { config: ConfigView; route: Rout
   const coming = (byKey.get("planned")?.cases ?? []).slice(0, 3);
   const headline = mine.length === 0 ? `${w.nothing} ${w.nice}` : mine.length === 1 ? (isClaims ? w.oneCase : w.one) : isClaims ? w.manyCases(mine.length) : w.many(mine.length);
   return (
-    <section className="list" aria-label={w.yourMove}>
+    <section className="list" aria-label={w.yourMove} data-help="cf.list">
       <h2>{headline}</h2>
       {mine.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} />)}
       {others.length > 0 && <p className="kicker" style={{ marginTop: 10 }}>{w.others}</p>}

@@ -377,6 +377,11 @@ def create_app(config: Config) -> FastAPI:
         log_text = Path(s.log).read_text(encoding="utf-8") if s.log and Path(s.log).is_file() else None
         return templates.TemplateResponse(request, "session.html", {**c, "v": session_view(store, team, s), "log_text": log_text})
 
+    @app.get("/api/help")
+    def api_help(request: Request):
+        from . import help as page_help
+        return JSONResponse(page_help.view(ctx(request)["lang"]))
+
     @app.get("/api/team")
     def api_team(request: Request):
         c = ctx(request)

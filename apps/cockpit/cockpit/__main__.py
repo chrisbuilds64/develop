@@ -23,6 +23,7 @@
     cockpit workspace create <id> --application <app> [--owner <name> | --shared] [--label …] [--from <workspace>] [--member <name>]…
     cockpit workspace remove <id> [--delete-files]
 
+    cockpit help check                                            the help matches the screen: every anchor has a topic, every topic an anchor
     cockpit agent templates                                       the organisation's job profiles ([cockpit] agents)
     cockpit team list      <name>                                 the person's hired agents, with engine, model and memory
     cockpit team hire      <name> <template> [--id …] [--model …] [--memory <path, {stage} allowed>]
@@ -288,6 +289,16 @@ def _people(args):
     return config, Accounts(config.accounts_path), Catalog.load(config.agents_path), (config.environment or "prod").lower()
 
 
+def cmd_help(args):
+    from . import help as page_help
+    problems = page_help.check()
+    for p in problems:
+        print(p)
+    n = len(page_help.topics())
+    print(f"{n} topics, {len(page_help.anchors())} anchors — " + ("in step" if not problems else f"{len(problems)} finding(s)"))
+    return 1 if problems else 0
+
+
 def cmd_agent(args):
     config, _, cat, _ = _people(args)
     if config.agents_path is None:
@@ -400,6 +411,10 @@ def main(argv=None) -> int:
     s.add_argument("--shared", action="store_true"); s.add_argument("--label"); s.add_argument("--from", dest="from"); s.add_argument("--member", action="append"); common(s)
     s = wss.add_parser("remove"); s.add_argument("id"); s.add_argument("--delete-files", action="store_true"); common(s)
     wsp.set_defaults(fn=cmd_workspace)
+
+    hp = sub.add_parser("help"); hps = hp.add_subparsers(dest="sub", required=True)
+    hps.add_parser("check")
+    hp.set_defaults(fn=cmd_help)
 
     ag = sub.add_parser("agent"); ags = ag.add_subparsers(dest="sub", required=True)
     s = ags.add_parser("templates"); common(s)

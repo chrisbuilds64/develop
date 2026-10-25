@@ -438,3 +438,13 @@ print(json.dumps({{"result": "ok", "session_id": "cs-1"}}))
     assert "switched the case reference off" in p[2]
     assert "<case-on-screen>" in p[3] and "outside the case" not in p[3]          # a path out of the pipeline is not followed
     assert store.transcript(s.id)[0]["text"] == "Was ist hier als Nächstes zu tun?"   # the transcript keeps the person's words
+
+
+def test_a_question_from_the_page_help_carries_the_pages_topics(org):
+    from types import SimpleNamespace
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("runner", RUNNER)
+    r = importlib.util.module_from_spec(spec); spec.loader.exec_module(r)
+    s = SimpleNamespace(focus={}, place={}, user="chris")
+    text, f = r.focus_block(SimpleNamespace(workspaces=None), "chris", {"focus": {"help": "cf.desk,cf.thread", "title": "PressRoom"}}, s)
+    assert "<page-help>" in text and "Schreibtisch" in text and "Gespräch" in text and "Regelwerk" not in text and f["help"] == "cf.desk,cf.thread"

@@ -92,7 +92,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
 
   return (
     <main className="main">
-      <header className="case-head">
+      <header className="case-head" data-help="cf.case-head">
         <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} size="m" />
         <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
         <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>
@@ -100,12 +100,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span></p>
       </header>
 
-      <Line stations={v.stations} mine={mine} label={v.stage_word} />
+      <div data-help="cf.stations"><Line stations={v.stations} mine={mine} label={v.stage_word} /></div>
 
       {refused && <div className="refused">{refused}</div>}
 
       <div className={`body${readingIndex >= 0 ? " reading" : ""}`}>
-        <div className="desk">
+        <div className="desk" data-help="cf.desk">
           {readingIndex >= 0 ? (
             <Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].versions[docs[i].versions.length - 1].name)} onClose={() => setReading(null)} w={w} />
           ) : (<>
@@ -145,7 +145,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           </>)}
         </div>
 
-        <aside className="thread" aria-label={w.conversation}>
+        <aside className="thread" aria-label={w.conversation} data-help="cf.thread">
           <p className="kicker">{w.conversation}</p>
           <div className="thread-scroll" ref={threadRef}>
           <Thread entries={v.entries} meName={me.name ?? ""} agentName={v.agent} lang={lang} w={w} busy={busy}

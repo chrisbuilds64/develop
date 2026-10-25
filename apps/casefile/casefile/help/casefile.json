@@ -1,0 +1,142 @@
+{
+  "$comment": "Help for the casefile surface: one topic per data-help anchor in web/src. `cockpit help check` fails when an anchor and a topic do not match — change both in the same commit.",
+  "surface": "casefile",
+  "intro": {
+    "de": "Hier arbeitest du Fälle ab. Links siehst du, was auf dich wartet, in der Mitte den offenen Fall, rechts das Gespräch dazu.",
+    "en": "This is where you work cases. On the left what waits for you, in the middle the open case, on the right its conversation."
+  },
+  "topics": [
+    {
+      "key": "cf.groups",
+      "since": "0.16.1",
+      "title": {
+        "de": "Was auf dich wartet",
+        "en": "What waits for you"
+      },
+      "text": {
+        "de": "„you“ zählt die Fälle, bei denen du dran bist. Darunter: was bei Claude liegt, bei anderen, was raus ist, und das Archiv.",
+        "en": "“you” counts the cases where it is your move. Below: what lies with Claude, with others, what is out, and the archive."
+      }
+    },
+    {
+      "key": "cf.views",
+      "since": "0.16.1",
+      "title": {
+        "de": "Ansichten",
+        "en": "Views"
+      },
+      "text": {
+        "de": "Dieselben Fälle dreimal: als Akten (eine nach der anderen), als Board nach Stationen, als Liste.",
+        "en": "The same cases three ways: as files (one after the other), as a board by station, as a list."
+      }
+    },
+    {
+      "key": "cf.list",
+      "since": "0.16.1",
+      "title": {
+        "de": "Deine Liste",
+        "en": "Your list"
+      },
+      "text": {
+        "de": "Die Fälle der gewählten Gruppe. Ein Klick öffnet den Fall in der Mitte. „Your move“ heißt: der nächste Schritt ist deiner.",
+        "en": "The cases of the chosen group. A click opens the case in the middle. “Your move” means the next step is yours."
+      }
+    },
+    {
+      "key": "cf.case-head",
+      "since": "0.16.1",
+      "title": {
+        "de": "Der Fall",
+        "en": "The case"
+      },
+      "text": {
+        "de": "Art, Nummer und Titel des Falls. Der Punkt zeigt, ob du dran bist, und seit wann.",
+        "en": "Kind, number and title of the case. The dot shows whether it is your move, and since when."
+      }
+    },
+    {
+      "key": "cf.stations",
+      "since": "0.16.1",
+      "title": {
+        "de": "Stationen",
+        "en": "Stations"
+      },
+      "text": {
+        "de": "Der Weg des Falls von der Idee bis zum Abschluss. Der gefüllte Punkt ist, wo er gerade steht.",
+        "en": "The case's way from first idea to done. The filled dot is where it stands now."
+      }
+    },
+    {
+      "key": "cf.desk",
+      "since": "0.16.1",
+      "title": {
+        "de": "Der Schreibtisch",
+        "en": "The desk"
+      },
+      "text": {
+        "de": "Was zum Fall gehört: Dokumente mit ihren Fassungen und was noch fehlt. Ein Klick liest ein Dokument im Fall; fehlende Teile legst du hier ab.",
+        "en": "What belongs to the case: documents with their versions, and what is still missing. A click reads a document in the case; missing parts are dropped here."
+      }
+    },
+    {
+      "key": "cf.thread",
+      "since": "0.16.1",
+      "title": {
+        "de": "Das Gespräch",
+        "en": "The conversation"
+      },
+      "text": {
+        "de": "Alles, was zum Fall gesagt wurde: Hinweise, Rückfragen, Läufe. Unten fragst oder antwortest du.",
+        "en": "Everything said about the case: notes, questions, runs. At the bottom you ask or answer."
+      }
+    },
+    {
+      "key": "cf.drop-in",
+      "since": "0.16.1",
+      "title": {
+        "de": "Neues ablegen",
+        "en": "Drop something in"
+      },
+      "text": {
+        "de": "Leg eine Datei oder Idee ab — daraus wird ein neuer Fall.",
+        "en": "Drop a file or an idea in — it becomes a new case."
+      }
+    },
+    {
+      "key": "cf.ask",
+      "since": "0.16.1",
+      "title": {
+        "de": "Frag die KI",
+        "en": "Ask the AI"
+      },
+      "text": {
+        "de": "Eine schnelle Frage zum offenen Fall, direkt im Gespräch des Falls. Für ein längeres Gespräch nimm dein Team rechts am Rand.",
+        "en": "A quick question about the open case, right in its conversation. For a longer talk use your team on the right edge."
+      }
+    },
+    {
+      "key": "cf.patterns",
+      "since": "0.16.1",
+      "title": {
+        "de": "Muster",
+        "en": "Patterns"
+      },
+      "text": {
+        "de": "Was über viele Fälle hinweg auffällt: wiederkehrende Hinweise und Engstellen.",
+        "en": "What stands out across many cases: recurring notes and bottlenecks."
+      }
+    },
+    {
+      "key": "cf.rules",
+      "since": "0.16.1",
+      "title": {
+        "de": "Regelwerk",
+        "en": "Rulebook"
+      },
+      "text": {
+        "de": "Die Regeln und Bausteine, nach denen die Fälle geprüft werden.",
+        "en": "The rules and building blocks the cases are checked against."
+      }
+    }
+  ]
+}

@@ -38,7 +38,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         </div>
         <button type="button" className="swap" onClick={onSwap} aria-label={w.switchHand} title={w.switchHand}><Swap /></button>
       </div>
-      <div className="views" role="tablist" aria-label={w.views}>
+      <div className="views" role="tablist" aria-label={w.views} data-help="cf.views">
         <button type="button" role="tab" aria-selected={view === "cases"} className={`view${view === "cases" ? " on" : ""}`} onClick={() => goClose("/")} title={w.casesView}><ViewCases /><span>{w.casesView}</span></button>
         <button type="button" role="tab" aria-selected={view === "board"} className={`view${view === "board" ? " on" : ""}`} onClick={() => goClose("/board")} title={w.board}><ViewBoard /><span>{w.board}</span></button>
         <button type="button" role="tab" aria-selected={view === "list"} className={`view${view === "list" ? " on" : ""}`} onClick={() => goClose("/list")} title={w.stacked}><ViewList /><span>{w.stacked}</span></button>
@@ -48,7 +48,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         if (n === 0 && !["you", "claude", "others", "out"].includes(g.key)) return null;
         const phone = g.key === "you";
         return (
-          <button key={g.key} type="button" className={`nav-row${current === g.key ? " on" : ""}${phone ? " phone" : ""}`}
+          <button key={g.key} type="button" className={`nav-row${current === g.key ? " on" : ""}${phone ? " phone" : ""}`} {...(g.key === "you" ? { "data-help": "cf.groups" } : {})}
                   onClick={() => goClose(g.key === "you" ? "/" : `/group/${g.key}`)}>
             <span>{g.word}</span>
             {g.key === "you" ? (n > 0 ? <span className="badge">{n}</span> : <span className="n">0</span>) : <span className="n">{n}</span>}
@@ -56,15 +56,15 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         );
       })}
       <div className="rule" />
-      <button type="button" className={`nav-row quiet${route.name === "signals" ? " on" : ""}`} onClick={() => goClose("/signals")}>
+      <button type="button" className={`nav-row quiet${route.name === "signals" ? " on" : ""}`} onClick={() => goClose("/signals")} data-help="cf.patterns">
         <span>{w.signals}</span><span className="n"><Spark /></span>
       </button>
-      <button type="button" className={`nav-row quiet${route.name === "rules" ? " on" : ""}`} onClick={() => goClose("/rules")}>
+      <button type="button" className={`nav-row quiet${route.name === "rules" ? " on" : ""}`} onClick={() => goClose("/rules")} data-help="cf.rules">
         <span>{w.rules}</span><span className="n"><Book /></span>
       </button>
       <div className="spacer" />
-      <button type="button" className="drop-in" onClick={() => goClose("/")} aria-label={w.dropIn}>{w.dropIn}</button>
-      <button type="button" className="nav-row quiet ask-row" onClick={() => document.querySelector<HTMLInputElement>(".ask input")?.focus()}>
+      <button type="button" className="drop-in" onClick={() => goClose("/")} aria-label={w.dropIn} data-help="cf.drop-in">{w.dropIn}</button>
+      <button type="button" className="nav-row quiet ask-row" data-help="cf.ask" onClick={() => document.querySelector<HTMLInputElement>(".ask input")?.focus()}>
         <span>{w.askClaude(agent)}</span><span className="mono n">⌘K</span>
       </button>
 

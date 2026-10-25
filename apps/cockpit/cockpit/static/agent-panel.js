@@ -14,6 +14,8 @@
     back: '← Team', place: 'Ort', none: 'Noch niemand im Team. Stell auf der Seite „Mein Team“ einen Agenten ein.',
     manage: 'Team verwalten', running: 'läuft', closed: 'Session beendet.', log: 'Log', keys: 'Return sendet · Shift+Return neue Zeile',
     dictate: 'Diktieren', close: 'Schließen', stale: 'Die Seite ist veraltet — bitte neu laden.',
+    help: 'Hilfe zu dieser Seite', tour: 'Tour starten', next: 'Weiter', prev: 'Zurück', done: 'Fertig', isNew: 'neu',
+    askHelp: 'Frag nach — z. B. „Wie lege ich einen neuen Fall an?“', askWho: 'Wen fragen?', noTopics: 'Zu dieser Seite gibt es noch keine Hilfe.',
     ref: 'Bezug', refOff: 'Ohne Bezug — allgemeine Frage', refOn: 'Bezug einschalten', refNone: 'Kein Fall geöffnet — allgemeine Frage'
   } : {
     team: 'My team', start: 'Start session', topic: 'Topic — one line', send: 'Send', end: 'End session',
@@ -21,6 +23,8 @@
     back: '← Team', place: 'Place', none: 'Nobody on your team yet. Hire an agent on the “My team” page.',
     manage: 'Manage team', running: 'running', closed: 'Session ended.', log: 'Log', keys: 'Return sends · Shift+Return new line',
     dictate: 'Dictate', close: 'Close', stale: 'The page is stale — please reload.',
+    help: 'Help for this page', tour: 'Start the tour', next: 'Next', prev: 'Back', done: 'Done', isNew: 'new',
+    askHelp: 'Ask — e.g. “How do I start a new case?”', askWho: 'Ask whom?', noTopics: 'There is no help for this page yet.',
     ref: 'About', refOff: 'No reference — a general question', refOn: 'Switch the reference on', refNone: 'No case open — a general question'
   };
   function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
@@ -86,10 +90,13 @@
 
   // ---------------------------------------------------------------- the frame
   var launcher = el('button', 'ap-launch'); launcher.type = 'button'; launcher.setAttribute('aria-label', T.team);
+  launcher.setAttribute('data-help', 'panel.launcher');
   var panel = el('aside', 'ap-panel'); panel.setAttribute('aria-label', T.team); panel.hidden = true;
   var head = el('div', 'ap-head'); var title = el('b', null, T.team); var closeBtn = el('button', 'ap-x', '×');
   closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', T.close);
-  head.appendChild(title); head.appendChild(closeBtn);
+  var helpBtn = el('button', 'ap-x ap-help', '?'); helpBtn.type = 'button'; helpBtn.title = T.help;
+  helpBtn.setAttribute('aria-label', T.help); helpBtn.setAttribute('data-help', 'panel.help');
+  head.appendChild(title); head.appendChild(helpBtn); head.appendChild(closeBtn);
   var body = el('div', 'ap-body');
   panel.appendChild(head); panel.appendChild(body);
   document.body.appendChild(launcher); document.body.appendChild(panel);
@@ -239,6 +246,97 @@
     else if (v.status !== 'active') refresh().then(drawLauncher);
   }
   function stopPoll() { if (state.timer) { clearTimeout(state.timer); state.timer = null; } }
+
+  // ---------------------------------------------------------------- help for this page
+  var helpData = null;
+  function loadHelp() { return helpData ? Promise.resolve(helpData) : api('GET', '/api/help').then(function (j) { helpData = j; return j; }); }
+  function newer(a, b) {                                  // semver-ish: is a newer than b?
+    var x = String(a || '0').split('.').map(Number), y = String(b || '0').split('.').map(Number);
+    for (var i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
+    return false;
+  }
+  function onPage() {                                    // the topics whose anchors are visible right now, in page order
+    var seen = {}, list = [];
+    document.querySelectorAll('[data-help]').forEach(function (n) {
+      var k = n.getAttribute('data-help'); if (seen[k]) return;
+      var r = n.getBoundingClientRect(); if (!r.width && !r.height) return;
+      seen[k] = 1; list.push(k);
+    });
+    return list;
+  }
+  function showHelp() {
+    stopPoll(); title.textContent = T.help; body.innerHTML = '';
+    loadHelp().then(function (h) {
+      var keys = onPage(), byKey = {}; h.topics.forEach(function (t) { byKey[t.key] = t; });
+      var topics = keys.map(function (k) { return byKey[k]; }).filter(Boolean);
+      var lastSeen = read('ap-help-seen');
+      var back = el('button', 'ap-back', T.back); back.type = 'button'; back.onclick = function () { showTeam(); };
+      body.appendChild(back);
+      var surfaces = {}; topics.forEach(function (t) { surfaces[t.surface] = 1; });
+      Object.keys(surfaces).forEach(function (s) { if (h.surfaces[s]) body.appendChild(el('p', 'ap-hint', h.surfaces[s])); });
+      if (!topics.length) { body.appendChild(el('p', 'ap-hint', T.noTopics)); return; }
+      var go = el('button', 'ap-primary', T.tour); go.type = 'button'; go.onclick = function () { tour(topics, 0); };
+      body.appendChild(go);
+      topics.forEach(function (t, i) {
+        var row = el('button', 'ap-topic'); row.type = 'button';
+        var head2 = el('b', null, t.title);
+        if (lastSeen && newer(t.since, lastSeen)) head2.appendChild(el('span', 'ap-new', T.isNew));
+        row.appendChild(head2); row.appendChild(el('span', null, t.text));
+        row.onclick = function () { tour(topics, i); };
+        body.appendChild(row);
+      });
+      // ask: the question goes to the team with this page's help as its reference
+      var ask = el('textarea', 'ap-text'); ask.rows = 2; ask.placeholder = T.askHelp;
+      body.appendChild(ask);
+      var who = el('div', 'ap-row');
+      state.agents.forEach(function (a) {
+        var b = el('button', 'ap-quiet'); b.type = 'button'; b.appendChild(avatar(a, 'sm')); b.appendChild(el('span', null, ' ' + a.label));
+        b.onclick = function () { askAbout(a, ask.value, keys); };
+        who.appendChild(b);
+      });
+      if (state.agents.length) { body.appendChild(el('p', 'ap-hint', T.askWho)); body.appendChild(who); }
+      var top = topics.reduce(function (m, t) { return newer(t.since, m) ? t.since : m; }, lastSeen || '0');
+      store('ap-help-seen', top);
+    }).catch(function (e) { body.appendChild(el('p', 'ap-err', e.message)); });
+  }
+  function askAbout(a, question, keys) {
+    if (!question.trim()) return;
+    var f = focus() || {}, p = place(); for (var k in p) if (f[k] == null) f[k] = p[k];
+    f.help = keys.join(',');
+    var run = state.sessions.filter(function (s) { return s.agent_id === a.id; })[0];
+    var start = run ? Promise.resolve({ id: run.session })
+      : api('POST', '/api/sessions', { agent: a.id, topic: T.help + ': ' + (document.title || ''), place: f });
+    start.then(function (j) { return api('POST', '/api/sessions/' + j.id + '/say', { text: question, focus: f }).then(function () { return refresh().then(function () { showSession(j.id); }); }); })
+      .catch(function (e) { body.insertBefore(el('p', 'ap-err', e.message), body.firstChild); });
+  }
+  var spot = null, tip = null;
+  function endTour() { if (spot) spot.remove(); if (tip) tip.remove(); spot = tip = null; document.removeEventListener('keydown', tourKeys); }
+  function tourKeys(e) { if (e.key === 'Escape') endTour(); }
+  function tour(topics, i) {
+    endTour();
+    var t = topics[i], n = document.querySelector('[data-help="' + t.key + '"]');
+    if (!n) return;
+    n.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    var r = n.getBoundingClientRect();
+    spot = el('div', 'ap-spot');
+    spot.style.top = (r.top - 6) + 'px'; spot.style.left = (r.left - 6) + 'px'; spot.style.width = (r.width + 12) + 'px'; spot.style.height = (r.height + 12) + 'px';
+    tip = el('div', 'ap-tip');
+    tip.appendChild(el('small', null, (i + 1) + ' / ' + topics.length));
+    tip.appendChild(el('b', null, t.title)); tip.appendChild(el('p', null, t.text));
+    var row = el('div', 'ap-row');
+    if (i > 0) { var p = el('button', 'ap-quiet', T.prev); p.type = 'button'; p.onclick = function () { tour(topics, i - 1); }; row.appendChild(p); }
+    var nx = el('button', 'ap-primary', i < topics.length - 1 ? T.next : T.done); nx.type = 'button';
+    nx.onclick = function () { if (i < topics.length - 1) tour(topics, i + 1); else endTour(); };
+    row.appendChild(nx); tip.appendChild(row);
+    document.body.appendChild(spot); document.body.appendChild(tip);
+    var below = r.bottom + 14, w = Math.min(340, window.innerWidth - 24);
+    tip.style.width = w + 'px';
+    tip.style.left = Math.max(12, Math.min(r.left, window.innerWidth - w - 12)) + 'px';
+    tip.style.top = (below + 180 < window.innerHeight ? below : Math.max(12, r.top - 200)) + 'px';
+    document.addEventListener('keydown', tourKeys);
+    nx.focus();
+  }
+  helpBtn.addEventListener('click', function () { if (panel.hidden) open(true); showHelp(); });
 
   // the person menu and other pages can open the panel on an agent: <a data-agent-panel="atlas">
   document.addEventListener('click', function (e) {

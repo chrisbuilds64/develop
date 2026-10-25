@@ -417,8 +417,19 @@ def focus_block(args, person: str, order: dict, s) -> tuple[str, dict | None]:
     last = s.focus or {}
     if not f:
         return ("<case-on-screen>The person has switched the case reference off: answer generally, not about a case.</case-on-screen>\n\n", {}) if last else ("", None)
-    if f.get("case") == last.get("case") and f.get("document") == last.get("document"):
+    if f.get("case") == last.get("case") and f.get("document") == last.get("document") and f.get("help") == last.get("help"):
         return "", None
+    if f.get("help"):                                     # asked from the page's help: the page's topics go with it
+        try:
+            from cockpit import help as page_help
+        except ImportError:
+            sys.path.insert(0, str(HERE.parents[2]))
+            from cockpit import help as page_help
+        keys = [k for k in f["help"].split(",") if k] or None
+        guide = page_help.as_text("de", keys)
+        if not f.get("case"):
+            return (f"<page-help>\nThe person asks from the help of the page they are on ({f.get('title') or f.get('url', '')}). What this page offers:\n"
+                    f"{guide}\nExplain in their words, step by step, with the names on the screen.\n</page-help>\n\n", f)
     wid, data = session_place(args, person, s, f.get("workspace"))
     head = (f"<case-on-screen>\nThe person has this open right now: {f.get('label', '')} {f.get('case', '')} — {f.get('title', '')} "
             f"({f.get('stage', '')}){', document ' + f['document'] if f.get('document') else ''}, in {f.get('application') or wid or 'the cockpit'}.\n"
@@ -428,6 +439,8 @@ def focus_block(args, person: str, order: dict, s) -> tuple[str, dict | None]:
         container = (data / f["item"]).resolve()
         if container.is_dir() and str(container).startswith(str(data.resolve()) + os.sep):
             body = case_files(container)
+    if f.get("help"):
+        body += f"\n\nWhat this page offers (its help):\n{guide}"
     return head + (f"\n{body}\n" if body else "") + "</case-on-screen>\n\n", f
 
 
