@@ -116,6 +116,7 @@ class Config:
     users_path: Path
     accounts_path: Path             # one directory per person: settings and the secrets they bring
     workspaces_path: Path           # the registry of applications and workspaces (casefile trees served under /w/<id>)
+    agents_path: Path | None        # the organisation's agent templates (ADR-020); None = nobody can hire an agent
     casefile_web: Path | None       # the built casefile surface; None = the one beside the installed package
     secret_path: Path
     plugins_dir: Path
@@ -344,6 +345,7 @@ def load(path: Path) -> Config:
         users_path=_path(top.get("users", "users.json"), base),
         accounts_path=_path(top.get("accounts", str(Path(top.get("users", "users.json")).parent / "accounts")), base),
         workspaces_path=_path(top.get("workspaces", "workspaces.json"), base),
+        agents_path=_path(top["agents"], base) if top.get("agents") else None,
         casefile_web=_path(top["casefile_web"], base) if top.get("casefile_web") else None,
         secret_path=_path(top.get("secret", ".cockpit-secret"), base),
         plugins_dir=_path(top.get("plugins", "plugins"), base),

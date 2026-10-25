@@ -25,6 +25,7 @@ from pathlib import Path
 BILLING = ("auto", "subscription", "api-key")
 # auto: the person's subscription token when one is set, the shared API key otherwise
 SETTINGS = {"billing": BILLING, "locale": ("de", "en")}
+PATH_SETTINGS = ("logs_dir",)                      # absolute paths the person chooses; {stage} is replaced per stage
 # the secrets a person may bring, and the shape each one must have — a wrong shape is refused before anything is written
 SECRETS = {
     "CLAUDE_CODE_OAUTH_TOKEN": re.compile(r"^sk-ant-oat01-[A-Za-z0-9_-]{40,}$"),   # `claude setup-token`, one year
@@ -89,6 +90,17 @@ class Accounts:
         os.chmod(p, 0o600)
 
     def set(self, name: str, key: str, value: str) -> dict:
+        if key in PATH_SETTINGS:
+            value = value.strip()
+            if value and (not value.startswith(("/", "~")) or ".." in Path(value).parts):
+                raise AccountError(f"{key} = '{value}' — an absolute path, without '..'")
+            data = self.settings(name)
+            if value:
+                data[key] = value
+            else:
+                data.pop(key, None)
+            self._save(name, data)
+            return data
         if key not in SETTINGS:
             raise AccountError(f"'{key}' is not a setting — one of: {', '.join(SETTINGS)}")
         if value not in SETTINGS[key]:
@@ -155,8 +167,30 @@ class Accounts:
             "locale": data.get("locale"),
             "secrets": {k: {"set": k in present, "since": data.get("secrets", {}).get(k)} for k in SECRETS},
             "codex": self.codex_home(name) is not None,
+            "logs_dir": data.get("logs_dir"),
             "updated": data.get("updated"),
         }
+
+    # ------------------------------------------------- the person's agents and sessions (ADR-020)
+    def sessions_dir(self, name: str, stage: str) -> Path:
+        """The person's session store for one stage: leases, transcripts, queue — in the account, not in a workspace."""
+        return self.dir(name) / "sessions" / (stage or "local")
+
+    def logs_dir(self, name: str, stage: str) -> Path | None:
+        """The person's own folder for session logs (setting `logs_dir`), or None for the default beside the store."""
+        v = self.settings(name).get("logs_dir")
+        return Path(v.replace("{stage}", stage or "local")).expanduser() if v else None
+
+    def store(self, name: str, stage: str):
+        from .sessions import Store
+        return Store(self.sessions_dir(name, stage), log_dir=self.logs_dir(name, stage))
+
+    def team(self, name: str, templates, stage: str):
+        from .agents import Team
+        return Team(self.root, name, templates, stage)
+
+    def people(self) -> list[str]:
+        return sorted(p.name for p in self.root.iterdir() if p.is_dir() and NAME.match(p.name)) if self.root.is_dir() else []
 
     # --------------------------------------------------------------- billing
     def codex_home(self, name: str | None) -> Path | None:

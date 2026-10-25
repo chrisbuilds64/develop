@@ -179,31 +179,39 @@ def create_app(config: Config) -> FastAPI:
             "ws_failures": getattr(app.state, "workspace_failures", {}),
         }
 
+    stage = (config.environment or "prod").lower()
+    from .agents import Catalog
+
+    def templates_now():
+        return Catalog.load(config.agents_path)
+
+    def team_of(user):
+        return accounts.team(user.name, templates_now(), stage)
+
+    def store_of(user):
+        return accounts.store(user.name, stage)
+
     def nav_state(user, role) -> dict:
-        """The menu's avatar row — per live workspace the agents this person may choose, and which of them has a
-        session of theirs running — and the bell: their running sessions, answered or still thinking. A broken
-        agents directory costs the row, never the page."""
-        agents, notes = {}, []
-        if not (workspaces and user):
-            return {"nav_agents": agents, "notes": notes}
-        for w in workspaces.for_user(user.name):
-            if w.mode != "live":
-                continue
-            try:
-                store, cat = workspaces.sessions(w), workspaces.agents(w)
-                mine = store.active(user.name)
-                running = {s.agent for s in mine}
-                agents[w.id] = [{"id": a.id, "label": a.label, "initials": a.initials, "img": a.avatar_path is not None,
-                                 "running": a.id in running} for a in cat.for_user(user.name, role.id)]
-                for s in mine:
-                    turns = store.transcript(s.id)
-                    kind = "thinking" if store.pending(s.id) else ("answered" if turns and turns[-1]["role"] != "user" else "open")
-                    a = cat.get(s.agent)
-                    notes.append({"workspace": w.id, "workspace_label": w.label, "session": s.id, "topic": s.topic, "kind": kind,
-                                  "agent": a.label if a else s.agent, "initials": a.initials if a else s.agent[:2].upper()})
-            except Exception:                            # noqa: BLE001
-                agents.setdefault(w.id, [])
-        return {"nav_agents": agents, "notes": notes}
+        """The side panel's first view and the bell: this person's agents, and their running sessions — answered or
+        still thinking. A broken team costs the panel, never the page."""
+        agents, notes = [], []
+        if not user:
+            return {"team": agents, "notes": notes}
+        try:
+            team, store = team_of(user), store_of(user)
+            running = {}
+            for s in store.active():
+                running.setdefault(s.agent, s.id)
+                turns = store.transcript(s.id)
+                kind = "thinking" if store.pending(s.id) else ("answered" if turns and turns[-1]["role"] != "user" else "open")
+                a = team.get(s.agent)
+                notes.append({"session": s.id, "topic": s.topic, "kind": kind, "agent": a.label if a else s.agent, "agent_id": s.agent,
+                              "initials": a.initials if a else s.agent[:2].upper(), "place": s.place})
+            agents = [{"id": a.id, "label": a.label, "initials": a.initials, "img": a.avatar_path is not None,
+                       "running": a.id in running} for a in team.agents.values()]
+        except Exception:                                # noqa: BLE001
+            pass
+        return {"team": agents, "notes": notes}
 
     def gate(request: Request):
         """Redirect to the intro or the sign-in when users exist and nobody is signed in."""
@@ -278,115 +286,170 @@ def create_app(config: Config) -> FastAPI:
             return go("/?err=" + quote(f"{w.id if w else '?'}: {type(exc).__name__}: {exc}"))
         return go(f"/w/{w.id}/")
 
-    # ---------------------------------------------------------------- agents and sessions (ADR-019)
-    def ws_for(request: Request, wid: str):
-        """(context, workspace) when the signed-in person may open it, else None."""
+    # ---------------------------------------------------------------- the person's team and sessions (ADR-020)
+    def api_csrf_ok(request: Request) -> bool:
+        cookie = request.cookies.get("csrf")
+        return bool(cookie) and hmac.compare_digest(cookie, request.headers.get("x-csrf", ""))
+
+    def place_for(user, raw: dict) -> dict:
+        """The place the panel reports, kept only where the person may be: a workspace they cannot open is dropped."""
+        from .sessions import clean_place
+        place = clean_place(raw)
+        if place.get("workspace") and (workspaces is None or not workspaces.may_open(user.name, place["workspace"])):
+            place.pop("workspace")
+        return place
+
+    def turn_view(t: dict) -> dict:
+        from .detail import render_md_safe
+        out = {k: t.get(k) for k in ("at", "role", "model", "cost_usd")}
+        out["html"] = render_md_safe(t["text"]) if t["role"] == "assistant" else None
+        out["text"] = t["text"]
+        return out
+
+    def session_view(store, team, s) -> dict:
+        a = team.get(s.agent)
+        p = store.pending(s.id)
+        return {"id": s.id, "agent": s.agent, "label": a.label if a else s.agent, "initials": a.initials if a else "?",
+                "img": bool(a and a.avatar_path), "topic": s.topic, "status": s.status, "started": s.started, "place": s.place,
+                "pending": (p or {}).get("type"), "turns": [turn_view(t) for t in store.transcript(s.id)],
+                "log": Path(s.log).name if s.log else None}
+
+    @app.get("/team", response_class=HTMLResponse)
+    def team_page(request: Request, ok: str | None = None, err: str | None = None):
+        if (r := gate(request)):
+            return r
         c = ctx(request)
-        if not c["user"] or workspaces is None or not workspaces.may_open(c["user"].name, wid):
-            return c, None
-        return c, workspaces.get(wid)
-
-    @app.get("/sessions/{wid}", response_class=HTMLResponse)
-    def sessions_page(request: Request, wid: str, err: str | None = None, warn: str | None = None, agent: str | None = None):
-        if (r := gate(request)):
-            return r
-        c, w = ws_for(request, wid)
-        if w is None:
+        if not c["user"]:
             return go("/")
-        cat, store = workspaces.agents(w), workspaces.sessions(w)
-        return templates.TemplateResponse(request, "sessions.html", {
-            **c, "w": w, "err": err, "warn": warn, "chosen": agent, "agents": cat.for_user(c["user"].name, c["role"].id),
-            "problems": cat.problems, "active": store.active(), "closed": list(reversed(store.closed()))[:20],
-            "agents_component": workspaces.component(w, "agents")})
+        team = team_of(c["user"])
+        store = store_of(c["user"])
+        return templates.TemplateResponse(request, "team.html", {
+            **c, "ok": ok, "err": err, "members": list(team.agents.values()), "problems": team.problems,
+            "hireable": [t for t in team.hireable(c["role"].id) if t.id not in team.agents],
+            "logs_dir": accounts.settings(c["user"].name).get("logs_dir", ""), "logs_now": store.log_dir or store.dir / "logs",
+            "active": store.active(), "closed": list(reversed(store.closed()))[:15], "stage": stage,
+            "templates_missing": config.agents_path is None})
 
-    @app.post("/sessions/{wid}", response_class=HTMLResponse)
-    async def session_start(request: Request, wid: str):
+    @app.post("/team", response_class=HTMLResponse)
+    async def team_post(request: Request):
         if (r := gate(request)):
             return r
-        c, w = ws_for(request, wid)
+        c = ctx(request)
         form = {k: str(v) for k, v in (await request.form()).items()}
-        if w is None or not csrf_ok(request, form):
-            return go(f"/sessions/{wid}?err=" + quote("the form token did not match — reload the page and try again"))
-        from .sessions import SessionError
-        agent = workspaces.agents(w).get(form.get("agent", ""))
-        if agent is None or not agent.may_be_chosen_by(c["user"].name, c["role"].id):
-            return go(f"/sessions/{wid}?err=" + quote("this agent is not one you may choose here"))
+        if not c["user"] or not csrf_ok(request, form):
+            return go("/team?err=" + quote("the form token did not match — reload the page and try again"))
+        from .agents import AgentError
+        from .account import AccountError
+        team = team_of(c["user"])
         try:
-            s, overlapping = workspaces.sessions(w).start(w.id, agent.id, c["user"].name, form.get("topic", ""))
-        except SessionError as exc:
-            return go(f"/sessions/{wid}?err=" + quote(str(exc)))
-        audit.record(c["user"].name, f"workspace:{w.id}", s.id, "agent-session.start")
-        warn = ("" if not overlapping else "?warn=" + quote(", ".join(o.id for o in overlapping)))
-        return go(f"/sessions/{wid}/{s.id}{warn}")
+            what = form.get("what")
+            if what == "hire":
+                a = team.hire(form.get("template", ""), (form.get("id") or "").strip().lower() or None, role=c["role"].id,
+                              model=form.get("model", "").strip() or None)
+                audit.record(c["user"].name, "team", a.id, "agent.hire")
+                return go("/team?ok=" + quote(f"{a.label} is on your team"))
+            if what == "dismiss":
+                if team.dismiss(form.get("agent", "")):
+                    audit.record(c["user"].name, "team", form.get("agent", ""), "agent.dismiss")
+                return go("/team?ok=" + quote("dismissed — the memory is kept in your account"))
+            if what == "logs_dir":
+                accounts.set(c["user"].name, "logs_dir", form.get("logs_dir", ""))
+                return go("/team?ok=" + quote("saved"))
+        except (AgentError, AccountError) as exc:
+            return go("/team?err=" + quote(str(exc)))
+        return go("/team")
 
-    @app.get("/sessions/{wid}/{sid}", response_class=HTMLResponse)
-    def session_page(request: Request, wid: str, sid: str, err: str | None = None, warn: str | None = None):
+    @app.get("/sessions/{sid}", response_class=HTMLResponse)
+    def session_page(request: Request, sid: str):
         if (r := gate(request)):
             return r
-        c, w = ws_for(request, wid)
-        if w is None:
+        c = ctx(request)
+        if not c["user"]:
             return go("/")
         from .sessions import SessionError
-        store = workspaces.sessions(w)
+        store, team = store_of(c["user"]), team_of(c["user"])
         try:
             s = store.get(sid)
         except SessionError:
             s = None
-        if s is None or s.user != c["user"].name:
-            return go(f"/sessions/{wid}?err=" + quote("no such session of yours"))
-        agent = workspaces.agents(w).get(s.agent)
-        log_text = (store.dir / s.log).read_text(encoding="utf-8") if s.log and (store.dir / s.log).is_file() else None
-        return templates.TemplateResponse(request, "session.html", {
-            **c, "w": w, "s": s, "agent": agent, "turns": store.transcript(s.id), "pending": store.pending(s.id),
-            "err": err, "warn": warn, "log_text": log_text})
+        if s is None:
+            return go("/team?err=" + quote("no such session of yours"))
+        log_text = Path(s.log).read_text(encoding="utf-8") if s.log and Path(s.log).is_file() else None
+        return templates.TemplateResponse(request, "session.html", {**c, "v": session_view(store, team, s), "log_text": log_text})
 
-    @app.post("/sessions/{wid}/{sid}", response_class=HTMLResponse)
-    async def session_act(request: Request, wid: str, sid: str):
-        if (r := gate(request)):
-            return r
-        c, w = ws_for(request, wid)
-        form = {k: str(v) for k, v in (await request.form()).items()}
-        if w is None or not csrf_ok(request, form):
-            return go(f"/sessions/{wid}/{sid}?err=" + quote("the form token did not match — reload the page and try again"))
+    @app.get("/api/team")
+    def api_team(request: Request):
+        c = ctx(request)
+        if not c["user"]:
+            return JSONResponse({"reason": "not signed in"}, status_code=401)
+        st = nav_state(c["user"], c["role"])
+        return JSONResponse({"agents": st["team"], "sessions": st["notes"], "csrf": csrf_token(request)})
+
+    @app.post("/api/sessions")
+    async def api_start(request: Request):
+        c = ctx(request)
+        if not c["user"] or not api_csrf_ok(request):
+            return JSONResponse({"reason": "not signed in, or the page is stale — reload it"}, status_code=403)
         from .sessions import SessionError
-        store = workspaces.sessions(w)
+        body = await request.json()
+        team = team_of(c["user"])
+        a = team.get(str(body.get("agent", "")))
+        if a is None:
+            return JSONResponse({"reason": "this agent is not on your team"}, status_code=400)
         try:
-            if form.get("what") == "end":
-                store.end(sid, c["user"].name, form.get("note", ""))
-                audit.record(c["user"].name, f"workspace:{w.id}", sid, "agent-session.end")
-            else:
-                store.say(sid, c["user"].name, form.get("text", ""))
+            s, overlapping = store_of(c["user"]).start(a.id, c["user"].name, str(body.get("topic", "")), place_for(c["user"], body.get("place") or {}))
         except SessionError as exc:
-            return go(f"/sessions/{wid}/{sid}?err=" + quote(str(exc)))
-        return go(f"/sessions/{wid}/{sid}")
+            return JSONResponse({"reason": str(exc)}, status_code=400)
+        audit.record(c["user"].name, "team", s.id, "agent-session.start")
+        return JSONResponse({"id": s.id, "overlapping": [o.id for o in overlapping]})
 
-    @app.get("/sessions/{wid}/agent/{aid}/avatar")
-    def agent_avatar(request: Request, wid: str, aid: str):
-        c, w = ws_for(request, wid)
-        a = workspaces.agents(w).get(aid) if w is not None else None
+    @app.get("/api/sessions/{sid}")
+    def api_session(request: Request, sid: str):
+        c = ctx(request)
+        if not c["user"]:
+            return JSONResponse({"reason": "not signed in"}, status_code=401)
+        from .sessions import SessionError
+        store = store_of(c["user"])
+        try:
+            s = store.get(sid)
+        except SessionError:
+            s = None
+        if s is None:
+            return JSONResponse({"reason": "no such session of yours"}, status_code=404)
+        return JSONResponse(session_view(store, team_of(c["user"]), s))
+
+    @app.post("/api/sessions/{sid}/{what}")
+    async def api_act(request: Request, sid: str, what: str):
+        c = ctx(request)
+        if not c["user"] or not api_csrf_ok(request):
+            return JSONResponse({"reason": "not signed in, or the page is stale — reload it"}, status_code=403)
+        from .sessions import SessionError
+        body = await request.json()
+        store = store_of(c["user"])
+        try:
+            if what == "say":
+                store.say(sid, c["user"].name, str(body.get("text", "")))
+            elif what == "end":
+                store.end(sid, c["user"].name, str(body.get("note", "")))
+                audit.record(c["user"].name, "team", sid, "agent-session.end")
+            else:
+                return JSONResponse({"reason": f"'{what}' is not an action"}, status_code=404)
+        except SessionError as exc:
+            return JSONResponse({"reason": str(exc)}, status_code=400)
+        return JSONResponse({"ok": True})
+
+    @app.get("/api/agents/{aid}/avatar")
+    def agent_avatar(request: Request, aid: str):
+        c = ctx(request)
+        a = team_of(c["user"]).get(aid) if c["user"] else None
         if a is None or a.avatar_path is None:
             return Response(status_code=404)
         try:
-            thumb = a.thumbnail(workspaces.path.parent / "cache" / "avatars")
+            thumb = a.thumbnail(config.accounts_path.parent / "cache" / "avatars")
         except Exception:                                # noqa: BLE001 — a picture Pillow cannot read is served as it is
             thumb = None
         return FileResponse(thumb or a.avatar_path, media_type="image/webp" if thumb else None,
                             headers={"Cache-Control": "private, max-age=86400"})
-
-    @app.get("/sessions/{wid}/{sid}/state")
-    def session_state(request: Request, wid: str, sid: str):
-        """For the page's poll: how many turns there are and whether an answer is still coming."""
-        c, w = ws_for(request, wid)
-        if w is None:
-            return JSONResponse({"error": "not found"}, status_code=404)
-        store = workspaces.sessions(w)
-        try:
-            s = store.get(sid)
-        except Exception:                                # noqa: BLE001 — a bad id is a 404, not a trace
-            s = None
-        if s is None or s.user != c["user"].name:
-            return JSONResponse({"error": "not found"}, status_code=404)
-        return JSONResponse({"turns": len(store.transcript(sid)), "pending": store.pending(sid) is not None, "status": s.status})
 
     # ---------------------------------------------------------------- entry
     @app.get("/intro", response_class=HTMLResponse)
@@ -761,6 +824,24 @@ def create_app(config: Config) -> FastAPI:
         return response
 
     # Mounted plugin apps and workspaces sit behind the same gate and the same role check as the pages.
+    _PANEL = ('<link rel="stylesheet" href="{b}/static/agent-panel.css"><script src="{b}/static/agent-panel.js" defer></script>'
+              .format(b=base or "").encode())
+
+    @app.middleware("http")
+    async def panel_in_apps(request: Request, call_next):
+        """The person's team stands beside them inside the mounted applications too (ADR-020): every HTML page under
+        /w/<id>/ gets the side panel, once, before </body>. The application itself knows nothing of it."""
+        response = await call_next(request)
+        parts = route_path(request).split("/")
+        if len(parts) < 3 or parts[1] != "w" or not response.headers.get("content-type", "").startswith("text/html") or who(request) is None:
+            return response
+        body = b"".join([chunk async for chunk in response.body_iterator])
+        if b"agent-panel.js" not in body:
+            body = body.replace(b"</body>", _PANEL + b"</body>", 1)
+        headers = dict(response.headers)
+        headers["content-length"] = str(len(body))
+        return Response(body, status_code=response.status_code, headers=headers, media_type=response.media_type)
+
     @app.middleware("http")
     async def guard_apps(request: Request, call_next):
         parts = route_path(request).split("/")

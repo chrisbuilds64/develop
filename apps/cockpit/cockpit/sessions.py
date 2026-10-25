@@ -1,17 +1,20 @@
-"""Sessions: one agent, in one workspace, for one person, on one topic — started and ended by a button.
+"""Sessions: one person with one of their agents, on one topic, at a place — started and ended by a button.
 
 The keyboard has /session-start and /session-end; this is the same lifecycle for the cockpit. A session is
 bound to an agent because an agent is an identity, and a change of identity is a new session (agent registry).
-The workspace's `sessions` component holds everything, one file per thing, so two sessions never write the
-same file:
+It belongs to the person and the agent, not to a workspace (ADR-020): the place where it was opened — workspace,
+application, item — travels with it as context. The person's account holds the store, per stage, one file per
+thing, so two sessions never write the same file:
 
     active/<id>.json      the lease and the record while it runs: who, which agent, topic, the Claude session
     turns/<id>.jsonl      the conversation, one line per message
     queue/<order>.json    what the runner is to do next: a message (`chat`) or the closing turn (`end`)
-    logs/<date>_<topic>.md  the session log with its continuation thread, written by the agent at the end
     closed/<id>.json      the record after the end; the newest one of an agent points at the log it starts from
 
-Parallel sessions are normal. The same workspace, agent, person and topic twice is reported as a conflict when
+The log itself — `<date>_<topic>.md`, written by the agent at the end — goes to the person's own folder (`log_dir`),
+which they choose on their account; without one it stays beside the store under logs/.
+
+Parallel sessions are normal. The same agent, person and topic twice is reported as a conflict when
 the second starts — a warning, not a refusal, like the lease table at the keyboard. One message at a time per
 session: the conversation is a chain of `--resume`, and a second order before the first is answered would fork it.
 """
@@ -47,7 +50,6 @@ def slug(text: str) -> str:
 @dataclass
 class Session:
     id: str
-    workspace: str
     agent: str
     user: str
     topic: str
@@ -56,17 +58,31 @@ class Session:
     claude_session: str | None = None          # set by the runner after the first answer; every later turn resumes it
     turns: int = 0
     ended: str | None = None
-    log: str | None = None                     # relative to the sessions directory
-    starts_from: str | None = None             # the log of this agent's previous session in this workspace
+    log: str | None = None                     # the written log, an absolute path in the person's folder
+    starts_from: str | None = None             # the log of this agent's previous session
+    place: dict = field(default_factory=dict)  # where it was opened: {"workspace", "application", "item", "url"}
 
     @property
-    def key(self) -> tuple[str, str, str, str]:
-        return (self.workspace, self.agent, self.user, slug(self.topic))
+    def workspace(self) -> str | None:
+        return self.place.get("workspace")
+
+    @property
+    def key(self) -> tuple[str, str, str]:
+        return (self.agent, self.user, slug(self.topic))
+
+
+PLACE_KEYS = ("workspace", "application", "item", "url", "title")
+
+
+def clean_place(place: dict | None) -> dict:
+    """Only the known keys, as short strings — the place is context the browser reports, not something to trust."""
+    return {k: str(v)[:300] for k, v in (place or {}).items() if k in PLACE_KEYS and v}
 
 
 @dataclass
 class Store:
     dir: Path
+    log_dir: Path | None = None                # the person's own folder for logs; None = logs/ beside the store
 
     # ---------------------------------------------------------------- paths
     def _p(self, *parts: str) -> Path:
@@ -84,7 +100,14 @@ class Store:
         tmp.replace(path)
 
     def _read(self, path: Path) -> Session:
-        return Session(**json.loads(path.read_text(encoding="utf-8")))
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        if "workspace" in raw:                         # a record from ADR-019, when sessions lived in a workspace
+            raw.setdefault("place", {})["workspace"] = raw.pop("workspace")
+        if raw.get("log") and not Path(raw["log"]).is_absolute():
+            raw["log"] = str(self.dir / raw["log"])
+        if raw.get("starts_from") and not Path(raw["starts_from"]).is_absolute():
+            raw["starts_from"] = str(self.dir / raw["starts_from"])
+        return Session(**{k: v for k, v in raw.items() if k in Session.__dataclass_fields__})
 
     # ---------------------------------------------------------------- reading
     def active(self, user: str | None = None) -> list[Session]:
@@ -108,8 +131,8 @@ class Store:
     def latest_log(self, agent: str) -> Path | None:
         """The log this agent's next session starts from: the newest closed session of the agent that left one."""
         for s in reversed(self.closed(agent)):
-            if s.log and self._p(s.log).is_file():
-                return self._p(s.log)
+            if s.log and Path(s.log).is_file():
+                return Path(s.log)
         return None
 
     def transcript(self, sid: str) -> list[dict]:
@@ -130,7 +153,7 @@ class Store:
         return None
 
     # ---------------------------------------------------------------- lifecycle
-    def start(self, workspace: str, agent: str, user: str, topic: str) -> tuple[Session, list[Session]]:
+    def start(self, agent: str, user: str, topic: str, place: dict | None = None) -> tuple[Session, list[Session]]:
         """A new session and its lease. Returns it and the active sessions it overlaps with (same key)."""
         topic = " ".join(topic.split())[:120]
         if not topic:
@@ -140,9 +163,8 @@ class Store:
         if self._p("active", f"{sid}.json").exists():
             raise SessionError("a session with this id started this very second — try again")
         prev = self.latest_log(agent)
-        s = Session(id=sid, workspace=workspace, agent=agent, user=user, topic=topic,
-                    started=now.isoformat(timespec="seconds"),
-                    starts_from=str(prev.relative_to(self.dir)) if prev else None)
+        s = Session(id=sid, agent=agent, user=user, topic=topic, started=now.isoformat(timespec="seconds"),
+                    starts_from=str(prev) if prev else None, place=clean_place(place))
         overlapping = [o for o in self.active() if o.key == s.key]
         self._write(self._p("active", f"{sid}.json"), asdict(s))
         return s, overlapping
@@ -152,7 +174,7 @@ class Store:
             raise SessionError(f"'{kind}' is not an order kind")
         now = _now()
         order = {"id": f"{now.strftime('%Y%m%d-%H%M%S-%f')}_{kind}_{s.id}", "type": kind, "session": s.id,
-                 "workspace": s.workspace, "agent": s.agent, "requested_by": s.user, "runner": "claude-code",
+                 "place": s.place, "agent": s.agent, "requested_by": s.user, "runner": "claude-code",
                  "status": "queued", "created": now.isoformat(timespec="seconds"), "text": text}
         self._write(self._p("queue", f"{order['id']}.json"), order)
         return order
@@ -210,12 +232,13 @@ class Store:
         return s
 
     def log_path(self, s: Session) -> Path:
-        """Where the closing turn writes the log: logs/<date>_<topic>.md, a suffix when the name is taken."""
+        """Where the closing turn writes the log: <log_dir>/<date>_<topic>.md, a suffix when the name is taken."""
+        d = self.log_dir or self._p("logs")
         base = f"{s.started[:10]}_{slug(s.topic)}"
-        p = self._p("logs", f"{base}.md")
+        p = d / f"{base}.md"
         n = 2
         while p.exists():
-            p = self._p("logs", f"{base}-{n}.md")
+            p = d / f"{base}-{n}.md"
             n += 1
         return p
 
@@ -224,7 +247,7 @@ class Store:
         p = self._p("active", f"{self._check_id(sid)}.json")
         s = self._read(p)
         s.status, s.ended = "closed", _now().isoformat(timespec="seconds")
-        s.log = str(log.relative_to(self.dir)) if log and log.is_file() else None
+        s.log = str(log) if log and log.is_file() else None
         self._write(self._p("closed", f"{sid}.json"), asdict(s))
         os.remove(p)
         return s

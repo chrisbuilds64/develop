@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/cockpit.css">
+<link rel="stylesheet" href="/static/agent-panel.css">
 <script>
   // Theme, look and transparency are this browser's choice (the person menu sets them); restored before the first paint.
   try {
@@ -45,23 +46,12 @@
   <details class="nav-sec" data-key="ws" open>
     <summary class="section"><span class="tx">{{ t('ws.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
     {% for w in live %}
-    <div class="ws-item{% if route.startswith('/sessions/' ~ w.id) %} here{% endif %}">
+    <div class="ws-item">
       <a href="/w/{{ w.id }}/" class="nav-row ws-row" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
         <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
         <span class="tx">{{ w.label }}</span>
         {% if w.shared %}<span class="n tx" title="{{ t('ws.shared') }}">{{ glyph('users', 15) }}</span>{% endif %}
       </a>
-      {% set ags = nav_agents.get(w.id, []) %}
-      {% if ags %}
-      <div class="nav-agents">
-        {% for a in ags %}
-        <a href="/sessions/{{ w.id }}?agent={{ a.id }}" class="nav-av{% if a.running %} running{% endif %}" title="{{ a.label }}{% if a.running %} · {{ t('ag.running') }}{% endif %}">
-          {% if a.img %}<img src="/sessions/{{ w.id }}/agent/{{ a.id }}/avatar" alt="{{ a.label }}">{% else %}<span>{{ a.initials }}</span>{% endif %}
-        </a>
-        {% endfor %}
-        <a href="/sessions/{{ w.id }}" class="nav-av more tx" title="{{ t('ag.title') }}">{{ t('ag.sessions') }}</a>
-      </div>
-      {% endif %}
     </div>
     {% endfor %}
     {% if samples %}
@@ -77,6 +67,22 @@
     {% endif %}
     {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
   </details>
+
+  {% if user %}
+  <details class="nav-sec" data-key="team" open>
+    <summary class="section"><span class="tx">{{ t('team.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
+    {% if team %}
+    <div class="nav-agents team">
+      {% for a in team %}
+      <a href="/team" data-agent-panel="{{ a.id }}" class="nav-av{% if a.running %} running{% endif %}" title="{{ a.label }}{% if a.running %} · {{ t('ag.running') }}{% endif %}">
+        {% if a.img %}<img src="/api/agents/{{ a.id }}/avatar" alt="{{ a.label }}">{% else %}<span>{{ a.initials }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <a href="/team" class="nav-row{% if route.startswith('/team') or route.startswith('/sessions') %} on{% endif %}" title="{{ t('team.manage') }}"><span class="ic">{{ glyph('users', 18) }}</span><span class="tx">{{ t('team.manage') }}</span></a>
+  </details>
+  {% endif %}
 
   {% if nav_modules %}
   <details class="nav-sec" data-key="workshop" open>
@@ -114,6 +120,7 @@
   <div class="version tx">{{ t('app.version') }} {{ version }}</div>
 </nav>
 {% if user %}
+<script src="/static/agent-panel.js" defer></script>
 <div class="me-pop pop" id="me-pop" hidden>
       <div class="me-head"><span class="avatar lg">{{ user.display[:2]|upper }}</span><span><span class="name">{{ user.display }}</span><span class="role-pill">{{ user.role }}</span></span></div>
       <div class="pop-label">{{ t('me.design') }}</div>
@@ -146,7 +153,7 @@
 </div>
 <div class="topbar">
   <details class="switch">
-    <summary class="pill">{% set here = (workspaces|selectattr('id', 'equalto', route.split('/')[2])|first) if route.startswith('/sessions/') else none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
+    <summary class="pill">{% set here = none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
     <div class="pop right">
       <div class="pop-title">{{ t('ws.mine_all') }}</div>
       {% for w in workspaces %}
@@ -160,7 +167,7 @@
     <div class="pop right">
       <div class="pop-title">{{ t('note.title') }}</div>
       {% for n in notes %}
-      <a href="/sessions/{{ n.workspace }}/{{ n.session }}" class="pop-row"><span class="nav-av sm">{{ n.initials }}</span><span><b>{{ n.agent }} · {{ n.topic }}</b><small>{{ t('note.' ~ n.kind) }} · {{ n.workspace_label }}</small></span></a>
+      <a href="/sessions/{{ n.session }}" data-agent-panel="{{ n.agent_id }}" class="pop-row"><span class="nav-av sm">{{ n.initials }}</span><span><b>{{ n.agent }} · {{ n.topic }}</b><small>{{ t('note.' ~ n.kind) }}{% if n.place.workspace %} · {{ n.place.workspace }}{% endif %}</small></span></a>
       {% else %}
       <p class="pop-empty">{{ t('note.none') }}</p>
       {% endfor %}

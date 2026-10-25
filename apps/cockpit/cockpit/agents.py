@@ -1,6 +1,6 @@
-"""Agents: who one may work with in a workspace — identity, memory, skills and rights in one directory.
+"""Agents: the organisation's job profiles (templates) and the person's team (hired agents) — ADR-020.
 
-A workspace's `agents` component is a directory with one folder per agent:
+The organisation keeps templates, one folder each (today `control/shared-context/agents/`):
 
     <agents>/<id>/agent.json            the definition: what the agent is, may run, may touch, and who may choose it
     <agents>/<id>/<id>-signature.md     its operating identity (the file name agent.json names)
@@ -19,14 +19,24 @@ agent.json is no agent, even with a signature in it: the same directory holds th
 here until a definition says so.
 
 Rights are an intersection. An order gets what run-policy.json grants the skill *and* what the agent's ceiling
-allows: an agent never does more than the skill, a skill never more than the agent.
+allows: an agent never does more than the skill, a skill never more than the agent. The template's `users` and
+`roles` say who may hire it.
+
+A person hires agents into their account — `<accounts>/<name>/agents/<id>/agent.json`:
+
+    {"template": "atlas", "hired": "2026-10-25", "model": "…", "memory": "/home/runner/envs/{stage}/notes/shared-context/agents/atlas"}
+
+The hired agent takes identity and avatar from the template's folder and keeps its own memory: working notes in
+`memory` ({stage} allowed), by default its folder in the account. It may be narrower than its template (tools,
+skills, web), never wider; model and engine may differ. Two people's Atlas share the role, not the memory.
 """
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
@@ -57,6 +67,8 @@ class Agent:
     write: tuple[str, ...] = ()
     users: tuple[str, ...] = ()
     roles: tuple[str, ...] = ()
+    memory_dir: Path | None = None             # where its working notes live; None = its own folder
+    template: str | None = None                # the job profile it was hired from
 
     @property
     def signature_path(self) -> Path | None:
@@ -97,7 +109,7 @@ class Agent:
 
     @property
     def notes_path(self) -> Path | None:
-        return self.dir / self.notes if self.notes else None
+        return (self.memory_dir or self.dir) / self.notes if self.notes else None
 
     def may_be_chosen_by(self, user: str | None, role: str | None) -> bool:
         if not self.users and not self.roles:
@@ -202,3 +214,110 @@ class Catalog:
 
     def for_user(self, user: str | None, role: str | None) -> list[Agent]:
         return [a for a in self.agents.values() if a.may_be_chosen_by(user, role)]
+
+
+# -------------------------------------------------------------------- the person's team (ADR-020)
+
+NARROW = ("tools", "skills", "write")           # a hired agent may keep fewer of these than its template, never more
+OVERRIDE = ("label", "model", "fallback_model", "engine")
+
+
+class Team:
+    """One person's hired agents, resolved against the organisation's templates, for one stage."""
+
+    def __init__(self, accounts_root: Path, user: str, templates: Catalog, stage: str = "local"):
+        if not NAME.match(user or ""):
+            raise AgentError(f"'{user}' is not an account name")
+        self.dir = Path(accounts_root) / user / "agents"
+        self.user, self.templates, self.stage = user, templates, stage or "local"
+        self.agents: dict[str, Agent] = {}
+        self.problems: dict[str, str] = {}
+        self.load()
+
+    def load(self) -> None:
+        self.agents, self.problems = {}, {}
+        if not self.dir.is_dir():
+            return
+        for folder in sorted(p for p in self.dir.iterdir() if p.is_dir() and not p.name.startswith(("_", "."))):
+            try:
+                a = self._resolve(folder)
+            except AgentError as exc:
+                self.problems[folder.name] = str(exc)
+                continue
+            if a is not None:
+                self.agents[a.id] = a
+
+    def _resolve(self, folder: Path) -> Agent | None:
+        spec = folder / "agent.json"
+        if not NAME.match(folder.name) or not spec.is_file():
+            return None
+        try:
+            raw = json.loads(spec.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            raise AgentError(f"{spec} is not valid JSON: {exc}") from exc
+        tid = raw.get("template")
+        if not tid:                                       # a definition of the person's own, signature in their folder
+            a = load_agent(folder)
+            return replace(a, memory_dir=self._memory(raw, folder)) if a else None
+        t = self.templates.get(tid)
+        if t is None:
+            raise AgentError(f"agent '{folder.name}': no template '{tid}' in the organisation")
+        changes: dict = {"id": folder.name, "template": tid, "memory_dir": self._memory(raw, folder)}
+        for key in OVERRIDE:
+            if raw.get(key):
+                changes[key] = str(raw[key])
+        if changes.get("engine", t.engine) not in ENGINES:
+            raise AgentError(f"agent '{folder.name}': engine '{changes['engine']}' — the runner drives {', '.join(ENGINES)}")
+        for key in NARROW:
+            if key in raw:
+                mine = _tuple(raw[key], f"agent '{folder.name}'", key)
+                wider = [x for x in mine if x not in getattr(t, key)]
+                if wider:
+                    raise AgentError(f"agent '{folder.name}': {key} {', '.join(wider)} — more than its template allows")
+                changes[key] = mine
+        if raw.get("web") is False:
+            changes["web"] = False
+        return replace(t, **changes)
+
+    def _memory(self, raw: dict, folder: Path) -> Path:
+        m = raw.get("memory")
+        return Path(str(m).replace("{stage}", self.stage)).expanduser() if m else folder
+
+    def get(self, aid: str) -> Agent | None:
+        return self.agents.get(aid)
+
+    def hireable(self, role: str | None) -> list[Agent]:
+        return [t for t in self.templates.agents.values() if t.may_be_chosen_by(self.user, role)]
+
+    def hire(self, template: str, aid: str | None = None, role: str | None = None, **settings) -> Agent:
+        """A new member of the team from an organisation template. `settings`: label, model, fallback_model, engine,
+        memory and narrower tools/skills/write — written into the hired agent's agent.json, checked on load."""
+        t = self.templates.get(template)
+        if t is None or not t.may_be_chosen_by(self.user, role):
+            raise AgentError(f"'{template}' is not a profile you may hire")
+        aid = aid or template
+        if not NAME.match(aid):
+            raise AgentError(f"'{aid}' is not an agent id — lower-case letters, digits, - and _")
+        folder = self.dir / aid
+        if (folder / "agent.json").exists():
+            raise AgentError(f"you already have an agent '{aid}'")
+        doc = {"$comment": f"Hired by {self.user} from the organisation's template '{template}' (ADR-020).",
+               "template": template, "hired": dt.date.today().isoformat(),
+               **{k: v for k, v in settings.items() if v not in (None, "", [])}}
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "agent.json").write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        self.load()
+        if aid not in self.agents:
+            problem = self.problems.get(aid, "unknown")
+            (folder / "agent.json").unlink()
+            raise AgentError(problem)
+        return self.agents[aid]
+
+    def dismiss(self, aid: str) -> bool:
+        """Leaves the team. The folder stays as `_dismissed-<id>-<date>` — memory is not thrown away by a click."""
+        folder = self.dir / aid
+        if not NAME.match(aid) or not (folder / "agent.json").is_file():
+            return False
+        folder.rename(self.dir / f"_dismissed-{aid}-{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}")
+        self.load()
+        return True

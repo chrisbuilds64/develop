@@ -157,11 +157,10 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
         }
         reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     data = json.loads(reg.read_text(encoding="utf-8"))
-    tree = env.dir(s) / "notes" if env.notes_branch else None
-    agents = ({"path": str(tree / "shared-context" / "agents"), "shared": True, "writable": True} if tree else    # learns on the notes branch
-              {"path": str(s.shared / "control" / "shared-context" / "agents"), "shared": True, "writable": False})  # reads control, never commits
-    if (data.get("defaults") or {}).get("agents") != agents:  # ADR-019: every workspace of the stage offers these agents
-        data.setdefault("defaults", {})["agents"] = agents
+    if "agents" in (data.get("defaults") or {}):      # ADR-020: agents left the workspace for the person's account
+        data["defaults"].pop("agents")
+        if not data["defaults"]:
+            data.pop("defaults")
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     have = {w["id"] for w in data["workspaces"]}
     venv = cp / ".venv"
@@ -191,6 +190,7 @@ def write_cockpit_config(settings: Settings, env: Env, folder_id: int) -> Path:
     cp = env.dir(s) / "cockpit"
     toml = _render("cockpit.toml", env=env.name, label=env.label, port=env.port, base_path=env.base_path,
                    users_json=s.users_json, cookie_secret=s.cookie_secret, accounts=s.users_json.parent / "accounts",
+                   agents=s.shared / "control" / "shared-context" / "agents",
                    data=s.groupfolders_data / str(folder_id) / "files" / "flow", mount=env.mount / "flow")
     p = cp / "cockpit.toml"
     p.write_text(toml, encoding="utf-8"); _own(p, s.runner_user)

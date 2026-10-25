@@ -25,11 +25,13 @@ run from the button knows what a session at the keyboard knows. (A SessionStart
 hook cannot carry it: Claude Code keeps hook output above a few kilobytes out
 of the context, observed 2026-10-24.)
 
-Sessions (ADR-019): with `--workspaces` the runner also serves every workspace's session queue —
-a message (`chat`) or the closing turn (`end`) of one agent's session. The agent's agent.json sets
-the rights, its folder the identity and memory; the conversation is a chain of `--resume` in a HOME
-that lives as long as the session, because Claude Code keeps a session's transcript under HOME.
-The closing turn writes the session log; then the lease is released.
+Sessions (ADR-020): with `--accounts` the runner also serves every person's session queue for this
+stage — a message (`chat`) or the closing turn (`end`) with one of their agents. The agent comes from
+the person's team (hired from a template in `--agents`): rights from the template cut to the hire,
+identity from the template's folder, memory from the hire. A session's place (a workspace the person
+may open) gives it a pipeline; without one it has none. The conversation is a chain of `--resume` in
+a HOME that lives as long as the session, because the engines keep a session's transcript there. The
+closing turn writes the log into the person's folder; then the lease is released.
 
 Claiming is a `mkdir` next to the order — atomic on a network mount, so two
 runners never take the same job. The transcript goes to _runs/<id>.log, the
@@ -212,14 +214,14 @@ def billing_for(run: dict, rules: dict, env: dict, args) -> tuple[dict, str, str
     return b.env, b.mode, b.source
 
 
-def run_home(args, data: Path, workspace_id: str, run_id: str) -> tuple[Path, Path]:
+def run_home(args, data: Path | None, workspace_id: str, run_id: str) -> tuple[Path, Path]:
     home = args.workspace / "tmp" / "homes" / run_id
     if (home / "ChrisBuilds64" / "CLAUDE.md").is_file():
         return home, home / "ChrisBuilds64"           # a session's HOME, built at its first turn and kept until its end
     return _build_home(args, data, workspace_id, run_id)
 
 
-def _build_home(args, data: Path, workspace_id: str, run_id: str) -> tuple[Path, Path]:
+def _build_home(args, data: Path | None, workspace_id: str, run_id: str) -> tuple[Path, Path]:
     """A HOME for this one run, so that `~/ChrisBuilds64/pressroom` points at the workspace the order belongs to.
 
     The skills address the pipeline as ~/ChrisBuilds64/pressroom/flow and are the same files the person uses at
@@ -237,7 +239,8 @@ def _build_home(args, data: Path, workspace_id: str, run_id: str) -> tuple[Path,
     for name in ("canon", "control", "develop"):
         if (base / name).exists():
             (ws / name).symlink_to((base / name).resolve())
-    (ws / "pressroom").symlink_to(data.parent if data.name == "flow" else data)
+    if data is not None:
+        (ws / "pressroom").symlink_to(data.parent if data.name == "flow" else data)
     for name in ("skills", "agents"):
         src = base / ".claude" / name
         if src.exists():
@@ -245,7 +248,8 @@ def _build_home(args, data: Path, workspace_id: str, run_id: str) -> tuple[Path,
     if (base / ".claude" / "settings.json").is_file():
         shutil.copy(base / ".claude" / "settings.json", ws / ".claude" / "settings.json")
     text = (base / "CLAUDE.md").read_text(encoding="utf-8") if (base / "CLAUDE.md").is_file() else ""
-    text += f"\n- **Workspace of this run:** `{workspace_id}` — its pipeline is `~/ChrisBuilds64/pressroom/flow/` here ({data}). Nothing else is this run's.\n"
+    text += (f"\n- **Workspace of this run:** `{workspace_id}` — its pipeline is `~/ChrisBuilds64/pressroom/flow/` here ({data}). Nothing else is this run's.\n"
+             if data is not None else "\n- **No workspace in this run:** it was opened outside one; there is no pipeline to work on.\n")
     (ws / "CLAUDE.md").write_text(text, encoding="utf-8")
     trust: dict = {}
     real = Path(os.environ.get("HOME", str(Path.home()))) / ".claude.json"
@@ -339,23 +343,47 @@ def _cockpit():
     return Workspaces
 
 
-def session_queues(args) -> list[tuple]:
-    """(registry, workspace) for every live workspace whose session store has a queue."""
-    if not args.workspaces:
-        return []
+def _templates(args):
     try:
-        ws = _cockpit()(args.workspaces, args.workspaces.parent)
-    except Exception as exc:                              # noqa: BLE001 — a broken registry is logged by queues() already
-        log.debug("sessions: registry unreadable: %s", exc)
+        from cockpit.agents import Catalog
+    except ImportError:
+        sys.path.insert(0, str(HERE.parents[2]))
+        from cockpit.agents import Catalog
+    return Catalog.load(args.agents)
+
+
+def session_queues(args) -> list[tuple]:
+    """(person, store) for every account with a session queue on this stage."""
+    if not args.accounts:
         return []
+    acc, stage = _accounts(args), os.environ.get("PRESSROOM_ENV", "local")
     out = []
-    for w in ws.items:
-        if w.mode != "live":
-            continue
-        store = ws.sessions(w)
+    for person in acc.people():
+        store = acc.store(person, stage)
         if (store.dir / "queue").is_dir():
-            out.append((ws, w, store))
+            out.append((person, store))
     return out
+
+
+def session_place(args, person: str, s):
+    """(workspace id, pipeline root) for the session's place — only a live workspace the person may open."""
+    wid = s.place.get("workspace") if s.place else None
+    if not wid or not args.workspaces:
+        return "", None
+    try:
+        reg = _cockpit()(args.workspaces, args.workspaces.parent)
+    except Exception:                                     # noqa: BLE001
+        return "", None
+    w = reg.get(wid)
+    if w is None or w.mode != "live" or not w.visible_to(person):
+        return "", None
+    pipe = reg.component(w, "pipeline")
+    return w.id, (pipe.write_path or pipe.path)
+
+
+def place_text(s) -> str:
+    p = s.place or {}
+    return " · ".join(x for x in (p.get("workspace"), p.get("application"), p.get("item")) if x) or p.get("title") or "Cockpit"
 
 
 def end_prompt(log_path: Path, notes: Path | None, s) -> str:
@@ -363,7 +391,7 @@ def end_prompt(log_path: Path, notes: Path | None, s) -> str:
                   f"your working notes at `{notes}` in their format; otherwise leave them untouched. " if notes else
                   "Your working notes are read-only here; put what you learned into the log's last section instead. ")
     return (f"End this session now. Write the session log to `{log_path}` — Markdown, in German (internal documentation). "
-            f"Structure: `# Session {s.started[:10]} — <title>`, then Datum, Instanz, Workspace `{s.workspace}`, Thema "
+            f"Structure: `# Session {s.started[:10]} — <title>`, then Datum, Instanz, Ort `{place_text(s)}`, Thema "
             f"„{s.topic}“; `## Was wurde gemacht`; `## Entscheidungen`; `## Offene Punkte`; `## Continuation Thread` with "
             "the open tension and the next natural sentence. Only what this conversation contains — no invented work. "
             f"{notes_line}Touch no other file. Then answer in two lines: the log's path and the next natural sentence.")
@@ -398,7 +426,7 @@ NOTES_HEAD = "## Für die Working Notes"
 
 def openai_end_prompt(s) -> str:
     return (f"End this session now and write its log. Answer with the log only, Markdown, in German (internal documentation). "
-            f"Structure: `# Session {s.started[:10]} — <title>`, then Datum, Instanz, Workspace `{s.workspace}`, Thema „{s.topic}“; "
+            f"Structure: `# Session {s.started[:10]} — <title>`, then Datum, Instanz, Ort `{place_text(s)}`, Thema „{s.topic}“; "
             "`## Was wurde gemacht`; `## Entscheidungen`; `## Offene Punkte`; `## Continuation Thread` with the open tension and the "
             f"next natural sentence; last `{NOTES_HEAD}` with one dated observation about how the collaboration works, if this "
             "session taught you one, otherwise a single dash. Only what this conversation contains — no invented work.")
@@ -557,24 +585,28 @@ def notes_sync(args) -> None:
         log.warning("notes: could not follow main: %s", (r.stderr or r.stdout).strip()[-200:])
 
 
-def notes_commit(args, agent, s) -> str | None:
-    """After the closing turn: what the agent wrote into its folder becomes one commit on the stage's notes branch,
-    pushed to the notes remote. Nothing reaches control's main without Chris' merge. Returns the commit, or None."""
+def notes_commit(args, label: str, s, paths: list) -> str | None:
+    """After the closing turn: what the session left inside the notes worktree — the agent's memory, the log when the
+    person's log folder is there — becomes one commit on the stage's notes branch, pushed to the notes remote.
+    Nothing reaches control's main without Chris' merge. Returns the commit, or None."""
     repo = args.notes_repo
     if not repo:
         return None
-    try:
-        rel = str(agent.dir.resolve().relative_to(repo.resolve()))
-    except ValueError:
-        log.warning("notes: %s is not inside the notes worktree %s", agent.dir, repo)
-        return None
-    if not subprocess.run(["git", "-C", str(repo), "status", "--porcelain", "--", rel], capture_output=True, text=True).stdout.strip():
+    rels = []
+    for p in paths:
+        if p is None:
+            continue
+        try:
+            rels.append(str(Path(p).resolve().relative_to(repo.resolve())))
+        except ValueError:
+            continue                                      # outside the worktree: the person's own folder, not ours to commit
+    if not rels or not subprocess.run(["git", "-C", str(repo), "status", "--porcelain", "--", *rels], capture_output=True, text=True).stdout.strip():
         return None
     branch = subprocess.run(["git", "-C", str(repo), "branch", "--show-current"], capture_output=True, text=True).stdout.strip()
-    msg = f"notes({os.environ.get('PRESSROOM_ENV', 'local')}): {agent.label} — {s.topic}\n\nSession {s.id}, for {s.user}. Learned in a cockpit session; reaches main only by merge."
+    msg = f"notes({os.environ.get('PRESSROOM_ENV', 'local')}): {label} — {s.topic}\n\nSession {s.id}, for {s.user}. Learned in a cockpit session; reaches main only by merge."
     run = lambda *c: subprocess.run(["git", "-C", str(repo), *c], capture_output=True, text=True, timeout=120)
-    run("add", "--", rel)
-    r = run("-c", f"user.name={agent.label} (cockpit)", "-c", "user.email=agents@chrisbuilds64.com", "commit", "--quiet", "-m", msg)
+    run("add", "--", *rels)
+    r = run("-c", f"user.name={label} (cockpit)", "-c", "user.email=agents@chrisbuilds64.com", "commit", "--quiet", "-m", msg)
     if r.returncode != 0:
         log.warning("notes: commit failed: %s", (r.stderr or r.stdout).strip()[-200:])
         return None
@@ -587,7 +619,7 @@ def notes_commit(args, agent, s) -> str | None:
     return sha
 
 
-def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
+def execute_session(f: Path, order: dict, person: str, store, args) -> None:
     """One turn of a session: a message, or the closing turn that writes the log and releases the lease."""
     sid, kind = order["session"], order.get("type")
 
@@ -597,30 +629,33 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
 
     notes_sync(args)                                       # the agents' folders follow main before the agent is read
     s = store.get(sid)
-    agent = ws.agents(w).get(order.get("agent", ""))
-    if s is None or s.status == "closed" or agent is None or kind not in ("chat", "end"):
+    stage = os.environ.get("PRESSROOM_ENV", "local")
+    team = _accounts(args).team(person, _templates(args), stage)
+    agent = team.get(order.get("agent", ""))
+    if s is None or s.status == "closed" or agent is None or kind not in ("chat", "end") or s.user != person:
         why = "the session is not running" if s is None or s.status == "closed" else (
-            f"no agent '{order.get('agent')}' in this workspace" if agent is None else f"unknown order type '{kind}'")
+            f"'{order.get('agent')}' is not on {person}'s team" if agent is None else f"unknown order type '{kind}'")
         finish("failed", why, exit=78)
         return
-    pipe = ws.component(w, "pipeline")
-    data = pipe.write_path or pipe.path
-    policy = load_policy(data) or {}
+    wid, data = session_place(args, person, s)
+    policy = (load_policy(data) if data else None) or {}
     rules = {**policy.get("default", {}), **agent.rules_for(None)}       # the agent's ceiling is the conversation's rule
     if args.pull:
         refresh(args.pull)
-    agents_c = ws.component(w, "agents")
-    plain_env = dict(os.environ, COCKPIT_DATA_DIR=str(data), CONTEXT_LOOP_DIR=str(data), PRESSROOM_WORKSPACE=w.id,
+    plain_env = dict(os.environ, **({"COCKPIT_DATA_DIR": str(data), "CONTEXT_LOOP_DIR": str(data)} if data else {}), PRESSROOM_WORKSPACE=wid,
                      PRESSROOM_ENV=os.environ.get("PRESSROOM_ENV", "local"), PRESSROOM_SKILL="",
-                     PRESSROOM_SESSION=sid, PRESSROOM_TOPIC=s.topic, PRESSROOM_ORDERED_BY=s.user,
+                     PRESSROOM_SESSION=sid, PRESSROOM_TOPIC=s.topic, PRESSROOM_ORDERED_BY=s.user, PRESSROOM_PLACE=place_text(s),
                      PRESSROOM_AGENT=agent.context or agent.id, PRESSROOM_AGENT_LABEL=agent.label,
                      PRESSROOM_AGENT_DIR=str(agent.dir),
                      PRESSROOM_AGENT_SIGNATURE=str(agent.signature_path or ""), PRESSROOM_AGENT_NOTES=str(agent.notes_path or ""),
-                     PRESSROOM_SESSION_LOG=str(store.dir / s.starts_from) if s.starts_from else "",
+                     PRESSROOM_SESSION_LOG=s.starts_from or "",
                      PRESSROOM_RUN_ID=order["id"])
-    notes_writable = bool(agents_c and agents_c.writable and agent.notes_path)
+    memory = agent.notes_path.parent if agent.notes_path else None
+    if memory is not None:
+        memory.mkdir(parents=True, exist_ok=True)
+    notes_writable = bool(memory is not None and os.access(memory, os.W_OK))
     if agent.engine == "codex":
-        home, wsdir = run_home(args, data, w.id, f"session-{sid}")
+        home, wsdir = run_home(args, data, wid, f"session-{sid}")
         cenv = dict(plain_env, HOME=str(home))
         context = context_file(order, cenv, args, wsdir) if not s.claude_session else None
         log_path = store.log_path(s) if kind == "end" else None
@@ -631,18 +666,17 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
                       agent.notes_path if notes_writable else None)
         if kind == "end":
             shutil.rmtree(home, ignore_errors=True)
-            if notes_writable:
-                notes_commit(args, agent, s)
+            notes_commit(args, agent.label, s, [agent.notes_path if notes_writable else None, log_path])
         return
     if agent.engine == "openai":
-        home, wsdir = run_home(args, data, w.id, f"session-{sid}")
+        home, wsdir = run_home(args, data, wid, f"session-{sid}")
         context = context_file(order, dict(plain_env, HOME=str(home)), args, wsdir)
         log.info("session %s %s — openai engine, %s", sid, kind, rules.get("model"))
         execute_openai(f, order, s, agent, store, rules, context, args, finish, agent.notes_path if notes_writable else None)
         if kind == "end":
             shutil.rmtree(home, ignore_errors=True)
-            if notes_writable:
-                notes_commit(args, agent, s)
+            closed = store.get(sid)
+            notes_commit(args, agent.label, s, [agent.notes_path if notes_writable else None, closed.log if closed else None])
         return
     env, billing, billed_by = billing_for(order, rules, plain_env, args)
     log.info("session %s %s — billing: %s", sid, kind, billed_by)
@@ -655,7 +689,7 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
             store.close(sid, None)
         return
 
-    home, wsdir = run_home(args, data, w.id, f"session-{sid}")
+    home, wsdir = run_home(args, data, wid, f"session-{sid}")
     env["HOME"] = str(home)
     context = context_file(order, env, args, wsdir)
     log_path, notes = None, None
@@ -675,8 +709,8 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
         cmd += ["--model", rules["model"]]                # assigned to the agent, else the stage's default from run-policy.json
     if rules.get("fallback_model") and rules.get("fallback_model") != rules.get("model"):
         cmd += ["--fallback-model", rules["fallback_model"]]
-    subst = {"{data}": str(data), "{container}": str(data)}
-    dirs = [subst.get(x, x) for x in rules.get("write", [])] + [str(d) for d in args.add_dir]
+    subst = {"{data}": str(data), "{container}": str(data)} if data else {}
+    dirs = [subst.get(x, x) for x in rules.get("write", []) if not x.startswith("{") or x in subst] + [str(d) for d in args.add_dir]
     tools = list(rules.get("tools", [])) + (WEB_TOOLS if rules.get("web") else [])
     if kind == "end":
         dirs.append(str(log_path.parent))
@@ -709,8 +743,7 @@ def execute_session(f: Path, order: dict, ws, w, store, args) -> None:
     if kind == "end":
         closed = store.close(sid, log_path)
         shutil.rmtree(home, ignore_errors=True)
-        if notes:
-            notes_commit(args, agent, s)            # the session's HOME ends with the session; the log and transcript stay
+        notes_commit(args, agent.label, s, [notes, log_path])   # the session's HOME ends with the session; the log and transcript stay
         log.info("session %s closed — log %s", sid, closed.log or "not written")
 
 
@@ -728,6 +761,7 @@ def main(argv=None) -> int:
     p.add_argument("--add-dir", action="append", default=[],
                    help="a directory the session may read beyond the workspace — the shared checkouts the workspace links to")
     p.add_argument("--accounts", default="", help="the cockpit's accounts directory — the orderer's token decides the billing; '' = always the shared key")
+    p.add_argument("--agents", default="", help="the organisation's agent templates (ADR-020); people's teams are hired from these")
     p.add_argument("--notes-repo", default="", help="a git worktree on the stage's notes branch that holds the agents' folders; "
                    "what an agent learns is committed there and pushed to --notes-remote ('' = notes are not committed)")
     p.add_argument("--notes-remote", default="notes", help="the remote the notes branch is pushed to — never control's main")
@@ -744,6 +778,7 @@ def main(argv=None) -> int:
     args.add_dir = [Path(x).expanduser().resolve() for x in args.add_dir]
     args.accounts = Path(args.accounts).expanduser() if args.accounts else None
     args.notes_repo = Path(args.notes_repo).expanduser() if args.notes_repo else None
+    args.agents = Path(args.agents).expanduser() if args.agents else None
     args.context_script = (args.workspace / args.context_script) if args.context_script else None
     if args.context_script and not args.context_script.is_file():
         log.warning("no context script at %s — runs get CLAUDE.md and the canon only", args.context_script)
@@ -784,15 +819,15 @@ def main(argv=None) -> int:
                      run.get("turns", "?"), run.get("cost_usd", "?"), run.get("duration_s", "?"))
             break                                          # one run, then look at every queue again
         if not took:
-            for ws_reg, w, store in session_queues(args):
+            for person, store in session_queues(args):
                 job = take(store.dir / "queue", me)
                 if not job:
                     continue
                 took = True
                 f, order = job
-                log.info("taking %s %s in %s (by %s)", order.get("type"), order["session"], w.id, order.get("requested_by", "?"))
+                log.info("taking %s %s for %s", order.get("type"), order["session"], person)
                 try:
-                    execute_session(f, order, ws_reg, w, store, args)
+                    execute_session(f, order, person, store, args)
                 except Exception as exc:                  # noqa: BLE001 — the loop survives one broken turn
                     log.exception("session order %s crashed in the runner itself", order["id"])
                     order.update(status="failed", finished=now(), exit=-1, result=f"runner error: {exc}")

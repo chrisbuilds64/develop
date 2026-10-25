@@ -11,10 +11,9 @@ The registry is one file beside `users.json`:
      "workspaces": [{"id": "pressroom", "application": "pressroom", "label": "PressRoom", "shared": true,
                      "members": ["chris", "akhil"], "root": "…/flow", "write_root": "…/flow", "mode": "live"}]}
 
-A workspace carries **components** — named paths, each its own or shared with other workspaces: `pipeline`
-(the tree; `root`/`write_root` are its older spelling and still read), `agents` (the agents one may choose
-here, see agents.py) and `sessions` (leases, transcripts and logs, see sessions.py). Pointing two workspaces'
-`agents` at one directory is how an agent takes what it learned from one into the other.
+A workspace carries **components** — named paths, each its own or shared with other workspaces: today only
+`pipeline` (the tree; `root`/`write_root` are its older spelling and still read). Agents and sessions left the
+workspace (ADR-020): they belong to the person, and a session carries its workspace as its place.
 
 Creating one copies a source (the application's template, or a workspace the person may see; documents as
 hard links, as in the demo sandbox), empties the queue and the journals, writes the entry, mounts at once.
@@ -33,7 +32,8 @@ from pathlib import Path
 NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{1,47}$")
 MODES = ("live", "replay")
 CLEARED = ("_runs", "_steps", "_audit")        # a copy starts without the source's orders, journals and audit
-COMPONENTS = ("pipeline", "agents", "sessions")
+COMPONENTS = ("pipeline",)
+RETIRED = ("agents", "sessions")                 # ADR-019 components, skipped when an older registry still names them
 
 
 class WorkspaceError(Exception):
@@ -87,35 +87,20 @@ class Workspaces:
         self.load()
 
     def component(self, w: Workspace, name: str) -> Component | None:
-        """A workspace's component: declared, else the stage default, else the built-in place. `pipeline` is the tree;
-        `sessions` falls back to `<registry dir>/sessions/<id>/` — server-local, never in a synced team folder."""
+        """A workspace's component: declared, else the stage default, else the built-in place (`pipeline` = the tree)."""
         if name not in COMPONENTS:
             raise WorkspaceError(f"'{name}' is not a component — one of: {', '.join(COMPONENTS)}")
         if name in w.components:
             return w.components[name]
-        if name == "pipeline":
-            return Component(path=w.root, write_path=w.write_root, shared=w.shared)
         if name in self.defaults:
             return self.defaults[name]
-        if name == "sessions":
-            return Component(path=self.path.parent / "sessions" / w.id)
-        return None
-
-    def agents(self, w: Workspace):
-        """The agents one may choose in this workspace (agents.Catalog; empty without an `agents` component)."""
-        from .agents import Catalog
-        c = self.component(w, "agents")
-        return Catalog.load(c.path if c else None)
-
-    def sessions(self, w: Workspace):
-        """The workspace's session store (sessions.Store), written where the component says writes go."""
-        from .sessions import Store
-        c = self.component(w, "sessions")
-        return Store(c.write_path or c.path)
+        return Component(path=w.root, write_path=w.write_root, shared=w.shared)
 
     def _components(self, raw: dict, where: str) -> dict[str, Component]:
         out = {}
         for name, c in (raw or {}).items():
+            if name in RETIRED:
+                continue
             if name not in COMPONENTS:
                 raise WorkspaceError(f"{where}: '{name}' is not a component — one of: {', '.join(COMPONENTS)}")
             if not isinstance(c, dict) or not c.get("path"):

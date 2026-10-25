@@ -60,7 +60,8 @@ def install(settings: Settings, env: Env, dav_url: str) -> dict[str, str]:
                                  claude=s.claude_bin, codex=s.claude_bin.parent / "codex", env_file=s.runner_env_file,
                                  pull=f"{s.shared / 'canon'},{s.shared / 'control'}", shared=s.shared,
                                  accounts=s.users_json.parent / "accounts",
-                                 notes=f" --notes-repo {d / 'notes'}" if env.notes_branch else ""),
+                                 notes=f" --notes-repo {d / 'notes'}" if env.notes_branch else "",
+                                 agents=s.shared / "control" / "shared-context" / "agents"),
     }
     for name, text in units.items():
         p = SYSTEMD / name

@@ -841,3 +841,14 @@ html[data-look="glass"] .form-card button, html[data-look="glass"] .btn-primary 
 .side button.who:hover, .side button.who.open { background: var(--ground-2); }
 .me-pop[hidden] { display: none; }
 @media (min-width: 901px) { body.rail-folded .side:not(:hover):not(:focus-within) .side-scroll { margin: 0 -10px; padding: 0 10px; } }
+.side .nav-agents.team { padding: 4px 10px 6px; }
+.member { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--hairline); }
+.member:first-of-type { border-top: none; }
+.member-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.member-tx .agent-rights { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.member-act { display: flex; gap: 8px; align-items: center; }
+.member-act form { margin: 0; }
+.hire-opts { margin-top: 6px; }
+.hire-opts input { font-size: 13px !important; padding: 6px 9px !important; }
+.form-card .member .agent-av { width: 44px; height: 44px; }
+.form-card .btn-quiet, .form-card button.btn-quiet { background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); font-weight: 500; font-size: 14px; padding: 8px 12px; text-decoration: none; }

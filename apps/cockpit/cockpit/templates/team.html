@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% macro av(a, size='') %}{% if a.avatar_path %}<img class="agent-av {{ size }}" src="/api/agents/{{ a.id }}/avatar" alt="">{% else %}<span class="agent-av {{ size }}">{{ a.initials }}</span>{% endif %}{% endmacro %}
+{% block main %}
+<div class="page-head">
+  <h1>{{ t('team.title') }}</h1>
+  <span class="stamp">{{ user.display }} · {{ stage|upper }}</span>
+</div>
+{% if ok %}<p class="notice">{{ ok }}</p>{% endif %}
+{% if err %}<p class="notice err">{{ err }}</p>{% endif %}
+
+<div class="form-card">
+  <h2>{{ t('team.members') }}</h2>
+  {% for a in members %}
+  <div class="member">
+    {{ av(a) }}
+    <div class="member-tx">
+      <b>{{ a.label }}</b> <span class="hint">{{ a.role }}</span>
+      <span class="agent-rights mono">{{ t('team.engine') }} {{ a.engine }}{% if a.model %} · {{ a.model }}{% endif %}{% if a.fallback_model %} → {{ a.fallback_model }}{% endif %}{% if a.skills %} · {{ a.skills|join(', ') }}{% endif %}</span>
+      <span class="agent-rights mono">{{ t('team.memory') }}: {{ a.notes_path }}</span>
+    </div>
+    <div class="member-act">
+      <a href="/team" data-agent-panel="{{ a.id }}" class="btn-quiet">Chat</a>
+      <form method="post" action="/team" onsubmit="return confirm('{{ t('team.dismiss') }}: {{ a.label }}?')">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="dismiss"><input type="hidden" name="agent" value="{{ a.id }}">
+        <button type="submit" class="btn-quiet">{{ t('team.dismiss') }}</button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <p class="hint">{{ t('team.none') }}</p>
+  {% endfor %}
+  {% for name, why in problems.items() %}<p class="notice err">{{ name }}: {{ why }}</p>{% endfor %}
+</div>
+
+<div class="form-card" style="margin-top:16px">
+  <h2>{{ t('team.profiles') }}</h2>
+  {% if templates_missing %}<p class="hint">{{ t('team.no_templates') }}</p>{% endif %}
+  {% for tpl in hireable %}
+  <form method="post" action="/team" class="member">
+    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="hire"><input type="hidden" name="template" value="{{ tpl.id }}">
+    {{ av(tpl) }}
+    <div class="member-tx">
+      <b>{{ tpl.label }}</b> <span class="hint">{{ tpl.role }}</span>
+      <span class="agent-rights mono">{{ tpl.engine }}{% if tpl.model %} · {{ tpl.model }}{% endif %}{% if tpl.skills %} · {{ tpl.skills|join(', ') }}{% endif %}</span>
+      <div class="row hire-opts">
+        <input name="id" placeholder="{{ t('team.id') }}: {{ tpl.id }}" maxlength="32">
+        <input name="model" placeholder="{{ t('team.model_opt') }}" maxlength="64">
+      </div>
+    </div>
+    <div class="member-act"><button type="submit">{{ t('team.hire') }}</button></div>
+  </form>
+  {% else %}
+  {% if not templates_missing %}<p class="hint">{{ t('team.no_profiles') }}</p>{% endif %}
+  {% endfor %}
+</div>
+
+<div class="form-card" style="margin-top:16px">
+  <h2>{{ t('team.logs') }}</h2>
+  <p class="hint">{{ t('team.logs_hint') }} {{ t('team.logs_now') }}: <span class="mono">{{ logs_now }}</span></p>
+  <form method="post" action="/team" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="what" value="logs_dir">
+    <input name="logs_dir" value="{{ logs_dir }}" placeholder="/home/runner/envs/{stage}/notes/context/session-logs/cockpit" style="flex:1">
+    <button type="submit">{{ t('team.save') }}</button>
+  </form>
+</div>
+
+{% if active or closed %}
+<div class="form-card" style="margin-top:16px">
+  <h2>{{ t('team.sessions') }}</h2>
+  <div class="kv">
+    {% for s in active + closed %}
+    <span class="k mono">{{ s.started[:16].replace('T', ' ') }} · {{ s.agent }}</span>
+    <span><a href="/sessions/{{ s.id }}">{{ s.topic }}</a>
+      {% if s.status != 'closed' %}<span class="hint"> — {{ t('ag.running') if s.status == 'active' else t('ag.ending') }}</span>{% elif not s.log %}<span class="hint"> — {{ t('ag.no_log') }}</span>{% endif %}
+      {% if s.place.workspace %}<span class="hint"> · {{ s.place.workspace }}{% if s.place.item %} · {{ s.place.item }}{% endif %}</span>{% endif %}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

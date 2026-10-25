@@ -12,6 +12,7 @@ default_role = "guest"
 audit = "cockpit-audit.jsonl"
 users = "{{users_json}}"
 accounts = "{{accounts}}"      # one directory per person, shared by all stages: settings and the secrets they bring
+agents = "{{agents}}"                # the organisation's agent templates (ADR-020): read from the shared control, hired into accounts
 workspaces = "workspaces.json"  # this stage's applications and workspaces, served under /w/<id>
 secret = "{{cookie_secret}}"
 people = "pipeline:people.json"
