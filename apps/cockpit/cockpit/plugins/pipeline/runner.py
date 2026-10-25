@@ -270,6 +270,8 @@ def refuse(f: Path, run: dict, rules: dict, why: str, env_for_tools: dict) -> No
             f"account — `cockpit account set-secret <you> CLAUDE_CODE_OAUTH_TOKEN` — and order the run again.")
     run.update(status="failed", finished=now(), exit=78, result=text, billing="none", stage=os.environ.get("PRESSROOM_ENV", "local"))
     f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if run.get("background"):                                # a helper beside the people (a follow-up) leaves no thread entry; the order says why
+        return
     subprocess.run([sys.executable, str(HERE / "review_append.py"), run["container"], "--by", rules.get("agent", "agent"),
                     "--title", f"Run /{run['skill']}: not started — no billing on your account", "--status", "open",
                     "--for", str(run.get("requested_by", ""))], input=text, capture_output=True, text=True, env=env_for_tools)
@@ -315,7 +317,10 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
     run.update(spent)
     f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    # The record in the container: one review entry, info, in the runner's own words.
+    # The record in the container: one review entry, info, in the runner's own words — not for a helper beside the
+    # people (a follow-up while somebody answers): it leaves its file, and one entry per chapter would bury the thread.
+    if run.get("background"):
+        return
     title = f"Run /{run['skill']}: {'done' if code == 0 else 'failed'}"
     body = (result.strip() or "(no output)")
     text = (body[:1800] + (" …" if len(body) > 1800 else "")) + f"\n\n*Run {run['id']}, transcript in `{run['log']}`.*"

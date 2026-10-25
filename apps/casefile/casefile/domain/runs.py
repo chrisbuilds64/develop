@@ -27,8 +27,10 @@ def may_order(config: DomainConfig, skill: str, person: Person) -> str | None:
     return None
 
 
-def order(store: FsStore, config: DomainConfig, case_id: str, stage: str, skill: str, by: str, note: str = "", request_id: str | None = None) -> str:
-    """Write the order. With a request id, a second call with the same id returns the first order's id."""
+def order(store: FsStore, config: DomainConfig, case_id: str, stage: str, skill: str, by: str, note: str = "", request_id: str | None = None,
+          background: bool = False) -> str:
+    """Write the order. With a request id, a second call with the same id returns the first order's id. A background
+    order works beside the people and is never anybody's move (a follow-up while somebody answers)."""
     if request_id:
         for name in store.runs():
             doc = store.read_json(f"_runs/{name}")
@@ -41,6 +43,8 @@ def order(store: FsStore, config: DomainConfig, case_id: str, stage: str, skill:
         run["note"] = note.strip()
     if request_id:
         run["request_id"] = request_id
+    if background:
+        run["background"] = True
     n = 0
     while store.exists(f"_runs/{run['id']}.json"):           # two orders in the same second
         n += 1

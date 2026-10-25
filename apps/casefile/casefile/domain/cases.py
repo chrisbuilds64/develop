@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import re
 
@@ -34,8 +35,9 @@ def slots_for(config: DomainConfig, label: str, files: list[str], sizes: dict[st
     """The matrix's slots first, filled or empty; then every other file the folder holds — the case shows what is there,
     the matrix only lends words, shapes and due stages to what it knows."""
     present: dict[str, list[FileVersion]] = {}
+    collected = [d.collects for d in config.deliverables(label) if d.collects]
     for f in files:
-        if f.startswith("."):
+        if f.startswith(".") or any(fnmatch.fnmatch(split_version(f)[0], g) for g in collected):
             continue
         base, v = split_version(f)
         present.setdefault(base, []).append(FileVersion(name=f, version=v, size=(sizes or {}).get(f, 0)))
@@ -48,6 +50,38 @@ def slots_for(config: DomainConfig, label: str, files: list[str], sizes: dict[st
         if base in known or base in HIDDEN:
             continue
         out.append(Slot(file=base, shape=shape_of(base), required=False, due_stage="", by="human", versions=sorted(versions, key=lambda x: x.version)))
+    return out
+
+
+DATA_SHAPES = ("interview", "data")
+
+
+def newest_versions(files: list[str]) -> dict[str, str]:
+    """base name → the file holding its newest version."""
+    best: dict[str, tuple[int, str]] = {}
+    for f in files:
+        base, v = split_version(f)
+        if base not in best or v > best[base][0]:
+            best[base] = (v, f)
+    return {b: f for b, (_, f) in best.items()}
+
+
+def load_data(store: FsStore, config: DomainConfig, case_id: str, label: str, files: list[str]) -> dict:
+    """The small JSON deliverables of a case, parsed: the declared ones of shape interview/data and the files they collect.
+    A file that does not parse is left out — a half-written helper file must not break the case."""
+    newest = newest_versions(files)
+    out: dict = {}
+    for d in config.deliverables(label):
+        names = []
+        if d.shape in DATA_SHAPES and d.file in newest:
+            names.append(d.file)
+        if d.collects:
+            names += [b for b in newest if fnmatch.fnmatch(b, d.collects)]
+        for base in names:
+            try:
+                out[base] = json.loads(store.case_text(case_id, newest[base]))
+            except (OSError, ValueError):
+                continue
     return out
 
 
@@ -84,7 +118,7 @@ def load(store: FsStore, config: DomainConfig, case_id: str) -> Case:
     if not since:
         since = entries[-1].date if entries else str(meta.get("created") or "")
     return Case(id=case_id, stage=stage, meta=meta, files=files, slots=slots_for(config, label, files, sizes),
-                entries=entries, runs=runs, since=since)
+                entries=entries, runs=runs, since=since, data=load_data(store, config, case_id, label, files))
 
 
 def load_all(store: FsStore, config: DomainConfig) -> list[Case]:

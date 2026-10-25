@@ -25,7 +25,16 @@ def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
     """Deliverables the action needs that are not in the case. Tokens: 'primary', 'required', 'shape:<prefix>', a file name, or alternatives 'a.pdf|a.md'."""
     out: list[str] = []
     for req in action.requires:
-        if req == "primary":
+        if req == "answered":                                  # a conversation: at least one respondent said they are done
+            from .interview import anyone_done
+            if not anyone_done(config, case):
+                out.append("answered")
+        elif req.startswith("decided:"):                       # every line of a draft decided: 'decided:<draft>:<decisions>'
+            from .interview import undecided
+            _, draft, decisions = (req.split(":") + ["", ""])[:3]
+            if undecided(case, draft, decisions):
+                out.append(req)
+        elif req == "primary":
             p = config.primary(case.label)
             if p and not (case.slot(p) and case.slot(p).present):
                 out.append(p)
@@ -103,6 +112,13 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
 
     # 4. by stage
     stage = config.stage(case.stage)
+    if stage and stage.interview:
+        # a conversation: every respondent who is not done has a move of their own, beside the stage's own actions
+        from .interview import progress
+        for pid, p in progress(config, case).items():
+            if not p["done"]:
+                out.append(Turn(actor=pid, action="interview", label=_label(config, "interview" if p["answered"] == 0 else "interview_continue", lang),
+                                reason=config.word("stages", case.stage, lang, case.stage), blocked_by=[], since=case.since))
     if stage and stage.turn and stage.turn != "claude":
         for action in stage.actions:
             missing = missing_for(config, case, action)

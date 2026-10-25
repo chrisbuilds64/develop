@@ -12,7 +12,7 @@ import { ago, dateWords, type words } from "../words";
 
 /** The documents on the desk, newest version each, the primary first — the order the reader walks. */
 export function docsOf(v: CaseView): Doc[] {
-  const present = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file));
+  const present = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
   const ordered = v.primary ? [...present.filter((s) => s.file === v.primary), ...present.filter((s) => s.file !== v.primary)] : present;
   return ordered.map((s) => ({ word: s.word, shape: s.shape, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) }));
 }
@@ -74,8 +74,10 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   };
   const framesAreTheMove = primaryTurn?.action === "deliver";
   const canPress = primaryTurn && blocked.length === 0 && (!needsAmount || amount.trim()) && (!needsDate || date) && (!needsNote || note.trim()) && !busy;
-  const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file));
-  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))))));
+  const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
+  const talkSlot = v.slots.find((s) => s.shape === "interview");
+  const outcomeReady = v.slots.some((s) => s.shape === "data" && s.present);
+  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))))));
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const docs = docsOf(v);
   const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((v) => v.name === reading));
@@ -111,6 +113,18 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           ) : (<>
           <p className="kicker">{w.onDesk}</p>
           <div className="desk-grid">
+            {talkSlot && v.station !== "prepare" && (
+              <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "interview") ? " mine" : ""}`} data-help="cf.talk-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/gespraech`)}>
+                <span className="head"><span className="name">{w.talkOpen}</span></span>
+                <span className="hint">{w.talkOpenHint}</span>
+              </button>
+            )}
+            {talkSlot && outcomeReady && (
+              <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "approve_canon") ? " mine" : ""}`} data-help="cf.outcome-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>
+                <span className="head"><span className="name">{w.outcomeOpen}</span></span>
+                <span className="hint">{w.outcomeOpenHint}</span>
+              </button>
+            )}
             {primary?.present && (
               <button type="button" className="file wide stack" onClick={() => setReading(primary.versions[primary.versions.length - 1].name)}>
                 <span className="head"><span className="name">{primary.word}</span><span className="meta">{w.version(Math.max(1, primary.versions[primary.versions.length - 1].version))}{primary.by_word ? ` · ${primary.by_word}` : ""}</span></span>
@@ -127,7 +141,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
                 </button>
               );
             })}
-            {desk.length === 0 && !primary?.present && <span className="empty">—</span>}
+            {desk.length === 0 && !primary?.present && !talkSlot && <span className="empty">—</span>}
           </div>
 
           {missing.length > 0 && (
@@ -177,7 +191,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             {blocked.length === 0 && needsAmount && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" autoFocus /></label>}
             {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
-            <button type="button" className="btn" disabled={!canPress} onClick={() => step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>
+            <button type="button" className="btn" disabled={!canPress} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>
           </>
         ) : main ? (
           <span className="says">{main.actor === "claude" ? w.isWorking(v.agent) : `${w.waitingFor(roleWord(main.actor))}`}</span>

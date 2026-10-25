@@ -12,14 +12,18 @@ import { Stacked } from "./screens/Stacked";
 import { Rules } from "./screens/Rules";
 import { Signals } from "./screens/Signals";
 import { DocWindow } from "./screens/DocWindow";
+import { InterviewScreen } from "./screens/Interview";
+import { OutcomeScreen } from "./screens/Outcome";
 import { words } from "./words";
 
-export type Route = { name: "home" } | { name: "case"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
+export type Route = { name: "home" } | { name: "case"; id: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
   const path = full.startsWith(BASE) ? full.slice(BASE.length) || "/" : full;
   const d = path.match(/^\/doc\/([^/]+)\/([^/]+)/);
   if (d) return { name: "doc", id: decodeURIComponent(d[1]), file: decodeURIComponent(d[2]) };
+  const t = path.match(/^\/case\/([^/]+)\/(gespraech|ergebnis)/);
+  if (t) return { name: t[2] === "gespraech" ? "talk" : "outcome", id: decodeURIComponent(t[1]) };
   const m = path.match(/^\/case\/([^/]+)/);
   if (m) return { name: "case", id: decodeURIComponent(m[1]) };
   if (path.startsWith("/board") || path.startsWith("/workshop")) return { name: "board" };
@@ -68,7 +72,7 @@ export function App() {
   // What is open right now, for whoever stands beside the person (the cockpit's side panel, ADR-020): the case on
   // the screen — chosen in the URL or, on the start page, the first one of the group — and the document if one is open.
   const wide = !window.matchMedia("(max-width: 900px)").matches;
-  const focusId = route.name === "case" || route.name === "doc" ? route.id
+  const focusId = route.name === "case" || route.name === "doc" || route.name === "talk" || route.name === "outcome" ? route.id
     : (route.name === "home" || route.name === "group") && wide
       ? (route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id)
       : undefined;
@@ -105,7 +109,11 @@ export function App() {
       <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
             onSignOut={async () => { await api.signOut(); qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
             theme={theme} onTheme={setTheme} onLang={onLang} />
-      {route.name === "board" ? (
+      {route.name === "talk" ? (
+        <InterviewScreen id={route.id} config={config.data} go={go} w={w} />
+      ) : route.name === "outcome" ? (
+        <OutcomeScreen id={route.id} config={config.data} go={go} w={w} />
+      ) : route.name === "board" ? (
         <Board config={config.data} go={go} w={w} />
       ) : route.name === "list" ? (
         <Stacked config={config.data} go={go} w={w} />

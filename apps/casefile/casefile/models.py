@@ -24,6 +24,7 @@ class Action(BaseModel):
     payload: list[str] = Field(default_factory=list)    # payload fields the surface must send, e.g. ["amount", "date"]
     actor: str | None = None                     # who may do it; None = the stage's turn
     handover: dict | None = None                 # demo: after the step, files go to a partner world (world, match, files, action, by, note)
+    compile: str | None = None                   # after the move, the core writes a document from the case's data: "canon" (decisions over a draft → canon.md)
 
 
 class AutoRun(BaseModel):
@@ -40,14 +41,16 @@ class Stage(BaseModel):
     actions: list[Action] = Field(default_factory=list)
     group: str = "other"                         # where the surface lists it: you | claude | others | date | planned | out | ideas | archive
     auto: list[AutoRun] = Field(default_factory=list)
+    interview: str | None = None                 # the conversation file this stage collects ("gespraech.json"): every respondent who is not done has a move of their own
 
 
 class Deliverable(BaseModel):
     file: str                                    # "substack.md", "thumbnail-16x9.png"
     stage: str = ""                              # where it is due
     by: str = ""                                 # who makes it: a skill, a role, "human"
-    shape: str = "text"                          # text | image-16x9 | image-4x5 | video-9x16 | pdf | money
+    shape: str = "text"                          # text | image-16x9 | image-4x5 | video-9x16 | pdf | money | interview | data
     required: bool = False
+    collects: str | None = None                  # a glob of helper files that belong to this deliverable and are not slots of their own ("nachfragen-*.json")
 
 
 class Person(BaseModel):
@@ -121,6 +124,7 @@ class Run(BaseModel):
     model: str | None = None
     turns: int | None = None
     duration_s: float | None = None
+    background: bool = False                     # a helper that works beside the people (a follow-up while someone answers): never anybody's move
 
 
 class Case(BaseModel):
@@ -133,6 +137,7 @@ class Case(BaseModel):
     entries: list[Entry] = Field(default_factory=list)
     runs: list[Run] = Field(default_factory=list)
     since: str = ""                              # ISO time the case entered its stage, as far as the thread knows
+    data: dict = Field(default_factory=dict)     # small JSON deliverables (shape interview | data), newest version each, read with the case: the turn rule may look inside
 
     @property
     def label(self) -> str:
@@ -140,7 +145,9 @@ class Case(BaseModel):
 
     @property
     def last_run(self) -> Run | None:
-        return self.runs[-1] if self.runs else None
+        """The last run that can be somebody's move; background helpers never are."""
+        fg = [r for r in self.runs if not r.background]
+        return fg[-1] if fg else None
 
     def slot(self, file: str) -> Slot | None:
         return next((s for s in self.slots if s.file == file), None)

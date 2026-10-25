@@ -173,6 +173,162 @@
         "de": "Schaltet zwischen heller und dunkler Darstellung um.",
         "en": "Switches between the light and the dark look."
       }
+    },
+    {
+      "key": "cf.new-case",
+      "since": "0.18.0",
+      "title": {
+        "de": "Neue Erhebung",
+        "en": "New elicitation"
+      },
+      "text": {
+        "de": "Legt eine neue Erhebung an: ein Name genügt. Der Fragenkanon kommt aus der Konfiguration des Workspace; die Befragten bestimmst du in der Akte.",
+        "en": "Starts a new elicitation: a name is enough. The question pack comes from the workspace's configuration; you name the respondents in the case."
+      }
+    },
+    {
+      "key": "cf.talk-tile",
+      "since": "0.18.0",
+      "title": {
+        "de": "Das Gespräch",
+        "en": "The conversation"
+      },
+      "text": {
+        "de": "Öffnet das Gespräch: eine Frage nach der anderen, in deinem Tempo. Blau umrandet, wenn du noch Fragen offen hast.",
+        "en": "Opens the conversation: one question after another, at your pace. Outlined in blue while questions are open for you."
+      }
+    },
+    {
+      "key": "cf.outcome-tile",
+      "since": "0.18.0",
+      "title": {
+        "de": "Das Ergebnis",
+        "en": "The outcome"
+      },
+      "text": {
+        "de": "Befund und Kanon-Entwurf. Erscheint, sobald die KI ausgewertet hat.",
+        "en": "Findings and canon draft. Appears once the AI has evaluated."
+      }
+    },
+    {
+      "key": "cf.talk-anchor",
+      "since": "0.18.0",
+      "title": {
+        "de": "Ein echter Fall",
+        "en": "One real case"
+      },
+      "text": {
+        "de": "Bevor die Fragen kommen, nennst du das letzte fertige Stück. Das ganze Gespräch läuft daran entlang: echte Fälle statt Wünsche.",
+        "en": "Before the questions, you name the last finished piece. The whole conversation runs along it: real cases instead of wishes."
+      }
+    },
+    {
+      "key": "cf.talk-map",
+      "since": "0.18.0",
+      "title": {
+        "de": "Kapitel",
+        "en": "Chapters"
+      },
+      "text": {
+        "de": "Sieben Kapitel, ein Punkt je Frage. Gefüllt: so ist es heute. Ring: so sollte es sein. Schraffiert: weiß ich nicht genau. Ein blauer Punkt heißt: die KI hat nachgefragt. Jede Frage lässt sich direkt anspringen.",
+        "en": "Seven chapters, a dot per question. Filled: how it is. Ring: how it should be. Hatched: not sure. A blue dot means the AI followed up. Jump to any question directly."
+      }
+    },
+    {
+      "key": "cf.talk-answer",
+      "since": "0.18.0",
+      "title": {
+        "de": "Deine Antwort",
+        "en": "Your answer"
+      },
+      "text": {
+        "de": "In deinen Worten, am besten an einem echten Fall. Wörter wie „eigentlich“ oder „normalerweise“ lösen sofort eine Nachfrage aus. Cmd/Strg+Enter geht weiter.",
+        "en": "In your own words, ideally along a real case. Words like “usually” prompt a follow-up at once. Cmd/Ctrl+Enter moves on."
+      }
+    },
+    {
+      "key": "cf.talk-markers",
+      "since": "0.18.0",
+      "title": {
+        "de": "Wie steht das?",
+        "en": "How does this stand?"
+      },
+      "text": {
+        "de": "Jede Antwort ordnest du selbst ein: so ist es heute, so sollte es sein, oder weiß ich nicht genau. Nichts ist vorgewählt; ohne Einordnung ist die Antwort nicht fertig. „Weiß ich nicht“ ist eine vollwertige Antwort.",
+        "en": "You place every answer yourself: how it is, how it should be, or not sure. Nothing is preselected; without it the answer is not finished. “Not sure” is a full answer."
+      }
+    },
+    {
+      "key": "cf.talk-followups",
+      "since": "0.18.0",
+      "title": {
+        "de": "Die KI hakt nach",
+        "en": "The AI follows up"
+      },
+      "text": {
+        "de": "Wenn du ein Kapitel verlässt, liest die KI deine Antworten im Hintergrund und stellt hier bis zu drei Nachfragen. Du musst nicht warten.",
+        "en": "When you leave a chapter, the AI reads your answers in the background and asks up to three follow-ups here. You do not have to wait."
+      }
+    },
+    {
+      "key": "cf.talk-finish",
+      "since": "0.18.0",
+      "title": {
+        "de": "Fertig",
+        "en": "Done"
+      },
+      "text": {
+        "de": "„Ich bin fertig“ heißt: deine Antworten dürfen ausgewertet werden. Ändern kannst du sie bis zur Auswertung.",
+        "en": "“I am done” means your answers may be evaluated. You can change them until the evaluation starts."
+      }
+    },
+    {
+      "key": "cf.talk-canon",
+      "since": "0.18.0",
+      "title": {
+        "de": "Dein Kanon entsteht",
+        "en": "Your canon is taking shape"
+      },
+      "text": {
+        "de": "Jedes Kapitel füllt ein Fach des Kanons: erst mit deinen Worten, nach der Nachfrage mit Entwürfen der KI. Spannungen zwischen zwei Antworten stehen oben, benannt, nicht aufgelöst.",
+        "en": "Every chapter fills a compartment of the canon: first with your words, after the follow-up with drafts by the AI. Tensions between two answers stand at the top, named, not resolved."
+      }
+    },
+    {
+      "key": "cf.outcome-findings",
+      "since": "0.18.0",
+      "title": {
+        "de": "Der Befund",
+        "en": "The findings"
+      },
+      "text": {
+        "de": "Euer Betrieb auf einer Seite: der Weg mit Toren und fehlenden Toren, wer entscheidet, wo Gesagtes und Getanes auseinandergehen, wo ihr es verschieden seht. Jede Aussage mit wörtlichem Zitat. Keine Punktzahl, keine Ampel.",
+        "en": "Your operation on one page: the way with gates and missing gates, who decides, where said and done part, where you see it differently. Every statement with a verbatim quote. No score, no traffic light."
+      }
+    },
+    {
+      "key": "cf.outcome-draft",
+      "since": "0.18.0",
+      "title": {
+        "de": "Der Kanon-Entwurf",
+        "en": "The canon draft"
+      },
+      "text": {
+        "de": "Jede Zeile nimmst du an, änderst sie oder verwirfst sie. Erst was ein Mensch angenommen hat, wird Kanon. Die Quelle zeigt, aus wessen Antwort die Zeile stammt.",
+        "en": "You accept, change or reject every line. Only what a person accepted becomes canon. The source shows whose answer the line comes from."
+      }
+    },
+    {
+      "key": "cf.outcome-approve",
+      "since": "0.18.0",
+      "title": {
+        "de": "Kanon freigeben",
+        "en": "Approve the canon"
+      },
+      "text": {
+        "de": "Aktiv, sobald jede Zeile entschieden ist. Die Freigabe schreibt den Kanon v0.1 als Datei in die Akte, mit Quellen. Nach vier Wochen Betrieb folgt der zweite Durchgang.",
+        "en": "Active once every line is decided. Approval writes canon v0.1 as a file into the case, with sources. After four weeks of real work the second pass follows."
+      }
     }
   ]
 }

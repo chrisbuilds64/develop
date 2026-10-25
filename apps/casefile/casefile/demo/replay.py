@@ -79,7 +79,9 @@ def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path,
         return True
     agent = config.agent
     files_written = []
+    person = next((part.split("=", 1)[1] for part in str(doc.get("note") or "").split() if part.startswith("person=")), "")
     for name, src in (reply.get("files") or {}).items():
+        name = name.replace("{person}", person or "du")
         content = (replies_dir / src).read_bytes() if not str(src).startswith("inline:") else str(src)[7:].encode("utf-8")
         from ..domain import assets
         try:
@@ -97,7 +99,8 @@ def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path,
     if e.get("for"):
         entry["for"] = e["for"]
     with store.lock(case_id):
-        _append_entry(store, config, case_id, stage, entry)
+        if not (doc.get("background") or reply.get("silent")):        # a helper beside the people leaves its file, not a thread entry
+            _append_entry(store, config, case_id, stage, entry)
         to = reply.get("to")
         if to and to in store.stages() and to != stage:
             try:

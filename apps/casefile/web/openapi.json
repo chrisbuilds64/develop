@@ -247,6 +247,43 @@
             }
           }
         }
+      },
+      "post": {
+        "summary": "Post Case",
+        "description": "A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the meta carries).",
+        "operationId": "post_case_api_cases_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCaseIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewCaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/cases/{case_id}": {
@@ -690,10 +727,411 @@
           }
         }
       }
+    },
+    "/api/cases/{case_id}/interview": {
+      "get": {
+        "summary": "Get Interview",
+        "operationId": "get_interview_api_cases__case_id__interview_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/interview/answer": {
+      "post": {
+        "summary": "Post Answer",
+        "operationId": "post_answer_api_cases__case_id__interview_answer_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/interview/anchor": {
+      "post": {
+        "summary": "Post Anchor",
+        "operationId": "post_anchor_api_cases__case_id__interview_anchor_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnchorIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/interview/followup": {
+      "post": {
+        "summary": "Post Followup",
+        "operationId": "post_followup_api_cases__case_id__interview_followup_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowupIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/interview/chapter": {
+      "post": {
+        "summary": "Post Chapter",
+        "operationId": "post_chapter_api_cases__case_id__interview_chapter_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChapterIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/interview/finish": {
+      "post": {
+        "summary": "Post Finish",
+        "operationId": "post_finish_api_cases__case_id__interview_finish_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/outcome": {
+      "get": {
+        "summary": "Get Outcome",
+        "operationId": "get_outcome_api_cases__case_id__outcome_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutcomeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/outcome/decide": {
+      "post": {
+        "summary": "Post Decide",
+        "operationId": "post_decide_api_cases__case_id__outcome_decide_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AnchorIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "AnchorIn"
+      },
+      "AnswerIn": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "marker": {
+            "type": "string",
+            "title": "Marker",
+            "default": ""
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "step_id"
+        ],
+        "title": "AnswerIn"
+      },
       "AssetOut": {
         "properties": {
           "name": {
@@ -1017,6 +1455,24 @@
         ],
         "title": "CaseView"
       },
+      "ChapterIn": {
+        "properties": {
+          "block": {
+            "type": "string",
+            "title": "Block"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "block",
+          "step_id"
+        ],
+        "title": "ChapterIn"
+      },
       "ConfigView": {
         "properties": {
           "product": {
@@ -1070,6 +1526,34 @@
           "words"
         ],
         "title": "ConfigView"
+      },
+      "DecideIn": {
+        "properties": {
+          "line": {
+            "type": "string",
+            "title": "Line"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "verdict",
+          "step_id"
+        ],
+        "title": "DecideIn"
       },
       "DemoSessionIn": {
         "properties": {
@@ -1266,6 +1750,42 @@
         ],
         "title": "EntryIn"
       },
+      "FinishIn": {
+        "properties": {
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "step_id"
+        ],
+        "title": "FinishIn"
+      },
+      "FollowupIn": {
+        "properties": {
+          "followup": {
+            "type": "string",
+            "title": "Followup"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "followup",
+          "step_id"
+        ],
+        "title": "FollowupIn"
+      },
       "GroupOut": {
         "properties": {
           "key": {
@@ -1322,6 +1842,79 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InterviewOut": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "pack": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Pack"
+          },
+          "me": {
+            "type": "string",
+            "title": "Me"
+          },
+          "can_answer": {
+            "type": "boolean",
+            "title": "Can Answer"
+          },
+          "anchor": {
+            "type": "string",
+            "title": "Anchor",
+            "default": ""
+          },
+          "answers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Answers"
+          },
+          "followup_answers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Followup Answers"
+          },
+          "helper": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Helper"
+          },
+          "helper_running": {
+            "type": "boolean",
+            "title": "Helper Running",
+            "default": false
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done",
+            "default": false
+          },
+          "respondents": {
+            "items": {
+              "$ref": "#/components/schemas/RespondentOut"
+            },
+            "type": "array",
+            "title": "Respondents",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "case",
+          "title",
+          "pack",
+          "me",
+          "can_answer"
+        ],
+        "title": "InterviewOut",
+        "description": "What one respondent sees of a conversation: the pack, their own answers and follow-ups, and how far everyone is.\nNobody sees another person's answers here; that is the outcome's business."
       },
       "LangIn": {
         "properties": {
@@ -1438,6 +2031,142 @@
         ],
         "title": "MeOut"
       },
+      "NewCaseIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "step_id"
+        ],
+        "title": "NewCaseIn"
+      },
+      "NewCaseOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "stage"
+        ],
+        "title": "NewCaseOut"
+      },
+      "OutcomeOut": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "stage_word": {
+            "type": "string",
+            "title": "Stage Word"
+          },
+          "blocks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Blocks",
+            "default": []
+          },
+          "findings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Findings"
+          },
+          "lines": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Lines",
+            "default": []
+          },
+          "can_decide": {
+            "type": "boolean",
+            "title": "Can Decide",
+            "default": false
+          },
+          "open_lines": {
+            "type": "integer",
+            "title": "Open Lines",
+            "default": 0
+          },
+          "canon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canon"
+          },
+          "canon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canon Url"
+          },
+          "running": {
+            "type": "boolean",
+            "title": "Running",
+            "default": false
+          },
+          "people": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "People"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case",
+          "title",
+          "stage_word"
+        ],
+        "title": "OutcomeOut",
+        "description": "The outcome: the findings, the draft with each line's decision, and the compiled canon when there is one."
+      },
       "PersonView": {
         "properties": {
           "id": {
@@ -1468,6 +2197,44 @@
           "roles"
         ],
         "title": "PersonView"
+      },
+      "RespondentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "answered": {
+            "type": "integer",
+            "title": "Answered"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "me": {
+            "type": "boolean",
+            "title": "Me",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "answered",
+          "total",
+          "done"
+        ],
+        "title": "RespondentOut"
       },
       "RuleAction": {
         "properties": {
@@ -1869,6 +2636,11 @@
               }
             ],
             "title": "Duration S"
+          },
+          "background": {
+            "type": "boolean",
+            "title": "Background",
+            "default": false
           }
         },
         "type": "object",

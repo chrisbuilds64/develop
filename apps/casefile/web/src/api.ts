@@ -71,6 +71,50 @@ export const api = {
   },
 };
 
+// A conversation (Gatehouse): the pack, my answers, the helper's file for me, how far everyone is.
+export type Question = { id: string; text: string; why: string };
+export type Block = { id: string; title: string; canon: string; lead: string; questions: Question[] };
+export type Trigger = { cue: string; ask: string; match: string[] };
+export type Pack = { id: string; name: string; version: string; anchor: { ask?: string; placeholder?: string; why?: string }; blocks: Block[]; triggers: Trigger[] };
+export type Answer = { text: string; marker: "is" | "should" | "open"; at?: string };
+export type Helper = {
+  followups?: { id: string; question: string; ask: string }[];
+  tensions?: { id: string; questions: string[]; text: string }[];
+  drafts?: { block: string; text: string; marker?: string; source?: string }[];
+};
+export type Interview = {
+  case: string; title: string; pack: Pack; me: string; can_answer: boolean; anchor: string;
+  answers: Record<string, Answer>; followup_answers: Record<string, { text: string }>; helper: Helper; helper_running: boolean; done: boolean;
+  respondents: { id: string; name: string; answered: number; total: number; done: boolean; me: boolean }[];
+};
+export type Source = { person: string; question: string; quote: string };
+export type Line = { id: string; block: string; text: string; marker?: string; sources?: Source[]; decision: { verdict?: "accept" | "edit" | "reject"; text?: string; by?: string; at?: string } };
+export type Findings = {
+  summary?: string;
+  path?: { step: string; gate?: string | null; missing_gate?: boolean; note?: string; source?: Source }[];
+  roles?: { name: string; decides: string; single_point?: boolean; source?: Source }[];
+  tensions?: { title: string; said: Source; done: Source }[];
+  divergences?: { topic: string; views: Source[] }[];
+  limits?: string;
+};
+export type Outcome = {
+  case: string; title: string; stage_word: string; blocks: { id: string; title: string; canon: string }[]; findings: Findings; lines: Line[];
+  can_decide: boolean; open_lines: number; canon: string | null; canon_url: string | null; running: boolean; people: Record<string, string>;
+};
+
+const cid = (id: string) => encodeURIComponent(id);
+export const talk = {
+  get: (id: string) => call<Interview>("GET", `/api/cases/${cid(id)}/interview`),
+  answer: (id: string, question: string, text: string, marker: string, step_id: string) => call<{ ok: boolean; answer: Answer }>("POST", `/api/cases/${cid(id)}/interview/answer`, { question, text, marker, step_id }),
+  anchor: (id: string, text: string) => call<{ ok: boolean; anchor: string }>("POST", `/api/cases/${cid(id)}/interview/anchor`, { text }),
+  followup: (id: string, followup: string, text: string, step_id: string) => call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/interview/followup`, { followup, text, step_id }),
+  chapter: (id: string, block: string, step_id: string) => call<{ ok: boolean; run: string | null }>("POST", `/api/cases/${cid(id)}/interview/chapter`, { block, step_id }),
+  finish: (id: string, step_id: string) => call<{ ok: boolean; first: boolean }>("POST", `/api/cases/${cid(id)}/interview/finish`, { step_id }),
+  outcome: (id: string) => call<Outcome>("GET", `/api/cases/${cid(id)}/outcome`),
+  decide: (id: string, line: string, verdict: string, text: string, step_id: string) => call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/outcome/decide`, { line, verdict, text, step_id }),
+  create: (title: string, step_id: string) => call<{ id: string; stage: string }>("POST", "/api/cases", { title, step_id }),
+};
+
 export const sample = (id: string, slot: string, step_id: string) =>
   call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/samples`, { slot, step_id });
 

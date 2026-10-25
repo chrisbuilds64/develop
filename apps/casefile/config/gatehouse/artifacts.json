@@ -1,0 +1,21 @@
+{
+  "$comment": "What an elicitation collects. gespraech.json is the conversation (written only by the core), nachfragen-<person>.json the helper's follow-ups per respondent, befund.json and kanon-entwurf.json the helper's evaluation, entscheide.json the decider's verdict per line, canon.md the compiled canon v0.1 (a new version per approval).",
+  "common": [
+    {"file": "meta.json", "stage": "10-vorbereitung", "by": "human", "shape": "text"},
+    {"file": "review.md", "stage": "10-vorbereitung", "by": "human", "shape": "text"}
+  ],
+  "formats": {
+    "ERH": {
+      "primary": "canon.md",
+      "artifacts": [
+        {"file": "gespraech.json", "stage": "20-gespraech", "by": "role:respondent", "shape": "interview", "collects": "nachfragen-*.json"},
+        {"file": "befund.json", "stage": "30-klaerung", "by": "gatehouse-auswerten", "shape": "data"},
+        {"file": "befund.md", "stage": "30-klaerung", "by": "gatehouse-auswerten", "shape": "text"},
+        {"file": "kanon-entwurf.json", "stage": "30-klaerung", "by": "gatehouse-auswerten", "shape": "data"},
+        {"file": "entscheide.json", "stage": "30-klaerung", "by": "role:decider", "shape": "data"},
+        {"file": "canon.md", "stage": "40-kanon", "by": "role:decider", "shape": "text"},
+        {"file": "zweiter-durchgang.md", "stage": "50-zweiter-durchgang", "by": "role:moderator", "shape": "text"}
+      ]
+    }
+  }
+}

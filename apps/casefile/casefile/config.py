@@ -94,7 +94,8 @@ class DomainConfig:
             if isinstance(x, str):
                 return Deliverable(file=x)
             return Deliverable(file=x["file"], stage=x.get("stage", ""), by=x.get("by", ""),
-                               shape=x.get("shape") or self._shape_of(x["file"]), required=bool(x.get("required", False)))
+                               shape=x.get("shape") or self._shape_of(x["file"]), required=bool(x.get("required", False)),
+                               collects=x.get("collects"))
         fmt = self.artifacts.get("formats", {}).get(label, {})
         return [norm(x) for x in self.artifacts.get("common", [])] + [norm(x) for x in fmt.get("artifacts", [])]
 

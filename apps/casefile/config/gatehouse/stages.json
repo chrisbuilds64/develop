@@ -1,0 +1,61 @@
+{
+  "$comment": "Gatehouse as configuration (ADR-015, ADR-021): an elicitation is a case. Preparation → the conversation (several respondents, each with a move of their own; a helper follows up per chapter in the background) → clarification (the helper's findings and canon draft; the decider accepts, changes or rejects every line) → canon v0.1 (compiled by the core) → the second pass after four weeks of real work → closed. The questions are a pack in the tree (_packs/), never in this repository.",
+  "name": "Gatehouse",
+  "lang": "de",
+  "configVersion": "1",
+  "stages": [
+    {
+      "folder": "10-vorbereitung",
+      "key": "prepare",
+      "group": "ideas",
+      "turn": "role:moderator",
+      "actions": [
+        {"id": "open_conversation", "label": "open_conversation", "to": "20-gespraech", "entry_status": "info"}
+      ]
+    },
+    {
+      "folder": "20-gespraech",
+      "key": "conversation",
+      "group": "others",
+      "turn": "role:moderator",
+      "interview": "gespraech.json",
+      "actions": [
+        {"id": "evaluate", "label": "evaluate", "to": "30-klaerung", "run": "gatehouse-auswerten", "requires": ["answered"], "entry_status": "info"}
+      ]
+    },
+    {
+      "folder": "30-klaerung",
+      "key": "clarify",
+      "group": "you",
+      "turn": "role:decider",
+      "actions": [
+        {"id": "approve_canon", "label": "approve_canon", "to": "40-kanon", "requires": ["decided:kanon-entwurf.json:entscheide.json"], "compile": "canon", "entry_status": "approved"},
+        {"id": "evaluate_again", "label": "evaluate_again", "run": "gatehouse-auswerten", "actor": "role:moderator", "entry_status": "info"}
+      ]
+    },
+    {
+      "folder": "40-kanon",
+      "key": "canon",
+      "group": "planned",
+      "turn": "role:moderator",
+      "actions": [
+        {"id": "second_pass", "label": "second_pass", "to": "50-zweiter-durchgang", "entry_status": "info"}
+      ]
+    },
+    {
+      "folder": "50-zweiter-durchgang",
+      "key": "second",
+      "group": "others",
+      "turn": "role:moderator",
+      "actions": [
+        {"id": "close", "label": "close", "to": "60-abgeschlossen", "payload": ["note"], "entry_status": "approved"}
+      ]
+    },
+    {
+      "folder": "60-abgeschlossen",
+      "key": "closed",
+      "group": "out",
+      "turn": null
+    }
+  ]
+}

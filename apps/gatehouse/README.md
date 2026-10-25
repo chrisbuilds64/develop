@@ -1,5 +1,9 @@
 # Gatehouse
 
+> **Since 2026-10-25 Gatehouse runs as a casefile application** (`apps/casefile/config/gatehouse`,
+> ADR-021): several respondents, no preset marker, follow-ups in the background, a canon draft decided
+> line by line. This standalone app stays until the new path has carried one real run with somebody outside.
+
 Canon elicitation harness. Runs on client hardware, asks the questions a
 canon pack defines, and writes the answers into a directory the client
 owns and versions.

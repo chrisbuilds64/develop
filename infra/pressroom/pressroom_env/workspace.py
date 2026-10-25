@@ -72,6 +72,9 @@ def _mkdir(path: Path, user: str, mode: int = 0o755) -> Path:
     return path
 
 
+WORLDS_LATER = ("gatehouse", "gatehouse-live")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
+
+
 def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     """develop at the stage's reference, then the cockpit venv from it. Returns the commit."""
     s, ref = settings.server, ref or env.ref
@@ -101,8 +104,8 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
         raise OpsError(f"{env.name}: the help does not match the screen — fix it in the same commit:\n{(r.stdout or r.stderr).strip()}")
     log.info("%s: help in step with the screen", env.name)
     worlds = d / "worlds"
+    seeded = Path("/opt/casefile/demo/worlds")
     if not (worlds / "claims").is_dir():                   # the sample worlds, once: the richer seed when it is on the machine, else the built-in ones
-        seeded = Path("/opt/casefile/demo/worlds")
         if (seeded / "claims").is_dir():
             run(["cp", "-a", str(seeded), str(worlds)])
             run(["chown", "-R", f"{s.runner_user}:{s.runner_user}", str(worlds)])
@@ -110,6 +113,11 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
         else:
             run([str(venv / "bin" / "python"), "-m", "casefile.demo.worlds", str(worlds)], user=s.runner_user)
             log.info("%s: sample worlds built", env.name)
+    for name in WORLDS_LATER:                              # worlds that came after the first seed: added when the seed has them
+        if not (worlds / name).is_dir() and (seeded / name).is_dir():
+            run(["cp", "-a", str(seeded / name), str(worlds / name)])
+            run(["chown", "-R", f"{s.runner_user}:{s.runner_user}", str(worlds / name)])
+            log.info("%s: world %s copied from %s", env.name, name, seeded)
     return commit
 
 
@@ -167,14 +175,25 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
         if not data["defaults"]:
             data.pop("defaults")
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
+    # applications that came after the registry was written (ADR-021: Gatehouse), added once their world is on the stage
+    later = {"gatehouse": {"label": "Gatehouse", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-live"), "mode": "live"},
+             "gatehouse-muster": {"label": "Gatehouse · Muster", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse"), "mode": "replay"}}
+    grew = [k for k, v in later.items() if k not in data["applications"] and Path(v["template"]).is_dir()]
+    for k in grew:
+        data["applications"][k] = later[k]
+    if grew:
+        reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
+        log.info("%s: applications added: %s", env.name, ", ".join(grew))
     have = {w["id"] for w in data["workspaces"]}
     venv = cp / ".venv"
     added = []
-    for wid, app, label in (("schadenakte-muster", "claims", "Schadenakte · Muster"), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster")):
-        if wid in have:
+    samples = [("schadenakte-muster", "claims", "Schadenakte · Muster", []), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster", []),
+               ("gatehouse-muster", "gatehouse-muster", "Gatehouse · Muster", []), ("gatehouse", "gatehouse", f"Gatehouse {env.label}", ["chris", "akhil"])]
+    for wid, app, label, members in samples:
+        if wid in have or app not in data["applications"]:
             continue
         # argparse takes the config as a positional after the id, which the options swallow: run from the cockpit dir instead
-        r = run([str(venv / "bin" / "cockpit"), "workspace", "create", wid, "--application", app, "--shared", "--label", label],
+        r = run([str(venv / "bin" / "cockpit"), "workspace", "create", wid, "--application", app, "--shared", "--label", label, *[x for m in members for x in ("--member", m)]],
                 user=s.runner_user, cwd=str(cp), check=False)
         if r.returncode != 0:
             log.warning("%s: sample workspace %s not created: %s", env.name, wid, (r.stderr or r.stdout).strip()[-300:])
@@ -183,7 +202,7 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     if added:
         data = json.loads(reg.read_text(encoding="utf-8"))
         for w in data["workspaces"]:
-            if w["id"] in added:
+            if w["id"] in added and w.get("mode") == "replay":
                 w["open_identity"] = True              # sample worlds keep the person picker: their people are invented
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     log.info("%s: workspaces: %s", env.name, ", ".join(w["id"] for w in data["workspaces"]))

@@ -18,3 +18,6 @@ export const ViewList = () => <svg {...base}><path d="M4 6h16M4 12h16M4 18h16" /
 export const Globe = () => <svg {...base}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>;
 export const Book = () => <svg {...base}><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z" /></svg>;
 export const Spark = () => <svg {...base}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M6.3 17.7l2.8-2.8M14.9 9.1l2.8-2.8" /></svg>;
+export const Check = () => <svg {...base}><path d="M5 12.5l4.5 4.5L19 7" /></svg>;
+export const Pen = () => <svg {...base}><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>;
+export const Cross = () => <svg {...base}><path d="M7 7l10 10M17 7L7 17" /></svg>;

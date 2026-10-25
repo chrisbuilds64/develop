@@ -225,6 +225,14 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
         except StoreError as exc:
             return _refuse(store, j, str(exc))
 
+    # 5b. a document the core compiles from the case's data, once per step
+    if action and action.compile == "canon" and not j.payload.get("_compiled"):
+        from .interview import compile_canon
+        draft, decisions = next(((r.split(":") + ["", ""])[1:3] for r in action.requires if r.startswith("decided:")), ("", ""))
+        if draft and decisions:
+            j.payload["_compiled"] = compile_canon(store, config, j.case, draft, decisions)
+            _write_journal(store, j)
+
     # 6. done
     j.status, j.finished = "done", _now()
     _write_journal(store, j)

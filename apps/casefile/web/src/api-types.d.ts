@@ -123,7 +123,11 @@ export interface paths {
         /** List Cases */
         get: operations["list_cases_api_cases_get"];
         put?: never;
-        post?: never;
+        /**
+         * Post Case
+         * @description A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the meta carries).
+         */
+        post: operations["post_case_api_cases_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -329,10 +333,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/interview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Interview */
+        get: operations["get_interview_api_cases__case_id__interview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/interview/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Answer */
+        post: operations["post_answer_api_cases__case_id__interview_answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/interview/anchor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Anchor */
+        post: operations["post_anchor_api_cases__case_id__interview_anchor_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/interview/followup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Followup */
+        post: operations["post_followup_api_cases__case_id__interview_followup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/interview/chapter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Chapter */
+        post: operations["post_chapter_api_cases__case_id__interview_chapter_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/interview/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Finish */
+        post: operations["post_finish_api_cases__case_id__interview_finish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Outcome */
+        get: operations["get_outcome_api_cases__case_id__outcome_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/outcome/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Decide */
+        post: operations["post_decide_api_cases__case_id__outcome_decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnchorIn */
+        AnchorIn: {
+            /** Text */
+            text: string;
+        };
+        /** AnswerIn */
+        AnswerIn: {
+            /** Question */
+            question: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Marker
+             * @default
+             */
+            marker: string;
+            /** Step Id */
+            step_id: string;
+        };
         /** AssetOut */
         AssetOut: {
             /** Name */
@@ -484,6 +646,13 @@ export interface components {
              */
             agent: string;
         };
+        /** ChapterIn */
+        ChapterIn: {
+            /** Block */
+            block: string;
+            /** Step Id */
+            step_id: string;
+        };
         /** ConfigView */
         ConfigView: {
             /** Product */
@@ -504,6 +673,20 @@ export interface components {
             words: {
                 [key: string]: unknown;
             };
+        };
+        /** DecideIn */
+        DecideIn: {
+            /** Line */
+            line: string;
+            /** Verdict */
+            verdict: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /** Step Id */
+            step_id: string;
         };
         /** DemoSessionIn */
         DemoSessionIn: {
@@ -585,6 +768,23 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** FinishIn */
+        FinishIn: {
+            /** Step Id */
+            step_id: string;
+        };
+        /** FollowupIn */
+        FollowupIn: {
+            /** Followup */
+            followup: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /** Step Id */
+            step_id: string;
+        };
         /** GroupOut */
         GroupOut: {
             /** Key */
@@ -605,6 +805,57 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * InterviewOut
+         * @description What one respondent sees of a conversation: the pack, their own answers and follow-ups, and how far everyone is.
+         *     Nobody sees another person's answers here; that is the outcome's business.
+         */
+        InterviewOut: {
+            /** Case */
+            case: string;
+            /** Title */
+            title: string;
+            /** Pack */
+            pack: {
+                [key: string]: unknown;
+            };
+            /** Me */
+            me: string;
+            /** Can Answer */
+            can_answer: boolean;
+            /**
+             * Anchor
+             * @default
+             */
+            anchor: string;
+            /** Answers */
+            answers?: {
+                [key: string]: unknown;
+            };
+            /** Followup Answers */
+            followup_answers?: {
+                [key: string]: unknown;
+            };
+            /** Helper */
+            helper?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Helper Running
+             * @default false
+             */
+            helper_running: boolean;
+            /**
+             * Done
+             * @default false
+             */
+            done: boolean;
+            /**
+             * Respondents
+             * @default []
+             */
+            respondents: components["schemas"]["RespondentOut"][];
         };
         /** LangIn */
         LangIn: {
@@ -639,6 +890,75 @@ export interface components {
             /** Shell */
             shell?: string | null;
         };
+        /** NewCaseIn */
+        NewCaseIn: {
+            /** Title */
+            title: string;
+            /** Label */
+            label?: string | null;
+            /** Step Id */
+            step_id: string;
+        };
+        /** NewCaseOut */
+        NewCaseOut: {
+            /** Id */
+            id: string;
+            /** Stage */
+            stage: string;
+        };
+        /**
+         * OutcomeOut
+         * @description The outcome: the findings, the draft with each line's decision, and the compiled canon when there is one.
+         */
+        OutcomeOut: {
+            /** Case */
+            case: string;
+            /** Title */
+            title: string;
+            /** Stage Word */
+            stage_word: string;
+            /**
+             * Blocks
+             * @default []
+             */
+            blocks: {
+                [key: string]: unknown;
+            }[];
+            /** Findings */
+            findings?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Lines
+             * @default []
+             */
+            lines: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Can Decide
+             * @default false
+             */
+            can_decide: boolean;
+            /**
+             * Open Lines
+             * @default 0
+             */
+            open_lines: number;
+            /** Canon */
+            canon?: string | null;
+            /** Canon Url */
+            canon_url?: string | null;
+            /**
+             * Running
+             * @default false
+             */
+            running: boolean;
+            /** People */
+            people?: {
+                [key: string]: unknown;
+            };
+        };
         /** PersonView */
         PersonView: {
             /** Id */
@@ -649,6 +969,24 @@ export interface components {
             kind: string;
             /** Roles */
             roles: string[];
+        };
+        /** RespondentOut */
+        RespondentOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Answered */
+            answered: number;
+            /** Total */
+            total: number;
+            /** Done */
+            done: boolean;
+            /**
+             * Me
+             * @default false
+             */
+            me: boolean;
         };
         /** RuleAction */
         RuleAction: {
@@ -823,6 +1161,11 @@ export interface components {
             turns?: number | null;
             /** Duration S */
             duration_s?: number | null;
+            /**
+             * Background
+             * @default false
+             */
+            background: boolean;
         };
         /** RunIn */
         RunIn: {
@@ -1247,6 +1590,39 @@ export interface operations {
             };
         };
     };
+    post_case_api_cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewCaseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewCaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_case_api_cases__case_id__get: {
         parameters: {
             query?: never;
@@ -1564,6 +1940,278 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_interview_api_cases__case_id__interview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_answer_api_cases__case_id__interview_answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_anchor_api_cases__case_id__interview_anchor_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnchorIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_followup_api_cases__case_id__interview_followup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_chapter_api_cases__case_id__interview_chapter_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChapterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_finish_api_cases__case_id__interview_finish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinishIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_outcome_api_cases__case_id__outcome_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_decide_api_cases__case_id__outcome_decide_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

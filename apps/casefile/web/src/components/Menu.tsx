@@ -1,6 +1,6 @@
 // The menu: the three views under the name, groups by urgency, drop-in and the person at the bottom. Left or right.
 import { useQuery } from "@tanstack/react-query";
-import { api, type ConfigView, type MeOut } from "../api";
+import { api, stepId, talk, ApiError, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
 import { Book, Close, Spark, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
@@ -10,6 +10,12 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
     onFresh: (world?: string) => void; onPerson: (person: string) => void; onLang: (lang: string) => void; w: ReturnType<typeof words>; theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void }) {
   const [open, setOpen] = useState(false);
+  const create = (config.theme as { create?: { label?: string; roles?: string[] } }).create;
+  const mayCreate = !!create && (create.roles ?? []).some((r) => me.roles.includes(r));
+  const [making, setMaking] = useState(false);
+  const [name, setName] = useState("");
+  const [madeError, setMadeError] = useState<string | null>(null);
+  const labelWord = create?.label ? ((config.words as { labels?: Record<string, string> }).labels?.[create.label] ?? create.label) : "";
   const goClose = (p: string) => { setOpen(false); go(p); };
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const humans = config.people.filter((p) => p.kind === "human");
@@ -63,7 +69,17 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         <span>{w.rules}</span><span className="n"><Book /></span>
       </button>
       <div className="spacer" />
-      <button type="button" className="drop-in" onClick={() => goClose("/")} aria-label={w.dropIn} data-help="cf.drop-in">{w.dropIn}</button>
+      {mayCreate ? (making ? (
+        <form className="new-case" data-help="cf.new-case" onSubmit={async (e) => { e.preventDefault(); if (!name.trim()) return; try { const r = await talk.create(name.trim(), stepId("new")); setMaking(false); setName(""); setMadeError(null); goClose(`/case/${encodeURIComponent(r.id)}`); } catch (err) { setMadeError(err instanceof ApiError ? err.message : String(err)); } }}>
+          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={w.newCasePlaceholder} maxLength={120} onKeyDown={(e) => { if (e.key === "Escape") setMaking(false); }} />
+          <button type="submit" className="btn small" disabled={!name.trim()}>{w.create}</button>
+          {madeError && <span className="talk-error">{madeError}</span>}
+        </form>
+      ) : (
+        <button type="button" className="drop-in" onClick={() => setMaking(true)} data-help="cf.drop-in">{w.newCase(labelWord)}</button>
+      )) : create ? null : (
+        <button type="button" className="drop-in" onClick={() => goClose("/")} aria-label={w.dropIn} data-help="cf.drop-in">{w.dropIn}</button>
+      )}
       <button type="button" className="nav-row quiet ask-row" data-help="cf.ask" onClick={() => document.querySelector<HTMLInputElement>(".ask input")?.focus()}>
         <span>{w.askClaude(agent)}</span><span className="mono n">⌘K</span>
       </button>

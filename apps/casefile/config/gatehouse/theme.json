@@ -1,0 +1,9 @@
+{
+  "name": "Gatehouse",
+  "lang": "de",
+  "accent": "your-move",
+  "$comment": "Same tokens as the other worlds. `interview` names the files of the conversation's helpers; `create` says how a new elicitation starts (who may, which label, what the meta carries).",
+  "interview": {"helper": "gatehouse-nachhaken", "draft": "kanon-entwurf.json", "decisions": "entscheide.json", "findings": "befund.json"},
+  "create": {"label": "ERH", "roles": ["moderator"], "meta": {"pack": "core-de"}},
+  "covers": {"by": "label", "colors": {"ERH": "#8a5a2b"}, "fallback": "#5a6270"}
+}

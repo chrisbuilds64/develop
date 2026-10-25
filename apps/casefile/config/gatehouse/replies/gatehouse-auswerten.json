@@ -1,0 +1,7 @@
+{
+  "$comment": "Fallback for a replay world without a prepared evaluation of its own: the run ends and says so. A world's own _replies/ carries the real one.",
+  "delay_s": 4,
+  "files": {},
+  "entry": {"title": "Auswertung", "text": "In dieser Musterwelt ist für diese Erhebung keine Auswertung vorbereitet."},
+  "model": "replay"
+}

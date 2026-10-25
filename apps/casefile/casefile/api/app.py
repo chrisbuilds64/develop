@@ -228,6 +228,92 @@ class RulesOut(BaseModel):
     connectors: list[RuleConnector] = []
 
 
+class AnswerIn(BaseModel):
+    question: str
+    text: str = ""
+    marker: str = ""
+    step_id: str
+
+
+class AnchorIn(BaseModel):
+    text: str
+
+
+class FollowupIn(BaseModel):
+    followup: str
+    text: str = ""
+    step_id: str
+
+
+class ChapterIn(BaseModel):
+    block: str
+    step_id: str
+
+
+class FinishIn(BaseModel):
+    step_id: str
+
+
+class DecideIn(BaseModel):
+    line: str
+    verdict: str
+    text: str = ""
+    step_id: str
+
+
+class NewCaseIn(BaseModel):
+    title: str
+    label: str | None = None
+    step_id: str
+
+
+class RespondentOut(BaseModel):
+    id: str
+    name: str
+    answered: int
+    total: int
+    done: bool
+    me: bool = False
+
+
+class InterviewOut(BaseModel):
+    """What one respondent sees of a conversation: the pack, their own answers and follow-ups, and how far everyone is.
+    Nobody sees another person's answers here; that is the outcome's business."""
+    case: str
+    title: str
+    pack: dict
+    me: str
+    can_answer: bool
+    anchor: str = ""
+    answers: dict = Field(default_factory=dict)        # question → {text, marker, at}
+    followup_answers: dict = Field(default_factory=dict)
+    helper: dict = Field(default_factory=dict)         # the helper's file for me: followups, tensions, drafts
+    helper_running: bool = False
+    done: bool = False
+    respondents: list[RespondentOut] = []
+
+
+class OutcomeOut(BaseModel):
+    """The outcome: the findings, the draft with each line's decision, and the compiled canon when there is one."""
+    case: str
+    title: str
+    stage_word: str
+    blocks: list[dict] = []                            # id, title, canon — the chapters, in order
+    findings: dict = Field(default_factory=dict)
+    lines: list[dict] = []                             # the draft's lines, each with its decision
+    can_decide: bool = False
+    open_lines: int = 0
+    canon: str | None = None                           # the newest compiled canon file
+    canon_url: str | None = None
+    running: bool = False
+    people: dict = Field(default_factory=dict)         # id → name
+
+
+class NewCaseOut(BaseModel):
+    id: str
+    stage: str
+
+
 class AssetOut(BaseModel):
     name: str
     slot: str
@@ -800,6 +886,155 @@ def create_app(settings: Settings) -> FastAPI:
         except StoreError as exc:
             raise HTTPException(409, str(exc))
         return AssetOut(name=name, slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
+
+    # ------------------------------------------------------------ a conversation (Gatehouse and anything shaped like it)
+    from ..domain import interview as talk
+
+    def _talk_case(c: Ctx, case_id: str) -> Case:
+        try:
+            return reading.load(c.store, c.config, case_id)
+        except (KeyError, StoreError) as exc:
+            raise HTTPException(404, str(exc) or case_id)
+
+    def _talk_conf(c: Ctx) -> dict:
+        return {"helper": "", "draft": "", "decisions": "", "findings": "", **(c.config.theme.get("interview") or {})}
+
+    def _refuse(exc: Exception) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"ok": False, "reason": str(exc)})
+
+    @app.get("/api/cases/{case_id}/interview", response_model=InterviewOut)
+    def get_interview(case_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        case = _talk_case(c, case_id)
+        name = talk.interview_file(c.config, case)
+        if not name:
+            raise HTTPException(404, "this case holds no conversation")
+        try:
+            pack = talk.load_pack(c.store.root, str(case.meta.get("pack", "")))
+        except talk.InterviewError as exc:
+            raise HTTPException(404, str(exc))
+        total = len(talk.question_ids(pack))
+        doc = case.data.get(name) or {}
+        st = c.config.stage(case.stage)
+        asked = talk.respondents(c.config, case)
+        helper_runs = [r for r in case.runs if r.background and r.requested_by == who and r.status in ("queued", "running")]
+        people = []
+        for pid, pr in talk.progress(c.config, case, total).items():
+            p = c.config.person(pid)
+            people.append(RespondentOut(id=pid, name=p.name if p else pid, answered=pr["answered"], total=total, done=pr["done"], me=pid == who))
+        mine = {q: {k: v for k, v in a.items() if k != "step"} for q, a in (doc.get("answers", {}).get(who) or {}).items()}
+        return InterviewOut(case=case.id, title=str(case.meta.get("title") or case.id), pack=pack, me=who,
+                            can_answer=bool(st and st.interview and who in asked), anchor=str((doc.get("anchor") or {}).get(who, "")),
+                            answers=mine, followup_answers={f: {k: v for k, v in a.items() if k != "step"} for f, a in (doc.get("followups", {}).get(who) or {}).items()},
+                            helper=case.data.get(f"nachfragen-{who}.json") or {}, helper_running=bool(helper_runs),
+                            done=bool((doc.get("done") or {}).get(who)), respondents=people)
+
+    @app.post("/api/cases/{case_id}/interview/answer")
+    def post_answer(case_id: str, body: AnswerIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            return {"ok": True, "answer": talk.answer(c.store, c.config, case_id, who, body.question, body.text, body.marker, body.step_id)}
+        except talk.InterviewError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases/{case_id}/interview/anchor")
+    def post_anchor(case_id: str, body: AnchorIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            return {"ok": True, "anchor": talk.anchor(c.store, c.config, case_id, who, body.text)}
+        except talk.InterviewError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases/{case_id}/interview/followup")
+    def post_followup(case_id: str, body: FollowupIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            return {"ok": True, "answer": talk.followup(c.store, c.config, case_id, who, body.followup, body.text, body.step_id)}
+        except talk.InterviewError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases/{case_id}/interview/chapter")
+    def post_chapter(case_id: str, body: ChapterIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            return {"ok": True, "run": talk.chapter(c.store, c.config, case_id, who, body.block, _talk_conf(c)["helper"], body.step_id)}
+        except talk.InterviewError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases/{case_id}/interview/finish")
+    def post_finish(case_id: str, body: FinishIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            first = talk.finish(c.store, c.config, case_id, who, body.step_id)
+        except talk.InterviewError as exc:
+            return _refuse(exc)
+        if first:
+            p = c.config.person(who)
+            with c.store.lock(case_id):
+                stage = c.store.find(case_id)
+                stepping._append_entry(c.store, c.config, case_id, stage, {"author": p.name if p else who, "status": "info",
+                                       "title": c.config.word("texts", "interview_done", c.lang, "Done with the conversation"), "text": c.config.word("texts", "interview_done_text", c.lang, "My answers are in."), "step": body.step_id})
+        return {"ok": True, "first": first}
+
+    @app.get("/api/cases/{case_id}/outcome", response_model=OutcomeOut)
+    def get_outcome(case_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        case = _talk_case(c, case_id)
+        conf = _talk_conf(c)
+        try:
+            pack = talk.load_pack(c.store.root, str(case.meta.get("pack", "")))
+            blocks = [{"id": b["id"], "title": b["title"], "canon": b.get("canon", "")} for b in pack["blocks"]]
+        except talk.InterviewError:
+            blocks = []
+        decided = case.data.get(conf["decisions"]) or {}
+        lines = [{**x, "decision": {k: v for k, v in (decided.get(str(x.get("id"))) or {}).items() if k != "step"}} for x in (case.data.get(conf["draft"]) or {}).get("lines", [])]
+        p = c.config.person(who)
+        stage = c.config.stage(case.stage)
+        can = bool(p and "decider" in p.roles and stage and any(r.startswith("decided:") for a in stage.actions for r in a.requires))
+        canon = reading.newest_versions(case.files).get("canon.md")
+        last = case.last_run
+        return OutcomeOut(case=case.id, title=str(case.meta.get("title") or case.id), stage_word=c.config.word("stages", case.stage, c.lang, case.stage), blocks=blocks,
+                          findings=case.data.get(conf["findings"]) or {}, lines=lines, can_decide=can,
+                          open_lines=len([x for x in lines if not x["decision"].get("verdict")]), canon=canon, canon_url=file_url(case, canon) if canon else None,
+                          running=bool(last and last.status in ("queued", "running")),
+                          people={x.id: x.name for x in c.config.people})
+
+    @app.post("/api/cases/{case_id}/outcome/decide")
+    def post_decide(case_id: str, body: DecideIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        conf = _talk_conf(c)
+        try:
+            return {"ok": True, "decision": talk.decide(c.store, c.config, case_id, who, body.line, body.verdict, body.text, body.step_id, conf["draft"], conf["decisions"])}
+        except talk.InterviewError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases", response_model=NewCaseOut)
+    def post_case(body: NewCaseIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the meta carries)."""
+        create = c.config.theme.get("create") or {}
+        p = c.config.person(who)
+        if not create:
+            raise HTTPException(404, "new cases are not started here")
+        if not p or not (set(create.get("roles", [])) & set(p.roles)):
+            return _refuse(Exception(c.config.word("texts", "create_refused", c.lang, "You may not start a case here.")))
+        title = body.title.strip()[:120]
+        if not title:
+            return _refuse(Exception(c.config.word("texts", "create_empty", c.lang, "Give it a name.")))
+        label = body.label or create.get("label", "X")
+        first = next((s.folder for s in c.config.stages if s.group != "archive"), None)
+        if not first or first not in c.store.stages():
+            return _refuse(Exception("the first stage folder is missing"))
+        for prior in c.store.journals():                        # the same step id twice is the same case
+            j = c.store.read_json(f"_steps/{prior}")
+            if j.get("step_id") == body.step_id and j.get("action") == "create":
+                return NewCaseOut(id=j["case"], stage=c.store.find(j["case"]) or first)
+        year = dt.date.today().year
+        numbers = [int(m.group(1)) for st in c.store.stages() for cid in c.store.cases(st) if (m := re.match(rf"^{re.escape(label)}-{year}-(\d+)", cid))]
+        number = f"{year}-{(max(numbers) + 1) if numbers else 1:02d}"
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower().translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}))).strip("-")[:40] or "akte"
+        cid = f"{label}-{number}-{slug}"
+        try:
+            c.store.mkcase(first, cid)
+        except StoreError as exc:
+            return _refuse(exc)
+        meta = {"configVersion": c.config.config_version, "label": label, "number": number, "title": title, "created": _now()[:10], "created_by": p.id,
+                **{k: v for k, v in (create.get("meta") or {}).items()}}
+        c.store.write_json(f"{first}/{cid}/meta.json", meta)
+        c.store.write_json(f"_steps/{body.step_id}.json", {"step_id": body.step_id, "case": cid, "action": "create", "by": p.id, "status": "done", "created": _now(), "payload": {"title": title}})
+        stepping._append_entry(c.store, c.config, cid, first, {"author": p.name, "status": "info", "title": c.config.word("texts", "created", c.lang, "Started"), "text": title, "step": body.step_id})
+        return NewCaseOut(id=cid, stage=first)
 
     # ------------------------------------------------------------ the surface
     if settings.web_dist and settings.web_dist.is_dir():
