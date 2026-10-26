@@ -17,6 +17,25 @@ export function Rules({ config, w }: { config: ConfigView; w: ReturnType<typeof 
         <span className="hint">{config.product} · {w.rulesHint}</span>
       </header>
       <div className="rules-scroll">
+        {!!r.matrix?.length && (
+          <section className="rules-block" data-help="cf.matrix">
+            <p className="kicker">{w.rulesMatrix}</p>
+            <table className="rules-table matrix">
+              <thead><tr><th /><th>{w.matrixKind}</th><th>{w.matrixDo}</th><th>{w.matrixTarget}</th><th>{w.matrixApproval}</th></tr></thead>
+              <tbody>
+                {r.matrix.map((m) => (
+                  <tr key={m.id} className={m.connected ? "" : "off"}>
+                    <td className="mono">{m.id}</td>
+                    <td><b>{m.word}</b>{m.when && <small>{m.when}</small>}</td>
+                    <td>{m.action_word}{!m.connected && <small>{w.notConnected}</small>}</td>
+                    <td>{m.target_word || "—"}</td>
+                    <td>{m.approval === "auto" ? w.approvalAuto : w.approvalHuman}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
         <section className="rules-block">
           <p className="kicker">{w.rulesStages}</p>
           <ol className="rule-stages">

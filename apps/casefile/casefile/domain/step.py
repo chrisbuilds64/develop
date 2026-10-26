@@ -216,6 +216,15 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
         j.run = ordering.order(store, config, j.case, stage_now, action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id)
         _write_journal(store, j)
 
+    # 4d. a hand-off to another application (the rule matrix's action), once, before the move: if it fails, nothing moved
+    if action and action.compile == "handoff" and not j.payload.get("_handed"):
+        from .handoff import HandoffError, execute
+        try:
+            j.payload["_handed"] = execute(store, config, j.case, j.by)
+        except (HandoffError, StoreError, OSError) as exc:
+            return _refuse(store, j, str(exc))
+        _write_journal(store, j)
+
     # 5. the move, once
     if j.to and stage_now != j.to:
         if stage_now != j.from_:

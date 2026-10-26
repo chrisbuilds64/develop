@@ -1,0 +1,21 @@
+{
+  "$comment": "The inbox as configuration (ADR-022): every mail is a case. It arrives in 10-eingang, the helper reads it and proposes a row of the rule matrix; a person confirms (the hand-off runs: a case in another application) or files it away.",
+  "name": "Posteingang",
+  "lang": "de",
+  "configVersion": "1",
+  "stages": [
+    {
+      "folder": "10-eingang",
+      "key": "inbox",
+      "group": "you",
+      "turn": "role:operator",
+      "actions": [
+        {"id": "confirm", "label": "confirm", "to": "30-erledigt", "requires": ["einordnung.json"], "compile": "handoff", "seal": true, "entry_status": "approved"},
+        {"id": "file_away", "label": "file_away", "to": "40-abgelegt", "entry_status": "info"},
+        {"id": "read_again", "label": "read_again", "run": "posteingang-einordnen", "entry_status": "info"}
+      ]
+    },
+    {"folder": "30-erledigt", "key": "done", "group": "out", "turn": null},
+    {"folder": "40-abgelegt", "key": "filed", "group": "archive", "turn": null}
+  ]
+}

@@ -734,3 +734,25 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .file:has(img) { padding: 8px 8px 12px; }
 .file:has(img) .name, .file:has(img) .meta { padding: 0 6px; }
 .file.wide { grid-column: span 2; }
+
+/* ------------------------------------------------------------------ the inbox: a mail's reading, the rule matrix */
+.triage { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: var(--r-l); background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.triage-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.triage-kind { font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.triage-urgency { font-size: 12px; font-weight: 600; border-radius: var(--r-pill); padding: 3px 10px; border: 1px solid var(--hairline-2); color: var(--ink-2); }
+.triage-urgency.high { border-color: var(--ink); color: var(--ink); }
+.triage-sum { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 62ch; }
+.triage-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px 18px; margin: 4px 0 0; }
+.triage-fields div { display: flex; flex-direction: column; gap: 1px; }
+.triage-fields dt { font-size: 12px; color: var(--muted); text-transform: capitalize; }
+.triage-fields dd { margin: 0; font-size: 15px; font-weight: 500; }
+.triage-reasons { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.triage-proposal { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 15px; }
+.triage-proposal .mono { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.triage-proposal em { color: var(--muted); font-style: normal; }
+.triage-done { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.triage-done .stampmark { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--seal); border: 1.5px solid var(--seal); border-radius: var(--r-pill); padding: 3px 8px; transform: rotate(-6deg); }
+.triage-done a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
+.rules-table.matrix td small { display: block; font-size: 12px; color: var(--muted); }
+.rules-table.matrix tr.off td { color: var(--muted); }
+.mail-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }

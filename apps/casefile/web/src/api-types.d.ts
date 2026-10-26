@@ -506,6 +506,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Mail
+         * @description A mail dropped in by hand (.eml): the same way in as from the mailbox, so the demo and the real thing are one path.
+         */
+        post: operations["post_mail_api_mail_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -546,6 +566,11 @@ export interface components {
             slot: string;
             /** Step Id */
             step_id: string;
+            /** File */
+            file: string;
+        };
+        /** Body_post_mail_api_mail_post */
+        Body_post_mail_api_mail_post: {
             /** File */
             file: string;
         };
@@ -682,6 +707,10 @@ export interface components {
              * @default Claude
              */
             agent: string;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
         };
         /** ChapterIn */
         ChapterIn: {
@@ -920,6 +949,47 @@ export interface components {
         LangIn: {
             /** Lang */
             lang: string;
+        };
+        /**
+         * MatrixRow
+         * @description One row of the rule matrix, in the viewer's words: when a mail is of this kind, this happens.
+         */
+        MatrixRow: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Word */
+            word: string;
+            /**
+             * When
+             * @default
+             */
+            when: string;
+            /** Action */
+            action: string;
+            /** Action Word */
+            action_word: string;
+            /**
+             * Target
+             * @default
+             */
+            target: string;
+            /**
+             * Target Word
+             * @default
+             */
+            target_word: string;
+            /**
+             * Connected
+             * @default true
+             */
+            connected: boolean;
+            /**
+             * Approval
+             * @default human
+             */
+            approval: string;
         };
         /** MeOut */
         MeOut: {
@@ -1225,6 +1295,11 @@ export interface components {
              * @default []
              */
             connectors: components["schemas"]["RuleConnector"][];
+            /**
+             * Matrix
+             * @default []
+             */
+            matrix: components["schemas"]["MatrixRow"][];
         };
         /** Run */
         Run: {
@@ -2387,6 +2462,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mail_api_mail_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_post_mail_api_mail_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewCaseOut"];
                 };
             };
             /** @description Validation Error */

@@ -901,6 +901,7 @@ def main(argv=None) -> int:
     warned: set[str] = set()
     while True:
         roots = queues(args)                               # re-read every round: a new workspace is served from its next order on
+        poll_mailboxes(args, roots)                        # mail first: what arrives becomes an order this same round
         took = False
         for wid, data in roots:
             policy = load_policy(data)                     # re-read every round: a changed line applies to the next run
@@ -950,6 +951,60 @@ def main(argv=None) -> int:
         if args.once:
             return 1 if (warned or not roots) else 0      # --once says in its exit code whether anything could run at all
         time.sleep(args.interval)
+
+
+def poll_mailboxes(args, roots: list[tuple[str, Path]]) -> None:
+    """Inboxes (ADR-022): a live workspace whose tree carries `mailbox.json` is polled every `every_s` seconds (default 60).
+    The credentials are the named account's secrets (IMAP_USER / IMAP_PASSWORD unless the file names other keys), never a
+    file in the tree. New mail becomes cases through casefile's one way in; the helper that reads them is ordered there."""
+    if not args.workspaces or not args.accounts:
+        return
+    try:
+        reg = json.loads(args.workspaces.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    apps = reg.get("applications", {})
+    by_id = {str(w.get("id")): w for w in reg.get("workspaces", [])}
+    for wid, data in roots:
+        conf_path = data / "mailbox.json"
+        if not conf_path.is_file():
+            continue
+        try:
+            conf = json.loads(conf_path.read_text(encoding="utf-8"))
+            from casefile.config import DomainConfig
+            from casefile.connectors import mailbox
+            from casefile.store import FsStore
+        except Exception as exc:                          # noqa: BLE001 — a broken connector never stops the runner
+            log.warning("%s: mailbox not readable: %s", wid, exc)
+            continue
+        if conf.get("enabled") is False:
+            continue
+        st = mailbox.state(data)
+        last = st.get("last_poll", "")
+        every = int(conf.get("every_s", 60))
+        if last and (dt.datetime.now().astimezone() - dt.datetime.fromisoformat(last)).total_seconds() < every:
+            continue
+        account = str(conf.get("account", ""))
+        acc = _accounts(args)
+        user, password = acc.secret(account, conf.get("user_key", "IMAP_USER")), acc.secret(account, conf.get("password_key", "IMAP_PASSWORD"))
+        st["last_poll"] = now()
+        if not (user and password and conf.get("host")):
+            st["error"] = "no credentials on the account or no host in mailbox.json"
+            mailbox.state(data, st)
+            continue
+        w = by_id.get(wid, {})
+        cfg_dir = Path((apps.get(w.get("application", "")) or {}).get("config_dir", ""))
+        try:
+            store = FsStore(data)
+            made = mailbox.poll_imap(store, DomainConfig.load(cfg_dir, data), conf["host"], user, password, int(conf.get("port", 993)),
+                                     conf.get("folder", "INBOX"), by=account)
+            st.update(error="", last_ok=now(), last_made=made, total=int(st.get("total", 0)) + len(made))
+            if made:
+                log.info("%s: %d mail(s) in — %s", wid, len(made), ", ".join(made))
+        except Exception as exc:                          # noqa: BLE001
+            st["error"] = f"{type(exc).__name__}: {exc}"[:300]
+            log.warning("%s: mailbox poll failed: %s", wid, st["error"])
+        mailbox.state(data, st)
 
 
 def queues(args) -> list[tuple[str, Path]]:

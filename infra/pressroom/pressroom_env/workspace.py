@@ -72,7 +72,7 @@ def _mkdir(path: Path, user: str, mode: int = 0o755) -> Path:
     return path
 
 
-WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
+WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo", "posteingang", "posteingang-live")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
 
 
 def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
@@ -178,7 +178,9 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     # applications that came after the registry was written (ADR-021: Gatehouse), added once their world is on the stage
     later = {"gatehouse": {"label": "Gatehouse", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-live"), "mode": "live"},
              "gatehouse-muster": {"label": "Gatehouse · Muster", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse"), "mode": "replay"},
-             "gatehouse-vorfuehrung": {"label": "Gatehouse · Vorführung", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-demo"), "mode": "live"}}
+             "gatehouse-vorfuehrung": {"label": "Gatehouse · Vorführung", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-demo"), "mode": "live"},
+             "posteingang": {"label": "Posteingang", "config_dir": str(cfg / "posteingang"), "template": str(d / "worlds" / "posteingang-live"), "mode": "live"},
+             "posteingang-muster": {"label": "Posteingang · Muster", "config_dir": str(cfg / "posteingang"), "template": str(d / "worlds" / "posteingang"), "mode": "replay"}}
     grew = [k for k, v in later.items() if k not in data["applications"] and Path(v["template"]).is_dir()]
     for k in grew:
         data["applications"][k] = later[k]
@@ -190,7 +192,8 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     added = []
     samples = [("schadenakte-muster", "claims", "Schadenakte · Muster", []), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster", []),
                ("gatehouse-muster", "gatehouse-muster", "Gatehouse · Muster", []), ("gatehouse", "gatehouse", f"Gatehouse {env.label}", ["chris", "akhil"]),
-               ("gatehouse-vorfuehrung", "gatehouse-vorfuehrung", "Gatehouse · Vorführung", ["chris"])]
+               ("gatehouse-vorfuehrung", "gatehouse-vorfuehrung", "Gatehouse · Vorführung", ["chris"]),
+               ("posteingang-muster", "posteingang-muster", "Posteingang · Muster", []), ("posteingang", "posteingang", f"Posteingang {env.label}", ["chris"])]
     for wid, app, label, members in samples:
         if wid in have or app not in data["applications"]:
             continue
@@ -207,8 +210,31 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
             if w["id"] in added and w.get("mode") == "replay":
                 w["open_identity"] = True              # sample worlds keep the person picker: their people are invented
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    _connect_targets(data, cp, cfg, s)
     log.info("%s: workspaces: %s", env.name, ", ".join(w["id"] for w in data["workspaces"]))
     return reg
+
+
+def _connect_targets(data: dict, cp: Path, cfg: Path, s) -> None:
+    """ADR-022: an inbox hands a confirmed mail to another application; which tree that is, the stage decides here — the
+    inboxes write into the claims sample world of the same stage. Written into each inbox's tree as targets.json, every
+    deploy, so a rebuilt sample world finds its target again."""
+    ws = {w["id"]: w for w in data["workspaces"]}
+    claims = ws.get("schadenakte-muster")
+    if not claims:
+        return
+    root = Path(claims.get("write_root") or claims["root"])
+    root = root if root.is_absolute() else cp / root
+    targets = {"schadenakte": {"label": "Schadenakte · Muster", "root": str(root), "config": str(cfg / "claims-demo"), "url": "../schadenakte-muster", "external_prefix": "SN-"}}
+    for wid in ("posteingang", "posteingang-muster"):
+        w = ws.get(wid)
+        if not w:
+            continue
+        r = Path(w.get("write_root") or w["root"])
+        r = r if r.is_absolute() else cp / r
+        if r.is_dir():
+            (r / "targets.json").write_text(json.dumps(targets, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            _own(r / "targets.json", s.runner_user)
 
 
 def write_cockpit_config(settings: Settings, env: Env, folder_id: int) -> Path:

@@ -1,0 +1,131 @@
+{
+  "de": {
+    "product": "Posteingang",
+    "labels": {
+      "MAIL": "Mail"
+    },
+    "stations": {
+      "inbox": "Eingang",
+      "done": "Erledigt",
+      "filed": "Abgelegt"
+    },
+    "stages": {
+      "10-eingang": "eingegangen, Vorschlag prüfen",
+      "30-erledigt": "erledigt",
+      "40-abgelegt": "abgelegt"
+    },
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "KI liest gerade",
+      "others": "Bei anderen",
+      "date": "Termin",
+      "planned": "Geplant",
+      "out": "Erledigt",
+      "ideas": "Neu",
+      "archive": "Abgelegt"
+    },
+    "actions": {
+      "confirm": "Bestätigen und ausführen",
+      "file_away": "Ablegen",
+      "read_again": "Von der KI einordnen lassen",
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten"
+    },
+    "reasons": {
+      "running": "die KI liest die Mail",
+      "failed": "der letzte Lauf ist gescheitert",
+      "missing": "es fehlt noch etwas"
+    },
+    "texts": {
+      "mail_in": "Mail eingegangen",
+      "done": "Erledigt.",
+      "deliver": "Abgelegt.",
+      "detected": "Von Hand verschoben",
+      "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter.",
+      "mail_refused": "Mails wirft der Posteingang ein."
+    },
+    "files": {
+      "mail.md": "Mail",
+      "mail.eml": "Original (.eml)",
+      "einordnung.json": "eine Einordnung der KI",
+      "aktion.json": "Ausgeführt"
+    },
+    "roles": {
+      "operator": "Posteingang"
+    },
+    "words": {
+      "external_id": "Mail"
+    }
+  },
+  "en": {
+    "product": "Inbox",
+    "labels": {
+      "MAIL": "Mail"
+    },
+    "stations": {
+      "inbox": "Inbox",
+      "done": "Done",
+      "filed": "Filed"
+    },
+    "stages": {
+      "10-eingang": "received, check the proposal",
+      "30-erledigt": "done",
+      "40-abgelegt": "filed away"
+    },
+    "groups": {
+      "you": "Your move",
+      "claude": "AI is reading",
+      "others": "With others",
+      "date": "Date",
+      "planned": "Planned",
+      "out": "Done",
+      "ideas": "New",
+      "archive": "Filed"
+    },
+    "actions": {
+      "confirm": "Confirm and carry out",
+      "file_away": "File away",
+      "read_again": "Have the AI read it",
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "Put in",
+      "see_failure": "See what went wrong",
+      "wait": "Wait"
+    },
+    "reasons": {
+      "running": "the AI is reading the mail",
+      "failed": "the last run failed",
+      "missing": "something is still missing"
+    },
+    "texts": {
+      "mail_in": "Mail received",
+      "done": "Done.",
+      "deliver": "Put in.",
+      "detected": "Moved by hand",
+      "detected_text": "The folder was found in {stage}; the thread last knew {known}.",
+      "delivered_title": "Put in: {files}",
+      "replay_moved": "Moved on.",
+      "mail_refused": "Only the inbox's operators put mail in."
+    },
+    "files": {
+      "mail.md": "Mail",
+      "mail.eml": "Original (.eml)",
+      "einordnung.json": "the AI's reading",
+      "aktion.json": "Carried out"
+    },
+    "roles": {
+      "operator": "Inbox"
+    },
+    "words": {
+      "external_id": "Mail"
+    }
+  },
+  "$comment": "Every word the inbox shows, German and English."
+}

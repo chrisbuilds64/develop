@@ -1,0 +1,18 @@
+{
+  "$comment": "What a mail case holds: the message as it came (mail.eml), as a document (mail.md), its attachments, the helper's reading (einordnung.json) and, once confirmed, what was done (aktion.json).",
+  "common": [
+    {"file": "meta.json", "stage": "10-eingang", "by": "human", "shape": "text"},
+    {"file": "review.md", "stage": "10-eingang", "by": "human", "shape": "text"}
+  ],
+  "formats": {
+    "MAIL": {
+      "primary": "mail.md",
+      "artifacts": [
+        {"file": "mail.md", "stage": "10-eingang", "by": "human", "shape": "text"},
+        {"file": "mail.eml", "stage": "10-eingang", "by": "human", "shape": "other"},
+        {"file": "einordnung.json", "stage": "10-eingang", "by": "posteingang-einordnen", "shape": "data"},
+        {"file": "aktion.json", "stage": "30-erledigt", "by": "posteingang-einordnen", "shape": "data"}
+      ]
+    }
+  }
+}

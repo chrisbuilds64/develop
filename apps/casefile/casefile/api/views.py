@@ -77,6 +77,7 @@ class CaseView(CaseCard):
     last_run: Run | None = None
     primary: str | None = None
     agent: str = "Claude"
+    data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
 
 
 class ConfigView(BaseModel):
@@ -150,7 +151,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
              for s in case.slots]
     agent = config.agent
     return CaseView(**c.model_dump(), meta=case.meta, stations=stations, slots=slots, entries=case.entries, turns=turns, my_turns=mine,
-                    last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude")
+                    last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
+                    data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
 
 def config_view(config: DomainConfig, lang: str) -> ConfigView:

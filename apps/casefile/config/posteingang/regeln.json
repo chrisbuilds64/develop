@@ -1,0 +1,19 @@
+{
+  "$comment": "The rule matrix: per kind of mail, what happens. The helper proposes a row, a person confirms. `carry` says which files travel to the new case and under which name; `meta` fills the new case from the reading. A workspace's own regeln.json wins.",
+  "rules": [
+    {"id": "R-01", "kind": "schadensmeldung", "word": {"de": "Schadensmeldung (Kfz)", "en": "Claim report (motor)"}, "when": {"de": "Kunde meldet einen Kfz-Schaden", "en": "A customer reports a motor claim"},
+     "action": "create_case", "action_word": {"de": "Akte in der Schadenakte anlegen", "en": "Open a claim file"}, "target": "schadenakte", "label": "KFZ", "approval": "human",
+     "carry": {"images": "fotos-{n}.jpg", "mail.md": "meldung.md"},
+     "meta": {"title": "{fields.title}", "subtitle": "{fields.summary_short}", "policy": "{fields.policy}"}},
+    {"id": "R-02", "kind": "schadensmeldung-hausrat", "word": {"de": "Schadensmeldung (Hausrat)", "en": "Claim report (contents)"}, "when": {"de": "Kunde meldet einen Hausratschaden", "en": "A customer reports a contents claim"},
+     "action": "create_case", "action_word": {"de": "Akte in der Schadenakte anlegen", "en": "Open a claim file"}, "target": "schadenakte", "label": "HR", "approval": "human",
+     "carry": {"images": "fotos-{n}.jpg", "mail.md": "meldung.md"}, "meta": {"title": "{fields.title}", "subtitle": "{fields.summary_short}", "policy": "{fields.policy}"}},
+    {"id": "R-03", "kind": "rueckfrage", "word": {"de": "Rückfrage zu einem Schaden", "en": "Question on a claim"}, "when": {"de": "Nennt eine Schadennummer", "en": "Names a claim number"},
+     "action": "note_to_case", "action_word": {"de": "Als Notiz an die Akte hängen", "en": "Add as a note to the file"}, "target": "schadenakte", "approval": "human"},
+    {"id": "R-04", "kind": "themenvorschlag", "word": {"de": "Themenvorschlag", "en": "Topic suggestion"}, "when": {"de": "Jemand schlägt ein Thema für Beiträge vor", "en": "Someone suggests a topic"},
+     "action": "create_case", "action_word": {"de": "Idee im PressRoom anlegen", "en": "Open an idea in PressRoom"}, "target": "pressroom", "label": "SP", "approval": "human",
+     "carry": {"mail.md": "anregung.md"}, "meta": {"title": "{fields.title}"}},
+    {"id": "R-09", "kind": "werbung", "word": {"de": "Werbung, Newsletter", "en": "Advertising, newsletter"}, "when": {"de": "Keine Aufgabe für uns", "en": "No task for us"},
+     "action": "file_away", "action_word": {"de": "Ablegen", "en": "File away"}, "approval": "human"}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Posteingang",
+  "lang": "de",
+  "accent": "your-move",
+  "$comment": "mailbox: where a message lands and which helper reads it; mail_drop: a person may drop an .eml in by hand.",
+  "mailbox": {"stage": "10-eingang", "label": "MAIL", "helper": "posteingang-einordnen"},
+  "mail_drop": true,
+  "covers": {"by": "label", "colors": {"MAIL": "#3d5a80"}, "fallback": "#5a6270"}
+}

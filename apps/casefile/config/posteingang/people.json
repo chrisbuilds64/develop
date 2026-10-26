@@ -1,0 +1,7 @@
+{
+  "$comment": "Default people of an inbox workspace; the workspace's own people.json wins.",
+  "people": [
+    {"id": "chris", "name": "Chris", "kind": "human", "roles": ["operator"]},
+    {"id": "ki", "name": "KI", "kind": "agent", "roles": []}
+  ]
+}

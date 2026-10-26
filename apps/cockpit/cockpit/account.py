@@ -31,6 +31,8 @@ SECRETS = {
     "CLAUDE_CODE_OAUTH_TOKEN": re.compile(r"^sk-ant-oat01-[A-Za-z0-9_-]{40,}$"),   # `claude setup-token`, one year
     "ANTHROPIC_API_KEY": re.compile(r"^sk-ant-api03-[A-Za-z0-9_-]{40,}$"),        # a personal key, if someone prefers one
     "OPENAI_API_KEY": re.compile(r"^sk-(proj-|svcacct-)?[A-Za-z0-9_-]{20,}$"),     # for agents on the openai engine; billed by OpenAI's API, not a ChatGPT plan
+    "IMAP_USER": re.compile(r"^[^@\s]+@[^@\s]+\.[a-z]{2,}$"),                    # a mailbox the runner reads on this person's behalf (ADR-022)
+    "IMAP_PASSWORD": re.compile(r"^\S{8,128}$"),
 }
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
@@ -145,6 +147,10 @@ class Accounts:
         data = self.settings(name)
         data.setdefault("secrets", {})[key] = _now()          # when, never what
         self._save(name, data)
+
+    def secret(self, name: str, key: str) -> str | None:
+        """One secret of a person's account, for a connector the runner serves on their behalf (a mailbox)."""
+        return self._read_secrets(name).get(key) or None
 
     def clear_secret(self, name: str, key: str) -> bool:
         secrets = self._read_secrets(name)

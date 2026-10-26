@@ -425,6 +425,30 @@
         "de": "Jeder KI-Assistent, der hier arbeitet, liest dieses Regelwerk beim Start und ist daran gebunden; was nie passieren darf, sichert zusätzlich ein Hook ab. Nur Menschen ändern den Kanon (Foundation-Prinzip 13).",
         "en": "Every AI assistant that works here reads this rulebook at the start and is bound by it; what must never happen is also guarded by a hook. Only people change the canon (foundation principle 13)."
       }
+    },
+    {
+      "key": "cf.triage",
+      "since": "0.20.0",
+      "title": {
+        "de": "Die Einordnung",
+        "en": "The reading"
+      },
+      "text": {
+        "de": "Was die KI in der Mail erkannt hat: die Art, die Dringlichkeit, die Daten für die Zielakte und die Zeile der Regel-Matrix, die sie vorschlägt. Erst wenn du bestätigst, passiert etwas.",
+        "en": "What the AI recognised in the mail: its kind, urgency, the data the target case needs, and the row of the rule matrix it proposes. Nothing happens until you confirm."
+      }
+    },
+    {
+      "key": "cf.matrix",
+      "since": "0.20.0",
+      "title": {
+        "de": "Die Regel-Matrix",
+        "en": "The rule matrix"
+      },
+      "text": {
+        "de": "Je Art von Mail, was geschieht: wenn Schadensmeldung, dann Akte in der Schadenakte anlegen. Die KI schlägt eine Zeile vor, ein Mensch bestätigt. Grau: noch nicht verbunden.",
+        "en": "Per kind of mail, what happens: when a claim report, open a claim file. The AI proposes a row, a person confirms. Grey: not connected yet."
+      }
     }
   ]
 }

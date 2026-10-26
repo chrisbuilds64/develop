@@ -1,11 +1,11 @@
 // The menu: the three views under the name, groups by urgency, drop-in and the person at the bottom. Left or right.
 import { useQuery } from "@tanstack/react-query";
-import { api, stepId, talk, ApiError, type ConfigView, type MeOut } from "../api";
+import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
 import { Book, Close, Spark, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
 import { useState } from "react";
-import { setSound, soundOn, chime } from "../moments";
+import { setSound, soundOn, chime, paper as paperSound } from "../moments";
 
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme }:
   { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
@@ -17,6 +17,17 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const [making, setMaking] = useState(false);
   const [name, setName] = useState("");
   const [madeError, setMadeError] = useState<string | null>(null);
+  const mailDrop = !!(config.theme as { mail_drop?: boolean }).mail_drop && me.roles.includes("operator");
+  const dropMail = async (f: File | undefined) => {
+    if (!f) return;
+    const fd = new FormData(); fd.append("file", f);
+    try {
+      const res = await fetch(BASE + "/api/mail", { method: "POST", body: fd, credentials: "same-origin" });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.reason ?? j.detail ?? `HTTP ${res.status}`);
+      paperSound(); goClose(`/case/${encodeURIComponent(j.id)}`);
+    } catch (e) { setMadeError(String((e as Error).message)); }
+  };
   const labelWord = create?.label ? ((config.words as { labels?: Record<string, string> }).labels?.[create.label] ?? create.label) : "";
   const goClose = (p: string) => { setOpen(false); go(p); };
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -71,7 +82,10 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         <span>{w.rules}</span><span className="n"><Book /></span>
       </button>
       <div className="spacer" />
-      {mayCreate ? (making ? (
+      {mailDrop ? (
+        <label className="drop-in mail-drop" data-help="cf.drop-in">{w.dropMail}<input type="file" accept=".eml,message/rfc822" hidden onChange={(e) => dropMail(e.target.files?.[0])} />
+          {madeError && <span className="talk-error">{madeError}</span>}</label>
+      ) : mayCreate ? (making ? (
         <form className="new-case" data-help="cf.new-case" onSubmit={async (e) => { e.preventDefault(); if (!name.trim()) return; try { const r = await talk.create(name.trim(), stepId("new")); setMaking(false); setName(""); setMadeError(null); goClose(`/case/${encodeURIComponent(r.id)}`); } catch (err) { setMadeError(err instanceof ApiError ? err.message : String(err)); } }}>
           <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={w.newCasePlaceholder} maxLength={120} onKeyDown={(e) => { if (e.key === "Escape") setMaking(false); }} />
           <button type="submit" className="btn small" disabled={!name.trim()}>{w.create}</button>

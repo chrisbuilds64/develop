@@ -10,6 +10,7 @@ import { Send } from "../components/Icons";
 import { Reader, type Doc } from "../components/Reader";
 import { ago, dateWords, type words } from "../words";
 import { paper, thud } from "../moments";
+import { MailTriage } from "../components/MailTriage";
 
 /** The documents on the desk, newest version each, the primary first — the order the reader walks. */
 export function docsOf(v: CaseView): Doc[] {
@@ -121,6 +122,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             <Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].versions[docs[i].versions.length - 1].name)} onClose={() => setReading(null)} w={w} />
           ) : (<>
           <p className="kicker">{w.onDesk}</p>
+          <MailTriage data={(v as unknown as { data?: Record<string, unknown> }).data ?? {}} w={w} />
           <div className="desk-grid">
             {talkSlot && v.station !== "prepare" && (
               <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "interview") ? " mine" : ""}`} data-help="cf.talk-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/gespraech`)}>

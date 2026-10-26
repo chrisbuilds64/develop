@@ -220,12 +220,27 @@ class SignalOut(BaseModel):
     text: str
 
 
+class MatrixRow(BaseModel):
+    """One row of the rule matrix, in the viewer's words: when a mail is of this kind, this happens."""
+    id: str
+    kind: str
+    word: str
+    when: str = ""
+    action: str
+    action_word: str
+    target: str = ""
+    target_word: str = ""
+    connected: bool = True
+    approval: str = "human"
+
+
 class RulesOut(BaseModel):
     """The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions, the connectors."""
     stages: list[RuleStage]
     skills: list[RuleSkill]
     modules: list[RuleModule]
     connectors: list[RuleConnector] = []
+    matrix: list[MatrixRow] = []
 
 
 class AnswerIn(BaseModel):
@@ -884,7 +899,15 @@ def create_app(settings: Settings) -> FastAPI:
                 except (OSError, ValueError, TypeError):
                     connectors = []
                 break
-        return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors)
+        from ..domain import handoff
+        tg = handoff.targets(c.store)
+        loc = lambda d, k: (d.get(k) or {}).get(lang) or (d.get(k) or {}).get("en") or "" if isinstance(d.get(k), dict) else str(d.get(k) or "")
+        matrix = [MatrixRow(id=r["id"], kind=str(r.get("kind", "")), word=loc(r, "word") or str(r.get("kind", "")), when=loc(r, "when"), action=str(r.get("action", "")),
+                            action_word=loc(r, "action_word") or str(r.get("action", "")), target=str(r.get("target", "")),
+                            target_word=str((tg.get(r.get("target", "")) or {}).get("label", "")), approval=str(r.get("approval", "human")),
+                            connected=r.get("action") == "file_away" or (r.get("action") == "create_case" and r.get("target", "") in tg))
+                  for r in handoff.matrix(c.store, c.config)]
+        return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix)
 
     @app.get("/api/stages", response_model=list[StageOut])
     def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1075,6 +1098,24 @@ def create_app(settings: Settings) -> FastAPI:
             return {"ok": True, "decision": talk.decide(c.store, c.config, case_id, who, body.line, body.verdict, body.text, body.step_id, conf["draft"], conf["decisions"])}
         except talk.InterviewError as exc:
             return _refuse(exc)
+
+    @app.post("/api/mail", response_model=NewCaseOut)
+    async def post_mail(file: UploadFile = File(...), c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A mail dropped in by hand (.eml): the same way in as from the mailbox, so the demo and the real thing are one path."""
+        from ..connectors import mailbox
+        p = c.config.person(who)
+        if not c.config.theme.get("mail_drop"):
+            raise HTTPException(404, "mails are not dropped in here")
+        if not p or "operator" not in p.roles:
+            return _refuse(Exception(c.config.word("texts", "mail_refused", c.lang, "Only the inbox's operators put mail in.")))
+        raw = await file.read()
+        if not raw or len(raw) > settings.max_upload_mb * 1024 * 1024:
+            raise HTTPException(413, "empty or too large")
+        try:
+            cid, _ = mailbox.ingest(c.store, c.config, raw, by=who, source="drop")
+        except StoreError as exc:
+            return _refuse(exc)
+        return NewCaseOut(id=cid, stage=c.store.find(cid) or "")
 
     @app.post("/api/cases", response_model=NewCaseOut)
     def post_case(body: NewCaseIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

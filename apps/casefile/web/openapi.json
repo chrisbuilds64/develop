@@ -1143,6 +1143,45 @@
           }
         }
       }
+    },
+    "/api/mail": {
+      "post": {
+        "summary": "Post Mail",
+        "description": "A mail dropped in by hand (.eml): the same way in as from the mailbox, so the demo and the real thing are one path.",
+        "operationId": "post_mail_api_mail_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_post_mail_api_mail_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewCaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1233,6 +1272,20 @@
           "file"
         ],
         "title": "Body_post_asset_api_cases__case_id__assets_post"
+      },
+      "Body_post_mail_api_mail_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_post_mail_api_mail_post"
       },
       "CaseCard": {
         "properties": {
@@ -1488,6 +1541,11 @@
             "type": "string",
             "title": "Agent",
             "default": "Claude"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
           }
         },
         "type": "object",
@@ -2008,6 +2066,65 @@
           "lang"
         ],
         "title": "LangIn"
+      },
+      "MatrixRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "when": {
+            "type": "string",
+            "title": "When",
+            "default": ""
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "action_word": {
+            "type": "string",
+            "title": "Action Word"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "default": ""
+          },
+          "target_word": {
+            "type": "string",
+            "title": "Target Word",
+            "default": ""
+          },
+          "connected": {
+            "type": "boolean",
+            "title": "Connected",
+            "default": true
+          },
+          "approval": {
+            "type": "string",
+            "title": "Approval",
+            "default": "human"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "word",
+          "action",
+          "action_word"
+        ],
+        "title": "MatrixRow",
+        "description": "One row of the rule matrix, in the viewer's words: when a mail is of this kind, this happens."
       },
       "MeOut": {
         "properties": {
@@ -2618,6 +2735,14 @@
             },
             "type": "array",
             "title": "Connectors",
+            "default": []
+          },
+          "matrix": {
+            "items": {
+              "$ref": "#/components/schemas/MatrixRow"
+            },
+            "type": "array",
+            "title": "Matrix",
             "default": []
           }
         },
