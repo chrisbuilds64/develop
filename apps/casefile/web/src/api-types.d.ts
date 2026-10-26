@@ -245,6 +245,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/canon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Canon
+         * @description The house canon at one glance: every document by layer and depth, with scope, status, owner, origin.
+         */
+        get: operations["get_canon_api_canon_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/canon/doc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Canon Doc
+         * @description One document of the house canon, rendered. Only files under `_kanon/`.
+         */
+        get: operations["get_canon_doc_api_canon_doc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rules": {
         parameters: {
             query?: never;
@@ -1988,6 +2028,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignalOut"][];
+                };
+            };
+        };
+    };
+    get_canon_api_canon_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_canon_doc_api_canon_doc_get: {
+        parameters: {
+            query: {
+                file: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

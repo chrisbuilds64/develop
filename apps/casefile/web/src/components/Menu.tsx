@@ -78,6 +78,11 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       <button type="button" className={`nav-row quiet${route.name === "signals" ? " on" : ""}`} onClick={() => goClose("/signals")} data-help="cf.patterns">
         <span>{w.signals}</span><span className="n"><Spark /></span>
       </button>
+      {(config.theme as { canon?: boolean }).canon && (
+        <button type="button" className={`nav-row quiet${route.name === "house" ? " on" : ""}`} onClick={() => goClose("/kanon")} data-help="cf.house">
+          <span>{w.house}</span><span className="n"><Book /></span>
+        </button>
+      )}
       <button type="button" className={`nav-row quiet${route.name === "rules" ? " on" : ""}`} onClick={() => goClose("/rules")} data-help="cf.rules">
         <span>{w.rules}</span><span className="n"><Book /></span>
       </button>

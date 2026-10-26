@@ -497,6 +497,61 @@
         }
       }
     },
+    "/api/canon": {
+      "get": {
+        "summary": "Get Canon",
+        "description": "The house canon at one glance: every document by layer and depth, with scope, status, owner, origin.",
+        "operationId": "get_canon_api_canon_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/canon/doc": {
+      "get": {
+        "summary": "Get Canon Doc",
+        "description": "One document of the house canon, rendered. Only files under `_kanon/`.",
+        "operationId": "get_canon_doc_api_canon_doc_get",
+        "parameters": [
+          {
+            "name": "file",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/rules": {
       "get": {
         "summary": "Get Rules",

@@ -15,10 +15,11 @@ import { DocWindow } from "./screens/DocWindow";
 import { InterviewScreen } from "./screens/Interview";
 import { OutcomeScreen } from "./screens/Outcome";
 import { CanonScreen } from "./screens/Canon";
+import { HouseScreen } from "./screens/House";
 import { words } from "./words";
 import { presenting, setPresenting } from "./moments";
 
-export type Route = { name: "home" } | { name: "case"; id: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
+export type Route = { name: "home" } | { name: "case"; id: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
   const path = full.startsWith(BASE) ? full.slice(BASE.length) || "/" : full;
@@ -32,6 +33,7 @@ export function parse(full: string): Route {
   if (path.startsWith("/list")) return { name: "list" };
   if (path.startsWith("/rules")) return { name: "rules" };
   if (path.startsWith("/signals")) return { name: "signals" };
+  if (path === "/kanon" || path.startsWith("/kanon/")) return { name: "house" };
   const g = path.match(/^\/group\/([^/]+)/);
   if (g) return { name: "group", key: g[1] };
   return { name: "home" };
@@ -136,6 +138,8 @@ export function App() {
         <Stacked config={config.data} go={go} w={w} />
       ) : route.name === "rules" ? (
         <Rules config={config.data} w={w} />
+      ) : route.name === "house" ? (
+        <HouseScreen config={config.data} go={go} w={w} />
       ) : route.name === "signals" ? (
         <Signals config={config.data} go={go} w={w} />
       ) : (

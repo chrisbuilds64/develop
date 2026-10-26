@@ -379,6 +379,54 @@
       }
     },
     {
+      "key": "cf.house",
+      "since": "0.20.0",
+      "title": {
+        "de": "Kanon",
+        "en": "Canon"
+      },
+      "text": {
+        "de": "Alles, was in diesem Haus gilt, an einem Ort: von den Grundsätzen bis zur Vorlage.",
+        "en": "Everything that holds in this house, in one place: from the principles down to the templates."
+      }
+    },
+    {
+      "key": "cf.house-intro",
+      "since": "0.20.0",
+      "title": {
+        "de": "Was ein Kanon ist",
+        "en": "What a canon is"
+      },
+      "text": {
+        "de": "Ein Ort, verbindlich, für Mensch und KI. Nur Freigegebenes gilt; Aussagen und Entwürfe sind Kandidaten.",
+        "en": "One place, binding, for people and AI. Only what is approved holds; statements and drafts are candidates."
+      }
+    },
+    {
+      "key": "cf.house-matrix",
+      "since": "0.20.0",
+      "title": {
+        "de": "Schicht und Ebene",
+        "en": "Layer and depth"
+      },
+      "text": {
+        "de": "Spalten sind die Schichten: Basis vor Marke vor Bereich. Zeilen sind die Ebenen: wie konkret eine Regel ist. Die Tiefe ist kein Vorrang. Unter der Linie stehen Nachweise; sie zeigen den Kanon bei der Arbeit und sind selbst keiner.",
+        "en": "Columns are the layers: basis before brand before area. Rows are the depths: how concrete a rule is. Depth is no precedence. Below the line stand records; they show the canon at work and are not canon themselves."
+      }
+    },
+    {
+      "key": "cf.house-doc",
+      "since": "0.20.0",
+      "title": {
+        "de": "Ein Dokument des Kanons",
+        "en": "One canon document"
+      },
+      "text": {
+        "de": "Geltungsbereich, Status, Verantwortung, Herkunft und was die Regel umsetzt. Eine Umsetzung, die ihrer Regel widerspricht, ist falsch, nicht die Regel.",
+        "en": "Scope, status, owner, origin and what carries the rule out. An implementation that contradicts its rule is wrong, not the rule."
+      }
+    },
+    {
       "key": "cf.canon-print",
       "since": "0.19.0",
       "title": {

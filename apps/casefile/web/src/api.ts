@@ -106,6 +106,16 @@ export type Outcome = {
   subtitle: string; version: number; approved_by: string; approved_at: string; canon_map: CanonMap;
 };
 export type CanonLayer = { present: boolean; title: string; rules: number };
+export type Trail = { step: string; date?: string; who?: string; text?: string; quotes?: { who: string; quote: string }[] };
+export type HouseDoc = { file?: string; case?: string; title: string; layer: string; area?: string; depth?: number; kind?: string; scope?: string; status?: string;
+  evidence?: string; open?: string; owner?: string; implements?: string[]; lead?: string; note?: string; version?: number; uses?: string[];
+  origin?: { kind: string; text?: string; trail?: Trail[] } };
+export type HouseView = { house: string; lead: string; updated: string; areas: { id: string; title: string; lead?: string }[]; docs: HouseDoc[];
+  gaps: { layer: string; area?: string; depth: number; title: string; lead?: string }[]; records: HouseDoc[] };
+export const canon = {
+  house: () => call<HouseView>("GET", "/api/canon"),
+  doc: (file: string) => call<{ file: string; html: string }>("GET", `/api/canon/doc?file=${encodeURIComponent(file)}`),
+};
 export type CanonMap = { basis?: CanonLayer; marke?: CanonLayer; areas?: { case: string; title: string; current: boolean; version: number }[] };
 
 const cid = (id: string) => encodeURIComponent(id);

@@ -184,3 +184,21 @@ def test_api_shows_only_my_answers_and_starts_a_case(tree):
     assert meta["pack"] == "core-de"
     client.post("/api/session", json={"person": "ann"})
     assert client.post("/api/cases", json={"title": "x", "step_id": "new2"}).status_code == 409
+
+
+def test_the_house_canon_places_documents_and_reads_only_its_folder(tree):
+    from casefile.domain import house
+    store, _ = ctx(tree)
+    v = house.overview(store)
+    assert [d["status"] for d in v["docs"] if d.get("case") == CASE] == ["vorgeschlagen"]           # an open elicitation proposes, it never approves
+    (tree / "_kanon" / "basis").mkdir(parents=True)
+    (tree / "_kanon" / "basis" / "kodex.md").write_text("# Kodex\n")
+    (tree / "_kanon" / "index.json").write_text(json.dumps({"house": "H", "docs": [
+        {"file": "basis/kodex.md", "title": "Kodex", "layer": "basis", "depth": 1, "status": "freigegeben"},
+        {"file": "x.md", "title": "Nirgends", "layer": "elsewhere", "depth": 1}]}))
+    v = house.overview(store)
+    assert v["house"] == "H" and [d["title"] for d in v["docs"] if d["layer"] == "basis"] == ["Kodex"]   # an unknown layer is dropped
+    assert house.doc_text(store, "basis/kodex.md").startswith("# Kodex")
+    for bad in ("../meta.json", "basis/../../people.json", "/etc/passwd", "index.json"):
+        with pytest.raises(FileNotFoundError):
+            house.doc_text(store, bad)

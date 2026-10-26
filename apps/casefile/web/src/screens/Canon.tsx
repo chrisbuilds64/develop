@@ -36,7 +36,7 @@ function CanonMapView({ map, w, go }: { map: CanonMap; w: W; go: (p: string) => 
           </span>
         </li>
       </ol>
-      <p className="map-rule">{w.mapRule}</p>
+      <p className="map-rule">{w.mapRule} <button type="button" className="btn link small" onClick={() => go("/kanon")}>{w.mapWhole}</button></p>
     </section>
   );
 }

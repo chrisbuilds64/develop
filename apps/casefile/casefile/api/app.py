@@ -713,7 +713,7 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/api/config", response_model=views.ConfigView)
     def get_config(c: Ctx = Depends(ctx)):
         v = views.config_view(c.config, c.lang)
-        v.theme = {**v.theme, "demo": settings.demo, "samples": samples_of(c)[1] if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
+        v.theme = {**v.theme, "canon": (Path(c.store.root) / "_kanon").is_dir() or bool(c.config.theme.get("interview")), "demo": settings.demo, "samples": samples_of(c)[1] if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
         return v
 
     @app.get("/api/me/turns", response_model=list[TurnOut])
@@ -847,6 +847,23 @@ def create_app(settings: Settings) -> FastAPI:
                                  cases=[SignalCase(id=i, title=titles.get(i, (i, "", ""))[0], external_id=titles.get(i, (i, "", ""))[1], stage_word=titles.get(i, (i, "", ""))[2]) for i in ids],
                                  text=body.strip()))
         return out
+
+    @app.get("/api/canon")
+    def get_canon(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The house canon at one glance: every document by layer and depth, with scope, status, owner, origin."""
+        from ..domain import house
+        return house.overview(c.store)
+
+    @app.get("/api/canon/doc")
+    def get_canon_doc(file: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """One document of the house canon, rendered. Only files under `_kanon/`."""
+        from ..domain import house
+        from .text import render
+        try:
+            text = house.doc_text(c.store, file)
+        except FileNotFoundError:
+            raise HTTPException(404, file)
+        return {"file": file, "html": render(text, "md" if file.endswith(".md") else "plain")}
 
     @app.get("/api/rules", response_model=RulesOut)
     def get_rules(c: Ctx = Depends(ctx)):
