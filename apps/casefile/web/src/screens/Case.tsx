@@ -32,6 +32,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const [ask, setAsk] = useState("");
   const [pending, setPending] = useState<Turn | null>(null);
   const [reading, setReading] = useState<string | null>(null);
+  const [landed, setLanded] = useState<string | null>(null);         // the slot that just received a file: it lands visibly on the desk
   const askRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); };
@@ -46,8 +47,9 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   }, onError: fail });
   const entry = useMutation({ mutationFn: (b: Parameters<typeof api.entry>[1]) => api.entry(id, b), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); setAsk(""); refresh(); }, onError: fail });
-  const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
-  const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
+  const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: (_r, p) => { setRefused(null); setLanded(p.slot); refresh(); }, onError: fail });
+  const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: (_r, slot) => { setRefused(null); setLanded(slot); refresh(); }, onError: fail });
+  useEffect(() => { if (!landed) return; const t = setTimeout(() => setLanded(null), 1600); return () => clearTimeout(t); }, [landed]);
   const entryCount = q.data?.entries.length ?? 0;
   useEffect(() => { const down = () => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }; down(); document.fonts?.ready.then(down); const t = setTimeout(down, 250); return () => clearTimeout(t); }, [entryCount, id]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t); }, [toast]);
@@ -140,7 +142,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             {desk.filter((s) => s.file !== v.primary).map((s) => {
               const newest = s.versions[s.versions.length - 1];
               return (
-                <button key={s.file} type="button" className={`file${s.versions.length > 1 ? " stack" : ""}`} onClick={() => setReading(newest.name)}>
+                <button key={s.file} type="button" className={`file${s.versions.length > 1 ? " stack" : ""}${landed === s.file ? " landed" : ""}`} onClick={() => setReading(newest.name)}>
                   {s.shape.startsWith("image") && <img src={BASE + newest.url} alt="" />}
                   <span className="name">{s.word}</span>
                   <span className="meta">{w.version(Math.max(1, newest.version))}{s.by_word ? ` · ${s.by_word}` : ""}</span>
@@ -194,10 +196,11 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         ) : primaryTurn ? (
           <>
             {blocked.length > 0 && <span className="says">{w.firstHere}: {blocked.map(blockedWord).join(", ")}</span>}
+            {blocked.length > 0 && <span className="gate-count" aria-live="polite"><b>{blocked.length}</b> {w.missingCount(blocked.length)}</span>}
             {blocked.length === 0 && needsAmount && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" autoFocus /></label>}
             {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
-            <button type="button" className="btn" disabled={!canPress} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>
+            {blocked.length === 0 && <button type="button" className={`btn${primaryTurn.seal ? " arrive" : ""}`} disabled={!canPress} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>}
           </>
         ) : main ? (
           <span className="says">{main.actor === "claude" ? w.isWorking(v.agent) : `${w.waitingFor(roleWord(main.actor))}`}</span>

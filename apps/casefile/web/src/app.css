@@ -634,3 +634,6 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .why-open { font-size: 15px; animation: talk-in .2s var(--ease); }
 .markers { animation: talk-in .25s var(--ease); }
 .markers.ask .marker { border-color: var(--your-move); animation: nudge .35s var(--ease); } @keyframes nudge { 30% { transform: translateX(-3px); } 60% { transform: translateX(3px); } } @media (prefers-reduced-motion: reduce) { .markers.ask .marker { animation: none; } }
+.file.landed { animation: fach-fill 1.3s var(--ease); }
+@media (prefers-reduced-motion: reduce) { .file.landed { animation: none; } }
+.stamp b { border-color: var(--seal); color: var(--seal); }   /* an approval in the thread is a seal, in the seal colour */

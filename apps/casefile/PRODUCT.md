@@ -97,6 +97,11 @@ incumbent default with a derived light mode; both must hold.
 3. Progress is visible as a path, so a person always knows where a piece is and what remains.
 4. Nothing is hidden: every file of a piece is reachable from its page.
 5. The demo is the product: what the prospect sees is the real surface on invented data.
+6. Moments are standard in every application (Chris, 2026-10-26): a gate passed is stamped in the second colour
+   (`--seal`, "decided, it holds now"); a count runs down to the gate instead of a greyed button; what a person
+   contributes visibly lands where it belongs; a finished product (canon, report, piece) is shown as a designed
+   document, never as a raw file; presenting mode hides the demo's furniture. No points, no confetti, no rankings
+   of people. What one application gets, the others get in their shape.
 
 ## Accessibility & Inclusion
 
