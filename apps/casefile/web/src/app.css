@@ -92,15 +92,15 @@ input, textarea { font: inherit; color: inherit; }
 
 .line { position: relative; flex: none; height: 72px; margin: 4px 36px 0; }
 .line .rail { position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: var(--hairline); }
-.line .done { position: absolute; left: 0; top: 8px; height: 2px; background: var(--ink); transition: width var(--slide) var(--ease); }
+.line .fill { position: absolute; left: 0; top: 8px; height: 2px; background: var(--ink); transition: width var(--slide) var(--ease); }
 .line .st { position: absolute; top: 0; width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .line .st i { width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; background: var(--surface); border: 2px solid var(--hairline-2); }
 .line .st.done i { background: var(--ink); border-color: var(--ink); }
 .line .st span { white-space: nowrap; font-size: 14px; margin-top: 2px; color: var(--muted); line-height: 1.2; }
 .line .st.current span { font-weight: 600; color: var(--ink); }
-.line .marker { position: absolute; top: 0; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 5px var(--hairline); transition: left var(--slide) var(--ease), background .3s, box-shadow .3s; }
-.line .marker.mine { background: var(--your-move); box-shadow: 0 0 0 5px var(--your-move-halo); }
-@media (prefers-reduced-motion: reduce) { .line .marker, .line .done { transition: none; } }
+.line .here { position: absolute; top: 0; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 5px var(--hairline); transition: left var(--slide) var(--ease), background .3s, box-shadow .3s; }
+.line .here.mine { background: var(--your-move); box-shadow: 0 0 0 5px var(--your-move-halo); }
+@media (prefers-reduced-motion: reduce) { .line .here, .line .fill { transition: none; } }
 
 /* the head and the line stay; the desk and the conversation scroll each for themselves; the one button stays in the thumb zone */
 .body { flex: 1 1 auto; min-height: 0; display: flex; gap: 28px; }
