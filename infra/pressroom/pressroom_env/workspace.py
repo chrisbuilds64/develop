@@ -72,7 +72,7 @@ def _mkdir(path: Path, user: str, mode: int = 0o755) -> Path:
     return path
 
 
-WORLDS_LATER = ("gatehouse", "gatehouse-live")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
+WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
 
 
 def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
@@ -177,7 +177,8 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     # applications that came after the registry was written (ADR-021: Gatehouse), added once their world is on the stage
     later = {"gatehouse": {"label": "Gatehouse", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-live"), "mode": "live"},
-             "gatehouse-muster": {"label": "Gatehouse · Muster", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse"), "mode": "replay"}}
+             "gatehouse-muster": {"label": "Gatehouse · Muster", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse"), "mode": "replay"},
+             "gatehouse-vorfuehrung": {"label": "Gatehouse · Vorführung", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-demo"), "mode": "live"}}
     grew = [k for k, v in later.items() if k not in data["applications"] and Path(v["template"]).is_dir()]
     for k in grew:
         data["applications"][k] = later[k]
@@ -188,7 +189,8 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     venv = cp / ".venv"
     added = []
     samples = [("schadenakte-muster", "claims", "Schadenakte · Muster", []), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster", []),
-               ("gatehouse-muster", "gatehouse-muster", "Gatehouse · Muster", []), ("gatehouse", "gatehouse", f"Gatehouse {env.label}", ["chris", "akhil"])]
+               ("gatehouse-muster", "gatehouse-muster", "Gatehouse · Muster", []), ("gatehouse", "gatehouse", f"Gatehouse {env.label}", ["chris", "akhil"]),
+               ("gatehouse-vorfuehrung", "gatehouse-vorfuehrung", "Gatehouse · Vorführung", ["chris"])]
     for wid, app, label, members in samples:
         if wid in have or app not in data["applications"]:
             continue

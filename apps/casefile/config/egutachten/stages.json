@@ -68,7 +68,8 @@
             "gutachten.md",
             "pruefbericht.md"
           ],
-          "entry_status": "approved"
+          "entry_status": "approved",
+          "seal": true
         },
         {
           "id": "return_to_assessor",
@@ -116,7 +117,8 @@
             "action": "deliver_report",
             "by": "gutachter",
             "note": "eGutachten über das GDV Schadennetz eingegangen"
-          }
+          },
+          "seal": true
         }
       ]
     },

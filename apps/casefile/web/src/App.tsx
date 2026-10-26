@@ -15,6 +15,7 @@ import { DocWindow } from "./screens/DocWindow";
 import { InterviewScreen } from "./screens/Interview";
 import { OutcomeScreen } from "./screens/Outcome";
 import { words } from "./words";
+import { presenting, setPresenting } from "./moments";
 
 export type Route = { name: "home" } | { name: "case"; id: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
@@ -86,6 +87,19 @@ export function App() {
     window.dispatchEvent(new CustomEvent("casefile:focus", { detail }));
   }, [focusCard?.id, focusCard?.stage, focusCard?.title, route.name, route.name === "doc" ? route.file : "", config.data?.product]);
 
+  // presenting: Shift+Alt+P hides the demo's furniture; Shift+Alt+1…9 switches to the n-th person of a sample world
+  useEffect(() => {
+    const onKey = async (e: KeyboardEvent) => {
+      if (!e.shiftKey || !e.altKey) return;
+      if (e.code === "KeyP") { e.preventDefault(); setPresenting(!presenting()); return; }
+      const n = /^Digit([1-9])$/.exec(e.code)?.[1];
+      const humans = config.data?.people.filter((p) => p.kind === "human") ?? [];
+      if (n && me.data?.open_identity && humans[Number(n) - 1]) { e.preventDefault(); await api.signIn(humans[Number(n) - 1].id); qc.invalidateQueries(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [config.data, me.data?.open_identity, qc]);
+
   if (me.isLoading || config.isLoading) return null;
   if (!config.data) return <div className="gate"><p className="empty">The core is not reachable.</p></div>;
   const lang = config.data.lang;
@@ -105,7 +119,7 @@ export function App() {
   if (route.name === "doc") return <div className="shell"><DocWindow id={route.id} name={route.file} config={config.data} w={w} /></div>;
 
   return (
-    <div className={`shell ${side}`}>
+    <div className={`shell ${side}`} style={{ viewTransitionName: (/\/w\/([^/]+)/.exec(BASE)?.[1] ? `ws-${/\/w\/([^/]+)/.exec(BASE)![1]}` : undefined) }}>
       <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
             onSignOut={async () => { await api.signOut(); qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
             theme={theme} onTheme={setTheme} onLang={onLang} />

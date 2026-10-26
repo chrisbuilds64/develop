@@ -28,6 +28,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
   const [anchorText, setAnchorText] = useState("");
   const [fu, setFu] = useState<Record<string, string>>({});
   const [showFinish, setShowFinish] = useState(false);
+  const [moment, setMoment] = useState<{ done: Block; next: Block; target: string } | null>(null);   // a chapter just clicked shut
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const sent = useRef<Set<string>>(new Set());
 
@@ -62,13 +63,28 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
     try { await talk.chapter(id, b.id, `${key}-${v.me}`.slice(0, 80)); refresh(); } catch { /* follow-ups are a bonus, never a blocker */ }
   };
 
+  // the answer flies from the field into its compartment — the one authored moment of the conversation
+  const fly = (text: string, blockId: string) => {
+    const from = areaRef.current?.getBoundingClientRect();
+    const to = document.querySelector<HTMLElement>(`.fach[data-block="${blockId}"]`)?.getBoundingClientRect();
+    if (!from || !to || window.matchMedia("(prefers-reduced-motion: reduce)").matches || to.width === 0) return;
+    const el = document.createElement("div");
+    el.className = "flight";
+    el.textContent = `„${text.length > 90 ? text.slice(0, 88) + "…" : text}“`;
+    el.style.left = `${from.left + 16}px`; el.style.top = `${from.top + 12}px`;
+    document.body.appendChild(el);
+    const dx = to.left + 12 - (from.left + 16), dy = to.top + 30 - (from.top + 12);
+    el.animate([{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${dx * 0.6}px, ${dy * 0.6 - 40}px) scale(.85)`, opacity: 1, offset: 0.6 },
+                { transform: `translate(${dx}px, ${dy}px) scale(.6)`, opacity: 0 }], { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" }).onfinish = () => el.remove();
+  };
+
   const save = async (): Promise<boolean> => {
     if (!qid || !dirty) return true;
     if (needsMarker) { setError(w.howStandsHint); return false; }
     setSaving(true); setError(null);
     try {
       await talk.answer(id, qid, draft.text, draft.marker, stepId("ans"));
-      if (draft.text.trim()) setFresh(here?.block.id ?? null);
+      if (draft.text.trim() && here) { fly(draft.text.trim(), here.block.id); setTimeout(() => setFresh(here.block.id), 520); }
       const next = { ...drafts }; delete next[qid]; setDrafts(next);
       await refresh();
       return true;
@@ -77,10 +93,16 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
   };
 
   const goTo = async (target: string | null, opts: { save?: boolean } = { save: true }) => {
+    const landed = !!qid && dirty && !saved && draft.text.trim() !== "";
     if (opts.save && !(await save())) return;
     const from = here?.block;
     const to = order.find((x) => x.q.id === target)?.block;
-    if (from && to && from.id !== to.id) void chapterDone(from);
+    if (from && to && from.id !== to.id) {
+      void chapterDone(from);
+      const full = blockAnswered(from) + (landed ? 1 : 0) >= from.questions.length;
+      if (full && landed && target) { setMoment({ done: from, next: to, target }); setCurrent(target); return; }
+    }
+    setMoment(null);
     setShowFinish(false);
     setCurrent(target);
   };
@@ -110,6 +132,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
         <section className="talk-anchor" data-help="cf.talk-anchor">
           <h1>{v.pack.anchor.ask ?? w.anchorPlaceholder}</h1>
           {v.pack.anchor.why && <p className="talk-why">{v.pack.anchor.why}</p>}
+          <p className="talk-scope">{w.scope(total, v.pack.blocks.length)}</p>
           <form onSubmit={async (e) => { e.preventDefault(); if (!anchorText.trim()) return; try { await talk.anchor(id, anchorText); refresh(); } catch (err) { setError(err instanceof ApiError ? err.message : String(err)); } }}>
             <input autoFocus value={anchorText} onChange={(e) => setAnchorText(e.target.value)} placeholder={v.pack.anchor.placeholder ?? w.anchorPlaceholder} maxLength={200} />
             <button type="submit" className="btn" disabled={!anchorText.trim()}>{w.anchorGo} →</button>
@@ -155,7 +178,19 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
 
         {/* the question */}
         <section className="talk-q" aria-live="polite">
-          {showFinish || !here ? (
+          {moment ? (
+            <div className="chapter-done" data-help="cf.talk-chapter">
+              <span className="mark" aria-hidden="true"><Check /></span>
+              <h1>{w.chapterDone(moment.done.title.replace(/^Block \d+ — /, ""))}</h1>
+              <p className="talk-why">{w.chapterFilled(moment.done.canon || moment.done.title, moment.done.questions.filter((qq) => v.answers[qq.id]).length)}</p>
+              {(() => { const last = [...moment.done.questions].reverse().find((qq) => v.answers[qq.id]); return last ? <blockquote>„{v.answers[last.id].text}“</blockquote> : null; })()}
+              <div className="talk-actions">
+                <button type="button" className="btn link" onClick={() => go(`/case/${encodeURIComponent(id)}`)}>{w.pauseHere}</button>
+                <span className="talk-state" />
+                <button type="button" className="btn" autoFocus onClick={() => setMoment(null)}>{w.nextChapter(moment.next.title.replace(/^Block \d+ — /, ""))} →</button>
+              </div>
+            </div>
+          ) : showFinish || !here ? (
             <div className="talk-finish" data-help="cf.talk-finish">
               {v.done ? (<><h1>{w.finished}</h1><p className="talk-why">{w.finishedHint}</p></>) : (<>
                 <h1>{w.finishTitle}</h1>
@@ -239,7 +274,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
             const drafts2 = (v.helper.drafts ?? []).filter((d) => d.block === b.id);
             const fill = mine.length / b.questions.length;
             return (
-              <div key={b.id} className={`fach${mine.length === 0 ? " empty" : ""}${fresh === b.id ? " fresh" : ""}${here?.block.id === b.id ? " on" : ""}`}>
+              <div key={b.id} data-block={b.id} className={`fach${mine.length === 0 ? " empty" : ""}${fresh === b.id ? " fresh" : ""}${here?.block.id === b.id ? " on" : ""}`}>
                 <div className="fach-head"><b>{b.canon || b.title}</b><span className="fach-bar" aria-hidden="true"><i style={{ width: `${Math.round(fill * 100)}%` }} /></span></div>
                 {mine.length === 0 && drafts2.length === 0 ? <span className="fach-empty">{w.emptyFach}</span> : null}
                 {drafts2.map((d, i) => <p key={i} className="fach-draft"><span>{d.text}</span><small>{w.drafted(agent)}</small></p>)}
@@ -257,7 +292,7 @@ function TalkHead({ v, go, w }: { v: Talk; go: (p: string) => void; w: W }) {
   return (
     <header className="talk-head">
       <button type="button" className="btn link small talk-back" onClick={() => go(`/case/${encodeURIComponent(v.case)}`)}><Back /> {w.backToCase}</button>
-      <div className="talk-title"><b>{v.title}</b><span>{v.pack.name}{v.pack.version ? ` · v${v.pack.version}` : ""}</span></div>
+      <div className="talk-title"><b>{v.title}</b><span className="pack-tag">{v.pack.name}{v.pack.version ? ` · v${v.pack.version}` : ""}</span></div>
     </header>
   );
 }
@@ -267,7 +302,7 @@ function People({ v, w, compact = false }: { v: Talk; w: W; compact?: boolean })
     <div className={`talk-people${compact ? " compact" : ""}`}>
       <p className="talk-sub">{w.people}</p>
       <ul>
-        {v.respondents.map((r) => (
+        {v.respondents.filter((r) => v.sees_all || r.me).map((r) => (
           <li key={r.id} className={r.me ? "me" : ""}>
             <span className="avatar small">{r.name.slice(0, 2).toUpperCase()}</span>
             <span className="talk-person">{r.name}</span>
@@ -276,6 +311,7 @@ function People({ v, w, compact = false }: { v: Talk; w: W; compact?: boolean })
           </li>
         ))}
       </ul>
+      {!v.sees_all && v.others > 0 && <p className="others">{w.othersDone(v.others_done, v.others)}</p>}
     </div>
   );
 }

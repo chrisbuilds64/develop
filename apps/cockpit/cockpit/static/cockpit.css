@@ -852,3 +852,30 @@ html[data-look="glass"] .form-card button, html[data-look="glass"] .btn-primary 
 .hire-opts input { font-size: 13px !important; padding: 6px 9px !important; }
 .form-card .member .agent-av { width: 44px; height: 44px; }
 .form-card .btn-quiet, .form-card button.btn-quiet { background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); font-weight: 500; font-size: 14px; padding: 8px 12px; text-decoration: none; }
+
+/* ---------------------------------------------------------------- the opener: the idea in four seconds, once per browser session */
+@view-transition { navigation: auto; }
+::view-transition-group(*) { animation-duration: .45s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+.opener { position: fixed; inset: 0; z-index: 60; background: var(--ground); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px; }
+.opener[hidden] { display: none; }
+.opener.leaving { animation: op-leave .65s cubic-bezier(.7, 0, .2, 1) forwards; }
+.op-line { width: min(640px, 86vw); height: auto; overflow: visible; }
+.op-rail { stroke: var(--ink); stroke-width: 2; fill: none; stroke-dasharray: 600; stroke-dashoffset: 600; animation: op-draw .7s cubic-bezier(.6, 0, .2, 1) .15s forwards; }
+.op-st { fill: var(--ground); stroke: var(--hairline-2); stroke-width: 2.5; opacity: 0; transform-box: fill-box; transform-origin: center; animation: op-pop .35s cubic-bezier(.3, 1.6, .5, 1) forwards; }
+.op-here { fill: var(--ink); opacity: 0; animation: op-here 1.1s cubic-bezier(.65, 0, .25, 1) 1.6s forwards; transition: fill .4s ease, filter .4s ease; }
+.opener.arrived .op-here { fill: var(--your-move); filter: drop-shadow(0 0 10px var(--your-move-halo)); }
+.op-hello { margin: 18px 0 0; font-size: clamp(30px, 4.4vw, 54px); font-weight: 500; letter-spacing: -.02em; line-height: 1.1; text-align: center; opacity: 0; animation: op-rise .6s cubic-bezier(.2, .8, .2, 1) 2.1s forwards; }
+.op-waiting { margin: 0; font-size: clamp(20px, 2.4vw, 28px); color: var(--ink-2); text-align: center; min-height: 1.3em; opacity: 0; transition: opacity .5s ease; }
+.opener.arrived .op-waiting, .opener.arrived-calm .op-waiting { opacity: 1; }
+.op-waiting b, .waiting-line.mine b { color: var(--your-move); font-weight: 600; }
+.op-skip { position: absolute; right: 22px; bottom: 22px; font: inherit; font-size: 14px; color: var(--muted); background: transparent; border: 1px solid var(--hairline); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+body.opening { overflow: hidden; }
+@keyframes op-draw { to { stroke-dashoffset: 0; } }
+@keyframes op-pop { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+@keyframes op-here { 0% { opacity: 0; transform: translateX(0); } 15% { opacity: 1; } 100% { opacity: 1; transform: translateX(232px); } }
+@keyframes op-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes op-leave { to { opacity: 0; clip-path: inset(0 0 100% 0); } }
+.waiting-line { margin: 4px 0 0; font-size: 16px; color: var(--ink-2); }
+.ws-card.mine { border: 1.5px solid var(--your-move); }
+.ws-waiting { align-self: flex-start; font-size: 12px; font-weight: 700; color: var(--your-move-on); background: var(--your-move); border-radius: 999px; padding: 2px 9px; }
+@media (prefers-reduced-motion: reduce) { .opener { display: none !important; } ::view-transition-group(*) { animation: none; } }

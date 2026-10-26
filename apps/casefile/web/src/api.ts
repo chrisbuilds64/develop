@@ -86,6 +86,7 @@ export type Interview = {
   case: string; title: string; pack: Pack; me: string; can_answer: boolean; anchor: string;
   answers: Record<string, Answer>; followup_answers: Record<string, { text: string }>; helper: Helper; helper_running: boolean; done: boolean;
   respondents: { id: string; name: string; answered: number; total: number; done: boolean; me: boolean }[];
+  sees_all: boolean; others: number; others_done: number;
 };
 export type Source = { person: string; question: string; quote: string };
 export type Line = { id: string; block: string; text: string; marker?: string; sources?: Source[]; decision: { verdict?: "accept" | "edit" | "reject"; text?: string; by?: string; at?: string } };

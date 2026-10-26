@@ -51,7 +51,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       </div>
       {config.groups.map((g) => {
         const n = counts.get(g.key) ?? 0;
-        if (n === 0 && !["you", "claude", "others", "out"].includes(g.key)) return null;
+        if (n === 0 && g.key !== "you") return null;           // an empty group says "nothing ever happens here"; only your own stays, even at zero
         const phone = g.key === "you";
         return (
           <button key={g.key} type="button" className={`nav-row${current === g.key ? " on" : ""}${phone ? " phone" : ""}`} {...(g.key === "you" ? { "data-help": "cf.groups" } : {})}
@@ -90,10 +90,10 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
           <button type="button" className="nav-row quiet" data-help-skip="public demo only" onClick={() => onFresh()}><span>{w.startOver}</span><span className="n"><Restart /></span></button>
         </div>
       )}
-      <button type="button" className="nav-row quiet" data-help="cf.language" onClick={() => onLang(config.lang === "de" ? "en" : "de")} title={w.language} lang={config.lang === "de" ? "en" : "de"}>
+      <button type="button" className="nav-row quiet lang-row" data-help="cf.language" onClick={() => onLang(config.lang === "de" ? "en" : "de")} title={w.language} lang={config.lang === "de" ? "en" : "de"}>
         <span>{w.otherLang}</span><span className="n"><Globe /></span>
       </button>
-      <button type="button" className="nav-row quiet" data-help="cf.theme" onClick={() => onTheme(dark ? "light" : "dark")} aria-label={w.theme}>
+      <button type="button" className="nav-row quiet theme-row" data-help="cf.theme" onClick={() => onTheme(dark ? "light" : "dark")} aria-label={w.theme}>
         <span>{dark ? w.light : w.dark}</span><span className="n">{dark ? <Sun /> : <Moon />}</span>
       </button>
       <div className="who">

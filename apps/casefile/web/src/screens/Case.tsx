@@ -9,6 +9,7 @@ import { Cover } from "../components/Cover";
 import { Send } from "../components/Icons";
 import { Reader, type Doc } from "../components/Reader";
 import { ago, dateWords, type words } from "../words";
+import { thud } from "../moments";
 
 /** The documents on the desk, newest version each, the primary first — the order the reader walks. */
 export function docsOf(v: CaseView): Doc[] {
@@ -24,7 +25,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const samples = ((config.theme as { samples?: string[] }).samples ?? []);
   const extWord = ((config.words as { words?: Record<string, string> }).words?.external_id) ?? "";
   const [refused, setRefused] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null);
+  const [toast, setToast] = useState<{ text: string; undo?: () => void; sealed?: boolean } | null>(null);
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [note, setNote] = useState("");
@@ -37,7 +38,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
   const stageWord = (f: string) => ((config.words as { stages?: Record<string, string> }).stages?.[f]) ?? f.replace(/^\d+-/, "");
   const roleWord = (actor: string) => actor.startsWith("role:") ? (((config.words as { roles?: Record<string, string> }).roles?.[actor.slice(5)]) ?? actor.slice(5)) : (config.people.find((p) => p.id === actor)?.name ?? actor);
-  const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown> }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r) => { setRefused(null); refresh(); if (r.to) setToast({ text: w.doneMoved(stageWord(r.to)) }); }, onError: fail });
+  const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown> }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r, p) => {
+    setRefused(null); refresh();
+    const gate = q.data?.my_turns.find((t) => t.action === p.action)?.seal && !r.replayed;
+    if (gate) { thud(); setToast({ text: `${q.data?.my_turns.find((t) => t.action === p.action)?.label ?? ""}${r.to ? ` · ${stageWord(r.to)}` : ""}`, sealed: true }); }
+    else if (r.to) setToast({ text: w.doneMoved(stageWord(r.to)) });
+  }, onError: fail });
   const entry = useMutation({ mutationFn: (b: Parameters<typeof api.entry>[1]) => api.entry(id, b), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); setAsk(""); refresh(); }, onError: fail });
   const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
@@ -82,7 +88,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const docs = docsOf(v);
   const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((v) => v.name === reading));
   const stub = main
-    ? mine ? `${v.stage_word} · ${w.waitingForYou}${v.since ? ` ${w.since} ${ago(v.since, lang)}` : ""}`
+    ? mine ? `${v.stage_word} · ${w.waitingForYou}`
       : main.actor === "claude" ? `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
       : `${v.stage_word} · ${w.waitingFor(roleWord(main.actor))}`
     : `${v.stage_word}${v.date ? ` · ${dateWords(v.date, lang)}` : ""}`;
@@ -199,7 +205,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           <span className="says">{v.stage_word}</span>
         )}
       </footer>
-      {toast && <div className="toast" role="status"><span>{toast.text}</span>{toast.undo && <button type="button" onClick={toast.undo}>{w.undo}</button>}<button type="button" onClick={() => go("/")}>{w.yourMove} →</button></div>}
+      {toast && <div className={`toast${toast.sealed ? " sealed" : ""}`} role="status">{toast.sealed && <span className="stampmark">{w.sealed}</span>}<span>{toast.text}</span>{toast.undo && <button type="button" onClick={toast.undo}>{w.undo}</button>}<button type="button" onClick={() => go("/")}>{w.yourMove} →</button></div>}
     </main>
   );
 }

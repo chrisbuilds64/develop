@@ -470,5 +470,10 @@
   "team.sessions": "Sessions",
   "team.place": "Place",
   "team.no_templates": "This stage knows no job profiles (cockpit.toml: agents).",
-  "ag.continue": "Continue in the panel"
+  "ag.continue": "Continue in the panel",
+  "home.waiting_none": "Nothing waits for you.",
+  "home.waiting_one": "One thing waits for you.",
+  "home.waiting_many": "{n} things wait for you.",
+  "ws.waiting": "{n} for you",
+  "home.skip": "Continue"
 }

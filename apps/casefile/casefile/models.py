@@ -24,6 +24,7 @@ class Action(BaseModel):
     payload: list[str] = Field(default_factory=list)    # payload fields the surface must send, e.g. ["amount", "date"]
     actor: str | None = None                     # who may do it; None = the stage's turn
     handover: dict | None = None                 # demo: after the step, files go to a partner world (world, match, files, action, by, note)
+    seal: bool = False                           # a gate whose passing is a decision that holds: the surface stamps it (the second colour, ADR-021 addendum)
     compile: str | None = None                   # after the move, the core writes a document from the case's data: "canon" (decisions over a draft → canon.md)
 
 
@@ -165,6 +166,7 @@ class Turn(BaseModel):
     since: str = ""
     entry: str | None = None                     # the entry this move answers, when it is an answer
     payload: list[str] = Field(default_factory=list)   # what the surface must ask for: amount, date, url, note
+    seal: bool = False                                  # passing this gate is stamped
 
 
 # ----------------------------------------------------------------------------- a step

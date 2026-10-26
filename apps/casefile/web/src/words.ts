@@ -79,6 +79,11 @@ const W = {
     accepted: "angenommen", edited: "geändert", rejected: "verworfen", openLines: (n: number) => (n === 1 ? "eine Zeile offen" : `${n} Zeilen offen`), allDecided: "Jede Zeile ist entschieden.",
     approve: "Kanon freigeben", canonReady: "Kanon v0.1 liegt in der Akte", openCanon: "Kanon lesen", evaluating: (a: string) => `${a} wertet aus …`, noOutcome: "Noch keine Auswertung. Sie entsteht, sobald jemand das Gespräch abgeschlossen hat und die Moderation auswerten lässt.",
     onlyDecider: "Entscheiden darf der Entscheider. Du siehst den Stand.", sourceOf: (who: string, q: string) => `${who} · ${q}`, questionN: (n: string) => `Frage ${n}`, sources: (n: number) => `${n} Quellen`, markerWord: (m: string) => (m === "is" ? "ist" : m === "should" ? "soll" : m === "open" ? "offen" : m),
+    sealed: "Besiegelt", sealedBand: (d: string) => `Kanon v0.1 · freigegeben ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "Regel" : "Regeln"}`, `${v} ${v === 1 ? "Stimme" : "Stimmen"}`, `${q} ${q === 1 ? "Zitat" : "Zitate"}`],
+    sealNow: "Ab jetzt gilt das.", sealTitle: (t: string) => `Kanon v0.1 · ${t}`, stillOpen: "noch offen", openLinesShort: (n: number) => (n === 1 ? "Zeile" : "Zeilen"),
+    chapterDone: (t: string) => `„${t}“ ist fertig.`, chapterFilled: (f: string, n: number) => `Dein Fach „${f}“ trägt jetzt ${n} ${n === 1 ? "Zitat" : "Zitate"}.`, nextChapter: (t: string) => `Weiter mit „${t}“`, pauseHere: "Hier pausieren",
+    scope: (q: number, c: number) => `${q} Fragen in ${c} Kapiteln. Zwei Sitzungen sind normal; du kannst jederzeit aufhören und später genau hier weitermachen.`,
+    othersDone: (d: number, n: number) => `${d} von ${n} anderen ${n === 1 ? "ist" : "sind"} fertig. Was sie sagen, siehst du nicht — das bleibt so, bis ausgewertet wird.`,
     newCase: (what: string) => `+ Neue ${what}`, newCasePlaceholder: "Name, z. B. Angebotsprozess", create: "Anlegen",
   },
   en: {
@@ -158,6 +163,11 @@ const W = {
     accepted: "accepted", edited: "changed", rejected: "rejected", openLines: (n: number) => (n === 1 ? "one line open" : `${n} lines open`), allDecided: "Every line is decided.",
     approve: "Approve the canon", canonReady: "Canon v0.1 is in the case", openCanon: "Read the canon", evaluating: (a: string) => `${a} is evaluating …`, noOutcome: "No evaluation yet. It comes once somebody has finished the conversation and the moderator has it evaluated.",
     onlyDecider: "The decider decides. You see where it stands.", sourceOf: (who: string, q: string) => `${who} · ${q}`, questionN: (n: string) => `question ${n}`, sources: (n: number) => `${n} sources`, markerWord: (m: string) => (m === "is" ? "is" : m === "should" ? "should" : m === "open" ? "open" : m),
+    sealed: "Sealed", sealedBand: (d: string) => `Canon v0.1 · approved ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "rule" : "rules"}`, `${v} ${v === 1 ? "voice" : "voices"}`, `${q} ${q === 1 ? "quote" : "quotes"}`],
+    sealNow: "From now on, this holds.", sealTitle: (t: string) => `Canon v0.1 · ${t}`, stillOpen: "still open", openLinesShort: (n: number) => (n === 1 ? "line" : "lines"),
+    chapterDone: (t: string) => `“${t}” is done.`, chapterFilled: (f: string, n: number) => `Your compartment “${f}” now holds ${n} ${n === 1 ? "quote" : "quotes"}.`, nextChapter: (t: string) => `On to “${t}”`, pauseHere: "Pause here",
+    scope: (q: number, c: number) => `${q} questions in ${c} chapters. Two sittings are normal; stop any time and carry on exactly here.`,
+    othersDone: (d: number, n: number) => `${d} of ${n} others are done. What they say you do not see — that stays so until the evaluation.`,
     newCase: (what: string) => `+ New ${what.toLowerCase()}`, newCasePlaceholder: "Name, e.g. quoting process", create: "Create",
   },
 };

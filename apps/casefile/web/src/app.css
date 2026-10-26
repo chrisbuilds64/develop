@@ -490,3 +490,61 @@ table.stack td.since, table.stack td.date { color: var(--ink-2); white-space: no
   .kline-main { grid-template-columns: minmax(0, 1fr); }
   .talk-head { flex-wrap: wrap; }
 }
+
+/* ------------------------------------------------------------------ moments: the seal, the flight into the canon, a chapter that clicks shut */
+/* the seal is the second colour and means only: decided, it holds now */
+.seal-stage { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: color-mix(in srgb, var(--ground) 82%, transparent); backdrop-filter: blur(6px); animation: seal-fade .35s var(--ease); }
+.seal-sheet { position: relative; width: min(560px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-l); padding: 28px 30px 26px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.06); display: flex; flex-direction: column; gap: 10px; animation: seal-rise .5s var(--ease); }
+.seal-sheet h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+.seal-lines { list-style: none; margin: 6px 0 4px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.seal-lines li { font-size: 14px; line-height: 1.4; color: var(--ink-2); padding-left: 14px; position: relative; opacity: 0; animation: seal-line .4s var(--ease) forwards; }
+.seal-lines li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 1px; background: var(--ink-2); }
+.seal-stamp { position: absolute; right: 22px; top: 18px; width: 108px; height: 108px; border-radius: 50%; border: 3px solid var(--seal); color: var(--seal); display: grid; place-items: center; text-align: center; font-family: var(--mono); font-weight: 600; letter-spacing: .08em; transform: rotate(-12deg); opacity: 0; animation: seal-stamp .55s cubic-bezier(.3, 1.6, .5, 1) forwards; box-shadow: inset 0 0 0 5px var(--surface), inset 0 0 0 6px var(--seal); }
+.seal-stamp b { display: block; font-size: 26px; letter-spacing: 0; }
+.seal-stamp small { display: block; font-size: 10px; text-transform: uppercase; }
+.seal-sum { margin: 6px 0 0; font-size: 18px; font-weight: 500; line-height: 1.35; opacity: 0; animation: seal-line .5s var(--ease) forwards; }
+.seal-sum em { font-style: normal; color: var(--seal-ink); font-weight: 600; }
+.seal-acts { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; opacity: 0; animation: seal-line .4s var(--ease) forwards; }
+.btn.seal { background: var(--seal); color: var(--seal-on); }
+.sealed-band { flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--r-m); background: var(--seal-soft); color: var(--seal-ink); font-size: 15px; }
+.sealed-band b { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; border: 1.5px solid var(--seal); border-radius: var(--r-pill); padding: 2px 9px; color: var(--seal); }
+.sealed-band a { margin-left: auto; color: inherit; }
+.toast.sealed { background: var(--seal); color: var(--seal-on); }
+.toast.sealed .stampmark { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; border: 1.5px solid currentColor; border-radius: var(--r-pill); padding: 2px 8px; animation: seal-stamp .5s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes seal-fade { from { opacity: 0; } }
+@keyframes seal-rise { from { opacity: 0; transform: translateY(18px) scale(.98); } }
+@keyframes seal-line { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes seal-stamp { 0% { opacity: 0; transform: rotate(-12deg) scale(1.9); } 60% { opacity: 1; transform: rotate(-12deg) scale(.94); } 100% { opacity: 1; transform: rotate(-12deg) scale(1); } }
+
+/* the counter that runs down to the gate */
+.gate-count { display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 20px; border-radius: 26px; border: 1.5px dashed var(--dashed); font-size: 16px; color: var(--ink-2); }
+.gate-count b { font-variant-numeric: tabular-nums; font-size: 22px; color: var(--ink); min-width: 1ch; text-align: center; }
+.btn.arrive { animation: btn-arrive .45s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes btn-arrive { from { transform: scale(.85); opacity: 0; } }
+
+/* an answer flies into its compartment */
+.flight { position: fixed; z-index: 30; pointer-events: none; max-width: 300px; background: var(--surface); border: 1px solid var(--hairline-2); border-radius: var(--r-m); padding: 8px 12px; font-size: 13px; line-height: 1.4; color: var(--ink-2); box-shadow: 0 12px 30px -10px rgba(0,0,0,.25); }
+
+/* a chapter clicks shut */
+.chapter-done { display: flex; flex-direction: column; gap: 14px; max-width: 620px; padding-top: 5vh; animation: talk-in .35s var(--ease); }
+.chapter-done .mark { width: 54px; height: 54px; border-radius: 50%; background: var(--ink); color: var(--ground); display: grid; place-items: center; animation: seal-stamp .5s cubic-bezier(.3, 1.6, .5, 1) both; transform: rotate(0); }
+.chapter-done .mark svg { width: 26px; height: 26px; }
+.chapter-done h1 { margin: 0; font-size: 30px; font-weight: 500; line-height: 1.2; letter-spacing: -.012em; }
+.chapter-done blockquote { margin: 0; padding: 14px 16px; border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--hairline); font-size: 17px; line-height: 1.45; color: var(--ink-2); }
+.talk-scope { margin: 0; font-size: 15px; color: var(--muted); }
+.talk-people .others { font-size: 14px; color: var(--ink-2); margin: 6px 0 0; }
+
+/* presenting: the demo's furniture leaves the stage (Shift+Alt+P) */
+:root[data-present] .demo-row, :root[data-present] .menu .lang-row, :root[data-present] .menu .theme-row, :root[data-present] .who .person-switch, :root[data-present] .talk-title .pack-tag { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .seal-stage, .seal-sheet, .seal-lines li, .seal-stamp, .seal-sum, .seal-acts, .toast.sealed .stampmark, .btn.arrive, .chapter-done, .chapter-done .mark { animation: none; opacity: 1; }
+}
+a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+.seal-sheet { padding-right: 150px; }
+.seal-stamp small { font-size: 9px; letter-spacing: .04em; }
+@media (max-width: 640px) { .seal-sheet { padding: 128px 20px 22px; } .seal-stamp { right: auto; left: 20px; top: 14px; width: 96px; height: 96px; } }
+
+/* entering from the cockpit: the workspace card grows into this shell (same view-transition name, cross-document) */
+@view-transition { navigation: auto; }
+::view-transition-group(*) { animation-duration: .45s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*) { animation: none; } }

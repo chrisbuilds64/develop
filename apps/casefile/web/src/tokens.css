@@ -1,5 +1,6 @@
 /* tokens.css — every colour, size and radius of the surface lives here and nowhere else (Bauplan §2).
- * The one accent is --your-move and means only: this waits for you. Light is the default; dark derives. */
+ * The one accent is --your-move and means only: this waits for you. Light is the default; dark derives.
+ * The second colour is --seal and means only: decided, it holds now (a gate passed, a canon released; Chris, 2026-10-26). */
 
 :root {
   --ground: #F6F3EE;
@@ -17,6 +18,10 @@
   --your-move-soft: #DCE6FF;
   --your-move-ink: #1E3A8A;
   --your-move-halo: rgba(29, 78, 216, 0.18);
+  --seal: #A3302A;
+  --seal-on: #FFF8F2;
+  --seal-soft: #F7E4DD;
+  --seal-ink: #7A1F1A;
   --bubble-you: #1B1916;
   --bubble-you-ink: #F6F3EE;
   --bubble-you-muted: #CFC7BA;
@@ -54,6 +59,10 @@
     --your-move-soft: #18233F;
     --your-move-ink: #B9CCFF;
     --your-move-halo: rgba(125, 162, 255, 0.22);
+    --seal: #E2725F;
+    --seal-on: #1A0D0B;
+    --seal-soft: #3A1D18;
+    --seal-ink: #F4A898;
     --bubble-you: #EDEAE4;
     --bubble-you-ink: #141516;
     --bubble-you-muted: #6E675D;
@@ -75,6 +84,10 @@
   --your-move-soft: #18233F;
   --your-move-ink: #B9CCFF;
   --your-move-halo: rgba(125, 162, 255, 0.22);
+  --seal: #E2725F;
+  --seal-on: #1A0D0B;
+  --seal-soft: #3A1D18;
+  --seal-ink: #F4A898;
   --bubble-you: #EDEAE4;
   --bubble-you-ink: #141516;
   --bubble-you-muted: #6E675D;

@@ -173,6 +173,18 @@
         "de": "Wie das Cockpit konfiguriert ist: Quellen, Module, Rollen.",
         "en": "How the cockpit is configured: sources, modules, roles."
       }
+    },
+    {
+      "key": "shell.opener",
+      "since": "0.19.0",
+      "title": {
+        "de": "Der Auftakt",
+        "en": "The opening"
+      },
+      "text": {
+        "de": "Einmal je Sitzung: die Linie, ihre Stationen und ein Marker, der dort blau wird, wo du dran bist. Die Zahl ist echt: was in deinen Workspaces auf dich wartet. Jede Taste oder „Weiter“ überspringt.",
+        "en": "Once per session: the line, its stations and a marker that turns blue where it is your move. The number is real: what waits for you in your workspaces. Any key or “Continue” skips it."
+      }
     }
   ]
 }

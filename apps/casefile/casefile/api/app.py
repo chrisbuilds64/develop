@@ -291,6 +291,9 @@ class InterviewOut(BaseModel):
     helper_running: bool = False
     done: bool = False
     respondents: list[RespondentOut] = []
+    sees_all: bool = False                             # moderation and decider see names and progress; a respondent sees only how many others
+    others: int = 0
+    others_done: int = 0
 
 
 class OutcomeOut(BaseModel):
@@ -918,15 +921,22 @@ def create_app(settings: Settings) -> FastAPI:
         asked = talk.respondents(c.config, case)
         helper_runs = [r for r in case.runs if r.background and r.requested_by == who and r.status in ("queued", "running")]
         people = []
+        viewer_p = c.config.person(who)
+        sees_all = bool(viewer_p and {"moderator", "decider"} & set(viewer_p.roles))     # respondents never see a ranking of their colleagues
+        others_done = 0
         for pid, pr in talk.progress(c.config, case, total).items():
             p = c.config.person(pid)
+            if pid != who and not sees_all:
+                others_done += pr["done"]
+                continue
             people.append(RespondentOut(id=pid, name=p.name if p else pid, answered=pr["answered"], total=total, done=pr["done"], me=pid == who))
         mine = {q: {k: v for k, v in a.items() if k != "step"} for q, a in (doc.get("answers", {}).get(who) or {}).items()}
         return InterviewOut(case=case.id, title=str(case.meta.get("title") or case.id), pack=pack, me=who,
                             can_answer=bool(st and st.interview and who in asked), anchor=str((doc.get("anchor") or {}).get(who, "")),
                             answers=mine, followup_answers={f: {k: v for k, v in a.items() if k != "step"} for f, a in (doc.get("followups", {}).get(who) or {}).items()},
                             helper=case.data.get(f"nachfragen-{who}.json") or {}, helper_running=bool(helper_runs),
-                            done=bool((doc.get("done") or {}).get(who)), respondents=people)
+                            done=bool((doc.get("done") or {}).get(who)), respondents=people, sees_all=sees_all,
+                            others=len(asked) - (1 if who in asked else 0) if not sees_all else 0, others_done=others_done)
 
     @app.post("/api/cases/{case_id}/interview/answer")
     def post_answer(case_id: str, body: AnswerIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

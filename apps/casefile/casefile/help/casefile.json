@@ -329,6 +329,30 @@
         "de": "Aktiv, sobald jede Zeile entschieden ist. Die Freigabe schreibt den Kanon v0.1 als Datei in die Akte, mit Quellen. Nach vier Wochen Betrieb folgt der zweite Durchgang.",
         "en": "Active once every line is decided. Approval writes canon v0.1 as a file into the case, with sources. After four weeks of real work the second pass follows."
       }
+    },
+    {
+      "key": "cf.talk-chapter",
+      "since": "0.19.0",
+      "title": {
+        "de": "Kapitel fertig",
+        "en": "Chapter done"
+      },
+      "text": {
+        "de": "Ein Kapitel ist voll: sein Fach im Kanon trägt jetzt deine Zitate. Weitermachen oder hier pausieren; beim nächsten Öffnen geht es genau hier weiter.",
+        "en": "A chapter is full: its compartment in the canon now holds your quotes. Carry on or pause here; next time it opens exactly here."
+      }
+    },
+    {
+      "key": "cf.outcome-sealed",
+      "since": "0.19.0",
+      "title": {
+        "de": "Besiegelt",
+        "en": "Sealed"
+      },
+      "text": {
+        "de": "Dieser Kanon ist freigegeben. Die zweite Farbe heißt nur das: beschlossen, ab jetzt gilt es. Der Kanon liegt als Datei in der Akte.",
+        "en": "This canon is approved. The second colour means only that: decided, it holds from now on. The canon is a file in the case."
+      }
     }
   ]
 }

@@ -29,7 +29,7 @@ export function Gate({ config, me, onSignedIn }: { config: ConfigView; me?: MeOu
                   onClick={async () => { setBusy(p.id); try { await api.signIn(p.id); onSignedIn(); } finally { setBusy(null); } }}>
             <span className="avatar">{p.name.slice(0, 2).toUpperCase()}</span>
             <span>{p.name}</span>
-            <span className="mono hint" style={{ marginLeft: "auto" }}>{p.roles.join(" · ")}</span>
+            <span className="mono hint" style={{ marginLeft: "auto" }}>{p.roles.map((r) => ((config.words as { roles?: Record<string, string> }).roles?.[r]) ?? r).join(" · ")}</span>
           </button>
         ))}
       </form>

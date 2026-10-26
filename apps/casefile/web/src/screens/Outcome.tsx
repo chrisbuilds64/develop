@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, BASE, stepId, talk, type ConfigView, type Line, type Outcome, type Source } from "../api";
 import { Back, Check, Cross, Pen } from "../components/Icons";
-import type { words } from "../words";
+import { dateWords, type words } from "../words";
+import { thud } from "../moments";
 
 type W = ReturnType<typeof words>;
 
@@ -14,10 +15,20 @@ export function OutcomeScreen({ id, config, go, w }: { id: string; config: Confi
   const c = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false });
   const agent = config.people.find((p) => p.kind === "agent")?.name ?? "KI";
   const [error, setError] = useState<string | null>(null);
+  const [sealing, setSealing] = useState<{ lines: string[]; rules: number; voices: number; quotes: number } | null>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["outcome", id] }); qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); };
   const decide = useMutation({ mutationFn: (p: { line: string; verdict: string; text?: string }) => talk.decide(id, p.line, p.verdict, p.text ?? "", stepId("dec")),
                                onSuccess: () => { setError(null); refresh(); }, onError: (e) => setError(e instanceof ApiError ? e.message : String(e)) });
-  const approve = useMutation({ mutationFn: () => api.step(id, "approve_canon", stepId("approve")), onSuccess: () => { setError(null); refresh(); },
+  const approve = useMutation({ mutationFn: () => api.step(id, "approve_canon", stepId("approve")), onSuccess: () => {
+                                  setError(null);
+                                  // the numbers on the seal are the case's own: lines kept, people whose words they rest on, quotes behind them
+                                  const kept = (q.data?.lines ?? []).filter((l) => l.decision.verdict === "accept" || l.decision.verdict === "edit");
+                                  const sources = kept.flatMap((l) => l.sources ?? []);
+                                  setSealing({ lines: kept.slice(0, 6).map((l) => (l.decision.verdict === "edit" ? l.decision.text : l.text) ?? ""), rules: kept.length,
+                                               voices: new Set(sources.map((s) => s.person)).size, quotes: sources.length });
+                                  setTimeout(thud, 420);
+                                  refresh();
+                                },
                                 onError: (e) => setError(e instanceof ApiError ? e.message : String(e)) });
 
   if (q.isLoading) return <main className="main talk-main"><p className="empty">…</p></main>;
@@ -38,9 +49,12 @@ export function OutcomeScreen({ id, config, go, w }: { id: string; config: Confi
       <header className="talk-head">
         <button type="button" className="btn link small talk-back" onClick={() => go(`/case/${encodeURIComponent(id)}`)}><Back /> {w.backToCase}</button>
         <div className="talk-title"><b>{v.title}</b><span>{v.stage_word}</span></div>
-        {v.canon_url && <a className="btn ghost small" href={BASE + v.canon_url} target="_blank" rel="noreferrer">{w.openCanon}</a>}
       </header>
 
+      {v.canon && !approveTurn && (
+        <div className="sealed-band" data-help="cf.outcome-sealed"><b>{w.sealed}</b><span>{w.sealedBand(dateWords(c.data?.entries.filter((e) => e.status === "approved").slice(-1)[0]?.date ?? "", config.lang) || "")}</span>
+          {v.canon_url && <a href={BASE + v.canon_url} target="_blank" rel="noreferrer">{w.openCanon}</a>}</div>
+      )}
       <div className="outcome-scroll">
         {v.running && <p className="talk-reading"><i aria-hidden="true" />{w.evaluating(agent)}</p>}
         {!hasFindings && !v.lines.length && !v.running && <p className="talk-lead">{w.noOutcome}</p>}
@@ -130,9 +144,25 @@ export function OutcomeScreen({ id, config, go, w }: { id: string; config: Confi
 
       {!!v.lines.length && (approveTurn || v.canon) && (
         <footer className="foot" data-help="cf.outcome-approve">
-          <span className="says">{v.canon && !approveTurn ? w.canonReady : v.open_lines ? w.openLines(v.open_lines) : w.allDecided}</span>
-          {approveTurn && <button type="button" className="btn" disabled={v.open_lines > 0 || approve.isPending} onClick={() => approve.mutate()}>{w.approve} →</button>}
+          <span className="says">{v.canon && !approveTurn ? w.canonReady : v.open_lines ? w.draftHint : w.allDecided}</span>
+          {approveTurn && (v.open_lines > 0
+            ? <span className="gate-count" aria-live="polite"><b>{v.open_lines}</b> {w.openLinesShort(v.open_lines)} {w.stillOpen}</span>
+            : <button type="button" className="btn arrive" disabled={approve.isPending} onClick={() => approve.mutate()}>{w.approve} →</button>)}
         </footer>
+      )}
+      {sealing && (
+        <div className="seal-stage" role="dialog" aria-modal="true" aria-label={w.sealed} onClick={() => setSealing(null)}>
+          <div className="seal-sheet" onClick={(e) => e.stopPropagation()}>
+            <span className="seal-stamp" style={{ animationDelay: "380ms" }} aria-hidden="true"><span><b>v0.1</b><small>{w.sealed}</small></span></span>
+            <h2>{w.sealTitle(v.title)}</h2>
+            <ul className="seal-lines">{sealing.lines.map((t, i) => <li key={i} style={{ animationDelay: `${60 + i * 50}ms` }}>{t}</li>)}</ul>
+            <p className="seal-sum" style={{ animationDelay: "900ms" }}>{w.sealSum(sealing.rules, sealing.voices, sealing.quotes).map((x, i) => <span key={i}>{i ? ", " : ""}<em>{x}</em></span>)}. {w.sealNow}</p>
+            <div className="seal-acts" style={{ animationDelay: "1150ms" }}>
+              <button type="button" className="btn link" onClick={() => setSealing(null)}>{w.close}</button>
+              {v.canon_url && <a className="btn seal" href={BASE + v.canon_url} target="_blank" rel="noreferrer">{w.openCanon}</a>}
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

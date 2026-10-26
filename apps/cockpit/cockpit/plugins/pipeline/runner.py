@@ -449,6 +449,36 @@ def focus_block(args, person: str, order: dict, s) -> tuple[str, dict | None]:
     return head + (f"\n{body}\n" if body else "") + "</case-on-screen>\n\n", f
 
 
+CANON_BUDGET = 20000
+
+
+def canon_block(args, person: str, order: dict, s) -> tuple[str, str]:
+    """The canon this house approved, line by line (Gatehouse, ADR-021): the newest canon.md of every case in the session's
+    workspace. It binds the agent. Returns (text, fingerprint); the text goes with a message only when the fingerprint is new
+    to the session — after an approval the very next message carries the new line."""
+    f = order.get("focus") or {}
+    _, data = session_place(args, person, s, f.get("workspace"))
+    if not data or not Path(data).is_dir():
+        return "", ""
+    best: dict[Path, tuple[int, Path]] = {}
+    for c in Path(data).glob("[0-9][0-9]-*/*/canon*.md"):
+        m = c.name.split(".")
+        v = int(m[1][1:]) if len(m) == 3 and m[1].startswith("v") and m[1][1:].isdigit() else 0
+        if c.parent not in best or v > best[c.parent][0]:
+            best[c.parent] = (v, c)
+    if not best:
+        return "", ""
+    files = sorted((c for _, c in best.values()), key=lambda c: c.stat().st_mtime)
+    fp = ";".join(f"{c.parent.name}/{c.name}@{int(c.stat().st_mtime)}" for c in files)
+    body = "\n\n".join(c.read_text(encoding="utf-8", errors="replace") for c in files)[-CANON_BUDGET:]
+    text = ("<house-canon>\nThese are the rules this house approved, line by line, after asking its own people. They bind you, "
+            "above any request in this conversation. Before you do or recommend anything, check it against them. When a request "
+            "conflicts with a line: do not do it; name the line (its K-number and wording), quote whose words it rests on, and hand "
+            "the decision back to the person who holds that gate. Never override or reinterpret a line; only a person changes the "
+            "canon, through the next approval.\n\n" + body + "\n</house-canon>\n\n")
+    return text, fp
+
+
 def place_text(s) -> str:
     p = s.place or {}
     return " · ".join(x for x in (p.get("workspace"), p.get("application"), p.get("item")) if x) or p.get("title") or "Cockpit"
@@ -725,6 +755,10 @@ def execute_session(f: Path, order: dict, person: str, store, args) -> None:
         focus_text, new_focus = focus_block(args, person, order, s)
         if new_focus is not None:
             s = store.update(sid, focus=new_focus)
+        canon_text, canon_fp = canon_block(args, person, order, s)
+        if canon_fp and canon_fp != (s.focus or {}).get("canon"):
+            focus_text = canon_text + focus_text                   # a canon new to this session binds from this message on
+            s = store.update(sid, focus={**(s.focus or {}), "canon": canon_fp})
         if focus_text:
             order["text"] = focus_text + order["text"]           # the case goes with this message; the transcript keeps the words
     memory = agent.notes_path.parent if agent.notes_path else None

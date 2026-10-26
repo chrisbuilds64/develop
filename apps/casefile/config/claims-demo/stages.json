@@ -82,7 +82,8 @@
           "payload": [
             "amount"
           ],
-          "entry_status": "approved"
+          "entry_status": "approved",
+          "seal": true
         },
         {
           "id": "ask_assessor",

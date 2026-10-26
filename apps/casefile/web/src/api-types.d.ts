@@ -856,6 +856,21 @@ export interface components {
              * @default []
              */
             respondents: components["schemas"]["RespondentOut"][];
+            /**
+             * Sees All
+             * @default false
+             */
+            sees_all: boolean;
+            /**
+             * Others
+             * @default 0
+             */
+            others: number;
+            /**
+             * Others Done
+             * @default 0
+             */
+            others_done: number;
         };
         /** LangIn */
         LangIn: {
@@ -1341,6 +1356,11 @@ export interface components {
             entry?: string | null;
             /** Payload */
             payload?: string[];
+            /**
+             * Seal
+             * @default false
+             */
+            seal: boolean;
         };
         /** TurnOut */
         TurnOut: {

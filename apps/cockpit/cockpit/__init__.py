@@ -10,4 +10,4 @@ the whole design:
 Everything else is rendering.
 """
 
-__version__ = "0.18.0"
+__version__ = "0.19.0"

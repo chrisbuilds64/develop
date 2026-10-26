@@ -9,7 +9,7 @@ import { ago, dateWords, type words } from "../words";
 export function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void; w: ReturnType<typeof words>; lang: string; quiet?: boolean }) {
   const t = c.turn;
   const running = t?.actor === "claude";
-  const state = t ? (c.mine ? `${c.stage_word}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;
+  const state = t ? (c.mine ? c.stage_word : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;
   return (
     <a className={`card${c.mine ? " mine" : ""}${quiet ? " quiet" : ""}`} href={`${BASE}/case/${encodeURIComponent(c.id)}`} onClick={(e) => { e.preventDefault(); go(`/case/${encodeURIComponent(c.id)}`); }}>
       <Cover label={c.label} number={c.number || c.id.split("-")[1] || ""} tint={c.tint} />

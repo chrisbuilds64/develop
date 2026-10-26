@@ -1,8 +1,20 @@
 {% extends "base.html" %}
 {% block main %}
 {% set hour = now[11:13]|int %}
+{% set greeting = t('home.morning' if hour < 11 else 'home.afternoon' if hour < 18 else 'home.evening', name=(', ' ~ user.display.split(' ')[0]) if user else '') %}
+{# The opener: once per browser session, the idea in four seconds — a line, its stations, a marker that turns blue where it is your move. #}
+<div class="opener" id="opener" hidden data-help="shell.opener" data-none="{{ t('home.waiting_none') }}" data-one="{{ t('home.waiting_one') }}" data-many="{{ t('home.waiting_many') }}">
+  <svg class="op-line" viewBox="0 0 600 40" aria-hidden="true">
+    <path class="op-rail" d="M10 20 H590" />
+    {% for i in range(6) %}<circle class="op-st" cx="{{ 10 + i * 116 }}" cy="20" r="6" style="animation-delay: {{ 700 + i * 140 }}ms" />{% endfor %}
+    <circle class="op-here" cx="10" cy="20" r="11" />
+  </svg>
+  <p class="op-hello">{{ greeting }}.</p>
+  <p class="op-waiting" aria-live="polite">&nbsp;</p>
+  <button type="button" class="op-skip">{{ t('home.skip') }}</button>
+</div>
 <div class="page-head">
-  <h1>{{ t('home.morning' if hour < 11 else 'home.afternoon' if hour < 18 else 'home.evening', name=(', ' ~ user.display.split(' ')[0]) if user else '') }}</h1>
+  <div><h1>{{ greeting }}</h1><p class="waiting-line" id="waiting-line"></p></div>
   <span class="stamp">{{ t('app.as_of', when=now) }}{% if user %} · {{ user.role }}{% endif %}</span>
 </div>
 {% if err %}<p class="notice err">{{ err }}</p>{% endif %}
@@ -12,7 +24,7 @@
 <h2 class="section" style="margin:0 0 10px">{{ t('ws.title') }}</h2>
 <div class="ws-grid">
   {% for w in workspaces %}
-  <a class="ws-card" href="/w/{{ w.id }}/">
+  <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
     <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
     <span class="title">{{ w.label }}</span>
     <span class="meta">
@@ -20,6 +32,7 @@
       {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
       {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
     </span>
+    <span class="ws-waiting" hidden data-tpl="{{ t('ws.waiting') }}"></span>
     {% if w.id in ws_failures %}<span class="fail">{{ ws_failures[w.id] }}</span>{% endif %}
   </a>
   {% endfor %}
@@ -31,4 +44,35 @@
 <h2 class="section" style="margin:0 0 10px">{{ t('app.workshop') }}</h2>
 {% include "grid.html" %}
 {% endif %}
+<script>
+// Who waits for you, honestly: each live workspace answers for itself (its own "your move" list); sample worlds do not count.
+(function () {
+  var cards = [].slice.call(document.querySelectorAll('.ws-card[data-mode="live"]'));
+  var total = Promise.all(cards.map(function (c) {
+    return fetch(new URL('api/me/turns', c.href), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+      .then(function (turns) {
+        var n = new Set(turns.map(function (t) { return t.case.id; })).size, b = c.querySelector('.ws-waiting');
+        if (n && b) { b.textContent = b.dataset.tpl.replace('{n}', n); b.hidden = false; c.classList.add('mine'); }
+        return n;
+      });
+  })).then(function (ns) { return ns.reduce(function (a, b) { return a + b; }, 0); });
+  var op = document.getElementById('opener'), line = document.getElementById('waiting-line');
+  function words(n) { var d = op.dataset; return n === 0 ? d.none : n === 1 ? d.one : d.many.replace('{n}', '<b>' + n + '</b>'); }
+  total.then(function (n) { line.innerHTML = words(n).replace(/^(\d+)/, '<b>$1</b>'); line.classList.toggle('mine', n > 0); });
+  var seen = false; try { seen = sessionStorage.getItem('cockpit-opened') === '1'; sessionStorage.setItem('cockpit-opened', '1'); } catch (e) {}
+  if (seen || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  op.hidden = false; document.body.classList.add('opening');
+  var done = false;
+  function close() { if (done) return; done = true; op.classList.add('leaving'); setTimeout(function () { op.hidden = true; document.body.classList.remove('opening'); }, 650); }
+  op.querySelector('.op-skip').addEventListener('click', close);
+  document.addEventListener('keydown', close, { once: true });
+  total.then(function (n) {
+    setTimeout(function () {
+      op.querySelector('.op-waiting').innerHTML = words(n);
+      op.classList.add(n > 0 ? 'arrived' : 'arrived-calm');
+    }, 2300);
+  });
+  setTimeout(close, 5600);
+})();
+</script>
 {% endblock %}

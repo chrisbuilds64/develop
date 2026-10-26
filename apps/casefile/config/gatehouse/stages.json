@@ -10,7 +10,12 @@
       "group": "ideas",
       "turn": "role:moderator",
       "actions": [
-        {"id": "open_conversation", "label": "open_conversation", "to": "20-gespraech", "entry_status": "info"}
+        {
+          "id": "open_conversation",
+          "label": "open_conversation",
+          "to": "20-gespraech",
+          "entry_status": "info"
+        }
       ]
     },
     {
@@ -20,7 +25,16 @@
       "turn": "role:moderator",
       "interview": "gespraech.json",
       "actions": [
-        {"id": "evaluate", "label": "evaluate", "to": "30-klaerung", "run": "gatehouse-auswerten", "requires": ["answered"], "entry_status": "info"}
+        {
+          "id": "evaluate",
+          "label": "evaluate",
+          "to": "30-klaerung",
+          "run": "gatehouse-auswerten",
+          "requires": [
+            "answered"
+          ],
+          "entry_status": "info"
+        }
       ]
     },
     {
@@ -29,8 +43,24 @@
       "group": "you",
       "turn": "role:decider",
       "actions": [
-        {"id": "approve_canon", "label": "approve_canon", "to": "40-kanon", "requires": ["decided:kanon-entwurf.json:entscheide.json"], "compile": "canon", "entry_status": "approved"},
-        {"id": "evaluate_again", "label": "evaluate_again", "run": "gatehouse-auswerten", "actor": "role:moderator", "entry_status": "info"}
+        {
+          "id": "approve_canon",
+          "label": "approve_canon",
+          "to": "40-kanon",
+          "requires": [
+            "decided:kanon-entwurf.json:entscheide.json"
+          ],
+          "compile": "canon",
+          "entry_status": "approved",
+          "seal": true
+        },
+        {
+          "id": "evaluate_again",
+          "label": "evaluate_again",
+          "run": "gatehouse-auswerten",
+          "actor": "role:moderator",
+          "entry_status": "info"
+        }
       ]
     },
     {
@@ -39,7 +69,12 @@
       "group": "planned",
       "turn": "role:moderator",
       "actions": [
-        {"id": "second_pass", "label": "second_pass", "to": "50-zweiter-durchgang", "entry_status": "info"}
+        {
+          "id": "second_pass",
+          "label": "second_pass",
+          "to": "50-zweiter-durchgang",
+          "entry_status": "info"
+        }
       ]
     },
     {
@@ -48,7 +83,15 @@
       "group": "others",
       "turn": "role:moderator",
       "actions": [
-        {"id": "close", "label": "close", "to": "60-abgeschlossen", "payload": ["note"], "entry_status": "approved"}
+        {
+          "id": "close",
+          "label": "close",
+          "to": "60-abgeschlossen",
+          "payload": [
+            "note"
+          ],
+          "entry_status": "approved"
+        }
       ]
     },
     {
