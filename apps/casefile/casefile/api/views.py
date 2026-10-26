@@ -87,6 +87,7 @@ class ConfigView(BaseModel):
     people: list[PersonView]
     theme: dict
     words: dict                                           # the vocabulary for the language, flat
+    videos: list[dict] = []                               # explainers for this language: key, where, title, url, poster, seconds
 
 
 def by_word(config: DomainConfig, by: str, lang: str) -> str:
@@ -159,4 +160,9 @@ def config_view(config: DomainConfig, lang: str) -> ConfigView:
                       lang=lang, stations=[StationView(key=k, word=config.word("stations", k, lang, k), state="todo") for k in config.stations],
                       groups=[GroupView(key=g, word=config.word("groups", g, lang, g)) for g in groups_order],
                       people=[PersonView(id=p.id, name=p.name, kind=p.kind, roles=p.roles) for p in config.people],
-                      theme=config.theme, words=v)
+                      theme=config.theme, words=v,
+                      videos=[{"key": x["key"], "where": list(x.get("where", [])), "title": (x.get("title") or {}).get(lang) or (x.get("title") or {}).get("en") or x["key"],
+                               "url": f"/api/videos/{x['file']}", "poster": f"/api/videos/{x['poster']}" if x.get("poster") else "", "seconds": int(x.get("seconds", 0))}
+                              for x in config.videos if not x.get("lang") or x.get("lang") == lang] or
+                             [{"key": x["key"], "where": list(x.get("where", [])), "title": (x.get("title") or {}).get(lang) or x["key"], "url": f"/api/videos/{x['file']}",
+                               "poster": f"/api/videos/{x['poster']}" if x.get("poster") else "", "seconds": int(x.get("seconds", 0))} for x in config.videos])

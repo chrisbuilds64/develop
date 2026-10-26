@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ApiError, BASE, talk, type ConfigView, type Line } from "../api";
 import { Back } from "../components/Icons";
+import { Explain } from "../components/Explain";
 import { dateWords, type words } from "../words";
 
 type W = ReturnType<typeof words>;
@@ -26,6 +27,7 @@ export function CanonScreen({ id, config, go, w }: { id: string; config: ConfigV
       <header className="talk-head canon-tools">
         <button type="button" className="btn link small talk-back" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}><Back /> {w.outcomeOpen}</button>
         <span className="talk-title" />
+        <Explain where="canon" config={config} />
         <button type="button" className="btn ghost small" onClick={() => window.print()} data-help="cf.canon-print">{w.printPdf}</button>
         {v.canon_url && <a className="btn link small" href={BASE + v.canon_url} download>{w.asFile}</a>}
       </header>

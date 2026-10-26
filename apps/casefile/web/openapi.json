@@ -418,6 +418,44 @@
         }
       }
     },
+    "/api/videos/{name}": {
+      "get": {
+        "summary": "Get Video",
+        "description": "An explainer from the application's configuration (`config/<domain>/videos/`); only files the catalog names.",
+        "operationId": "get_video_api_videos__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/signals": {
       "get": {
         "summary": "Get Signals",
@@ -1513,6 +1551,15 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Words"
+          },
+          "videos": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Videos",
+            "default": []
           }
         },
         "type": "object",

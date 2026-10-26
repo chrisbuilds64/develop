@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, stepId, talk, type Answer, type Block, type ConfigView, type Interview as Talk } from "../api";
 import { Back, Check } from "../components/Icons";
+import { Explain } from "../components/Explain";
 import type { words } from "../words";
 
 type W = ReturnType<typeof words>;
@@ -135,6 +136,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
           <h1>{v.pack.anchor.ask ?? w.anchorPlaceholder}</h1>
           {v.pack.anchor.why && <p className="talk-why">{v.pack.anchor.why}</p>}
           <p className="talk-scope">{w.scope(total, v.pack.blocks.length)}</p>
+          <div><Explain where="interview" config={config} /></div>
           <form onSubmit={async (e) => { e.preventDefault(); if (!anchorText.trim()) return; try { await talk.anchor(id, anchorText); refresh(); } catch (err) { setError(err instanceof ApiError ? err.message : String(err)); } }}>
             <input autoFocus value={anchorText} onChange={(e) => setAnchorText(e.target.value)} placeholder={v.pack.anchor.placeholder ?? w.anchorPlaceholder} maxLength={200} />
             <button type="submit" className="btn" disabled={!anchorText.trim()}>{w.anchorGo} →</button>

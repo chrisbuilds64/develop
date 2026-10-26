@@ -377,6 +377,18 @@
         "de": "Druckt das Regelwerk ohne Menü und Knöpfe; im Druckdialog „Als PDF sichern“ wählen.",
         "en": "Prints the rulebook without menu and buttons; choose “Save as PDF” in the print dialog."
       }
+    },
+    {
+      "key": "cf.explain",
+      "since": "0.19.0",
+      "title": {
+        "de": "Erklärvideo",
+        "en": "Explainer"
+      },
+      "text": {
+        "de": "Ein kurzes Video zu dem, was du hier siehst. Es öffnet sich über der Seite; Esc schließt es.",
+        "en": "A short video about what you see here. It opens over the page; Esc closes it."
+      }
     }
   ]
 }

@@ -747,6 +747,17 @@ def create_app(settings: Settings) -> FastAPI:
         kind = "md" if ext == "md" else "plain"
         return {"name": name, "kind": kind, "html": render(p.read_text(encoding="utf-8", errors="replace"), kind)}
 
+    @app.get("/api/videos/{name}")
+    def get_video(name: str, c: Ctx = Depends(ctx)):
+        """An explainer from the application's configuration (`config/<domain>/videos/`); only files the catalog names."""
+        known = {x.get("file") for x in c.config.videos} | {x.get("poster") for x in c.config.videos}
+        if name not in known or "/" in name or name.startswith(".") or not c.config.dir:
+            raise HTTPException(404, name)
+        p = c.config.dir / "videos" / name
+        if not p.is_file():
+            raise HTTPException(404, name)
+        return FileResponse(p)
+
     @app.get("/api/signals", response_model=list[SignalOut])
     def get_signals(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         """What the pattern helper noticed across the files of this world: `_signale/*.md` at the pipeline root."""

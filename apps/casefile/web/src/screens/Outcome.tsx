@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, BASE, stepId, talk, type ConfigView, type Line, type Outcome, type Source } from "../api";
 import { Back, Check, Cross, Pen } from "../components/Icons";
+import { Explain } from "../components/Explain";
 import { dateWords, type words } from "../words";
 import { thud } from "../moments";
 
@@ -49,6 +50,7 @@ export function OutcomeScreen({ id, config, go, w }: { id: string; config: Confi
       <header className="talk-head">
         <button type="button" className="btn link small talk-back" onClick={() => go(`/case/${encodeURIComponent(id)}`)}><Back /> {w.backToCase}</button>
         <div className="talk-title"><b>{v.title}</b><span>{v.stage_word}</span></div>
+        <Explain where="outcome" config={config} />
       </header>
 
       {v.canon && !approveTurn && (

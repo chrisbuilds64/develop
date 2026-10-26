@@ -188,6 +188,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/videos/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Video
+         * @description An explainer from the application's configuration (`config/<domain>/videos/`); only files the catalog names.
+         */
+        get: operations["get_video_api_videos__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/signals": {
         parameters: {
             query?: never;
@@ -673,6 +693,13 @@ export interface components {
             words: {
                 [key: string]: unknown;
             };
+            /**
+             * Videos
+             * @default []
+             */
+            videos: {
+                [key: string]: unknown;
+            }[];
         };
         /** DecideIn */
         DecideIn: {
@@ -1732,6 +1759,37 @@ export interface operations {
             header?: never;
             path: {
                 case_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_api_videos__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
                 name: string;
             };
             cookie?: never;

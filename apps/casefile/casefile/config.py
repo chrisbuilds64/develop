@@ -34,6 +34,7 @@ class DomainConfig:
     lang: str = "en"
     config_version: str = "1"
     dir: Path | None = None                       # where the domain files came from (replies for the demo live beside them)
+    videos: list = field(default_factory=list)    # explainer videos (videos.json): key, where, title, file, poster, minutes
 
     # ------------------------------------------------------------------ loading
     @classmethod
@@ -65,6 +66,7 @@ class DomainConfig:
             lang=theme.get("lang") or stages_doc.get("lang") or "en",
             config_version=str(stages_doc.get("configVersion") or "1"),
             dir=domain_dir,
+            videos=[v for v in ((_read(domain_dir / "videos.json") or {}).get("videos") or []) if isinstance(v, dict) and v.get("key") and v.get("file")],
         )
 
     # ------------------------------------------------------------------ stages
