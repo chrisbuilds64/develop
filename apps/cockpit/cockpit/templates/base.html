@@ -92,10 +92,10 @@
       <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
     </a>
     {% endfor %}
-    {% if role.may_act('*') or role.may_act('setup.view') %}
-    <a href="/setup" class="nav-row{% if route.startswith('/setup') %} on{% endif %}" data-help="shell.setup" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
-    {% endif %}
   </details>
+  {% endif %}
+  {% if role.may_act('*') or role.may_act('setup.view') %}
+  <a href="/setup" class="nav-row{% if route.startswith('/setup') %} on{% endif %}" data-help="shell.setup" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
   {% endif %}
 
   </div>
