@@ -79,6 +79,17 @@ export function CanonScreen({ id, config, go, w }: { id: string; config: ConfigV
             </section>
           ))}
 
+          <section className="canon-machine" data-help="cf.canon-machine">
+            <h2>{w.machineTitle}</h2>
+            <p>{w.machineText}</p>
+            <div className="machine-row" aria-hidden="true">
+              <span className="machine-doc">{w.canonKind.split(" · ")[0]} v0.{v.version || 1}</span>
+              <span className="machine-lines" />
+              <span className="machine-agents">{["Claude", "Codex", "Grok", "API"].map((a) => <span key={a}>{a}</span>)}</span>
+            </div>
+            <p className="machine-rule">{w.machineRule}</p>
+          </section>
+
           <footer className="canon-foot">
             <p>{w.canonFoot}</p>
           </footer>

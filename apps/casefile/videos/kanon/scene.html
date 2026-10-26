@@ -52,6 +52,23 @@ html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; backgrou
 .ai b { color: var(--seal); font-family: "IBM Plex Mono", monospace; }
 .typing { display: inline-flex; gap: 6px; } .typing i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); animation: t 1s infinite; } .typing i:nth-child(2) { animation-delay: .15s } .typing i:nth-child(3) { animation-delay: .3s }
 @keyframes t { 50% { opacity: .2 } }
+/* one canon, every AI */
+.hub { position: absolute; inset: 0; }
+.hub svg { position: absolute; inset: 0; width: 1280px; height: 720px; }
+.hub .wire { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 6 8; fill: none; opacity: 0; transition: opacity .5s; }
+.hub.go .wire { opacity: .5; animation: flow 1s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -14; } }
+.doc { position: absolute; left: 150px; top: 150px; width: 300px; height: 240px; background: var(--surface); border: 2px solid var(--seal); border-radius: 18px; padding: 24px; box-shadow: 0 30px 60px -36px rgba(0,0,0,.35); }
+.doc b { display: block; font-family: "IBM Plex Mono", monospace; color: var(--seal); font-size: 20px; margin-bottom: 14px; }
+.doc i { display: block; height: 10px; border-radius: 5px; background: var(--hair); margin: 12px 0; }
+.agent { position: absolute; left: 860px; width: 270px; padding: 16px 20px; border-radius: 16px; background: var(--surface); border: 1.5px solid var(--hair2); font-size: 24px; font-weight: 600; display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateX(30px); transition: all .5s var(--ease); }
+.agent.on { opacity: 1; transform: none; }
+.agent::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--hair2); transition: background .4s; }
+.agent.bound::before { background: var(--seal); box-shadow: 0 0 0 5px var(--seal-soft); }
+.agent small { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--seal); opacity: 0; transition: opacity .4s; }
+.agent.bound small { opacity: 1; }
+.hookline { position: absolute; left: 150px; top: 430px; font-family: "IBM Plex Mono", monospace; font-size: 17px; color: var(--ink-2); opacity: 0; transition: opacity .6s; }
+.hookline.on { opacity: 1; }
 /* end */
 .end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
 .end svg { width: 560px; }
@@ -103,13 +120,24 @@ html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; backgrou
     <div class="msg ai" id="m1"><span class="typing"><i></i><i></i><i></i></span></div>
   </div>
 </div>
+<!-- 6b: one canon, every AI -->
+<div class="layer hub" id="L6b">
+  <svg><path class="wire" d="M450 270 C 650 270, 660 150, 860 150"/><path class="wire" d="M450 270 C 650 270, 660 240, 860 240"/><path class="wire" d="M450 270 C 650 270, 660 330, 860 330"/><path class="wire" d="M450 270 C 650 270, 660 420, 860 420"/></svg>
+  <div class="doc"><b>KANON v0.1</b><i style="width:90%"></i><i style="width:74%"></i><i style="width:84%"></i><i style="width:62%"></i><i style="width:78%"></i></div>
+  <div class="agent" id="a0" style="top:120px">Claude<small>gebunden</small></div>
+  <div class="agent" id="a1" style="top:210px">Codex<small>gebunden</small></div>
+  <div class="agent" id="a2" style="top:300px">Grok<small>gebunden</small></div>
+  <div class="agent" id="a3" style="top:390px">eure eigene KI<small>gebunden</small></div>
+  <div class="hookline" id="hook">Hook beim Start → liest den Kanon → arbeitet danach</div>
+</div>
 <!-- 7: end -->
 <div class="layer" id="L7">
   <div class="end">
     <svg viewBox="0 0 560 40"><path class="rail" d="M10 20H550" /><circle class="dot" cx="10" cy="20" r="9"/><circle class="dot" cx="122" cy="20" r="9"/><circle class="dot" cx="234" cy="20" r="9"/><circle class="dot" cx="346" cy="20" r="9"/><circle class="dot" cx="458" cy="20" r="9"/><circle class="dot" cx="550" cy="20" r="9"/><circle class="here" cx="10" cy="20" r="14"/></svg>
     <h1>Kanon</h1>
     <p>das Regelwerk eures Hauses</p>
-    <p style="font-size:22px;color:var(--muted)">v0.1 heute. Besser nach vier Wochen.</p>
+    <p style="font-size:22px;color:var(--ink);font-weight:600">Der Kanon sagt, was gilt. Hooks erzwingen das Unverhandelbare. Nur Menschen ändern ihn.</p>
+    <p style="font-size:20px;color:var(--muted)">v0.1 heute. Besser nach vier Wochen.</p>
     <span class="brand">ChrisBuilds64</span>
   </div>
 </div>
@@ -138,8 +166,14 @@ const T = [
   [38000, () => { off("#L4"); on("#L5"); cap(""); setTimeout(() => on("#stamp"), 900); setTimeout(() => on("#sum"), 1700); setTimeout(() => cap("Ab jetzt gilt das."), 2200); }],
   [46000, () => { off("#L5"); on("#L6"); cap("Auch für eure KI-Assistenten."); setTimeout(() => on("#m0"), 600); setTimeout(() => on("#m1"), 1800);
     setTimeout(() => { $("#m1").innerHTML = "Das widerspricht <b>K-01</b>: Durchbruchspläne gehen erst nach einer zweiten Prüfung raus. Timo hält dieses Tor — ich gebe es an ihn weiter."; }, 3600); }],
-  [56000, () => { off("#L6"); cap(""); on("#L7"); }],
-  [62500, () => { document.title = "done"; }],
+  [55000, () => { off("#L6"); on("#L6b"); cap("Ein Kanon. Für jede KI.<small>Lesbar für Menschen, bindend für Maschinen.</small>");
+    ["#a0", "#a1", "#a2", "#a3"].forEach((a, i) => setTimeout(() => on(a), 400 + i * 300));
+    setTimeout(() => $("#L6b").classList.add("go"), 1700);
+    ["#a0", "#a1", "#a2", "#a3"].forEach((a, i) => setTimeout(() => $(a).classList.add("bound"), 2400 + i * 350));
+    setTimeout(() => on("#hook"), 4200);
+    setTimeout(() => cap("Ein Hook beim Start.<small>Jedes System liest denselben Kanon, gleich von welchem Anbieter.</small>"), 5200); }],
+  [66000, () => { off("#L6b"); cap(""); on("#L7"); }],
+  [74000, () => { document.title = "done"; }],
 ];
 document.fonts.ready.then(() => { const t0 = performance.now(); T.forEach(([t, f]) => setTimeout(f, t)); window.__t0 = t0; });
 </script>

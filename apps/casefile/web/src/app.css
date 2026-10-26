@@ -669,3 +669,15 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .quote-fall .into { position: absolute; left: 0; bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
 @keyframes fall { 0% { transform: translateY(0) rotate(-4deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(210px) rotate(3deg) scale(.7); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .chapter-done .mark.got, .quote-fall .slip { animation: none; } .quote-fall { display: none; } }
+.canon-machine { padding: 40px 64px 36px; border-top: 1px solid var(--hairline); background: var(--ink); color: var(--ground); }
+.canon-machine h2 { margin: 0 0 12px; font-size: 26px; font-weight: 600; letter-spacing: -.015em; }
+.canon-machine p { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.55; opacity: .85; }
+.machine-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0; margin: 28px 0; }
+.machine-doc { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: .04em; border: 1.5px solid var(--seal); color: var(--seal); border-radius: 10px; padding: 14px 16px; background: color-mix(in srgb, var(--seal) 12%, transparent); }
+.machine-lines { height: 2px; background: repeating-linear-gradient(90deg, var(--ground) 0 6px, transparent 6px 12px); opacity: .5; animation: flow 1.2s linear infinite; background-size: 12px 2px; }
+@keyframes flow { to { background-position: 12px 0; } }
+.machine-agents { display: flex; flex-direction: column; gap: 6px; }
+.machine-agents span { font-family: var(--mono); font-size: 12px; border: 1px solid color-mix(in srgb, var(--ground) 35%, transparent); border-radius: 8px; padding: 5px 10px; }
+.canon-machine .machine-rule { font-size: 18px; font-weight: 600; opacity: 1; }
+@media (max-width: 900px) { .canon-machine { padding: 28px 22px; } }
+@media (prefers-reduced-motion: reduce) { .machine-lines { animation: none; } }

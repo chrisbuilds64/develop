@@ -1,6 +1,6 @@
 {
   "$comment": "Explainer videos of this application (SYS-83): `where` names the places that offer them (canon, outcome, interview); files live in videos/. Rendered from videos/<key>/scene.html by render.mjs.",
   "videos": [
-    {"key": "kanon", "where": ["canon", "outcome", "interview"], "title": {"de": "Was ist ein Kanon?", "en": "What is a canon?"}, "file": "kanon.mp4", "poster": "kanon.jpg", "seconds": 62, "lang": "de"}
+    {"key": "kanon", "where": ["canon", "outcome", "interview"], "title": {"de": "Was ist ein Kanon?", "en": "What is a canon?"}, "file": "kanon.mp4", "poster": "kanon.jpg", "seconds": 74, "lang": "de"}
   ]
 }

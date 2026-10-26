@@ -413,6 +413,18 @@
         "de": "Wenn nichts mehr auf dich wartet: was du heute durch ein Tor gebracht hast, zum Abholen. Gezählt aus deinen Schritten, nichts erfunden; die Woche steht darunter, ohne Serie, die reißen kann.",
         "en": "When nothing waits for you: what you brought through a gate today, to collect. Counted from your steps, nothing invented; the week below, with no streak to break."
       }
+    },
+    {
+      "key": "cf.canon-machine",
+      "since": "0.19.0",
+      "title": {
+        "de": "Bindend für jede KI",
+        "en": "Binding for every AI"
+      },
+      "text": {
+        "de": "Jeder KI-Assistent, der hier arbeitet, liest dieses Regelwerk beim Start und ist daran gebunden; was nie passieren darf, sichert zusätzlich ein Hook ab. Nur Menschen ändern den Kanon (Foundation-Prinzip 13).",
+        "en": "Every AI assistant that works here reads this rulebook at the start and is bound by it; what must never happen is also guarded by a hook. Only people change the canon (foundation principle 13)."
+      }
     }
   ]
 }
