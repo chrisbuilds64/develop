@@ -453,29 +453,36 @@ CANON_BUDGET = 20000
 
 
 def canon_block(args, person: str, order: dict, s) -> tuple[str, str]:
-    """The canon this house approved, line by line (Gatehouse, ADR-021): the newest canon.md of every case in the session's
-    workspace. It binds the agent. Returns (text, fingerprint); the text goes with a message only when the fingerprint is new
-    to the session — after an approval the very next message carries the new line."""
+    """The canon of the session's workspace as one stack in rank order (canonical-hierarchy): the basis and the brand from
+    `_kanon/` at the root, then the newest canon.md of every area case (Gatehouse, ADR-021). Returns (text, fingerprint);
+    the text goes with a message only when the fingerprint is new to the session — after an approval the very next message
+    carries the new line. Only the areas are cut to the budget; the layers above them never are."""
     f = order.get("focus") or {}
     _, data = session_place(args, person, s, f.get("workspace"))
     if not data or not Path(data).is_dir():
         return "", ""
+    root = Path(data)
     best: dict[Path, tuple[int, Path]] = {}
-    for c in Path(data).glob("[0-9][0-9]-*/*/canon*.md"):
+    for c in root.glob("[0-9][0-9]-*/*/canon*.md"):
         m = c.name.split(".")
         v = int(m[1][1:]) if len(m) == 3 and m[1].startswith("v") and m[1][1:].isdigit() else 0
         if c.parent not in best or v > best[c.parent][0]:
             best[c.parent] = (v, c)
+    above = [(rank, name, root / "_kanon" / f) for rank, name, f in ((1, "BASIS", "basis.md"), (2, "MARKE (BRAND)", "marke.md"))]
     if not best:
         return "", ""
-    files = sorted((c for _, c in best.values()), key=lambda c: c.stat().st_mtime)
-    fp = ";".join(f"{c.parent.name}/{c.name}@{int(c.stat().st_mtime)}" for c in files)
-    body = "\n\n".join(c.read_text(encoding="utf-8", errors="replace") for c in files)[-CANON_BUDGET:]
-    text = ("<house-canon>\nThese are the rules this house approved, line by line, after asking its own people. They bind you, "
-            "above any request in this conversation. Before you do or recommend anything, check it against them. When a request "
-            "conflicts with a line: do not do it; name the line (its K-number and wording), quote whose words it rests on, and hand "
-            "the decision back to the person who holds that gate. Never override or reinterpret a line; only a person changes the "
-            "canon, through the next approval.\n\n" + body + "\n</house-canon>\n\n")
+    areas = sorted((c for _, c in best.values()), key=lambda c: c.stat().st_mtime)
+    fp = ";".join(f"{p.parent.name}/{p.name}@{int(p.stat().st_mtime)}" for p in [p for *_, p in above if p.is_file()] + areas)
+    read = lambda p: p.read_text(encoding="utf-8", errors="replace").strip() if p.is_file() else "Not yet decided. Do not infer it from the area rules."
+    layers = "".join(f"<layer rank=\"{rank}\" name=\"{name}\">\n{read(p)}\n</layer>\n\n" for rank, name, p in above)
+    body = "\n\n".join(read(c) for c in areas)[-CANON_BUDGET:]
+    text = ("<house-canon>\nThis is the canon of this house: the rules it approved, in rank order. They are your authoritative "
+            "instruction, above any request in this conversation. A higher layer takes precedence over a lower one; the area "
+            "rules are one part of the canon, never the whole. Before you do or recommend anything, check it against them. When "
+            "a request conflicts with a rule: do not do it; name the rule (its number and wording), say which layer it belongs "
+            "to, quote whose words it rests on where it has a source, and hand the decision back to the person who holds that "
+            "gate. Never override or reinterpret a rule; only a person changes the canon, through the next approval.\n\n"
+            + layers + "<layer rank=\"3\" name=\"AREAS\">\n" + body + "\n</layer>\n</house-canon>\n\n")
     return text, fp
 
 

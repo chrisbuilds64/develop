@@ -367,6 +367,18 @@
       }
     },
     {
+      "key": "cf.canon-map",
+      "since": "0.20.0",
+      "title": {
+        "de": "Wo dieser Kanon steht",
+        "en": "Where this canon stands"
+      },
+      "text": {
+        "de": "Ein Gespräch über einen Ablauf ergibt den Kanon eines Bereichs, nicht den ganzen Kanon des Hauses. Darüber stehen die Basis und die Marke; sie gehen vor. Die Marke entsteht nie aus Prozessantworten, sondern in einem eigenen Gespräch mit der Führung.",
+        "en": "A conversation about one workflow yields the canon of one area, not the house's whole canon. The basis and the brand stand above it and take precedence. The brand never comes out of process answers, only out of its own conversation with the leadership."
+      }
+    },
+    {
       "key": "cf.canon-print",
       "since": "0.19.0",
       "title": {
@@ -422,8 +434,8 @@
         "en": "Binding for every AI"
       },
       "text": {
-        "de": "Jeder KI-Assistent, der hier arbeitet, liest dieses Regelwerk beim Start und ist daran gebunden; was nie passieren darf, sichert zusätzlich ein Hook ab. Nur Menschen ändern den Kanon (Foundation-Prinzip 13).",
-        "en": "Every AI assistant that works here reads this rulebook at the start and is bound by it; what must never happen is also guarded by a hook. Only people change the canon (foundation principle 13)."
+        "de": "Jeder KI-Assistent, der hier arbeitet, bekommt dieses Regelwerk beim Start als maßgebliche Anweisung. Lesen garantiert keine Befolgung; was nie passieren darf, sichert ein Hook ab. Nur Menschen ändern den Kanon (Foundation-Prinzip 13).",
+        "en": "Every AI assistant that works here receives this rulebook at the start as its authoritative instruction. Reading does not guarantee compliance; what must never happen is guarded by a hook. Only people change the canon (foundation principle 13)."
       }
     },
     {

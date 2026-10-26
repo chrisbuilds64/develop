@@ -293,6 +293,41 @@ def decide(store: FsStore, config: DomainConfig, case_id: str, person: str, line
         return doc.get(line, {})
 
 
+# ----------------------------------------------------------------------------- the canon map
+
+CANON_DIR = "_kanon"                                   # the layers above the areas: basis.md, marke.md — at the pipeline root
+
+
+def canon_layer(root: Path, name: str) -> dict:
+    """One layer above the areas, as the map shows it: present or still open, its title and how many rules it holds."""
+    f = Path(root) / CANON_DIR / f"{name}.md"
+    if not f.is_file():
+        return {"present": False, "title": "", "rules": 0}
+    text = f.read_text(encoding="utf-8", errors="replace")
+    title = next((ln[2:].strip() for ln in text.splitlines() if ln.startswith("# ")), name)
+    return {"present": True, "title": title, "rules": len(re.findall(r"^## ", text, re.M))}
+
+
+def canon_map(store: FsStore, current: str = "") -> dict:
+    """Where a canon stands among the others (canonical-hierarchy, depth): the basis and the brand above, every area this
+    workspace elicits beside it. An area is a case that names a pack; its version is its newest compiled canon, 0 while
+    it is still being worked out. The brand is never derived from process answers — absent, it stays open."""
+    areas = []
+    for stage in store.stages():
+        for cid in store.cases(stage):
+            try:
+                meta = store.case_json(cid, "meta.json")
+            except (StoreError, OSError, ValueError):
+                continue
+            if not meta.get("pack"):
+                continue
+            canon = reading.newest_versions(store.files(cid)).get("canon.md")
+            areas.append({"case": cid, "title": str(meta.get("title") or cid), "current": cid == current,
+                          "version": max(1, reading.split_version(canon)[1]) if canon else 0})
+    areas.sort(key=lambda a: (a["version"] == 0, a["title"]))
+    return {"basis": canon_layer(store.root, "basis"), "marke": canon_layer(store.root, "marke"), "areas": areas}
+
+
 # ----------------------------------------------------------------------------- the canon, compiled
 
 def compile_canon(store: FsStore, config: DomainConfig, case_id: str, draft: str, decisions: str, target: str = "canon.md", lang: str | None = None) -> str:
@@ -312,7 +347,8 @@ def compile_canon(store: FsStore, config: DomainConfig, case_id: str, draft: str
     w = lambda k, d: config.word("texts", k, lang, d)
     marker_word = {m: config.word("markers", m, lang, m) for m in MARKERS}
     out = [f"# {w('canon_title', 'Canon')} — {case.meta.get('title') or case_id}", "",
-           w("canon_lead", "Approved line by line. What was rejected is not here; what was changed stands in its new wording."), ""]
+           w("canon_lead", "Approved line by line. What was rejected is not here; what was changed stands in its new wording."), "",
+           f"*{w('canon_scope', 'Layer: area — process and procedures. The basis and the brand above it take precedence.')}*", ""]
     kept = [x for x in lines if (decided.get(str(x.get("id"))) or {}).get("verdict") in ("accept", "edit")]
     for bid in order + sorted({str(x.get("block")) for x in kept} - set(order)):
         group = [x for x in kept if str(x.get("block")) == bid]

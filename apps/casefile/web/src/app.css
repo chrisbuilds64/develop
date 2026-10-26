@@ -571,6 +571,22 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .canon-toc a { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--hairline-2); font-size: 14px; color: var(--ink); text-decoration: none; }
 .canon-toc a:hover { border-color: var(--ink-2); }
 .canon-toc a span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+/* where this canon stands: the layers above, the areas beside — neutral ink; the seal colour stays reserved for "sealed" */
+.canon-map { padding: 26px 64px 24px; border-bottom: 1px solid var(--hairline); background: var(--ground-2); }
+.canon-map h2 { margin: 0 0 14px; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--muted); }
+.map-stack { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.map-layer { display: grid; grid-template-columns: 124px minmax(0, 1fr); column-gap: 20px; align-items: baseline; padding: 9px 0; }
+.map-layer + .map-layer { border-top: 1px solid var(--hairline); }
+.map-name { font-size: 14px; font-weight: 600; }
+.map-what { font-size: 15px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.map-what small, .map-area small { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.map-layer.open .map-what { color: var(--muted); font-style: italic; }
+.map-areas { display: flex; flex-wrap: wrap; gap: 8px; }
+.map-area { display: inline-flex; align-items: baseline; gap: 8px; padding: 5px 12px; border-radius: var(--r-pill); border: 1px solid var(--hairline-2); background: var(--surface); font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; }
+.map-area:hover:not(:disabled) { border-color: var(--ink-2); }
+.map-area.here { border-color: var(--ink); border-width: 2px; cursor: default; font-weight: 600; }
+.map-area.work { border-style: dashed; color: var(--ink-2); }
+.map-rule { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
 .canon-chapter { padding: 40px 64px 8px; scroll-margin-top: 12px; }
 .canon-chapter + .canon-chapter { border-top: 1px solid var(--hairline); }
 .canon-chapter h2 { margin: 0 0 22px; font-size: 26px; font-weight: 600; letter-spacing: -.015em; }
@@ -591,6 +607,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 @media (max-width: 900px) {
   .canon-cover { padding: 132px 22px 26px; } .canon-seal { left: 22px; right: auto; top: 22px; width: 92px; height: 92px; } .canon-seal b { font-size: 22px; }
   .canon-cover h1 { font-size: 36px; } .canon-chapter { padding: 28px 22px 4px; } .canon-foot { padding: 22px; }
+  .canon-map { padding: 20px 22px; } .map-layer { grid-template-columns: 1fr; row-gap: 6px; }
   .canon-rule { grid-template-columns: 1fr; } .rule-head { grid-row: auto; flex-direction: row; align-items: center; } .rule-text { font-size: 18px; }
   .canon-scroll { overflow: visible; }
 }

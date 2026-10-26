@@ -1107,6 +1107,10 @@ export interface components {
              * @default
              */
             approved_at: string;
+            /** Canon Map */
+            canon_map?: {
+                [key: string]: unknown;
+            };
         };
         /** PersonView */
         PersonView: {

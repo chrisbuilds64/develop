@@ -69,7 +69,8 @@
       "created": "Erhebung angelegt",
       "create_refused": "Eine Erhebung legt der Moderator an.",
       "create_empty": "Gib der Erhebung einen Namen.",
-      "canon_title": "Kanon v0.1",
+      "canon_title": "Bereichskanon v0.1",
+      "canon_scope": "Schicht: Bereich, Prozess und Verfahren. Basis und Marke stehen darüber und gehen vor.",
       "canon_lead": "Zeile für Zeile freigegeben. Was verworfen wurde, steht nicht hier; was geändert wurde, steht in der neuen Fassung.",
       "canon_foot": "Freigegeben von {who} am {date}. Version 0.1: ein Entwurf des Betriebs, kein Endstand. Der zweite Durchgang nach vier Wochen echtem Betrieb gehört dazu.",
       "question_word": "Frage"
@@ -164,7 +165,8 @@
       "created": "Elicitation set up",
       "create_refused": "The moderator sets up an elicitation.",
       "create_empty": "Give the elicitation a name.",
-      "canon_title": "Canon v0.1",
+      "canon_title": "Area canon v0.1",
+      "canon_scope": "Layer: area, process and procedures. The basis and the brand stand above it and take precedence.",
       "canon_lead": "Approved line by line. What was rejected is not here; what was changed stands in its new wording.",
       "canon_foot": "Approved by {who} on {date}. Version 0.1: a draft of the operation, not its final state. The second pass after four weeks of real work belongs to it.",
       "question_word": "question"

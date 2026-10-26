@@ -2373,6 +2373,11 @@
             "type": "string",
             "title": "Approved At",
             "default": ""
+          },
+          "canon_map": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Canon Map"
           }
         },
         "type": "object",

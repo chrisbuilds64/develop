@@ -153,6 +153,18 @@ def test_decisions_and_the_compiled_canon(tree):
     assert ok.ok and ok.to == "40-kanon"
     canon = (tree / "40-kanon" / CASE / "canon.md").read_text()
     assert "second person" in canon and "Nobody checks" not in canon and "„Drawings“ — Ann" in canon
+    assert "Basis und Marke stehen darüber" in canon                    # an area canon says it is one part, not the whole
+
+
+def test_the_canon_map_shows_the_layers_above_and_the_areas_beside(tree):
+    store, _ = ctx(tree)
+    m = talk.canon_map(store, CASE)
+    assert m["basis"]["present"] is False and m["marke"]["present"] is False       # nothing above yet: both stay open
+    assert [(a["case"], a["current"], a["version"]) for a in m["areas"]] == [(CASE, True, 0)]
+    (tree / "_kanon").mkdir()
+    (tree / "_kanon" / "basis.md").write_text("# Foundation\n\n## 1. One\n\nx\n\n## 2. Two\n\ny\n")
+    m = talk.canon_map(store, CASE)
+    assert m["basis"] == {"present": True, "title": "Foundation", "rules": 2} and m["marke"]["present"] is False
 
 
 def test_api_shows_only_my_answers_and_starts_a_case(tree):

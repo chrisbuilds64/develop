@@ -1,12 +1,45 @@
 // The canon as the finished product: the house's own rules, each with the words it rests on. Built from the case's data
 // (draft, decisions, pack), never from the compiled file — that file is the export, this is the reading (ADR-021).
 import { useQuery } from "@tanstack/react-query";
-import { ApiError, BASE, talk, type ConfigView, type Line } from "../api";
+import { ApiError, BASE, talk, type CanonMap, type ConfigView, type Line } from "../api";
 import { Back } from "../components/Icons";
 import { Explain } from "../components/Explain";
 import { dateWords, type words } from "../words";
 
 type W = ReturnType<typeof words>;
+
+// Where this canon stands (canonical-hierarchy, depth): the layers above it and the other areas beside it. An area's rules
+// are one part of the canon, never the whole; the brand stays open until it has had its own conversation.
+function CanonMapView({ map, w, go }: { map: CanonMap; w: W; go: (p: string) => void }) {
+  const areas = map.areas ?? [];
+  const layer = (name: string, l?: { present: boolean; title: string; rules: number }) => (
+    <li className={`map-layer ${l?.present ? "" : "open"}`}>
+      <span className="map-name">{name}</span>
+      <span className="map-what">{l?.present ? <>{l.title}{l.rules ? <small>{w.mapRules(l.rules)}</small> : null}</> : w.mapOpen}</span>
+    </li>
+  );
+  return (
+    <section className="canon-map" aria-label={w.mapTitle} data-help="cf.canon-map">
+      <h2>{w.mapTitle}</h2>
+      <ol className="map-stack">
+        {layer(w.mapBasis, map.basis)}
+        {layer(w.mapMarke, map.marke)}
+        <li className="map-layer">
+          <span className="map-name">{w.mapAreas}</span>
+          <span className="map-areas">
+            {areas.map((a) => (
+              <button key={a.case} type="button" className={`map-area ${a.current ? "here" : ""} ${a.version ? "" : "work"}`} disabled={a.current}
+                onClick={() => go(`/case/${encodeURIComponent(a.case)}${a.version ? "/kanon" : ""}`)}>
+                {a.title}<small>{a.current ? w.mapHere : a.version ? `v0.${a.version}` : w.mapInWork}</small>
+              </button>
+            ))}
+          </span>
+        </li>
+      </ol>
+      <p className="map-rule">{w.mapRule}</p>
+    </section>
+  );
+}
 
 export function CanonScreen({ id, config, go, w }: { id: string; config: ConfigView; go: (p: string) => void; w: W }) {
   const q = useQuery({ queryKey: ["outcome", id], queryFn: () => talk.outcome(id), retry: false });
@@ -48,6 +81,8 @@ export function CanonScreen({ id, config, go, w }: { id: string; config: ConfigV
               {groups.map((g) => <a key={g.b.id} href={`#k-${g.b.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(`k-${g.b.id}`)?.scrollIntoView({ behavior: "smooth" }); }}>{g.b.canon || g.b.title}<span>{g.lines.length}</span></a>)}
             </nav>
           </header>
+
+          <CanonMapView map={v.canon_map} w={w} go={go} />
 
           {groups.map((g) => (
             <section key={g.b.id} id={`k-${g.b.id}`} className="canon-chapter">
