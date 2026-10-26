@@ -78,14 +78,15 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
     const slot = v.slots.find((s) => s.file === b);
     if (slot) return slot.word;
     if (b.startsWith("shape:")) { const want = b.slice(6); const first = v.slots.find((s) => !s.present && s.shape.startsWith(want)); return first ? first.word : w.shape(want); }
-    return b;
+    return ((config.words as { files?: Record<string, string> }).files?.[b]) ?? b;          // a condition's word from the vocabulary, never its code
   };
   const framesAreTheMove = primaryTurn?.action === "deliver";
   const canPress = primaryTurn && blocked.length === 0 && (!needsAmount || amount.trim()) && (!needsDate || date) && (!needsNote || note.trim()) && !busy;
   const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
   const talkSlot = v.slots.find((s) => s.shape === "interview");
   const outcomeReady = v.slots.some((s) => s.shape === "data" && s.present);
-  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))))));
+  const byHelper = (s: { by: string; by_word: string }) => s.by === "claude" || (!!s.by_word && s.by_word === v.agent);
+  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))))));
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const docs = docsOf(v);
   const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((v) => v.name === reading));
@@ -196,7 +197,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         ) : primaryTurn ? (
           <>
             {blocked.length > 0 && <span className="says">{w.firstHere}: {blocked.map(blockedWord).join(", ")}</span>}
-            {blocked.length > 0 && <span className="gate-count" aria-live="polite"><b>{blocked.length}</b> {w.missingCount(blocked.length)}</span>}
+            {blocked.length > 0 && talkSlot && outcomeReady && <button type="button" className="btn ghost" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>{w.outcomeOpen} →</button>}
             {blocked.length === 0 && needsAmount && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" autoFocus /></label>}
             {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}

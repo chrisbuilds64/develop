@@ -16,14 +16,14 @@ export function Line({ stations, mine, label, caseId }: { stations: { key: strin
   return (
     <div className="line" aria-label={label} role="img">
       <div className="rail" />
-      <div className="fill" style={{ width: `${pct}%` }} />
+      <div className="fill" style={{ width: `calc((100% - 2 * var(--line-pad, 0px)) * ${pct / 100})` }} />
       {stations.map((s, i) => (
-        <div key={s.key} className={`st ${s.state}`} style={{ left: `${(i / n) * 100}%` }}>
+        <div key={s.key} className={`st ${s.state}`} style={{ left: `calc(var(--line-pad, 0px) + (100% - 2 * var(--line-pad, 0px)) * ${i / n})` }}>
           <i />
           <span>{s.word}</span>
         </div>
       ))}
-      <div className={`here${mine ? " mine" : ""}`} style={{ left: `${pct}%` }} />
+      <div className={`here${mine ? " mine" : ""}`} style={{ left: `calc(var(--line-pad, 0px) + (100% - 2 * var(--line-pad, 0px)) * ${pct / 100})` }} />
     </div>
   );
 }
