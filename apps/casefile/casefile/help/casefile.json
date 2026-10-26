@@ -353,6 +353,30 @@
         "de": "Dieser Kanon ist freigegeben. Die zweite Farbe heißt nur das: beschlossen, ab jetzt gilt es. Der Kanon liegt als Datei in der Akte.",
         "en": "This canon is approved. The second colour means only that: decided, it holds from now on. The canon is a file in the case."
       }
+    },
+    {
+      "key": "cf.canon-doc",
+      "since": "0.19.0",
+      "title": {
+        "de": "Das Regelwerk",
+        "en": "The rulebook"
+      },
+      "text": {
+        "de": "Der freigegebene Kanon als Dokument: jede Regel mit den Worten, auf denen sie steht, und der Person, die sie gesagt hat. Ist heute, soll so sein oder offen steht an jeder Regel.",
+        "en": "The approved canon as a document: every rule with the words it rests on and the person who said them. Is, should or open stands at every rule."
+      }
+    },
+    {
+      "key": "cf.canon-print",
+      "since": "0.19.0",
+      "title": {
+        "de": "Drucken / PDF",
+        "en": "Print / PDF"
+      },
+      "text": {
+        "de": "Druckt das Regelwerk ohne Menü und Knöpfe; im Druckdialog „Als PDF sichern“ wählen.",
+        "en": "Prints the rulebook without menu and buttons; choose “Save as PDF” in the print dialog."
+      }
     }
   ]
 }

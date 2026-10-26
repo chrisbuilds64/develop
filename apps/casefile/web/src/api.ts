@@ -101,6 +101,7 @@ export type Findings = {
 export type Outcome = {
   case: string; title: string; stage_word: string; blocks: { id: string; title: string; canon: string }[]; findings: Findings; lines: Line[];
   can_decide: boolean; open_lines: number; canon: string | null; canon_url: string | null; running: boolean; people: Record<string, string>;
+  subtitle: string; version: number; approved_by: string; approved_at: string;
 };
 
 const cid = (id: string) => encodeURIComponent(id);

@@ -973,6 +973,26 @@ export interface components {
             people?: {
                 [key: string]: unknown;
             };
+            /**
+             * Subtitle
+             * @default
+             */
+            subtitle: string;
+            /**
+             * Version
+             * @default 0
+             */
+            version: number;
+            /**
+             * Approved By
+             * @default
+             */
+            approved_by: string;
+            /**
+             * Approved At
+             * @default
+             */
+            approved_at: string;
         };
         /** PersonView */
         PersonView: {

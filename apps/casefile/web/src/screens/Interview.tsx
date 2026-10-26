@@ -28,6 +28,8 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
   const [anchorText, setAnchorText] = useState("");
   const [fu, setFu] = useState<Record<string, string>>({});
   const [showFinish, setShowFinish] = useState(false);
+  const [whyOpen, setWhyOpen] = useState(false);
+  const [triedNext, setTriedNext] = useState(false);
   const [moment, setMoment] = useState<{ done: Block; next: Block; target: string } | null>(null);   // a chapter just clicked shut
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const sent = useRef<Set<string>>(new Set());
@@ -41,7 +43,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
   const here = at >= 0 ? order[at] : undefined;
   useEffect(() => { if (qid) { try { localStorage.setItem(storeKey, qid); } catch { /* private window */ } } }, [qid, storeKey]);
   useEffect(() => { if (!fresh) return; const t = setTimeout(() => setFresh(null), 1400); return () => clearTimeout(t); }, [fresh]);
-  useEffect(() => { areaRef.current?.focus({ preventScroll: true }); }, [qid]);
+  useEffect(() => { areaRef.current?.focus({ preventScroll: true }); setWhyOpen(false); setTriedNext(false); }, [qid]);
 
   if (q.isLoading) return <main className="main talk-main"><p className="empty">…</p></main>;
   if (!v) return <main className="main talk-main"><p className="empty">{q.error instanceof ApiError ? q.error.message : w.unreachable}</p></main>;
@@ -80,7 +82,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
 
   const save = async (): Promise<boolean> => {
     if (!qid || !dirty) return true;
-    if (needsMarker) { setError(w.howStandsHint); return false; }
+    if (needsMarker) { setTriedNext(true); return false; }
     setSaving(true); setError(null);
     try {
       await talk.answer(id, qid, draft.text, draft.marker, stepId("ans"));
@@ -205,9 +207,19 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
           ) : (
             <>
               <p className="talk-where"><span>{here.block.title.replace(/^Block \d+ — /, "")}</span><span className="mono">{w.questionOf(at + 1, total)}</span></p>
-              <h1 className="talk-question">{here.q.text}</h1>
-              {here.q.why && <p className="talk-why"><b>{w.whyAsk}.</b> {here.q.why}</p>}
-              {v.anchor && <p className="talk-anchor-chip">{w.atExample(v.anchor)}</p>}
+              {(() => {
+                // the first sentence is the question; what follows only explains it — set smaller, read second
+                const m = /^(.+?[?.!])\s+(.+)$/s.exec(here.q.text);
+                return <>
+                  <h1 className="talk-question">{m ? m[1] : here.q.text}</h1>
+                  {m && <p className="talk-detail">{m[2]}</p>}
+                </>;
+              })()}
+              <div className="talk-meta">
+                {v.anchor && <span className="talk-anchor-chip">{w.atExample(v.anchor)}</span>}
+                {here.q.why && <button type="button" className={`why-toggle${whyOpen ? " on" : ""}`} aria-expanded={whyOpen} onClick={() => setWhyOpen(!whyOpen)}>{w.whyAsk}</button>}
+              </div>
+              {whyOpen && here.q.why && <p className="talk-why why-open">{here.q.why}</p>}
               <textarea ref={areaRef} className="talk-area" value={draft.text} onChange={(e) => setDraft({ text: e.target.value })} placeholder={w.answerPlaceholder} rows={6}
                         onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); void next(); } }} data-help="cf.talk-answer" />
               {cues.length > 0 && (
@@ -216,7 +228,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
                   {cues.slice(0, 2).map((c) => <span key={c.cue}>{c.ask}</span>)}
                 </div>
               )}
-              <fieldset className="markers" data-help="cf.talk-markers">
+              {(draft.text.trim() !== "" || saved) && <fieldset className={`markers${needsMarker && triedNext ? " ask" : ""}`} data-help="cf.talk-markers">
                 <legend>{w.howStands}</legend>
                 <div className="marker-row" role="radiogroup" aria-label={w.howStands}>
                   {MARKERS.map((m) => (
@@ -226,8 +238,8 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
                     </button>
                   ))}
                 </div>
-                {needsMarker && <p className="talk-hint">{w.howStandsHint}</p>}
-              </fieldset>
+                {needsMarker && triedNext && <p className="talk-hint">{w.howStandsHint}</p>}
+              </fieldset>}
 
               {helperHere.length > 0 && (
                 <div className="talk-followups" data-help="cf.talk-followups">
@@ -251,7 +263,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
                 <button type="button" className="btn link" disabled={at <= 0 || saving} onClick={() => goTo(order[at - 1].q.id)}>{w.back}</button>
                 <span className="talk-state">{saving ? w.saving : saved && !dirty ? w.saved : ""}</span>
                 {!saved && !draft.text.trim() && <button type="button" className="btn link" onClick={() => goTo(at < total - 1 ? order[at + 1].q.id : null, { save: false })}>{w.later}</button>}
-                <button type="button" className="btn" disabled={saving || needsMarker} onClick={next}>{w.goOn} →</button>
+                <button type="button" className="btn" disabled={saving} onClick={next}>{w.goOn} →</button>
               </div>
             </>
           )}
@@ -260,7 +272,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
         {/* the canon, growing */}
         <aside className="talk-canon" aria-label={w.canonGrows} data-help="cf.talk-canon">
           <h2>{w.canonGrows}</h2>
-          <p className="talk-hint">{w.canonGrowsHint}</p>
+          {answeredCount === 0 && <p className="talk-hint">{w.canonGrowsHint}</p>}
           {v.helper_running && <p className="talk-reading"><i aria-hidden="true" />{w.reading(agent)}</p>}
           {tensions.map((t) => (
             <div key={t.id} className="tension">

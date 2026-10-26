@@ -310,6 +310,10 @@ class OutcomeOut(BaseModel):
     canon_url: str | None = None
     running: bool = False
     people: dict = Field(default_factory=dict)         # id → name
+    subtitle: str = ""
+    version: int = 0                                   # the compiled canon's version (1 = canon.md, 2 = canon.v2.md …)
+    approved_by: str = ""                              # the decider's name, from the decisions
+    approved_at: str = ""                              # the newest decision's time
 
 
 class NewCaseOut(BaseModel):
@@ -1000,7 +1004,10 @@ def create_app(settings: Settings) -> FastAPI:
                           findings=case.data.get(conf["findings"]) or {}, lines=lines, can_decide=can,
                           open_lines=len([x for x in lines if not x["decision"].get("verdict")]), canon=canon, canon_url=file_url(case, canon) if canon else None,
                           running=bool(last and last.status in ("queued", "running")),
-                          people={x.id: x.name for x in c.config.people})
+                          people={x.id: x.name for x in c.config.people}, subtitle=str(case.meta.get("subtitle") or ""),
+                          version=max(1, reading.split_version(canon)[1]) if canon else 0,
+                          approved_by=(lambda p: p.name if p else "")(c.config.person(max(decided.values(), key=lambda d: str(d.get("at", ""))).get("by", "")) if decided else None),
+                          approved_at=max((str(d.get("at", "")) for d in decided.values()), default=""))
 
     @app.post("/api/cases/{case_id}/outcome/decide")
     def post_decide(case_id: str, body: DecideIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

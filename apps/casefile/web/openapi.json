@@ -2171,6 +2171,26 @@
             "additionalProperties": true,
             "type": "object",
             "title": "People"
+          },
+          "subtitle": {
+            "type": "string",
+            "title": "Subtitle",
+            "default": ""
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 0
+          },
+          "approved_by": {
+            "type": "string",
+            "title": "Approved By",
+            "default": ""
+          },
+          "approved_at": {
+            "type": "string",
+            "title": "Approved At",
+            "default": ""
           }
         },
         "type": "object",

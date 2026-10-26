@@ -53,7 +53,7 @@ export function OutcomeScreen({ id, config, go, w }: { id: string; config: Confi
 
       {v.canon && !approveTurn && (
         <div className="sealed-band" data-help="cf.outcome-sealed"><b>{w.sealed}</b><span>{w.sealedBand(dateWords(c.data?.entries.filter((e) => e.status === "approved").slice(-1)[0]?.date ?? "", config.lang) || "")}</span>
-          {v.canon_url && <a href={BASE + v.canon_url} target="_blank" rel="noreferrer">{w.openCanon}</a>}</div>
+          {v.canon && <button type="button" className="btn link small" onClick={() => go(`/case/${encodeURIComponent(id)}/kanon`)}>{w.openCanon}</button>}</div>
       )}
       <div className="outcome-scroll">
         {v.running && <p className="talk-reading"><i aria-hidden="true" />{w.evaluating(agent)}</p>}
@@ -159,7 +159,7 @@ export function OutcomeScreen({ id, config, go, w }: { id: string; config: Confi
             <p className="seal-sum" style={{ animationDelay: "900ms" }}>{w.sealSum(sealing.rules, sealing.voices, sealing.quotes).map((x, i) => <span key={i}>{i ? ", " : ""}<em>{x}</em></span>)}. {w.sealNow}</p>
             <div className="seal-acts" style={{ animationDelay: "1150ms" }}>
               <button type="button" className="btn link" onClick={() => setSealing(null)}>{w.close}</button>
-              {v.canon_url && <a className="btn seal" href={BASE + v.canon_url} target="_blank" rel="noreferrer">{w.openCanon}</a>}
+              <button type="button" className="btn seal" onClick={() => { setSealing(null); go(`/case/${encodeURIComponent(id)}/kanon`); }}>{w.openCanon}</button>
             </div>
           </div>
         </div>
