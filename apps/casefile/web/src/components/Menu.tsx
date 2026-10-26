@@ -31,7 +31,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         <span>{(config.groups.find((g) => g.key === "you")?.word) ?? w.yourMove}</span>
         {(counts.get("you") ?? 0) > 0 ? <span className="badge">{counts.get("you")}</span> : null}
       </button>
-      <button type="button" className="drop-in phone-only" data-help-skip="phone copy of cf.drop-in" onClick={() => goClose("/")} aria-label={w.dropIn}>+</button>
+      <button type="button" className="drop-in phone-only" data-help-skip="phone copy of cf.drop-in" onClick={() => { if (mayCreate) { setOpen(true); setMaking(true); } else goClose("/"); }} aria-label={mayCreate ? w.newCase(labelWord) : w.dropIn}>+</button>
       <button type="button" className="nav-row phone-only" data-help-skip="opens this menu on a phone" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? <Close /> : <MenuIcon />}<span style={{ marginLeft: 8 }}>{w.menu}</span></button>
       <div className="sheet">
       {me.shell && (
