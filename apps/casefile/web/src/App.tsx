@@ -140,7 +140,7 @@ export function App() {
         <Signals config={config.data} go={go} w={w} />
       ) : (
         <>
-          {showList && <List config={config.data} route={route} go={go} w={w} />}
+          {showList && <List config={config.data} route={route} go={go} w={w} me={me.data.person ?? ""} />}
           {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} />}
           {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} /> : <main className="main" />)}
         </>

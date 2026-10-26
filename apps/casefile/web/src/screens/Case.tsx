@@ -9,7 +9,7 @@ import { Cover } from "../components/Cover";
 import { Send } from "../components/Icons";
 import { Reader, type Doc } from "../components/Reader";
 import { ago, dateWords, type words } from "../words";
-import { thud } from "../moments";
+import { paper, thud } from "../moments";
 
 /** The documents on the desk, newest version each, the primary first — the order the reader walks. */
 export function docsOf(v: CaseView): Doc[] {
@@ -47,8 +47,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   }, onError: fail });
   const entry = useMutation({ mutationFn: (b: Parameters<typeof api.entry>[1]) => api.entry(id, b), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); setAsk(""); refresh(); }, onError: fail });
-  const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: (_r, p) => { setRefused(null); setLanded(p.slot); refresh(); }, onError: fail });
-  const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: (_r, slot) => { setRefused(null); setLanded(slot); refresh(); }, onError: fail });
+  const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: (_r, p) => { setRefused(null); setLanded(p.slot); paper(); refresh(); }, onError: fail });
+  const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: (_r, slot) => { setRefused(null); setLanded(slot); paper(); refresh(); }, onError: fail });
   useEffect(() => { if (!landed) return; const t = setTimeout(() => setLanded(null), 1600); return () => clearTimeout(t); }, [landed]);
   const entryCount = q.data?.entries.length ?? 0;
   useEffect(() => { const down = () => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }; down(); document.fonts?.ready.then(down); const t = setTimeout(down, 250); return () => clearTimeout(t); }, [entryCount, id]);
@@ -110,7 +110,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span></p>
       </header>
 
-      <div data-help="cf.stations"><Line stations={v.stations} mine={mine} label={v.stage_word} /></div>
+      <div data-help="cf.stations"><Line stations={v.stations} mine={mine} label={v.stage_word} caseId={v.id} /></div>
 
       {refused && <div className="refused">{refused}</div>}
 

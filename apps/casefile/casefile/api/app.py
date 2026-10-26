@@ -316,6 +316,23 @@ class OutcomeOut(BaseModel):
     approved_at: str = ""                              # the newest decision's time
 
 
+class SealOut(BaseModel):
+    case: str
+    title: str
+    label: str
+    action: str                                        # the gate's word ("Kanon freigeben")
+    at: str
+
+
+class RhythmOut(BaseModel):
+    """What this person moved, honestly counted from the step journals: today and the last seven days. No streak, nothing
+    to lose — a rhythm to come back to."""
+    today_steps: int = 0
+    today_seals: list[SealOut] = []
+    week_steps: int = 0
+    week_seals: int = 0
+
+
 class NewCaseOut(BaseModel):
     id: str
     stage: str
@@ -708,6 +725,37 @@ def create_app(settings: Settings) -> FastAPI:
 
     def file_url(case: Case, name: str) -> str:
         return f"/api/cases/{case.id}/files/{name}"
+
+    @app.get("/api/me/rhythm", response_model=RhythmOut)
+    def my_rhythm(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        seal_actions = {a.id for st in c.config.stages for a in st.actions if a.seal}
+        now = dt.datetime.now().astimezone()
+        today, week_start = now.date().isoformat(), (now - dt.timedelta(days=7)).isoformat()
+        titles: dict[str, tuple[str, str]] = {}
+        out = RhythmOut()
+        for name in c.store.journals():
+            try:
+                j = c.store.read_json(f"_steps/{name}")
+            except (OSError, ValueError):
+                continue
+            if j.get("by") != who or j.get("status") != "done" or str(j.get("created", "")) < week_start:
+                continue
+            seal = j.get("action") in seal_actions
+            out.week_steps += 1
+            out.week_seals += int(seal)
+            if str(j.get("created", ""))[:10] == today:
+                out.today_steps += 1
+                if seal:
+                    cid = str(j.get("case", ""))
+                    if cid not in titles:
+                        try:
+                            k = reading.load(c.store, c.config, cid)
+                            titles[cid] = (str(k.meta.get("title") or cid), c.config.word("labels", k.label, c.lang, k.label))
+                        except (KeyError, StoreError):
+                            titles[cid] = (cid, "")
+                    out.today_seals.append(SealOut(case=cid, title=titles[cid][0], label=titles[cid][1],
+                                                   action=c.config.word("actions", str(j.get("action")), c.lang, str(j.get("action"))), at=str(j.get("created", ""))))
+        return out
 
     @app.get("/api/cases/{case_id}", response_model=views.CaseView)
     def get_case(case_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

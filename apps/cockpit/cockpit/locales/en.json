@@ -475,5 +475,7 @@
   "home.waiting_one": "One thing waits for you.",
   "home.waiting_many": "{n} things wait for you.",
   "ws.waiting": "{n} for you",
-  "home.skip": "Continue"
+  "home.skip": "Continue",
+  "home.week_one": "This week: one case through a gate.",
+  "home.week_many": "This week: {n} cases through a gate."
 }

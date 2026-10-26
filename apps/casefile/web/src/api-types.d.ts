@@ -134,6 +134,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/rhythm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Rhythm */
+        get: operations["my_rhythm_api_me_rhythm_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}": {
         parameters: {
             query?: never;
@@ -1050,6 +1067,33 @@ export interface components {
              */
             me: boolean;
         };
+        /**
+         * RhythmOut
+         * @description What this person moved, honestly counted from the step journals: today and the last seven days. No streak, nothing
+         *     to lose — a rhythm to come back to.
+         */
+        RhythmOut: {
+            /**
+             * Today Steps
+             * @default 0
+             */
+            today_steps: number;
+            /**
+             * Today Seals
+             * @default []
+             */
+            today_seals: components["schemas"]["SealOut"][];
+            /**
+             * Week Steps
+             * @default 0
+             */
+            week_steps: number;
+            /**
+             * Week Seals
+             * @default 0
+             */
+            week_seals: number;
+        };
         /** RuleAction */
         RuleAction: {
             /** Id */
@@ -1250,6 +1294,19 @@ export interface components {
             slot: string;
             /** Step Id */
             step_id: string;
+        };
+        /** SealOut */
+        SealOut: {
+            /** Case */
+            case: string;
+            /** Title */
+            title: string;
+            /** Label */
+            label: string;
+            /** Action */
+            action: string;
+            /** At */
+            at: string;
         };
         /** SessionIn */
         SessionIn: {
@@ -1686,6 +1743,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_rhythm_api_me_rhythm_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RhythmOut"];
                 };
             };
         };

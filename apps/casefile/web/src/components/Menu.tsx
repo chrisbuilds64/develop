@@ -5,11 +5,13 @@ import type { Route } from "../App";
 import type { words } from "../words";
 import { Book, Close, Spark, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
 import { useState } from "react";
+import { setSound, soundOn, chime } from "../moments";
 
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme }:
   { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
     onFresh: (world?: string) => void; onPerson: (person: string) => void; onLang: (lang: string) => void; w: ReturnType<typeof words>; theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void }) {
   const [open, setOpen] = useState(false);
+  const [sound, setSoundState] = useState(soundOn());
   const create = (config.theme as { create?: { label?: string; roles?: string[] } }).create;
   const mayCreate = !!create && (create.roles ?? []).some((r) => me.roles.includes(r));
   const [making, setMaking] = useState(false);
@@ -95,6 +97,9 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       </button>
       <button type="button" className="nav-row quiet theme-row" data-help="cf.theme" onClick={() => onTheme(dark ? "light" : "dark")} aria-label={w.theme}>
         <span>{dark ? w.light : w.dark}</span><span className="n">{dark ? <Sun /> : <Moon />}</span>
+      </button>
+      <button type="button" className="nav-row quiet sound-row" data-help="cf.sound" aria-pressed={sound} onClick={() => { setSound(!sound); setSoundState(!sound); if (!sound) setTimeout(() => chime(), 30); }}>
+        <span>{sound ? w.soundOn : w.soundOff}</span><span className="n"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" />{sound ? <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /> : <path d="M17 9l5 6M22 9l-5 6" />}</svg></span>
       </button>
       <div className="who">
         <span className="avatar">{(me.name ?? "?").slice(0, 2).toUpperCase()}</span>

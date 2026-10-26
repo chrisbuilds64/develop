@@ -647,3 +647,25 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .explain-frame { position: relative; width: min(1100px, 100%); aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 40px 100px -30px rgba(0,0,0,.6); animation: seal-rise .35s var(--ease); }
 .explain-frame video { width: 100%; height: 100%; display: block; }
 .explain-close { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; display: grid; place-items: center; }
+
+/* ------------------------------------------------------------------ the day done: collect what you sealed today */
+.daydone { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 8px; }
+.daydone-lead { margin: 0; font-size: 17px; line-height: 1.4; color: var(--ink-2); }
+.btn.collect { align-self: flex-start; min-height: 56px; padding: 0 34px; font-size: 18px; box-shadow: 0 10px 24px -12px var(--seal); animation: collect-breathe 2.4s ease-in-out infinite; }
+@keyframes collect-breathe { 50% { transform: translateY(-2px); box-shadow: 0 16px 30px -14px var(--seal); } }
+.seal-stack { display: flex; flex-direction: column; gap: 8px; }
+.seal-slip { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 96px 12px 14px; border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--hairline); animation: slip-in .5s cubic-bezier(.3, 1.4, .5, 1) both; }
+.seal-slip b { font-size: 15px; } .seal-slip small { font-size: 13px; color: var(--muted); }
+.slip-stamp { position: absolute; right: 12px; top: 50%; margin-top: -14px; font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--seal); border: 1.5px solid var(--seal); border-radius: var(--r-pill); padding: 5px 9px; transform: rotate(-8deg); animation: seal-stamp .45s cubic-bezier(.3, 1.6, .5, 1) both; }
+.daydone-sum { margin: 4px 0 0; font-size: 18px; font-weight: 600; color: var(--seal-ink); animation: seal-line .5s var(--ease) both; }
+.week-line { margin: 0; font-size: 14px; color: var(--muted); }
+@keyframes slip-in { from { opacity: 0; transform: translateY(-16px) scale(.96); } }
+@media (prefers-reduced-motion: reduce) { .btn.collect, .seal-slip, .slip-stamp, .daydone-sum { animation: none; } }
+.btn.collect-chapter { background: var(--seal); color: var(--seal-on); padding: 0 34px; }
+.chapter-done .mark.got { background: var(--seal); animation: got .6s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes got { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); } 100% { transform: scale(1); } }
+.quote-fall { position: relative; height: 220px; border-bottom: 2px solid var(--ink); margin-bottom: 8px; overflow: hidden; }
+.quote-fall .slip { position: absolute; top: -40px; max-width: 240px; font-size: 13px; line-height: 1.3; color: var(--ink-2); background: var(--surface); border: 1px solid var(--hairline-2); border-radius: 10px; padding: 6px 10px; box-shadow: 0 8px 18px -10px rgba(0,0,0,.3); animation: fall 1.1s cubic-bezier(.5, 0, .5, 1) forwards; }
+.quote-fall .into { position: absolute; left: 0; bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+@keyframes fall { 0% { transform: translateY(0) rotate(-4deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(210px) rotate(3deg) scale(.7); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .chapter-done .mark.got, .quote-fall .slip { animation: none; } .quote-fall { display: none; } }

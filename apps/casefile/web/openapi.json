@@ -286,6 +286,24 @@
         }
       }
     },
+    "/api/me/rhythm": {
+      "get": {
+        "summary": "My Rhythm",
+        "operationId": "my_rhythm_api_me_rhythm_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RhythmOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}": {
       "get": {
         "summary": "Get Case",
@@ -2318,6 +2336,36 @@
         ],
         "title": "RespondentOut"
       },
+      "RhythmOut": {
+        "properties": {
+          "today_steps": {
+            "type": "integer",
+            "title": "Today Steps",
+            "default": 0
+          },
+          "today_seals": {
+            "items": {
+              "$ref": "#/components/schemas/SealOut"
+            },
+            "type": "array",
+            "title": "Today Seals",
+            "default": []
+          },
+          "week_steps": {
+            "type": "integer",
+            "title": "Week Steps",
+            "default": 0
+          },
+          "week_seals": {
+            "type": "integer",
+            "title": "Week Seals",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "RhythmOut",
+        "description": "What this person moved, honestly counted from the step journals: today and the last seven days. No streak, nothing\nto lose \u2014 a rhythm to come back to."
+      },
       "RuleAction": {
         "properties": {
           "id": {
@@ -2775,6 +2823,39 @@
           "step_id"
         ],
         "title": "SampleIn"
+      },
+      "SealOut": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "at": {
+            "type": "string",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case",
+          "title",
+          "label",
+          "action",
+          "at"
+        ],
+        "title": "SealOut"
       },
       "SessionIn": {
         "properties": {

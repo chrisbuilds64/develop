@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, stepId, talk, type Answer, type Block, type ConfigView, type Interview as Talk } from "../api";
 import { Back, Check } from "../components/Icons";
 import { Explain } from "../components/Explain";
+import { chime } from "../moments";
 import type { words } from "../words";
 
 type W = ReturnType<typeof words>;
@@ -30,6 +31,8 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
   const [fu, setFu] = useState<Record<string, string>>({});
   const [showFinish, setShowFinish] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
+  const [gotChapter, setGotChapter] = useState(false);              // the chapter's reward picked up
+  const [finishedNow, setFinishedNow] = useState(false);           // "I am done" just pressed: the quotes go into the canon
   const [triedNext, setTriedNext] = useState(false);
   const [moment, setMoment] = useState<{ done: Block; next: Block; target: string } | null>(null);   // a chapter just clicked shut
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,7 +106,7 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
     if (from && to && from.id !== to.id) {
       void chapterDone(from);
       const full = blockAnswered(from) + (landed ? 1 : 0) >= from.questions.length;
-      if (full && landed && target) { setMoment({ done: from, next: to, target }); setCurrent(target); return; }
+      if (full && landed && target) { setGotChapter(false); setMoment({ done: from, next: to, target }); setCurrent(target); return; }
     }
     setMoment(null);
     setShowFinish(false);
@@ -184,24 +187,33 @@ export function InterviewScreen({ id, config, go, w }: { id: string; config: Con
         <section className="talk-q" aria-live="polite">
           {moment ? (
             <div className="chapter-done" data-help="cf.talk-chapter">
-              <span className="mark" aria-hidden="true"><Check /></span>
+              <span className={`mark${gotChapter ? " got" : ""}`} aria-hidden="true"><Check /></span>
               <h1>{w.chapterDone(moment.done.title.replace(/^Block \d+ — /, ""))}</h1>
               <p className="talk-why">{w.chapterFilled(moment.done.canon || moment.done.title, moment.done.questions.filter((qq) => v.answers[qq.id]).length)}</p>
               {(() => { const last = [...moment.done.questions].reverse().find((qq) => v.answers[qq.id]); return last ? <blockquote>„{v.answers[last.id].text}“</blockquote> : null; })()}
               <div className="talk-actions">
                 <button type="button" className="btn link" onClick={() => go(`/case/${encodeURIComponent(id)}`)}>{w.pauseHere}</button>
                 <span className="talk-state" />
-                <button type="button" className="btn" autoFocus onClick={() => setMoment(null)}>{w.nextChapter(moment.next.title.replace(/^Block \d+ — /, ""))} →</button>
+                {gotChapter
+                  ? <button type="button" className="btn arrive" autoFocus onClick={() => setMoment(null)}>{w.nextChapter(moment.next.title.replace(/^Block \d+ — /, ""))} →</button>
+                  : <button type="button" className="btn collect-chapter" autoFocus onClick={() => { chime(); setGotChapter(true); setFresh(moment.done.id); }}>{w.collect}</button>}
               </div>
             </div>
           ) : showFinish || !here ? (
             <div className="talk-finish" data-help="cf.talk-finish">
-              {v.done ? (<><h1>{w.finished}</h1><p className="talk-why">{w.finishedHint}</p></>) : (<>
+              {v.done ? (<>
+                {finishedNow && (
+                  <div className="quote-fall" aria-hidden="true">
+                    {Object.values(v.answers).slice(-8).map((a, i) => <span key={i} className="slip" style={{ animationDelay: `${i * 0.12}s`, left: `${8 + (i % 4) * 22}%` }}>„{a.text.length > 48 ? a.text.slice(0, 46) + "…" : a.text}“</span>)}
+                    <span className="into">{w.canonGrows}</span>
+                  </div>
+                )}
+                <h1>{finishedNow ? w.carried(answeredCount) : w.finished}</h1><p className="talk-why">{w.finishedHint}</p></>) : (<>
                 <h1>{w.finishTitle}</h1>
                 <p className="talk-why">{w.finishText(answeredCount, total)}</p>
                 <div className="talk-actions">
                   <button type="button" className="btn ghost" onClick={() => goTo(firstOpen, { save: false })}>{w.back}</button>
-                  <button type="button" className="btn" disabled={answeredCount === 0} onClick={async () => { try { await talk.finish(id, stepId("fin")); await refresh(); qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); } catch (e) { setError(e instanceof ApiError ? e.message : String(e)); } }}>{w.finishBtn}</button>
+                  <button type="button" className="btn" disabled={answeredCount === 0} onClick={async () => { try { await talk.finish(id, stepId("fin")); setFinishedNow(true); chime(0.9); await refresh(); qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); } catch (e) { setError(e instanceof ApiError ? e.message : String(e)); } }}>{w.finishBtn}</button>
                 </div>
               </>)}
               {error && <p className="talk-error" role="alert">{error}</p>}

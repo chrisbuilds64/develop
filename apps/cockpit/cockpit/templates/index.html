@@ -14,7 +14,7 @@
   <button type="button" class="op-skip">{{ t('home.skip') }}</button>
 </div>
 <div class="page-head">
-  <div><h1>{{ greeting }}</h1><p class="waiting-line" id="waiting-line"></p></div>
+  <div><h1>{{ greeting }}</h1><p class="waiting-line" id="waiting-line"></p><p class="week-line" id="week-line" hidden data-one="{{ t('home.week_one') }}" data-many="{{ t('home.week_many') }}"></p></div>
   <span class="stamp">{{ t('app.as_of', when=now) }}{% if user %} · {{ user.role }}{% endif %}</span>
 </div>
 {% if err %}<p class="notice err">{{ err }}</p>{% endif %}
@@ -56,6 +56,14 @@
         return n;
       });
   })).then(function (ns) { return ns.reduce(function (a, b) { return a + b; }, 0); });
+  // the week, honestly: gates passed by this person in the last seven days, summed over the live workspaces — a rhythm, no streak
+  Promise.all(cards.map(function (c) {
+    return fetch(new URL('api/me/rhythm', c.href), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+      .then(function (r) { return r.week_seals || 0; });
+  })).then(function (ns) {
+    var n = ns.reduce(function (a, b) { return a + b; }, 0), el = document.getElementById('week-line');
+    if (n > 0) { el.textContent = n === 1 ? el.dataset.one : el.dataset.many.replace('{n}', n); el.hidden = false; }
+  });
   var op = document.getElementById('opener'), line = document.getElementById('waiting-line');
   function words(n) { var d = op.dataset; return n === 0 ? d.none : n === 1 ? d.one : d.many.replace('{n}', '<b>' + n + '</b>'); }
   total.then(function (n) { line.innerHTML = words(n).replace(/^(\d+)/, '<b>$1</b>'); line.classList.toggle('mine', n > 0); });

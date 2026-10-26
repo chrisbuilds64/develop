@@ -14,6 +14,7 @@ export type MeOut = components["schemas"]["MeOut"];
 export type ConfigView = components["schemas"]["ConfigView"];
 export type Entry = components["schemas"]["Entry"];
 export type SlotView = components["schemas"]["SlotView"];
+export type RhythmOut = components["schemas"]["RhythmOut"];
 
 export class ApiError extends Error {
   status: number;
@@ -54,6 +55,7 @@ export const api = {
   groups: () => call<GroupOut[]>("GET", "/api/cases"),
   stages: () => call<StageOut[]>("GET", "/api/stages"),
   rules: () => call<RulesOut>("GET", "/api/rules"),
+  rhythm: () => call<RhythmOut>("GET", "/api/me/rhythm"),
   signals: () => call<SignalOut[]>("GET", "/api/signals"),
   case: (id: string) => call<CaseView>("GET", `/api/cases/${encodeURIComponent(id)}`),
   step: (id: string, action: string, step_id: string, payload: Record<string, unknown> = {}) =>

@@ -879,3 +879,4 @@ body.opening { overflow: hidden; }
 .ws-card.mine { border: 1.5px solid var(--your-move); }
 .ws-waiting { align-self: flex-start; font-size: 12px; font-weight: 700; color: var(--your-move-on); background: var(--your-move); border-radius: 999px; padding: 2px 9px; }
 @media (prefers-reduced-motion: reduce) { .opener { display: none !important; } ::view-transition-group(*) { animation: none; } }
+.week-line { margin: 2px 0 0; font-size: 14px; color: var(--seal-ink); }

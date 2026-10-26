@@ -4,6 +4,7 @@ import { api, type CaseCard, type ConfigView } from "../api";
 import { BASE } from "../api";
 import type { Route } from "../App";
 import { Cover } from "../components/Cover";
+import { DayDone } from "../components/DayDone";
 import { ago, dateWords, type words } from "../words";
 
 export function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) => void; w: ReturnType<typeof words>; lang: string; quiet?: boolean }) {
@@ -25,7 +26,7 @@ export function Card({ c, go, w, lang, quiet }: { c: CaseCard; go: (p: string) =
   );
 }
 
-export function List({ config, route, go, w }: { config: ConfigView; route: Route; go: (p: string) => void; w: ReturnType<typeof words> }) {
+export function List({ config, route, go, w, me }: { config: ConfigView; route: Route; go: (p: string) => void; w: ReturnType<typeof words>; me?: string }) {
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const lang = config.lang;
   if (!groups.data) return <section className="list" aria-label={w.yourMove}><p className="empty">…</p></section>;
@@ -47,6 +48,7 @@ export function List({ config, route, go, w }: { config: ConfigView; route: Rout
   return (
     <section className="list" aria-label={w.yourMove} data-help="cf.list">
       <h2>{headline}</h2>
+      {mine.length === 0 && <DayDone w={w} me={me ?? ""} />}
       {mine.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} />)}
       {others.length > 0 && <p className="kicker" style={{ marginTop: 10 }}>{w.others}</p>}
       {others.slice(0, 6).map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet />)}
