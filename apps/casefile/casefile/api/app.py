@@ -73,6 +73,7 @@ class Settings:
     max_upload_mb: int = 10
     recover_on_start: bool = True
     demo: bool = False                           # samples offered, prepared replies played back
+    template: Path | None = None                 # a sample workspace's world: POST /api/demo/reset puts the tree back to it
     samples_dir: Path | None = None
     replies_dir: Path | None = None
     worlds: dict[str, World] = field(default_factory=dict)      # the public demo: name → world
@@ -704,6 +705,33 @@ def create_app(settings: Settings) -> FastAPI:
         _set_session(response, c.session)
         _set_person(response, settings.worlds[world].person)
         return me_out(c, settings.worlds[world].person)
+
+    @app.get("/api/demo/ablaeufe")
+    def demo_flows():
+        """The demonstrations a sample workspace offers: whole flows the surface plays step by step. They travel with the
+        world they were written for (`_ablaeufe/*.json` in the template, put there by whoever built the world), so a flow
+        never meets data it does not fit."""
+        if not settings.demo or settings.template is None or settings.worlds:
+            return {"flows": []}                         # the public demo's sandboxes cannot be put back from here
+        flows = []
+        for p in sorted((settings.template / "_ablaeufe").glob("*.json")):
+            try:
+                flows.append(json.loads(p.read_text(encoding="utf-8")))
+            except ValueError:
+                continue
+        return {"flows": flows}
+
+    @app.post("/api/demo/reset")
+    def demo_reset(request: Request):
+        """A sample workspace back to its world before a demonstration. Only where the shell named a world and its login lets
+        the person in; the public demo starts over with a fresh sandbox instead."""
+        if not settings.demo or settings.template is None or settings.worlds or single is None:
+            raise HTTPException(404, "nothing to reset here")
+        if settings.identity is not None and not settings.identity(request):
+            raise HTTPException(401, "not signed in")
+        from ..demo.sandbox import reset_world
+        reset_world(settings.template, Path(settings.write_root or settings.root))     # no case lock: the locks live in _steps, which goes too
+        return {"ok": True}
 
     @app.get("/api/me", response_model=MeOut)
     def me(request: Request, c: Ctx = Depends(ctx)):

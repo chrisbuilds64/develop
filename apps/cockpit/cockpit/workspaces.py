@@ -305,7 +305,7 @@ def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: P
     settings = Settings(
         root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell,
         open_identity=w.open_identity, identity=None if w.open_identity else identity,
-        secret=secret, web_dist=web_dist, demo=(w.mode == "replay"),
+        secret=secret, web_dist=web_dist, demo=(w.mode == "replay"), template=app.template if w.mode == "replay" else None,
         samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies",
     )
     return create_app(settings)

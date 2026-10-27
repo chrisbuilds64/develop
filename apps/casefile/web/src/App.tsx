@@ -90,6 +90,13 @@ export function App() {
     window.dispatchEvent(new CustomEvent("casefile:focus", { detail }));
   }, [focusCard?.id, focusCard?.stage, focusCard?.title, route.name, route.name === "doc" ? route.file : "", config.data?.product]);
 
+  // the director (components/Director) asks for fresh data after the AI finished a step it waited for
+  useEffect(() => {
+    const on = () => { qc.invalidateQueries(); };
+    window.addEventListener("casefile:refresh", on);
+    return () => window.removeEventListener("casefile:refresh", on);
+  }, [qc]);
+
   // presenting: Shift+Alt+P hides the demo's furniture; Shift+Alt+1…9 switches to the n-th person of a sample world
   useEffect(() => {
     const onKey = async (e: KeyboardEvent) => {

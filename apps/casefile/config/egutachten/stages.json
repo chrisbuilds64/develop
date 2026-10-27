@@ -45,7 +45,8 @@
           "requires": [
             "diktat.md"
           ],
-          "entry_status": "info"
+          "entry_status": "info",
+          "actor": "role:operator"
         },
         {
           "id": "compose_report",
@@ -54,7 +55,8 @@
             "ergebnis.json"
           ],
           "compile": "compose",
-          "entry_status": "info"
+          "entry_status": "info",
+          "actor": "role:operator"
         }
       ],
       "auto": [

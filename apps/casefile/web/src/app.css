@@ -846,3 +846,32 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
   .house-panel { position: fixed; inset: 0; width: 100%; border-left: none; padding: 18px 16px 32px; }
   .house-facts { grid-template-columns: 1fr; } .house-facts dt { margin-top: 6px; }
 }
+
+/* ------------------------------------------------------------------ the director: flows played in the real surface */
+.cf-dir-pointer { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; opacity: 0; transform: translate(50vw, 80vh); transition: transform .7s var(--ease, ease), opacity .3s; margin: -4px 0 0 -4px; }
+.cf-dir-pointer svg { fill: var(--ink); stroke: var(--ground); stroke-width: 1.5; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.cf-dir-hit { outline: 3px solid var(--your-move); outline-offset: 3px; box-shadow: 0 0 0 10px var(--your-move-halo, rgba(0,0,0,.08)); transition: outline-offset .2s, box-shadow .4s; }
+.cf-dir-launch { position: fixed; right: 16px; top: 34px; z-index: 50; border: 1px solid var(--hairline); background: var(--surface); color: var(--ink); border-radius: var(--r-pill); padding: 8px 14px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.cf-dir-pick { position: fixed; right: 16px; top: 34px; z-index: 55; width: min(420px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--r-l); padding: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.2); display: flex; flex-direction: column; gap: 8px; }
+.cf-dir-pick-head { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+.cf-dir-pick-head button { border: none; background: transparent; font-size: 20px; color: var(--muted); }
+.cf-dir-note { margin: 0; font-size: 12px; color: var(--muted); }
+.cf-dir-flow { text-align: left; border: 1px solid var(--hairline); background: var(--ground); border-radius: var(--r-m); padding: 10px 12px; display: grid; gap: 2px; color: var(--ink); }
+.cf-dir-flow:hover { border-color: var(--your-move); }
+.cf-dir-flow .t { font-weight: 600; font-size: 14px; }
+.cf-dir-flow .s { font-size: 13px; color: var(--ink-2); }
+.cf-dir-flow .n { font-size: 11px; color: var(--muted); }
+.cf-dir-panel { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 55; width: min(760px, calc(100vw - 32px)); background: var(--ink); color: var(--ground); border-radius: var(--r-l); padding: 12px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.28); display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center; }
+.cf-dir-panel.small { width: auto; }
+.cf-dir-row { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 12px; opacity: .8; }
+.cf-dir-tools { display: flex; gap: 6px; }
+.cf-dir-tools button { border: 1px solid rgba(255,255,255,.25); background: transparent; color: inherit; border-radius: var(--r-pill); padding: 3px 10px; font-size: 12px; }
+.cf-dir-say { margin: 0; font-size: 18px; line-height: 1.4; }
+.cf-dir-panel.small .cf-dir-say { display: none; }
+.cf-dir-next { border: none; background: var(--your-move); color: var(--your-move-on, #fff); border-radius: var(--r-pill); padding: 10px 18px; font-weight: 600; font-size: 15px; white-space: nowrap; }
+.cf-dir-next:disabled { opacity: .7; }
+.cf-dir-error { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--seal-soft, #f3c); }
+@media (max-width: 900px) { .cf-dir-panel { bottom: calc(76px + 12px); } .cf-dir-say { font-size: 15px; } }
+[data-present] .cf-dir-launch { display: none; }
+.cf-dir-suite { margin: 6px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.cf-dir-pick > div { display: grid; }

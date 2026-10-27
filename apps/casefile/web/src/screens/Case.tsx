@@ -137,7 +137,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
               </button>
             )}
             {primary?.present && (
-              <button type="button" className="file wide stack" onClick={() => setReading(primary.versions[primary.versions.length - 1].name)}>
+              <button type="button" className="file wide stack" data-file={primary.file} onClick={() => setReading(primary.versions[primary.versions.length - 1].name)}>
                 <span className="head"><span className="name">{primary.word}</span><span className="meta">{w.version(Math.max(1, primary.versions[primary.versions.length - 1].version))}{primary.by_word ? ` · ${primary.by_word}` : ""}</span></span>
                 {primary.versions.length > 1 && <span className="hint">{w.keeps}</span>}
               </button>
@@ -145,7 +145,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             {desk.filter((s) => s.file !== v.primary).map((s) => {
               const newest = s.versions[s.versions.length - 1];
               return (
-                <button key={s.file} type="button" className={`file${s.versions.length > 1 ? " stack" : ""}${landed === s.file ? " landed" : ""}`} onClick={() => setReading(newest.name)}>
+                <button key={s.file} type="button" className={`file${s.versions.length > 1 ? " stack" : ""}${landed === s.file ? " landed" : ""}`} data-file={s.file} onClick={() => setReading(newest.name)}>
                   {s.shape.startsWith("image") && <img src={BASE + newest.url} alt="" />}
                   <span className="name">{s.word}</span>
                   <span className="meta">{w.version(Math.max(1, newest.version))}{s.by_word ? ` · ${s.by_word}` : ""}</span>
@@ -180,8 +180,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           </div>
           {secondary.length > 0 && (
             <div className="chips">
-              {secondary.map((t) => <button key={t.action} type="button" className={`chip${pending?.action === t.action ? " on" : ""}`} disabled={busy || t.blocked_by.length > 0} title={t.blocked_by.join(", ")}
-                                            onClick={() => { setPending(t); setAsk(""); askRef.current?.focus(); }}>{t.label}</button>)}
+              {secondary.map((t) => <button key={t.action} type="button" className={`chip${pending?.action === t.action ? " on" : ""}`} disabled={busy || t.blocked_by.length > 0} title={t.blocked_by.join(", ")} data-action={t.action}
+                                            onClick={() => { if (!(t.payload ?? []).includes("note")) { step.mutate({ action: t.action }); return; } setPending(t); setAsk(""); askRef.current?.focus(); }}>{t.label}</button>)}
             </div>
           )}
           <form className="ask" onSubmit={(e) => { e.preventDefault(); if (!ask.trim()) return; if (pending) { step.mutate({ action: pending.action, payload: { note: ask.trim(), text: ask.trim() } }); setPending(null); setAsk(""); } else run.mutate(ask.trim()); }}>
@@ -203,7 +203,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             {blocked.length === 0 && needsAmount && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" autoFocus /></label>}
             {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
-            {blocked.length === 0 && <button type="button" className={`btn${primaryTurn.seal ? " arrive" : ""}`} disabled={!canPress} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>}
+            {blocked.length === 0 && <button type="button" className={`btn${primaryTurn.seal ? " arrive" : ""}`} disabled={!canPress} data-action={primaryTurn.action} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>}
           </>
         ) : main ? (
           <span className="says">{main.actor === "claude" ? w.isWorking(v.agent) : `${w.waitingFor(roleWord(main.actor))}`}</span>
