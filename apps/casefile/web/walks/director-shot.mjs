@@ -16,7 +16,7 @@ page.on("pageerror", (e) => { if (!/ViewTransition/.test(e.message)) issues.push
 await page.goto(`${base}/w/${ws}/`, { waitUntil: "networkidle" });
 await page.request.post(`${base}/w/${ws}/api/session`, { data: { person: "du" } });
 await page.reload({ waitUntil: "networkidle" });
-await page.click(".cf-dir-launch");
+await page.evaluate(() => window.dispatchEvent(new CustomEvent("cf:director")));   // what the bar's "Abläufe" does
 if (flowId) await page.click(`[data-flow="${flowId}"]`); else await page.getByRole("button", { name: new RegExp(title) }).click();
 await page.waitForSelector(".cf-dir-panel", { timeout: 20000 });
 for (let n = 1; n < 60; n++) {
