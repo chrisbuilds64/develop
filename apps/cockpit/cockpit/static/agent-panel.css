@@ -90,3 +90,8 @@ html[data-look="glass"] .ap-panel, html[data-look="glass"] .ap-launch {
 .ap-tip p { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .ap-spot { transition: none; } }
 .ap-back { align-self: flex-start; }
+/* docked in an application's bar (casefile's support group): a small pill among the other support buttons */
+.ap-launch.ap-docked, .ap-in-app .ap-launch.ap-docked { position: static; transform: none; top: auto; right: auto; bottom: auto; height: 34px; flex-direction: row; padding: 0 8px 0 4px; border-radius: 999px; border-right: 1px solid var(--hairline, #e3ded4); box-shadow: none; }
+.ap-launch.ap-docked .ap-stack { flex-direction: row; }
+.ap-in-app .ap-launch.ap-docked .ap-stack { flex-direction: row; }
+.ap-in-app .ap-launch.ap-docked .ap-stack .ap-av + .ap-av { margin-top: 0; margin-left: -8px; }

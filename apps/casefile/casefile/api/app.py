@@ -750,7 +750,7 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/api/config", response_model=views.ConfigView)
     def get_config(c: Ctx = Depends(ctx)):
         v = views.config_view(c.config, c.lang)
-        v.theme = {**v.theme, "canon": (Path(c.store.root) / "_kanon").is_dir() or bool(c.config.theme.get("interview")), "demo": settings.demo, "samples": samples_of(c)[1] if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
+        v.theme = {**v.theme, "canon": (Path(c.store.root) / "_kanon").is_dir() or bool(c.config.theme.get("interview")), "demo": settings.demo, "resettable": bool(settings.demo and settings.template is not None and not settings.worlds), "samples": samples_of(c)[1] if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
         return v
 
     @app.get("/api/me/turns", response_model=list[TurnOut])

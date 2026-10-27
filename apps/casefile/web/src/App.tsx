@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, BASE } from "./api";
 import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
+import { TopBar } from "./components/TopBar";
 import { List } from "./screens/List";
 import { CaseScreen } from "./screens/Case";
 import { Board } from "./screens/Board";
@@ -129,6 +130,8 @@ export function App() {
   if (route.name === "doc") return <div className="shell"><DocWindow id={route.id} name={route.file} config={config.data} w={w} /></div>;
 
   return (
+    <>
+    <TopBar config={config.data} me={me.data} w={w} onSwap={() => setSide(side === "left" ? "right" : "left")} onFresh={() => onFresh()} />
     <div className={`shell ${side}`} style={{ viewTransitionName: (/\/w\/([^/]+)/.exec(BASE)?.[1] ? `ws-${/\/w\/([^/]+)/.exec(BASE)![1]}` : undefined) }}>
       <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
             onSignOut={async () => { await api.signOut(); if (me.data?.shell) { window.location.href = `${me.data.shell.replace(/\/?$/, "/")}logout`; return; } qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
@@ -157,5 +160,6 @@ export function App() {
         </>
       )}
     </div>
+    </>
   );
 }

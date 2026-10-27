@@ -102,6 +102,13 @@
   document.body.appendChild(launcher); document.body.appendChild(panel);
   document.body.classList.add('has-agent-panel');
 
+  // an application with a bar of its own (casefile's support group) docks the launcher there and opens help from it
+  window.agentPanel = {
+    dock: function (host) { if (host && launcher.parentNode !== host) { host.appendChild(launcher); launcher.classList.add('ap-docked'); } },
+    help: function () { open(true); showHelp(); }
+  };
+  setTimeout(function () { window.dispatchEvent(new CustomEvent('agent-panel:ready')); }, 0);
+
   var state = { agents: [], sessions: [], current: read('ap-session'), timer: null };
   function open(on) { panel.hidden = !on; launcher.classList.toggle('on', on); store('ap-open', on ? '1' : null); if (on) refresh(); }
   launcher.addEventListener('click', function () { open(panel.hidden); });

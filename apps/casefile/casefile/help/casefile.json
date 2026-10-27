@@ -7,6 +7,30 @@
   },
   "topics": [
     {
+      "key": "cf.support",
+      "since": "0.20.0",
+      "title": {
+        "de": "Support",
+        "en": "Support"
+      },
+      "text": {
+        "de": "Rechts in der Leiste: Hilfe zu dieser Seite mit Tour, die Erklärvideos der Anwendung, die vorführbaren Abläufe, das Zurücksetzen eines Muster-Workspaces und dein Team. Auf dem Handy sammelt der Knopf „Support“ alles in einem Blatt.",
+        "en": "On the right of the bar: help for this page with a tour, the application's explainer videos, the demonstrable flows, putting a sample workspace back, and your team. On a phone the “Support” button gathers it all in one sheet."
+      }
+    },
+    {
+      "key": "cf.topbar",
+      "since": "0.20.0",
+      "title": {
+        "de": "Wo du bist",
+        "en": "Where you are"
+      },
+      "text": {
+        "de": "Die Leiste oben zeigt den Workspace mit ganzem Namen und die Stufe (ENTW, TEST). „← Cockpit“ führt zurück zur Übersicht.",
+        "en": "The bar at the top shows the workspace by its whole name and the stage (ENTW, TEST). “← Cockpit” leads back to the overview."
+      }
+    },
+    {
       "key": "cf.groups",
       "since": "0.16.1",
       "title": {

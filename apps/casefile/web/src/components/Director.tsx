@@ -2,7 +2,7 @@
 // Flows belong to a demo suite and travel with its worlds (GET /api/demo/ablaeufe, only in sample workspaces). Starting one puts every workspace it touches
 // back to its world (POST /api/demo/reset), signs the flow's person in, and opens the first page. The flow's place survives a
 // page change (sessionStorage), so a flow walks from one application into the next. → / Space / PageDown: next step (the
-// presenter's clicker); Shift+Alt+D: the list; Shift+Alt+C: captions on or off. There is no step back: the steps are real.
+// presenter's clicker); the bar's "Abläufe" or Shift+Alt+D: the list; Shift+Alt+C: captions on or off. There is no step back: the steps are real.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, BASE } from "../api";
 
@@ -62,6 +62,11 @@ export function Director() {
   const pointer = useRef<HTMLDivElement>(null);
   const running = useRef(false);
 
+  useEffect(() => {                                   // the bar's "Abläufe" opens the list
+    const on = () => setPicking(true);
+    window.addEventListener("cf:director", on);
+    return () => window.removeEventListener("cf:director", on);
+  }, []);
   useEffect(() => {
     fetch(BASE + "/api/demo/ablaeufe", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { flows: [] })).then((d) => setFlows(d.flows ?? [])).catch(() => setFlows([]));
   }, []);
@@ -224,7 +229,6 @@ export function Director() {
   return (
     <>
       <div ref={pointer} className="cf-dir-pointer" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M4 2l16 10-7 1.5L9.5 21z" /></svg></div>
-      {!state && !picking && <button type="button" className="cf-dir-launch" onClick={() => setPicking(true)} title="Abläufe vorführen · Shift+Alt+D">▶ Abläufe</button>}
       {picking && (
         <div className="cf-dir-pick" role="dialog" aria-label="Abläufe">
           <div className="cf-dir-pick-head"><b>Ablauf vorführen</b><button type="button" onClick={() => setPicking(false)} aria-label="Schließen">×</button></div>
