@@ -5,7 +5,7 @@ The matrix (`regeln.json`, the pipeline root's copy wins over the domain's) says
     {"rules": [{"id": "R-01", "kind": "schadensmeldung", "word": {"de": "Schadensmeldung", "en": "Claim report"},
                 "action": "create_case", "target": "schadenakte", "label": "KFZ", "approval": "human",
                 "carry": {"images": "fotos-{n}.jpg", "mail.md": "meldung.md"},
-                "meta": {"title": "{fields.title}", "subtitle": "{fields.summary}", "policy": "{fields.policy}"}},
+                "meta": {"title": "{fields.title}", "subtitle": "{fields.summary}", "policy": "{fields.policy}"}, "run": "<a helper of the target, optional>"},
                {"id": "R-09", "kind": "werbung", "action": "file_away", "approval": "auto"}]}
 
 The helper's reading (`einordnung.json`: kind, rule, fields, summary, reasons) picks the row; a person confirms; this
@@ -115,6 +115,9 @@ def execute(store: FsStore, config: DomainConfig, case_id: str, by: str) -> dict
                                "title": _fill(rule.get("entry_title", "{mail.title}"), ctx)[:120] or title,
                                "text": (reading_.get("summary") or "") + f"\n\n*{config.name} · {case.meta.get('from_name') or case.meta.get('from', '')} · {rule['id']}*",
                                "files": carried})
+        if rule.get("run"):                                         # the target's first helper starts at once: the questionnaire fills while the person reads on
+            from . import runs as ordering
+            result["run"] = ordering.order(tstore, tconfig, tid, stage, rule["run"], by, request_id=f"handoff-{case_id}")
         result.update(target=rule.get("target"), target_label=t.get("label", rule.get("target")), case=tid, title=title, url=t.get("url", "").rstrip("/") + f"/case/{tid}" if t.get("url") else "")
     elif rule.get("action") == "file_away":
         result.update(note="filed away")

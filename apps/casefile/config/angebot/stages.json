@@ -1,0 +1,48 @@
+{
+  "$comment": "A quote request as configuration: a request arrives (from the inbox's hand-off or by hand), the AI fills the questionnaire from the customer's words and drafts a question back where answers are missing, the rate table computes the premium (compile: rate — the core, not the AI), a person approves, the AI drafts the letter from approved text modules, a person sends. Invented demo domain; every name and every rate fictional.",
+  "name": "Angebotsakte",
+  "lang": "de",
+  "configVersion": "1",
+  "stages": [
+    {
+      "folder": "10-anfrage",
+      "key": "request",
+      "group": "you",
+      "turn": "role:operator",
+      "actions": [
+        {"id": "calculate", "label": "calculate", "to": "30-angebot", "requires": ["fragebogen.json"], "compile": "rate", "entry_status": "info"},
+        {"id": "ask_customer", "label": "ask_customer", "to": "20-rueckfrage", "requires": ["rueckfrage.md"], "entry_status": "open"},
+        {"id": "prefill", "label": "prefill", "run": "angebot-fragebogen", "entry_status": "info"}
+      ]
+    },
+    {
+      "folder": "20-rueckfrage",
+      "key": "waiting",
+      "group": "others",
+      "turn": "role:operator",
+      "actions": [
+        {"id": "answer_in", "label": "answer_in", "to": "10-anfrage", "run": "angebot-nachtragen", "payload": ["note"], "entry_status": "info"}
+      ]
+    },
+    {
+      "folder": "30-angebot",
+      "key": "quote",
+      "group": "you",
+      "turn": "role:approver",
+      "actions": [
+        {"id": "approve_quote", "label": "approve_quote", "to": "40-versand", "run": "angebot-anschreiben", "requires": ["angebot.md"], "entry_status": "approved", "seal": true},
+        {"id": "back_to_request", "label": "back_to_request", "to": "10-anfrage", "payload": ["note"], "entry_status": "info"}
+      ]
+    },
+    {
+      "folder": "40-versand",
+      "key": "dispatch",
+      "group": "you",
+      "turn": "role:operator",
+      "actions": [
+        {"id": "send", "label": "send", "to": "50-versendet", "requires": ["anschreiben.md"], "entry_status": "info", "seal": true}
+      ]
+    },
+    {"folder": "50-versendet", "key": "sent", "group": "out", "turn": null}
+  ]
+}

@@ -25,7 +25,7 @@ class Action(BaseModel):
     actor: str | None = None                     # who may do it; None = the stage's turn
     handover: dict | None = None                 # demo: after the step, files go to a partner world (world, match, files, action, by, note)
     seal: bool = False                           # a gate whose passing is a decision that holds: the surface stamps it (the second colour, ADR-021 addendum)
-    compile: str | None = None                   # after the move, the core writes a document from the case's data: "canon" (decisions over a draft → canon.md)
+    compile: str | None = None                   # after the move, the core writes a document from the case's data: "canon" (decisions over a draft → canon.md); "handoff" (the rule matrix's action); "rate" (questionnaire × rate table → angebot.md, before the move)
 
 
 class AutoRun(BaseModel):

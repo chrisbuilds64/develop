@@ -1,0 +1,258 @@
+{
+  "$comment": "A fictional rate table for the demo — no insurer's real tariff. The core computes the premium from it (casefile.domain.rating); the AI only fills the answers.",
+  "name": "Demo-Tarif 2026 (fiktiv)",
+  "tax": {
+    "word": "Versicherungsteuer",
+    "rate": 0.19
+  },
+  "words": {
+    "title": "Angebot",
+    "base": "Grundbeitrag",
+    "premium": "Beitrag",
+    "net": "Nettobeitrag",
+    "year": "Jahresbeitrag",
+    "monthly": "monatlich",
+    "by": "gerechnet vom Tarifrechner, nicht von der KI",
+    "missing": "Für das Angebot fehlt noch: {fields}. Erst fragen, dann rechnen."
+  },
+  "products": {
+    "KFZ": {
+      "word": "Kfz-Versicherung",
+      "coverages": [
+        {
+          "id": "kh",
+          "word": "Kfz-Haftpflicht",
+          "base": 420,
+          "factors": [
+            "sf",
+            "km",
+            "jung",
+            "garage"
+          ]
+        },
+        {
+          "id": "tk",
+          "word": "Teilkasko (SB 150 €)",
+          "base": 160,
+          "when": {
+            "kasko": "teilkasko"
+          },
+          "factors": [
+            "km",
+            "garage"
+          ]
+        },
+        {
+          "id": "vk",
+          "word": "Vollkasko (SB 300 €, TK 150 €)",
+          "base": 560,
+          "when": {
+            "kasko": "vollkasko"
+          },
+          "factors": [
+            "sf_vk",
+            "km",
+            "jung",
+            "garage"
+          ]
+        }
+      ]
+    },
+    "HR": {
+      "word": "Hausratversicherung",
+      "coverages": [
+        {
+          "id": "hr",
+          "word": "Hausrat (Versicherungssumme 650 €/m², Unterversicherungsverzicht)",
+          "per": {
+            "field": "wohnflaeche",
+            "rate": 1.3,
+            "unit": "m²"
+          },
+          "factors": [
+            "zone",
+            "vorschaeden"
+          ]
+        },
+        {
+          "id": "el",
+          "word": "Elementarschäden",
+          "base": 38,
+          "when": {
+            "elementar": "ja"
+          },
+          "factors": [
+            "zone"
+          ]
+        },
+        {
+          "id": "fr",
+          "word": "Fahrraddiebstahl bis 2.000 €",
+          "base": 49,
+          "when": {
+            "fahrrad": "ja"
+          },
+          "factors": []
+        }
+      ]
+    }
+  },
+  "factors": {
+    "sf": {
+      "field": "sf_klasse",
+      "word": "SF-Klasse Haftpflicht",
+      "bands": [
+        [
+          0,
+          0,
+          1.3
+        ],
+        [
+          1,
+          1,
+          1.0
+        ],
+        [
+          2,
+          4,
+          0.85
+        ],
+        [
+          5,
+          9,
+          0.65
+        ],
+        [
+          10,
+          14,
+          0.5
+        ],
+        [
+          15,
+          19,
+          0.42
+        ],
+        [
+          20,
+          50,
+          0.35
+        ]
+      ]
+    },
+    "sf_vk": {
+      "field": "sf_klasse_vk",
+      "word": "SF-Klasse Vollkasko",
+      "bands": [
+        [
+          0,
+          0,
+          1.2
+        ],
+        [
+          1,
+          1,
+          0.95
+        ],
+        [
+          2,
+          4,
+          0.8
+        ],
+        [
+          5,
+          9,
+          0.62
+        ],
+        [
+          10,
+          14,
+          0.48
+        ],
+        [
+          15,
+          19,
+          0.4
+        ],
+        [
+          20,
+          50,
+          0.33
+        ]
+      ]
+    },
+    "km": {
+      "field": "fahrleistung",
+      "word": "Fahrleistung km/Jahr",
+      "bands": [
+        [
+          0,
+          6000,
+          0.88
+        ],
+        [
+          6001,
+          12000,
+          1.0
+        ],
+        [
+          12001,
+          20000,
+          1.12
+        ],
+        [
+          20001,
+          99999999,
+          1.25
+        ]
+      ]
+    },
+    "jung": {
+      "field": "juengster_fahrer",
+      "word": "Jüngster Fahrer (Alter)",
+      "bands": [
+        [
+          17,
+          22,
+          1.6
+        ],
+        [
+          23,
+          25,
+          1.25
+        ],
+        [
+          26,
+          120,
+          1.0
+        ]
+      ]
+    },
+    "garage": {
+      "field": "garage",
+      "word": "Nachts in Garage",
+      "table": {
+        "ja": 0.92,
+        "nein": 1.0
+      }
+    },
+    "zone": {
+      "field": "tarifzone",
+      "word": "Tarifzone (aus der PLZ)",
+      "table": {
+        "1": 0.85,
+        "2": 1.0,
+        "3": 1.2,
+        "4": 1.45
+      }
+    },
+    "vorschaeden": {
+      "field": "vorschaeden",
+      "word": "Vorschäden letzte 5 Jahre",
+      "table": {
+        "0": 1.0,
+        "1": 1.15,
+        "2": 1.35
+      }
+    }
+  }
+}

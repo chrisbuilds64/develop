@@ -1,0 +1,9 @@
+{
+  "name": "Angebotsakte",
+  "lang": "de",
+  "accent": "your-move",
+  "$comment": "Same tokens as the claims file; the one accent means only: this waits for you.",
+  "external_label": "Angebotsnummer",
+  "external_url": "",
+  "covers": {"by": "label", "colors": {"KFZ": "#e0a52a", "HR": "#2f6fed"}, "fallback": "#5a6270"}
+}

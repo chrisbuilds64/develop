@@ -72,7 +72,7 @@ def _mkdir(path: Path, user: str, mode: int = 0o755) -> Path:
     return path
 
 
-WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo", "posteingang", "posteingang-live")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
+WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo", "posteingang", "posteingang-live", "angebot", "angebot-live")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
 
 
 def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
@@ -180,7 +180,9 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
              "gatehouse-muster": {"label": "Gatehouse · Muster", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse"), "mode": "replay"},
              "gatehouse-vorfuehrung": {"label": "Gatehouse · Vorführung", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-demo"), "mode": "live"},
              "posteingang": {"label": "Posteingang", "config_dir": str(cfg / "posteingang"), "template": str(d / "worlds" / "posteingang-live"), "mode": "live"},
-             "posteingang-muster": {"label": "Posteingang · Muster", "config_dir": str(cfg / "posteingang"), "template": str(d / "worlds" / "posteingang"), "mode": "replay"}}
+             "posteingang-muster": {"label": "Posteingang · Muster", "config_dir": str(cfg / "posteingang"), "template": str(d / "worlds" / "posteingang"), "mode": "replay"},
+             "angebot": {"label": "Angebotsakte", "config_dir": str(cfg / "angebot"), "template": str(d / "worlds" / "angebot-live"), "mode": "live"},
+             "angebot-muster": {"label": "Angebotsakte · Muster", "config_dir": str(cfg / "angebot"), "template": str(d / "worlds" / "angebot"), "mode": "replay"}}
     grew = [k for k, v in later.items() if k not in data["applications"] and Path(v["template"]).is_dir()]
     for k in grew:
         data["applications"][k] = later[k]
@@ -193,7 +195,8 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     samples = [("schadenakte-muster", "claims", "Schadenakte · Muster", []), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster", []),
                ("gatehouse-muster", "gatehouse-muster", "Gatehouse · Muster", []), ("gatehouse", "gatehouse", f"Gatehouse {env.label}", ["chris", "akhil"]),
                ("gatehouse-vorfuehrung", "gatehouse-vorfuehrung", "Gatehouse · Vorführung", ["chris"]),
-               ("posteingang-muster", "posteingang-muster", "Posteingang · Muster", []), ("posteingang", "posteingang", f"Posteingang {env.label}", ["chris"])]
+               ("posteingang-muster", "posteingang-muster", "Posteingang · Muster", []), ("posteingang", "posteingang", f"Posteingang {env.label}", ["chris"]),
+               ("angebot-muster", "angebot-muster", "Angebotsakte · Muster", [])]
     for wid, app, label, members in samples:
         if wid in have or app not in data["applications"]:
             continue
@@ -217,21 +220,26 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
 
 def _connect_targets(data: dict, cp: Path, cfg: Path, s) -> None:
     """ADR-022: an inbox hands a confirmed mail to another application; which tree that is, the stage decides here — the
-    inboxes write into the claims sample world of the same stage. Written into each inbox's tree as targets.json, every
+    inboxes write into the claims and quote sample worlds of the same stage. Written into each inbox's tree as targets.json, every
     deploy, so a rebuilt sample world finds its target again."""
     ws = {w["id"]: w for w in data["workspaces"]}
-    claims = ws.get("schadenakte-muster")
-    if not claims:
+
+    def tree(w: dict) -> Path:
+        r = Path(w.get("write_root") or w["root"])
+        return r if r.is_absolute() else cp / r
+
+    targets = {}
+    if ws.get("schadenakte-muster"):
+        targets["schadenakte"] = {"label": "Schadenakte · Muster", "root": str(tree(ws["schadenakte-muster"])), "config": str(cfg / "claims-demo"), "url": "../schadenakte-muster", "external_prefix": "SN-"}
+    if ws.get("angebot-muster"):                       # the agency case (2026-10-27): quote requests open a quote file
+        targets["angebot"] = {"label": "Angebotsakte · Muster", "root": str(tree(ws["angebot-muster"])), "config": str(cfg / "angebot"), "url": "../angebot-muster", "external_prefix": "AN-"}
+    if not targets:
         return
-    root = Path(claims.get("write_root") or claims["root"])
-    root = root if root.is_absolute() else cp / root
-    targets = {"schadenakte": {"label": "Schadenakte · Muster", "root": str(root), "config": str(cfg / "claims-demo"), "url": "../schadenakte-muster", "external_prefix": "SN-"}}
     for wid in ("posteingang", "posteingang-muster"):
         w = ws.get(wid)
         if not w:
             continue
-        r = Path(w.get("write_root") or w["root"])
-        r = r if r.is_absolute() else cp / r
+        r = tree(w)
         if r.is_dir():
             (r / "targets.json").write_text(json.dumps(targets, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             _own(r / "targets.json", s.runner_user)

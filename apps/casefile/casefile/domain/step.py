@@ -225,6 +225,15 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
             return _refuse(store, j, str(exc))
         _write_journal(store, j)
 
+    # 4e. a quote the core rates from the questionnaire, once, before the move: a missing answer refuses, nothing moved
+    if action and action.compile == "rate" and not j.payload.get("_rated"):
+        from .rating import RatingError, compile_quote
+        try:
+            j.payload["_rated"] = compile_quote(store, config, j.case)
+        except (RatingError, StoreError, OSError, ValueError) as exc:
+            return _refuse(store, j, str(exc))
+        _write_journal(store, j)
+
     # 5. the move, once
     if j.to and stage_now != j.to:
         if stage_now != j.from_:

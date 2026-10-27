@@ -32,11 +32,12 @@ def _now() -> str:
 
 def load_reply(replies_dir: Path, skill: str, config: DomainConfig | None = None, root: Path | None = None, case_id: str | None = None) -> tuple[dict | None, Path]:
     """Where a prepared reply comes from, nearest first: the world's own `_replies/` at the pipeline root — for this very case
-    (`<skill>.<case>.json`) or for the skill — then the domain's `config/<domain>/replies/`, then the shared folder."""
+    (`<skill>.<case>.json`), for its label (`<skill>.<LABEL>.json`) or for the skill — then the domain's `config/<domain>/replies/`, then the shared folder."""
     places: list[tuple[Path, str]] = []
     if root is not None:
         if case_id:
             places.append((root / "_replies", f"{skill}.{case_id}.json"))
+            places.append((root / "_replies", f"{skill}.{case_id.split('-')[0]}.json"))   # per label: a case a hand-off opened has an id nobody could prepare
         places.append((root / "_replies", f"{skill}.json"))
     if config and config.dir:
         places.append((config.dir / "replies", f"{skill}.json"))

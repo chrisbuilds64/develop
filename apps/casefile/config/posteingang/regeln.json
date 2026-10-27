@@ -1,5 +1,5 @@
 {
-  "$comment": "The rule matrix: per kind of mail, what happens. The helper proposes a row, a person confirms. `carry` says which files travel to the new case and under which name; `meta` fills the new case from the reading. A workspace's own regeln.json wins.",
+  "$comment": "The rule matrix: per kind of mail, what happens. The helper proposes a row, a person confirms. `carry` says which files travel to the new case and under which name; `meta` fills the new case from the reading. `run` starts a helper of the target at once. A workspace's own regeln.json wins.",
   "rules": [
     {"id": "R-01", "kind": "schadensmeldung", "word": {"de": "Schadensmeldung (Kfz)", "en": "Claim report (motor)"}, "when": {"de": "Kunde meldet einen Kfz-Schaden", "en": "A customer reports a motor claim"},
      "action": "create_case", "action_word": {"de": "Akte in der Schadenakte anlegen", "en": "Open a claim file"}, "target": "schadenakte", "label": "KFZ", "approval": "human",
@@ -13,6 +13,12 @@
     {"id": "R-04", "kind": "themenvorschlag", "word": {"de": "Themenvorschlag", "en": "Topic suggestion"}, "when": {"de": "Jemand schlägt ein Thema für Beiträge vor", "en": "Someone suggests a topic"},
      "action": "create_case", "action_word": {"de": "Idee im PressRoom anlegen", "en": "Open an idea in PressRoom"}, "target": "pressroom", "label": "SP", "approval": "human",
      "carry": {"mail.md": "anregung.md"}, "meta": {"title": "{fields.title}"}},
+    {"id": "R-05", "kind": "angebotsanfrage-kfz", "word": {"de": "Angebotsanfrage (Kfz)", "en": "Quote request (motor)"}, "when": {"de": "Kunde möchte ein Fahrzeug versichern oder wechseln", "en": "A customer wants a vehicle insured or to switch"},
+     "action": "create_case", "action_word": {"de": "Akte in der Angebotsakte anlegen", "en": "Open a quote file"}, "target": "angebot", "label": "KFZ", "approval": "human",
+     "carry": {"mail.md": "anfrage.md"}, "run": "angebot-fragebogen", "meta": {"title": "{fields.title}", "subtitle": "{fields.summary_short}", "customer": "{fields.customer}"}},
+    {"id": "R-06", "kind": "angebotsanfrage-hausrat", "word": {"de": "Angebotsanfrage (Hausrat)", "en": "Quote request (contents)"}, "when": {"de": "Kunde möchte seinen Hausrat versichern", "en": "A customer wants contents insurance"},
+     "action": "create_case", "action_word": {"de": "Akte in der Angebotsakte anlegen", "en": "Open a quote file"}, "target": "angebot", "label": "HR", "approval": "human",
+     "carry": {"mail.md": "anfrage.md"}, "run": "angebot-fragebogen", "meta": {"title": "{fields.title}", "subtitle": "{fields.summary_short}", "customer": "{fields.customer}"}},
     {"id": "R-09", "kind": "werbung", "word": {"de": "Werbung, Newsletter", "en": "Advertising, newsletter"}, "when": {"de": "Keine Aufgabe für uns", "en": "No task for us"},
      "action": "file_away", "action_word": {"de": "Ablegen", "en": "File away"}, "approval": "human"}
   ]

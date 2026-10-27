@@ -1,0 +1,157 @@
+{
+  "de": {
+    "product": "Angebotsakte",
+    "labels": {
+      "KFZ": "Kfz",
+      "HR": "Hausrat"
+    },
+    "stations": {
+      "request": "Anfrage",
+      "waiting": "Rückfrage",
+      "quote": "Angebot",
+      "dispatch": "Versand",
+      "sent": "Versendet"
+    },
+    "stages": {
+      "10-anfrage": "Anfrage, Fragebogen prüfen",
+      "20-rueckfrage": "wartet auf Antwort des Kunden",
+      "30-angebot": "Angebot gerechnet, Freigabe",
+      "40-versand": "Anschreiben prüfen und versenden",
+      "50-versendet": "versendet"
+    },
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "KI arbeitet",
+      "others": "Wartet auf Kunden",
+      "date": "Termin",
+      "planned": "Geplant",
+      "out": "Versendet",
+      "ideas": "Neu",
+      "archive": "Abgelegt"
+    },
+    "actions": {
+      "calculate": "Angebot rechnen",
+      "ask_customer": "Rückfrage an den Kunden senden",
+      "prefill": "Fragebogen von der KI ausfüllen lassen",
+      "answer_in": "Antwort des Kunden eintragen",
+      "approve_quote": "Angebot freigeben und Anschreiben entwerfen",
+      "back_to_request": "Zurück zur Anfrage",
+      "send": "An den Kunden versenden",
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten"
+    },
+    "reasons": {
+      "running": "die KI arbeitet an der Akte",
+      "failed": "der letzte Lauf ist gescheitert",
+      "missing": "es fehlt noch etwas"
+    },
+    "texts": {
+      "done": "Erledigt.",
+      "deliver": "Abgelegt.",
+      "detected": "Von Hand verschoben",
+      "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter."
+    },
+    "files": {
+      "anfrage.md": "Anfrage des Kunden",
+      "fragebogen.md": "Fragebogen",
+      "fragebogen.json": "Fragebogen (Daten)",
+      "rueckfrage.md": "Rückfrage an den Kunden",
+      "angebot.md": "Angebot",
+      "angebot.json": "Angebot (Daten)",
+      "anschreiben.md": "Anschreiben",
+      "review.md": "Verlauf",
+      "meta.json": "Kopfdaten"
+    },
+    "roles": {
+      "operator": "Innendienst",
+      "approver": "Freigabe"
+    },
+    "words": {
+      "external_id": "Angebotsnummer"
+    }
+  },
+  "en": {
+    "product": "Quote file",
+    "labels": {
+      "KFZ": "Motor",
+      "HR": "Contents"
+    },
+    "stations": {
+      "request": "Request",
+      "waiting": "Question",
+      "quote": "Quote",
+      "dispatch": "Dispatch",
+      "sent": "Sent"
+    },
+    "stages": {
+      "10-anfrage": "request, check the questionnaire",
+      "20-rueckfrage": "waiting for the customer",
+      "30-angebot": "quote computed, approval",
+      "40-versand": "check the letter and send",
+      "50-versendet": "sent"
+    },
+    "groups": {
+      "you": "Your move",
+      "claude": "AI at work",
+      "others": "Waiting for the customer",
+      "date": "Date",
+      "planned": "Planned",
+      "out": "Sent",
+      "ideas": "New",
+      "archive": "Filed"
+    },
+    "actions": {
+      "calculate": "Compute the quote",
+      "ask_customer": "Send the question to the customer",
+      "prefill": "Have the AI fill the questionnaire",
+      "answer_in": "Enter the customer's answer",
+      "approve_quote": "Approve the quote and draft the letter",
+      "back_to_request": "Back to the request",
+      "send": "Send to the customer",
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "Put in",
+      "see_failure": "See what went wrong",
+      "wait": "Wait"
+    },
+    "reasons": {
+      "running": "the AI is working on the file",
+      "failed": "the last run failed",
+      "missing": "something is still missing"
+    },
+    "texts": {
+      "done": "Done.",
+      "deliver": "Put in.",
+      "detected": "Moved by hand",
+      "detected_text": "The folder was found in {stage}; the thread last knew {known}.",
+      "delivered_title": "Put in: {files}",
+      "replay_moved": "Moved on."
+    },
+    "files": {
+      "anfrage.md": "Customer's request",
+      "fragebogen.md": "Questionnaire",
+      "fragebogen.json": "Questionnaire (data)",
+      "rueckfrage.md": "Question to the customer",
+      "angebot.md": "Quote",
+      "angebot.json": "Quote (data)",
+      "anschreiben.md": "Letter",
+      "review.md": "Thread",
+      "meta.json": "Head data"
+    },
+    "roles": {
+      "operator": "Back office",
+      "approver": "Approval"
+    },
+    "words": {
+      "external_id": "Quote number"
+    }
+  },
+  "$comment": "Every word the quote file shows, German and English."
+}

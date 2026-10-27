@@ -1,0 +1,140 @@
+{
+  "$comment": "What a quote request collects. anfrage.md is the customer's words as they came (the inbox carries the mail here); fragebogen.json/.md the AI's filled questionnaire, every answer with the words it came from; rueckfrage.md the AI's draft question back when answers are missing; angebot.json/.md the rate table's result (the core computes it, not the AI); anschreiben.md the letter from approved text modules. KFZ = motor, HR = contents.",
+  "common": [
+    {
+      "file": "meta.json",
+      "stage": "10-anfrage",
+      "by": "human",
+      "shape": "text"
+    },
+    {
+      "file": "review.md",
+      "stage": "10-anfrage",
+      "by": "human",
+      "shape": "text"
+    }
+  ],
+  "formats": {
+    "KFZ": {
+      "primary": "angebot.md",
+      "artifacts": [
+        {
+          "file": "anfrage.md",
+          "stage": "10-anfrage",
+          "by": "human",
+          "shape": "text"
+        },
+        {
+          "file": "fragebogen.md",
+          "stage": "10-anfrage",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "fragebogen.json",
+          "stage": "10-anfrage",
+          "by": "claude",
+          "shape": "data"
+        },
+        {
+          "file": "rueckfrage.md",
+          "stage": "10-anfrage",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "angebot.md",
+          "stage": "30-angebot",
+          "by": "tarifrechner",
+          "shape": "text"
+        },
+        {
+          "file": "angebot.json",
+          "stage": "30-angebot",
+          "by": "tarifrechner",
+          "shape": "data"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "40-versand",
+          "by": "claude",
+          "shape": "text"
+        }
+      ]
+    },
+    "HR": {
+      "primary": "angebot.md",
+      "artifacts": [
+        {
+          "file": "anfrage.md",
+          "stage": "10-anfrage",
+          "by": "human",
+          "shape": "text"
+        },
+        {
+          "file": "fragebogen.md",
+          "stage": "10-anfrage",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "fragebogen.json",
+          "stage": "10-anfrage",
+          "by": "claude",
+          "shape": "data"
+        },
+        {
+          "file": "rueckfrage.md",
+          "stage": "10-anfrage",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "angebot.md",
+          "stage": "30-angebot",
+          "by": "tarifrechner",
+          "shape": "text"
+        },
+        {
+          "file": "angebot.json",
+          "stage": "30-angebot",
+          "by": "tarifrechner",
+          "shape": "data"
+        },
+        {
+          "file": "anschreiben.md",
+          "stage": "40-versand",
+          "by": "claude",
+          "shape": "text"
+        }
+      ]
+    }
+  },
+  "skills": {
+    "angebot-fragebogen": {
+      "stage": "10-anfrage",
+      "$comment": "Fills the questionnaire from the request; drafts a question back for what is missing."
+    },
+    "angebot-nachtragen": {
+      "stage": "10-anfrage",
+      "$comment": "Adds the customer's answer to the questionnaire."
+    },
+    "angebot-anschreiben": {
+      "stage": "40-versand",
+      "$comment": "Drafts the letter from approved text modules and the quote; a person sends."
+    },
+    "ask": {
+      "stage": "*",
+      "$comment": "A free question about the file."
+    }
+  },
+  "kinds": [
+    "anfrage.md",
+    "fragebogen.md",
+    "fragebogen.json",
+    "rueckfrage.md",
+    "angebot.md",
+    "angebot.json",
+    "anschreiben.md"
+  ]
+}
