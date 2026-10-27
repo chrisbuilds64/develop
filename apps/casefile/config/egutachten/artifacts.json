@@ -75,6 +75,24 @@
           "required": true
         },
         {
+          "file": "diktat.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
+          "file": "ergebnis.md",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "ergebnis.json",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "data"
+        },
+        {
           "file": "gutachten.md",
           "stage": "20-besichtigung",
           "by": "role:assessor",
@@ -149,6 +167,24 @@
           "required": true
         },
         {
+          "file": "diktat.md",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "text"
+        },
+        {
+          "file": "ergebnis.md",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "text"
+        },
+        {
+          "file": "ergebnis.json",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "data"
+        },
+        {
           "file": "gutachten.md",
           "stage": "20-besichtigung",
           "by": "role:assessor",
@@ -206,6 +242,10 @@
     "muster": {
       "stage": "*",
       "$comment": "Across all files: duplicates, repeats, deviations. Writes signals to _signale/."
+    },
+    "ergebnis": {
+      "stage": "20-besichtigung",
+      "$comment": "Reads the dictation and the calculation, writes the result as data, every value with the words it came from."
     }
   },
   "kinds": [
@@ -218,6 +258,9 @@
     "fotos-5.jpg",
     "fotohinweise.md",
     "kalkulation.pdf",
+    "diktat.md",
+    "ergebnis.md",
+    "ergebnis.json",
     "gutachten.md",
     "pruefbericht.md",
     "anschreiben.md",

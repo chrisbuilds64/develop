@@ -47,7 +47,9 @@
       "done": "Erledigt",
       "deliver": "Ablegen",
       "see_failure": "Nachsehen, was schiefging",
-      "wait": "Warten"
+      "wait": "Warten",
+      "capture_result": "Ergebnis aus dem Diktat erfassen lassen",
+      "compose_report": "Gutachten aus Bausteinen zusammenstellen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -78,7 +80,10 @@
       "review.md": "Verlauf",
       "meta.json": "Steckbrief",
       "fotohinweise.md": "Fotohinweise (KI)",
-      "auftrag.md": "Gutachtenauftrag (eGutachten)"
+      "auftrag.md": "Gutachtenauftrag (eGutachten)",
+      "diktat.md": "Diktat des Gutachters",
+      "ergebnis.md": "Ergebnis",
+      "ergebnis.json": "Ergebnis (Daten)"
     },
     "roles": {
       "assessor": "Gutachter",
@@ -137,7 +142,9 @@
       "done": "Done",
       "deliver": "Drop in",
       "see_failure": "See what went wrong",
-      "wait": "Wait"
+      "wait": "Wait",
+      "capture_result": "Have the result taken from the dictation",
+      "compose_report": "Compose the report from modules"
     },
     "reasons": {
       "running": "the AI is checking",
@@ -168,7 +175,10 @@
       "review.md": "Thread",
       "meta.json": "Record",
       "fotohinweise.md": "Photo hints (AI)",
-      "auftrag.md": "Assessment order (electronic)"
+      "auftrag.md": "Assessment order (electronic)",
+      "diktat.md": "Assessor's dictation",
+      "ergebnis.md": "Result",
+      "ergebnis.json": "Result (data)"
     },
     "roles": {
       "assessor": "Assessor",

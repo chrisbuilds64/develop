@@ -234,6 +234,15 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
             return _refuse(store, j, str(exc))
         _write_journal(store, j)
 
+    # 4f. a document the core composes from approved modules over the case's result, once, before the move
+    if action and action.compile == "compose" and not j.payload.get("_composed"):
+        from .compose import ComposeError, compile_document
+        try:
+            j.payload["_composed"] = compile_document(store, config, j.case)
+        except (ComposeError, StoreError, OSError, ValueError) as exc:
+            return _refuse(store, j, str(exc))
+        _write_journal(store, j)
+
     # 5. the move, once
     if j.to and stage_now != j.to:
         if stage_now != j.from_:

@@ -1,0 +1,176 @@
+{
+  "$comment": "How a report is composed from the result (ergebnis.json) and the approved modules in _bausteine/ (casefile.domain.compose). Per section the first module whose condition holds; the core composes, the AI only extracts the result.",
+  "source": "ergebnis.json",
+  "target": "gutachten.md",
+  "modules": "_bausteine",
+  "title": "Kfz-Schadengutachten (Entwurf aus Bausteinen)",
+  "words": {
+    "missing": "Im Ergebnis fehlt noch: {fields}. Erst erfassen, dann zusammenstellen.",
+    "trail": "Zusammengestellt vom Kern aus freigegebenen Bausteinen, keine fachliche Aussage der KI"
+  },
+  "head": [
+    [
+      "Auftragsnummer",
+      "{order}"
+    ],
+    [
+      "Auftraggeber",
+      "Nordlicht Versicherung AG, {sparte}"
+    ],
+    [
+      "Fahrzeug",
+      "{fahrzeug}"
+    ],
+    [
+      "FIN",
+      "{fin}"
+    ],
+    [
+      "Besichtigung",
+      "{besichtigung}, {ort}"
+    ],
+    [
+      "Gutachter",
+      "{gutachter}"
+    ]
+  ],
+  "derive": [
+    {
+      "id": "quote_rk",
+      "ratio": [
+        "rk_brutto",
+        "wbw"
+      ]
+    },
+    {
+      "id": "wba",
+      "minus": [
+        "wbw",
+        "restwert"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "title": "Vorschäden und Altschäden",
+      "choose": [
+        {
+          "module": "B-16",
+          "when": {
+            "vorschaeden": "nein"
+          },
+          "rule": "R-01"
+        },
+        {
+          "module": "B-17",
+          "rule": "R-01"
+        }
+      ]
+    },
+    {
+      "title": "Schadenhergang",
+      "text": "{hergang}"
+    },
+    {
+      "title": "Befund",
+      "text": "{befund}"
+    },
+    {
+      "title": "Reparaturweg",
+      "text": "{reparaturweg}",
+      "always": [
+        {
+          "module": "B-11"
+        }
+      ],
+      "when": {
+        "quote_rk": {
+          "lt": 100
+        }
+      }
+    },
+    {
+      "title": "Fotodokumentation",
+      "always": [
+        {
+          "module": "B-18",
+          "rule": "R-02"
+        }
+      ]
+    },
+    {
+      "title": "Kalkulation",
+      "text": "Reparaturkostenkalkulation K-{order} (Anlage, {kalk_system}). **Reparaturkosten netto {rk_netto|eur}**, brutto {rk_brutto|eur}. Reparaturdauer {dauer}."
+    },
+    {
+      "title": "Wiederbeschaffungswert, Restwert, Totalschadenprüfung",
+      "choose": [
+        {
+          "module": "B-13",
+          "when": {
+            "quote_rk": {
+              "gte": 100
+            }
+          },
+          "rule": "R-07"
+        },
+        {
+          "module": "B-14",
+          "when": {
+            "quote_rk": {
+              "gte": 60
+            }
+          },
+          "rule": "R-07"
+        },
+        {
+          "module": "B-12",
+          "rule": "R-07"
+        }
+      ]
+    },
+    {
+      "title": "Wertminderung",
+      "choose": [
+        {
+          "module": "B-05",
+          "when": {
+            "wm": {
+              "gt": 0
+            }
+          },
+          "after": "Ergebnis: **{wm|eur}**.",
+          "rule": "R-04"
+        },
+        {
+          "module": "B-05",
+          "after": "Ergebnis: **0 €** ({wm_grund}).",
+          "rule": "R-04"
+        }
+      ]
+    },
+    {
+      "title": "Nutzungsausfall",
+      "choose": [
+        {
+          "module": "B-15",
+          "when": {
+            "sparte_typ": "kasko"
+          }
+        },
+        {
+          "module": "B-10"
+        }
+      ]
+    },
+    {
+      "title": "Hinweise",
+      "always": [
+        {
+          "module": "B-01"
+        }
+      ]
+    }
+  ],
+  "footer": "**Anlagen:** Fotodokumentation, Kalkulation K-{order}."
+}

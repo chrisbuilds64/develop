@@ -74,6 +74,20 @@
         "operator",
         "approver"
       ]
+    },
+    "ergebnis": {
+      "does": "Liest das Diktat des Gutachters und die Kalkulation und hält das Ergebnis als Daten fest: jeder Wert mit den Worten, aus denen er stammt. Daraus stellt der Kern das Gutachten aus freigegebenen Bausteinen zusammen.",
+      "never": "Schreibt einen Satz des Gutachtens. Stellt einen Schaden fest, den der Gutachter nicht diktiert hat. Rechnet Werte um, die nicht in Diktat oder Kalkulation stehen.",
+      "rules": [
+        "R-01 Vorschäden",
+        "R-04 Wertminderung",
+        "R-07 Totalschadengrenze und Restwert"
+      ],
+      "orderable_by": [
+        "assessor",
+        "approver",
+        "operator"
+      ]
     }
   }
 }
