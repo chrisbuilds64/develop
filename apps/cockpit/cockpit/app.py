@@ -52,6 +52,9 @@ def create_app(config: Config) -> FastAPI:
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=HERE / "templates")
     from .detail import render_md_safe
+    # the panel's files carry their own stamp in the address: after a deploy every browser fetches the new ones, no stale cache
+    asset_v = str(int(max((HERE / "static" / f).stat().st_mtime for f in ("agent-panel.js", "agent-panel.css"))))
+    templates.env.globals["asset_v"] = asset_v
     templates.env.filters["md"] = render_md_safe       # an agent's answer is Markdown; shown rendered, raw HTML as text
 
     # Served under a prefix ("/test"), every link and redirect carries it; at the root it is empty.
@@ -829,8 +832,8 @@ def create_app(config: Config) -> FastAPI:
         return response
 
     # Mounted plugin apps and workspaces sit behind the same gate and the same role check as the pages.
-    _PANEL = ('<link rel="stylesheet" href="{b}/static/agent-panel.css"><script src="{b}/static/agent-panel.js" defer></script>'
-              .format(b=base or "").encode())
+    _PANEL = ('<link rel="stylesheet" href="{b}/static/agent-panel.css?v={v}"><script src="{b}/static/agent-panel.js?v={v}" defer></script>'
+              .format(b=base or "", v=asset_v).encode())
 
     @app.middleware("http")
     async def panel_in_apps(request: Request, call_next):

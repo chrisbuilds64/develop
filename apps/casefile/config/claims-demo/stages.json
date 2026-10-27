@@ -76,7 +76,7 @@
           "label": "approve_settlement",
           "to": "40-regulierung",
           "requires": [
-            "gutachten.pdf",
+            "gutachten.pdf|gutachten.md",
             "rechnung.pdf"
           ],
           "payload": [

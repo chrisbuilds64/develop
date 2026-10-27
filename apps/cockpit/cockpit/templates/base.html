@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/cockpit.css">
-<link rel="stylesheet" href="/static/agent-panel.css">
+<link rel="stylesheet" href="/static/agent-panel.css?v={{ asset_v }}">
 <script>
   // Theme, look and transparency are this browser's choice (the person menu sets them); restored before the first paint.
   try {
@@ -120,7 +120,7 @@
   <div class="version tx">{{ t('app.version') }} {{ version }}</div>
 </nav>
 {% if user %}
-<script src="/static/agent-panel.js" defer></script>
+<script src="/static/agent-panel.js?v={{ asset_v }}" defer></script>
 <div class="me-pop pop" id="me-pop" hidden>
       <div class="me-head"><span class="avatar lg">{{ user.display[:2]|upper }}</span><span><span class="name">{{ user.display }}</span><span class="role-pill">{{ user.role }}</span></span></div>
       <div class="pop-label">{{ t('me.design') }}</div>
