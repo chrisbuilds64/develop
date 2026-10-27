@@ -7,7 +7,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, BASE } from "../api";
 
 type Step = { do: "go" | "open" | "press" | "type" | "read" | "close" | "follow" | "wait" | "show" | "say"; say: string;
-  ws?: string; path?: string; case?: string; action?: string; text?: string; file?: string; target?: string; until?: "idle"; ms?: number };
+  ws?: string; path?: string; case?: string; action?: string; text?: string; file?: string; target?: string; until?: "idle"; ms?: number;
+  date?: number; amount?: string };                // press: a date (days from today) or an amount the action asks for, entered first
 type Flow = { id: string; title: string; summary: string; person: string; workspaces: Record<string, string>; suite?: { id: string; title: string }; steps: Step[] };
 type State = { flow: string; i: number; auto: boolean; captions: boolean };
 
@@ -41,6 +42,15 @@ function caseInPath(): string | undefined {
 function navigate(path: string) {                   // inside this application: the router listens to popstate
   window.history.pushState(null, "", BASE + path);
   window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+async function fill(input: HTMLElement, value: string) {      // React reads the native setter, not .value
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+  input.scrollIntoView({ block: "center" });
+  setter.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  await sleep(500);
 }
 
 export function Director() {
@@ -94,6 +104,8 @@ export function Director() {
         return "next";
       }
       case "press":
+        if (s.date !== undefined) await fill(await find(".desk input[type=date]"), new Date(Date.now() + s.date * 86_400_000).toISOString().slice(0, 10));
+        if (s.amount !== undefined) await fill(await find(".foot label.money input"), s.amount);
         await aim(await find(`[data-action="${s.action}"]`));
         await sleep(900);
         return "next";

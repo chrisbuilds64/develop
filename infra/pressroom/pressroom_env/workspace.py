@@ -233,15 +233,21 @@ def _connect_targets(data: dict, cp: Path, cfg: Path, s) -> None:
         targets["schadenakte"] = {"label": "Schadenakte · Muster", "root": str(tree(ws["schadenakte-muster"])), "config": str(cfg / "claims-demo"), "url": "../schadenakte-muster", "external_prefix": "SN-"}
     if ws.get("angebot-muster"):                       # the agency case (2026-10-27): quote requests open a quote file
         targets["angebot"] = {"label": "Angebotsakte · Muster", "root": str(tree(ws["angebot-muster"])), "config": str(cfg / "angebot"), "url": "../angebot-muster", "external_prefix": "AN-"}
-    if not targets:
-        return
-    for wid in ("posteingang", "posteingang-muster"):
+    # the claims and the assessor's sample worlds hand an order and the e-report to each other (the demo's GDV stand-in)
+    pairs = {"schadenakte-muster": {"egutachten": ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster")},
+             "gutachtenakte-muster": {"claims": ("schadenakte-muster", "claims-demo", "Schadenakte · Muster")}}
+    plan = {wid: targets for wid in ("posteingang", "posteingang-muster") if targets}
+    for wid, partners in pairs.items():
+        got = {key: {"label": label, "root": str(tree(ws[other])), "config": str(cfg / conf)} for key, (other, conf, label) in partners.items() if other in ws}
+        if got:
+            plan[wid] = got
+    for wid, doc in plan.items():
         w = ws.get(wid)
         if not w:
             continue
         r = tree(w)
         if r.is_dir():
-            (r / "targets.json").write_text(json.dumps(targets, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            (r / "targets.json").write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             _own(r / "targets.json", s.runner_user)
 
 

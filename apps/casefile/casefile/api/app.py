@@ -528,16 +528,24 @@ def create_app(settings: Settings) -> FastAPI:
         the partner's step. A failed hand-over is logged; the visitor's own step stands."""
         try:
             world = str(spec.get("world", ""))
-            if world not in settings.worlds or not c.world:
-                return
-            mapping = _read_worlds(request)
-            if c.session:
-                mapping[c.world] = c.session
-            target = _session_ctx(mapping[world]) if world in mapping else None
-            if target is None:
-                target = _new_session(world)
-                mapping[world] = target.session
-            _set_worlds(response, mapping)
+            if settings.worlds:
+                if world not in settings.worlds or not c.world:
+                    return
+                mapping = _read_worlds(request)
+                if c.session:
+                    mapping[c.world] = c.session
+                target = _session_ctx(mapping[world]) if world in mapping else None
+                if target is None:
+                    target = _new_session(world)
+                    mapping[world] = target.session
+                _set_worlds(response, mapping)
+            else:                                        # in the cockpit: the stage names the partner workspace (targets.json, ADR-022)
+                from ..domain import handoff
+                t = handoff.targets(c.store).get(world)
+                if not t:
+                    return
+                troot = Path(t["root"])
+                target = Ctx(store=FsStore(troot), config=DomainConfig.load(Path(t["config"]), troot), lang=c.lang, world=world)
             src_case = reading.load(c.store, c.config, case_id)
             src_dir = c.store.case_dir(case_id)
             rename = spec.get("rename", {})
@@ -584,8 +592,9 @@ def create_app(settings: Settings) -> FastAPI:
             stepping.step(target.store, target.config, partner.id, StepRequest(action=str(spec.get("action", "deliver")), step_id=f"{step_id}-handover", payload=payload), str(spec.get("by", "")))
         except Exception as exc:        # noqa: BLE001 — a failed hand-over must never break the visitor's own step
             try:
-                (settings.sessions_dir / "handover-errors.log").open("a", encoding="utf-8").write(f"{_now()} {c.world}/{case_id} {step_id}: {exc!r}\n")
-            except OSError:
+                log = (settings.sessions_dir or Path(settings.write_root or settings.root)) / "handover-errors.log"
+                log.open("a", encoding="utf-8").write(f"{_now()} {c.world}/{case_id} {step_id}: {exc!r}\n")
+            except (OSError, TypeError):
                 pass
 
     def ctx(request: Request, response: Response) -> Ctx:
@@ -972,7 +981,7 @@ def create_app(settings: Settings) -> FastAPI:
     @app.post("/api/cases/{case_id}/steps", response_model=StepResult)
     def post_step(case_id: str, body: StepRequest, request: Request, response: Response, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         result = stepping.step(c.store, c.config, case_id, body, who)
-        if result.ok and not result.replayed and settings.worlds:
+        if result.ok and not result.replayed:
             action = next((a for st in c.config.stages for a in st.actions if a.id == body.action and a.handover), None)
             if action:
                 _handover(request, response, c, case_id, action.handover, body.step_id)
