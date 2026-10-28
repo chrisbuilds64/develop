@@ -62,10 +62,88 @@
           "shape": "image"
         },
         {
+          "file": "fotos-6.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-7.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-8.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-9.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-10.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-11.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-12.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-13.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-14.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-15.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-16.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
           "file": "fotohinweise.md",
           "stage": "20-besichtigung",
           "by": "claude",
           "shape": "text"
+        },
+        {
+          "file": "fotohinweise.json",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "data"
+        },
+        {
+          "file": "vorort.json",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "data"
         },
         {
           "file": "kalkulation.pdf",
@@ -154,10 +232,94 @@
           "shape": "image"
         },
         {
+          "file": "fotos-5.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-6.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-7.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-8.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-9.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-10.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-11.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-12.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-13.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-14.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-15.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
+          "file": "fotos-16.jpg",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "image"
+        },
+        {
           "file": "fotohinweise.md",
           "stage": "20-besichtigung",
           "by": "claude",
           "shape": "text"
+        },
+        {
+          "file": "fotohinweise.json",
+          "stage": "20-besichtigung",
+          "by": "claude",
+          "shape": "data"
+        },
+        {
+          "file": "vorort.json",
+          "stage": "20-besichtigung",
+          "by": "role:assessor",
+          "shape": "data"
         },
         {
           "file": "kalkulation.pdf",
@@ -237,7 +399,7 @@
     },
     "fotohinweis": {
       "stage": "20-besichtigung",
-      "$comment": "Looks at the first photos while the assessor is still at the car: missing views, likely hidden damage from similar cases."
+      "$comment": "Looks at the photos and notes while the assessor is still at the car: missing views, what to clarify, likely hidden damage from similar cases. Writes fotohinweise.md and, for the on-site view, fotohinweise.json ({round, summary, photograph[], clarify[], notice[]}, each item {id, text, why, view?, photo?}). Called again, it reads vorort.json (what the assessor ticked and answered) and starts the next round."
     },
     "muster": {
       "stage": "*",

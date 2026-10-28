@@ -12,5 +12,58 @@
       "KK": "#2fa36b"
     },
     "fallback": "#5a6270"
+  },
+  "onsite": {
+    "$comment": "The assessor's view at the car (tablet, phone): photos by view, a note, the AI's hints in rounds. stages: where it opens; series: the numbered photo slots; views: the photo standard R-02 (required) plus the detail shots; note: where the note lands (it becomes the dictation); helper: the skill asked; close: the action that ends the inspection.",
+    "stages": [
+      "20-besichtigung"
+    ],
+    "series": "fotos-{n}.jpg",
+    "note": "diktat.md",
+    "helper": "fotohinweis",
+    "hints": "fotohinweise.json",
+    "state": "vorort.json",
+    "close": "close_inspection",
+    "views": [
+      {
+        "id": "vorn",
+        "word": "Gesamtansicht vorn",
+        "required": true
+      },
+      {
+        "id": "hinten",
+        "word": "Gesamtansicht hinten",
+        "required": true
+      },
+      {
+        "id": "links",
+        "word": "Seite links",
+        "required": true
+      },
+      {
+        "id": "rechts",
+        "word": "Seite rechts",
+        "required": true
+      },
+      {
+        "id": "fin",
+        "word": "Fahrgestellnummer",
+        "required": true
+      },
+      {
+        "id": "tacho",
+        "word": "Tacho",
+        "required": true
+      },
+      {
+        "id": "schaden",
+        "word": "Schaden im Detail",
+        "required": true
+      },
+      {
+        "id": "weitere",
+        "word": "Weiteres Foto"
+      }
+    ]
   }
 }

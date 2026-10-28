@@ -87,7 +87,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const talkSlot = v.slots.find((s) => s.shape === "interview");
   const outcomeReady = v.slots.some((s) => s.shape === "data" && s.present);
   const byHelper = (s: { by: string; by_word: string }) => s.by === "claude" || (!!s.by_word && s.by_word === v.agent);
-  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))))));
+  // a numbered series (fotos-1 … fotos-16) asks for its next place only, not for every empty one
+  const seriesOf = (f: string) => /^(.+)-\d+\.(\w+)$/.exec(f)?.slice(1).join(".");
+  const firstFree = new Set<string>();
+  const nextOfSeries = (s: { file: string; present: boolean }) => { const k = seriesOf(s.file); if (!k) return true; if (firstFree.has(k)) return false; firstFree.add(k); return true; };
+  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6)))))).filter(nextOfSeries);
+  const onsiteHere = ((config.theme as { onsite?: { stages?: string[] } }).onsite?.stages ?? []).includes(v.stage);
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const docs = docsOf(v);
   const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((v) => v.name === reading));
@@ -134,6 +139,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
               <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "approve_canon") ? " mine" : ""}`} data-help="cf.outcome-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>
                 <span className="head"><span className="name">{w.outcomeOpen}</span></span>
                 <span className="hint">{w.outcomeOpenHint}</span>
+              </button>
+            )}
+            {onsiteHere && (
+              <button type="button" className={`file wide talk-tile${mine ? " mine" : ""}`} data-onsite="1" onClick={() => go(`/case/${encodeURIComponent(id)}/vorort`)}>
+                <span className="head"><span className="name">{w.onsite} →</span></span>
+                <span className="hint">{w.onsiteHint}</span>
               </button>
             )}
             {primary?.present && (

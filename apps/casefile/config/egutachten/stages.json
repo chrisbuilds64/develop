@@ -57,6 +57,17 @@
           "compile": "compose",
           "entry_status": "info",
           "actor": "role:operator"
+        },
+        {
+          "id": "close_inspection",
+          "label": "close_inspection",
+          "run": "ergebnis",
+          "requires": [
+            "diktat.md",
+            "shape:image"
+          ],
+          "entry_status": "info",
+          "actor": "role:assessor"
         }
       ],
       "auto": [

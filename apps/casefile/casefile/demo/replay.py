@@ -30,12 +30,16 @@ def _now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def load_reply(replies_dir: Path, skill: str, config: DomainConfig | None = None, root: Path | None = None, case_id: str | None = None) -> tuple[dict | None, Path]:
+def load_reply(replies_dir: Path, skill: str, config: DomainConfig | None = None, root: Path | None = None, case_id: str | None = None,
+               round_no: int = 0) -> tuple[dict | None, Path]:
     """Where a prepared reply comes from, nearest first: the world's own `_replies/` at the pipeline root — for this very case
-    (`<skill>.<case>.json`), for its label (`<skill>.<LABEL>.json`) or for the skill — then the domain's `config/<domain>/replies/`, then the shared folder."""
+    in this round (`<skill>.<case>.<n>.json`, a helper asked again answers again), for the case (`<skill>.<case>.json`), for its
+    label (`<skill>.<LABEL>.json`) or for the skill — then the domain's `config/<domain>/replies/`, then the shared folder."""
     places: list[tuple[Path, str]] = []
     if root is not None:
         if case_id:
+            if round_no:
+                places.append((root / "_replies", f"{skill}.{case_id}.{round_no}.json"))
             places.append((root / "_replies", f"{skill}.{case_id}.json"))
             places.append((root / "_replies", f"{skill}.{case_id.split('-')[0]}.json"))   # per label: a case a hand-off opened has an id nobody could prepare
         places.append((root / "_replies", f"{skill}.json"))
@@ -50,12 +54,27 @@ def load_reply(replies_dir: Path, skill: str, config: DomainConfig | None = None
     return None, replies_dir
 
 
+def _round(store: FsStore, doc: dict) -> int:
+    """Which time this helper is asked on this case: 1 + the finished orders of the same skill before it."""
+    case_id = doc["container"].split("/")[-1]
+    n = 1
+    for name in store.runs():
+        try:
+            other = store.read_json(f"_runs/{name}")
+        except (OSError, ValueError):
+            continue
+        if other.get("id") != doc.get("id") and other.get("skill") == doc.get("skill") and other.get("status") == "done" \
+                and other.get("container", "").split("/")[-1] == case_id:
+            n += 1
+    return n
+
+
 def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path, wait: bool = True) -> bool:
     """Move one order along: queued → running now; running → done once its delay has passed. No sleeping, so a
     room full of sandboxes is served in parallel by one thread. `wait=False` finishes it in one call (tests)."""
     rel = f"_runs/{run_name}"
     doc = store.read_json(rel)
-    reply, replies_dir = load_reply(replies_dir, doc.get("skill", ""), config, store.root, doc["container"].split("/")[-1])
+    reply, replies_dir = load_reply(replies_dir, doc.get("skill", ""), config, store.root, doc["container"].split("/")[-1], _round(store, doc))
     if doc.get("status") == "queued":
         doc["status"], doc["started"], doc["taken_by"] = "running", _now(), "replay"
         store.write_json(rel, doc)

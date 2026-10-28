@@ -118,6 +118,13 @@ class RunIn(BaseModel):
 class SampleIn(BaseModel):
     slot: str
     step_id: str
+    source: str | None = None        # a sample under another name: `vorort-hinten.jpg` into the next photo of a series
+
+
+class OnsiteIn(BaseModel):
+    """The assessor's state at the car: which view each photo shows, what they ticked or answered of the AI's hints."""
+    photos: dict[str, str] = {}
+    hints: dict[str, dict] = {}
 
 
 class MeOut(BaseModel):
@@ -1020,16 +1027,44 @@ def create_app(settings: Settings) -> FastAPI:
     def post_sample(case_id: str, body: SampleIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         """The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version."""
         samples_dir, samples = samples_of(c)
-        if not settings.demo or not samples_dir or body.slot not in samples:
+        source = body.source or body.slot
+        if not settings.demo or not samples_dir or source not in samples:
             raise HTTPException(404, "no sample for that slot")
         prior = stepping.read_journal(c.store, body.step_id)
         if prior is not None:
             return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
         try:
-            name = assets.put(c.store, c.config, case_id, body.slot, samples_dir / body.slot, body.slot)
+            name = assets.put(c.store, c.config, case_id, body.slot, samples_dir / source, source)
         except StoreError as exc:
             raise HTTPException(409, str(exc))
         return AssetOut(name=name, slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
+
+    @app.put("/api/cases/{case_id}/vorort")
+    def put_onsite(case_id: str, body: OnsiteIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The on-site view's working state (theme.onsite.state), merged: a photo's view, a hint ticked or answered. State, not a
+        deliverable version — the photos and the note are the versioned files; this only says what they are and what is settled."""
+        conf = c.config.theme.get("onsite") or {}
+        name = str(conf.get("state") or "")
+        if not name:
+            raise HTTPException(404, "this application has no on-site view")
+        if any(not re.fullmatch(r"[a-z0-9-]+(\.v\d+)?\.(jpg|jpeg|png|webp)", f) or len(v) > 40 for f, v in body.photos.items()):
+            raise HTTPException(422, "a photo is named by its file, a view by a short word")
+        if any(len(k) > 60 or len(str(h.get("text", ""))) > 2000 for k, h in body.hints.items()):
+            raise HTTPException(422, "a hint answer is at most 2000 characters")
+        with c.store.lock(case_id):
+            stage = c.store.find(case_id)
+            if stage is None:
+                raise HTTPException(404, "case not found")
+            try:
+                doc = json.loads(c.store.case_text(case_id, name))
+            except (OSError, ValueError):
+                doc = {}
+            doc.setdefault("photos", {}).update(body.photos)
+            for k, h in body.hints.items():
+                doc.setdefault("hints", {})[k] = {"done": bool(h.get("done")), "text": str(h.get("text", "")).strip(), "by": who,
+                                                  "at": dt.datetime.now().astimezone().isoformat(timespec="seconds")}
+            c.store.write_json(f"{stage}/{case_id}/{name}", doc)
+        return {"ok": True, "state": doc}
 
     # ------------------------------------------------------------ a conversation (Gatehouse and anything shaped like it)
     from ..domain import interview as talk
@@ -1233,6 +1268,17 @@ def create_app(settings: Settings) -> FastAPI:
                 html = html.replace("</head>", mark + "\n  </head>", 1)
                 html = html.replace("<body>", f'<body>\n    <div class="cf-stage" aria-hidden="true"></div><div class="cf-stage-badge">{stage.upper()}</div>', 1)
             return html
+
+        @app.get("/manifest.webmanifest", include_in_schema=False)
+        def manifest(request: Request):
+            """Put on a tablet's home screen, the app opens where it was added — this mount, not the host's root."""
+            prefix = str(request.scope.get("root_path", "") or "").rstrip("/")
+            name = single.config.name if single else "casefile"
+            return JSONResponse({"name": name, "short_name": name[:24], "start_url": f"{prefix}/", "scope": f"{prefix}/", "display": "standalone",
+                                 "background_color": "#F6F3EE", "theme_color": "#F6F3EE",
+                                 "icons": [{"src": f"{prefix}/icon-512.png", "sizes": "512x512", "type": "image/png"},
+                                           {"src": f"{prefix}/icon.svg", "sizes": "any", "type": "image/svg+xml"}]},
+                                media_type="application/manifest+json")
 
         @app.get("/{path:path}", include_in_schema=False)
         def spa(path: str, request: Request):

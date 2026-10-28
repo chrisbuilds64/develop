@@ -19,7 +19,8 @@ await page.reload({ waitUntil: "networkidle" });
 await page.evaluate(() => window.dispatchEvent(new CustomEvent("cf:director")));   // what the bar's "Abläufe" does
 if (flowId) await page.click(`[data-flow="${flowId}"]`); else await page.getByRole("button", { name: new RegExp(title) }).click();
 await page.waitForSelector(".cf-dir-panel", { timeout: 20000 });
-for (let n = 1; n < 60; n++) {
+let done = false, last = null;
+for (let n = 1; n < 80; n++) {
   await page.waitForTimeout(800);
   const count = await page.locator(".cf-dir-count").textContent({ timeout: 5000 }).catch(() => "");
   await page.screenshot({ path: join(out, `${String(n).padStart(2, "0")}.png`) });
@@ -27,11 +28,14 @@ for (let n = 1; n < 60; n++) {
   const err = (await errs.count()) ? await errs.first().textContent() : null;
   console.log(n, count, err ? `ERROR ${err}` : "");
   if (err) issues.push(`${count}: ${err}`);
-  if (/fertig/.test(count ?? "") || err) break;
+  if (/fertig/.test(count ?? "") || err) { done = true; break; }
+  if (count && count === last) { issues.push(`no step forward at ${count}`); break; }   // a press that moves nothing is a broken flow, not a slow one
+  last = count;
   await page.keyboard.press("ArrowRight");
   await page.waitForFunction(() => { const b = document.querySelector(".cf-dir-next"); return b && !b.disabled; }, null, { timeout: 70000 }).catch(() => issues.push(`stuck at ${count}`));
   await page.waitForTimeout(400);
 }
+if (!done && !issues.length) issues.push(`never reached the end (last: ${last})`);
 console.log(issues.length ? issues.join("\n") : "clean");
 await browser.close();
 process.exit(issues.length ? 1 : 0);

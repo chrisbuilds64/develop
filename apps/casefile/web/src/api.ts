@@ -131,8 +131,19 @@ export const talk = {
   create: (title: string, step_id: string) => call<{ id: string; stage: string }>("POST", "/api/cases", { title, step_id }),
 };
 
-export const sample = (id: string, slot: string, step_id: string) =>
-  call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/samples`, { slot, step_id });
+export const sample = (id: string, slot: string, step_id: string, source?: string) =>
+  call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/samples`, { slot, step_id, source: source ?? null });
+
+// At the car (theme.onsite): which view each photo shows, what of the AI's hints is settled.
+export type OnsiteHint = { id: string; text: string; why?: string; view?: string; photo?: string };
+export type OnsiteHints = { round?: number; summary?: string; photograph?: OnsiteHint[]; clarify?: OnsiteHint[]; notice?: OnsiteHint[] };
+export type OnsiteState = { photos?: Record<string, string>; hints?: Record<string, { done: boolean; text: string; by?: string; at?: string }> };
+export type OnsiteConf = { stages: string[]; series: string; note: string; helper: string; hints: string; state: string; close: string;
+  views: { id: string; word: string; required?: boolean }[] };
+export const onsite = {
+  put: (id: string, body: { photos?: Record<string, string>; hints?: Record<string, { done: boolean; text?: string }> }) =>
+    call<{ ok: boolean; state: OnsiteState }>("PUT", `/api/cases/${encodeURIComponent(id)}/vorort`, body),
+};
 
 export function stepId(prefix: string): string {
   const r = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2)).replace(/-/g, "").slice(0, 12);

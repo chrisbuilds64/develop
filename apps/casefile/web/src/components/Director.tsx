@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, BASE } from "../api";
 
-type Step = { do: "go" | "open" | "press" | "type" | "read" | "close" | "follow" | "wait" | "show" | "say"; say: string;
+type Step = { do: "go" | "open" | "press" | "tap" | "type" | "read" | "close" | "follow" | "wait" | "show" | "say"; say: string;
   ws?: string; path?: string; case?: string; action?: string; text?: string; file?: string; target?: string; until?: "idle"; ms?: number;
   date?: number; amount?: string };                // press: a date (days from today) or an amount the action asks for, entered first
 type Flow = { id: string; title: string; summary: string; person: string; workspaces: Record<string, string>; suite?: { id: string; title: string }; steps: Step[] };
@@ -114,7 +114,26 @@ export function Director() {
         await aim(await find(`[data-action="${s.action}"]`));
         await sleep(900);
         return "next";
+      case "tap":                                     // any visible control by selector: a view's sample, the AI button, a hint's answer
+        await aim(await find(s.target ?? "main"));
+        await sleep(900);
+        return "next";
       case "type": {
+        if (s.target) {                                // a field by selector, typed into and left as it is (the next step presses)
+          const field = await find(s.target);
+          const proto = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+          const set = Object.getOwnPropertyDescriptor(proto, "value")!.set!;
+          await aim(field, false);
+          field.focus();
+          for (let n = 1; n <= (s.text ?? "").length; n++) {
+            set.call(field, (s.text ?? "").slice(0, n));
+            field.dispatchEvent(new Event("input", { bubbles: true }));
+            await sleep(18);
+          }
+          field.blur();                                // the clicker's next press must reach the director, not the field
+          await sleep(400);
+          return "next";
+        }
         // a secondary move is a chip that opens the thread's field; the case's main move carries its own field on the desk
         const chip = document.querySelector<HTMLElement>(`.chips [data-action="${s.action}"]`);
         if (chip) await aim(chip);
@@ -152,6 +171,7 @@ export function Director() {
       }
       case "wait": {
         const id = caseInPath();
+        await sleep(1200);                             // the order a press just placed has to land before "idle" means anything
         const until = Date.now() + (s.ms ?? 60_000);
         while (id && Date.now() < until) {
           const v = await api.case(id);
