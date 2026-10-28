@@ -63,6 +63,15 @@
     },
     "words": {
       "external_id": "Mail"
+    },
+    "meta": {
+      "title": "Betreff",
+      "from_name": "Absender",
+      "from": "Adresse",
+      "received": "Eingegangen",
+      "message_id": "Message-ID",
+      "source": "Quelle",
+      "headers": "Kopfzeilen"
     }
   },
   "en": {
@@ -129,6 +138,15 @@
     },
     "words": {
       "external_id": "Mail"
+    },
+    "meta": {
+      "title": "Subject",
+      "from_name": "Sender",
+      "from": "Address",
+      "received": "Received",
+      "message_id": "Message-ID",
+      "source": "Source",
+      "headers": "Headers"
     }
   },
   "$comment": "Every word the inbox shows, German and English."

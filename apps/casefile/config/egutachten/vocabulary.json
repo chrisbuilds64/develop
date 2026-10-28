@@ -94,6 +94,19 @@
     },
     "words": {
       "external_id": "Auftragsnummer"
+    },
+    "meta": {
+      "title": "Titel",
+      "subtitle": "Untertitel",
+      "label": "Art",
+      "number": "Nummer",
+      "external_id": "Referenz",
+      "created": "Angelegt",
+      "origin": "Herkunft",
+      "configVersion": "Konfiguration",
+      "fictional": "Erfunden",
+      "client": "Auftraggeber",
+      "schaden_nr": "Schadennummer"
     }
   },
   "en": {
@@ -190,6 +203,19 @@
     },
     "words": {
       "external_id": "Order number"
+    },
+    "meta": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "label": "Kind",
+      "number": "Number",
+      "external_id": "Reference",
+      "created": "Created",
+      "origin": "Origin",
+      "configVersion": "Configuration",
+      "fictional": "Fictional",
+      "client": "Client",
+      "schaden_nr": "Claim number"
     }
   }
 }

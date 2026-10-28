@@ -100,6 +100,29 @@
       "approver": "approver",
       "visual": "visuals",
       "operator": "operator"
+    },
+    "meta": {
+      "title": "Title",
+      "working_title": "Working title",
+      "status": "Status",
+      "publishDate": "Published on",
+      "publishTime": "Time",
+      "publishSlot": "Slot",
+      "publishUrl": "Published at",
+      "channel": "Channel",
+      "platforms": "Platforms",
+      "series": "Series",
+      "track": "Track",
+      "pillar": "Pillar",
+      "coreMessage": "Core message",
+      "linkedin_url": "LinkedIn",
+      "substack_url": "Substack",
+      "youtube_url": "YouTube",
+      "recorded": "Recorded",
+      "guests": "Guests",
+      "created": "Created",
+      "label": "Format",
+      "number": "Number"
     }
   },
   "de": {
@@ -202,6 +225,29 @@
       "approver": "Freigabe",
       "visual": "Bild",
       "operator": "Betrieb"
+    },
+    "meta": {
+      "title": "Titel",
+      "working_title": "Arbeitstitel",
+      "status": "Status",
+      "publishDate": "Veröffentlicht am",
+      "publishTime": "Uhrzeit",
+      "publishSlot": "Sendeplatz",
+      "publishUrl": "Veröffentlicht unter",
+      "channel": "Kanal",
+      "platforms": "Plattformen",
+      "series": "Serie",
+      "track": "Track",
+      "pillar": "Säule",
+      "coreMessage": "Kernaussage",
+      "linkedin_url": "LinkedIn",
+      "substack_url": "Substack",
+      "youtube_url": "YouTube",
+      "recorded": "Aufgenommen",
+      "guests": "Gäste",
+      "created": "Angelegt",
+      "label": "Format",
+      "number": "Nummer"
     }
   }
 }

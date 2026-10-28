@@ -92,6 +92,19 @@
     },
     "words": {
       "external_id": "Schadennummer"
+    },
+    "meta": {
+      "title": "Titel",
+      "subtitle": "Untertitel",
+      "label": "Art",
+      "number": "Nummer",
+      "external_id": "Referenz",
+      "created": "Angelegt",
+      "origin": "Herkunft",
+      "configVersion": "Konfiguration",
+      "fictional": "Erfunden",
+      "policy": "Police",
+      "gutachten_auftrag": "Gutachtenauftrag"
     }
   },
   "en": {
@@ -186,6 +199,19 @@
     },
     "words": {
       "external_id": "Claim number"
+    },
+    "meta": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "label": "Kind",
+      "number": "Number",
+      "external_id": "Reference",
+      "created": "Created",
+      "origin": "Origin",
+      "configVersion": "Configuration",
+      "fictional": "Fictional",
+      "policy": "Policy",
+      "gutachten_auftrag": "Assessment order"
     }
   }
 }

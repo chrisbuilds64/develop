@@ -11,6 +11,7 @@ import { Reader, type Doc } from "../components/Reader";
 import { ago, dateWords, type words } from "../words";
 import { paper, thud } from "../moments";
 import { MailTriage } from "../components/MailTriage";
+import { MetaSheet } from "../components/MetaSheet";
 
 /** The documents on the desk, newest version each, the primary first — the order the reader walks. */
 export function docsOf(v: CaseView): Doc[] {
@@ -116,7 +117,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
         <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>
         <p className="title">{v.title}</p>
-        <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span></p>
+        <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span>
+          <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} /></p>
       </header>
 
       <div data-help="cf.stations"><Line stations={v.stations} mine={mine} label={v.stage_word} caseId={v.id} /></div>
