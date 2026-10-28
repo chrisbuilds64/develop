@@ -165,7 +165,7 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
                 "egutachten": {"label": "Gutachtenakte", "config_dir": str(cfg / "egutachten"), "template": str(d / "worlds" / "egutachten"), "mode": "replay"},
             },
             "workspaces": [
-                {"id": "pressroom", "application": "pressroom", "label": f"PressRoom {env.label}", "shared": True, "members": ["chris", "akhil"],
+                {"id": "pressroom", "application": "pressroom", "label": "PressRoom", "shared": True, "members": ["chris", "akhil"],
                  "root": str(s.groupfolders_data / str(folder_id) / "files" / "flow"), "write_root": str(env.mount / "flow"), "mode": "live"},
             ],
         }
@@ -175,6 +175,12 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
         data["defaults"].pop("agents")
         if not data["defaults"]:
             data.pop("defaults")
+        reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
+    renamed = False
+    for w in data["workspaces"]:                       # the stage is the badge, not part of a name (Chris, 2026-10-28)
+        if w.get("id") == "pressroom" and w.get("label") == f"PressRoom {env.label}":
+            w["label"], renamed = "PressRoom", True
+    if renamed:
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     # applications that came after the registry was written (ADR-021: Gatehouse), added once their world is on the stage
     later = {"gatehouse": {"label": "Gatehouse", "config_dir": str(cfg / "gatehouse"), "template": str(d / "worlds" / "gatehouse-live"), "mode": "live"},

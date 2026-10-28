@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }} · {{ t('app.title') }}</title>
+<title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }}{% if config.name != t('app.title') %} · {{ t('app.title') }}{% endif %}</title>
 {% if export %}
 <style>{{ inline_css }}</style>
 {% else %}
