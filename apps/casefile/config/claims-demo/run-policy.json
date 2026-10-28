@@ -23,12 +23,7 @@
         "operator",
         "assessor"
       ]
-    },
-    "interpret": {
-      "orderable_by": [
-        "approver",
-        "operator"
-      ]
     }
-  }
+  },
+  "agents": []
 }

@@ -1,10 +1,21 @@
 {
   "$comment": "The helpers of an elicitation. They read the conversation and write their own files; they never answer for anybody and never decide the canon. `does` and `never` are shown in the rulebook.",
   "default": {
-    "orderable_by": ["moderator", "respondent", "decider", "operator"],
+    "orderable_by": [
+      "moderator",
+      "respondent",
+      "decider",
+      "operator"
+    ],
     "permission_mode": "acceptEdits",
-    "write": ["{container}"],
-    "tools": ["Read", "Write", "Glob"],
+    "write": [
+      "{container}"
+    ],
+    "tools": [
+      "Read",
+      "Write",
+      "Glob"
+    ],
     "web": false,
     "timeout": 900,
     "agent": "KI",
@@ -14,19 +25,31 @@
     "gatehouse-nachhaken": {
       "does": "Liest nach jedem Kapitel die Antworten einer Person gegen die Auslöser des Fragenkanons. Stellt bis zu drei Nachfragen, benennt Spannungen zwischen Antworten und entwirft Kanonzeilen für das Fach, jede mit Quelle.",
       "never": "Antwortet für jemanden. Löst einen Widerspruch auf. Sieht die Antworten anderer Befragter.",
-      "rules": ["Nur am Fall entlang", "Zitat oder nichts", "Benennen, nicht auflösen"],
+      "rules": [
+        "Nur am Fall entlang",
+        "Zitat oder nichts",
+        "Benennen, nicht auflösen"
+      ],
       "timeout": 300
     },
     "gatehouse-auswerten": {
       "does": "Liest alle Antworten aller Befragten. Schreibt den Befund (Weg und Tore, Rollen, Spannungen, Abweichungen zwischen den Befragten) und den Kanon-Entwurf, Zeile für Zeile mit Zitat, Frage und Einordnung.",
       "never": "Gibt eine Punktzahl, eine Ampel oder eine Empfehlung. Behauptet etwas ohne wörtliches Zitat. Liest Schweigen als Befund.",
-      "rules": ["Zitat oder nichts", "Keine Punktzahl", "Ist, soll und offen getrennt"],
-      "orderable_by": ["moderator", "operator"]
+      "rules": [
+        "Zitat oder nichts",
+        "Keine Punktzahl",
+        "Ist, soll und offen getrennt"
+      ],
+      "orderable_by": [
+        "moderator",
+        "operator"
+      ]
     },
     "ask": {
       "does": "Beantwortet eine freie Frage aus dem Inhalt der Erhebung.",
       "never": "Entscheidet. Erfindet, was nicht in den Antworten steht.",
       "rules": []
     }
-  }
+  },
+  "agents": []
 }

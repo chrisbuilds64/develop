@@ -529,79 +529,34 @@ def create_app(settings: Settings) -> FastAPI:
         response.set_cookie(WORLDS_COOKIE, f"{body}.{_sign(settings.secret, body)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
 
     def _handover(request: Request, response: Response, c: Ctx, case_id: str, spec: dict, step_id: str) -> None:
-        """Demo stand-in for a connector between two worlds (the GDV Schadennetz in the real thing): after the step, the
-        case's files travel to the visitor's sandbox of the partner world. Two modes: `create` opens a new case there (a
-        claim orders an assessment); `match` finds the case waiting for them (the e-report returns to its claim) and takes
-        the partner's step. A failed hand-over is logged; the visitor's own step stands."""
+        """After the step, the action's hand-over (domain/handoff.py). Here only the target is found: in the cockpit the stage
+        names it (targets.json, ADR-022); in the public demo it is the visitor's sandbox of the partner world. A failed hand-over
+        stands in the case's thread for the person to see; the step itself stands."""
+        from ..domain import handoff
+        key = str(spec.get("target") or spec.get("world") or "")
         try:
-            world = str(spec.get("world", ""))
             if settings.worlds:
-                if world not in settings.worlds or not c.world:
+                if key not in settings.worlds or not c.world:
                     return
                 mapping = _read_worlds(request)
                 if c.session:
                     mapping[c.world] = c.session
-                target = _session_ctx(mapping[world]) if world in mapping else None
-                if target is None:
-                    target = _new_session(world)
-                    mapping[world] = target.session
+                other = _session_ctx(mapping[key]) if key in mapping else None
+                if other is None:
+                    other = _new_session(key)
+                    mapping[key] = other.session
                 _set_worlds(response, mapping)
-            else:                                        # in the cockpit: the stage names the partner workspace (targets.json, ADR-022)
-                from ..domain import handoff
-                t = handoff.targets(c.store).get(world)
-                if not t:
-                    return
-                troot = Path(t["root"])
-                target = Ctx(store=FsStore(troot), config=DomainConfig.load(Path(t["config"]), troot), lang=c.lang, world=world)
-            src_case = reading.load(c.store, c.config, case_id)
-            src_dir = c.store.case_dir(case_id)
-            rename = spec.get("rename", {})
-
-            def newest(patterns):
-                base_of = {}
-                for pattern in patterns:
-                    for h in sorted(src_dir.glob(pattern)):
-                        base, v = reading.split_version(h.name)
-                        if base not in base_of or v > base_of[base][1]:
-                            base_of[base] = (h, v)
-                return [(rename.get(base, base), h) for base, (h, _) in base_of.items()]
-
-            create = spec.get("create")
-            if create:
-                number = str(src_case.meta.get("number") or case_id)
-                ref = str(create.get("external_prefix", "")) + number.replace("2026-", "2026-0")
-                slug = "-".join(case_id.split("-")[3:]) or "auftrag"
-                new_id = f"{create.get('label', 'KH')}-{number}-{slug}"
-                stage = str(create.get("stage"))
-                d = target.store.root / stage / new_id
-                if d.exists():
-                    return
-                d.mkdir(parents=True)
-                meta = {"configVersion": "1", "fictional": True, "label": create.get("label", "KH"), "number": number, "title": str(src_case.meta.get("title") or case_id),
-                        "created": _now()[:10], "external_id": ref, "subtitle": str(src_case.meta.get("subtitle") or ""), "client": str(create.get("client", "")),
-                        "schaden_nr": str(src_case.meta.get("external_id") or case_id), "origin": f"{c.world}/{case_id}"}
-                (d / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-                for name, h in newest(spec.get("files", [])):
-                    shutil.copy(h, d / name)
-                # the source case remembers which order it placed
-                src_meta = {**src_case.meta, str(spec.get("match", "gutachten_auftrag")): ref}
-                c.store.write_atomic(f"{src_case.stage}/{case_id}/meta.json", json.dumps(src_meta, ensure_ascii=False, indent=2) + "\n")
-                note = str(spec.get("note", "")).replace("{ref}", ref).replace("{claim}", meta["schaden_nr"])
-                stepping.step(target.store, target.config, new_id, StepRequest(action="note", step_id=f"{step_id}-handover", payload={"title": str(create.get("title", "")).replace("{claim}", meta["schaden_nr"]), "text": note, "files": [n for n, _ in newest(spec.get("files", []))]}), str(spec.get("by", "")))
-                return
-            key = str(spec.get("match", "external_id"))
-            ref = str(src_case.meta.get("external_id") or case_id)
-            partner = next((k for k in reading.load_all(target.store, target.config) if str(k.meta.get(key, "")) == ref), None)
-            if partner is None:
-                return
-            written = [assets.put(target.store, target.config, partner.id, name, h, h.name) for name, h in newest(spec.get("files", []))]
-            payload = {"files": written, "note": str(spec.get("note", ""))}
-            stepping.step(target.store, target.config, partner.id, StepRequest(action=str(spec.get("action", "deliver")), step_id=f"{step_id}-handover", payload=payload), str(spec.get("by", "")))
-        except Exception as exc:        # noqa: BLE001 — a failed hand-over must never break the visitor's own step
+                tgt = handoff.Target(key=key, store=other.store, config=other.config, label=other.config.name)
+            else:
+                tgt = handoff.target(c.store, key)
+            handoff.hand_over(c.store, c.config, case_id, tgt, spec, "", request_id=f"{step_id}-handover")
+        except Exception as exc:        # noqa: BLE001 — a failed hand-over never undoes the step; it is said where the person looks
             try:
-                log = (settings.sessions_dir or Path(settings.write_root or settings.root)) / "handover-errors.log"
-                log.open("a", encoding="utf-8").write(f"{_now()} {c.world}/{case_id} {step_id}: {exc!r}\n")
-            except (OSError, TypeError):
+                stage = c.store.find(case_id)
+                if stage:
+                    stepping._append_entry(c.store, c.config, case_id, stage, {"author": c.config.name, "status": "open",
+                                           "title": f"Übergabe an {key} nicht gelungen", "text": str(exc)})
+            except Exception:           # noqa: BLE001
                 pass
 
     def ctx(request: Request, response: Response) -> Ctx:
@@ -968,7 +923,7 @@ def create_app(settings: Settings) -> FastAPI:
         matrix = [MatrixRow(id=r["id"], kind=str(r.get("kind", "")), word=loc(r, "word") or str(r.get("kind", "")), when=loc(r, "when"), action=str(r.get("action", "")),
                             action_word=loc(r, "action_word") or str(r.get("action", "")), target=str(r.get("target", "")),
                             target_word=str((tg.get(r.get("target", "")) or {}).get("label", "")), approval=str(r.get("approval", "human")),
-                            connected=r.get("action") == "file_away" or (r.get("action") == "create_case" and r.get("target", "") in tg))
+                            connected=handoff.connected(c.store, r))
                   for r in handoff.matrix(c.store, c.config)]
         return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix)
 

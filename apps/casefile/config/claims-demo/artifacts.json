@@ -8,6 +8,12 @@
       "shape": "text"
     },
     {
+      "file": "rueckfrage.md",
+      "stage": "10-meldung",
+      "by": "human",
+      "shape": "text"
+    },
+    {
       "file": "schadenmeldung.pdf",
       "stage": "10-meldung",
       "by": "human",

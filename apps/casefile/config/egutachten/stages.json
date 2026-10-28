@@ -138,16 +138,22 @@
           ],
           "entry_status": "info",
           "handover": {
-            "world": "claims",
-            "match": "gutachten_auftrag",
-            "files": [
-              "gutachten*.md",
-              "fotos-*.jpg",
-              "anschreiben*.md"
-            ],
+            "target": "claims",
+            "mode": "deliver",
+            "match": {
+              "key": "gutachten_auftrag",
+              "value": "{source.external_id}"
+            },
+            "files": {
+              "gutachten*.md": "",
+              "fotos-*.jpg": "",
+              "anschreiben*.md": ""
+            },
             "action": "deliver_report",
             "by": "gutachter",
-            "note": "eGutachten über das GDV Schadennetz eingegangen"
+            "entry": {
+              "text": "eGutachten über das GDV Schadennetz eingegangen"
+            }
           },
           "seal": true
         }

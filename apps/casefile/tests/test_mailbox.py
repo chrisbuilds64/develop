@@ -83,7 +83,39 @@ def test_confirm_opens_a_claim_and_carries_the_photo(world):
 
 def test_an_unconnected_target_moves_nothing(world):
     store, config, _ = world
-    cid, _ = mailbox.ingest(store, config, mail("Rückfrage SN-2026-00430", with_photo=False))
-    (store.root / "10-eingang" / cid / "einordnung.json").write_text(json.dumps({"kind": "rueckfrage", "rule": "R-03", "fields": {}}))
+    cid, _ = mailbox.ingest(store, config, mail("Themenvorschlag", with_photo=False))
+    (store.root / "10-eingang" / cid / "einordnung.json").write_text(json.dumps({"kind": "themenvorschlag", "rule": "R-04", "fields": {"title": "x"}}))
     r = stepping.step(store, config, cid, StepRequest(action="confirm", step_id="r1"), "chris")
     assert not r.ok and "not connected" in r.reason and store.find(cid) == "10-eingang"
+
+
+def test_a_question_reaches_the_claim_it_names_or_nothing_moves(world):
+    store, config, claims = world
+    (claims / "20-besichtigung" / "KFZ-2026-0430-auffahrunfall").mkdir()
+    (claims / "20-besichtigung" / "KFZ-2026-0430-auffahrunfall" / "meta.json").write_text(json.dumps({"label": "KFZ", "title": "Auffahrunfall", "external_id": "SN-2026-00430"}))
+    cid, _ = mailbox.ingest(store, config, mail("Rückfrage SN-2026-00430"))
+    rd = store.root / "10-eingang" / cid / "einordnung.json"
+    rd.write_text(json.dumps({"kind": "rueckfrage", "rule": "R-03", "summary": "Fragt nach dem Stand.", "fields": {"reference": "SN-2026-00999"}}))
+    r = stepping.step(store, config, cid, StepRequest(action="confirm", step_id="q1"), "chris")
+    assert not r.ok and "waits for SN-2026-00999" in r.reason and store.find(cid) == "10-eingang"
+    rd.write_text(json.dumps({"kind": "rueckfrage", "rule": "R-03", "summary": "Fragt nach dem Stand.", "fields": {"reference": "SN-2026-00430"}}))
+    assert stepping.step(store, config, cid, StepRequest(action="confirm", step_id="q2"), "chris").ok
+    claim = claims / "20-besichtigung" / "KFZ-2026-0430-auffahrunfall"
+    assert (claim / "rueckfrage.md").is_file() and not (claim / "fotos-1.jpg").exists()      # what the row carries, nothing else
+    assert "Fragt nach dem Stand." in (claim / "review.md").read_text()
+
+
+def test_a_topic_mail_becomes_a_signal_in_pressroom(world, tmp_path):
+    store, config, _ = world
+    press = tmp_path / "press"
+    for st in ("00-archive", "05-operational-observations", "10-ideas"):
+        (press / st).mkdir(parents=True)
+    t = json.loads((store.root / "targets.json").read_text())
+    t["pressroom"] = {"label": "PressRoom", "root": str(press), "config": str(CFG / "pressroom")}
+    (store.root / "targets.json").write_text(json.dumps(t))
+    cid, _ = mailbox.ingest(store, config, mail("Idee: Agenten im Schadenprozess", with_photo=False))
+    (store.root / "10-eingang" / cid / "einordnung.json").write_text(json.dumps({"kind": "themenvorschlag", "rule": "R-04", "fields": {"title": "Agenten im Schadenprozess"}}))
+    assert stepping.step(store, config, cid, StepRequest(action="confirm", step_id="t1"), "chris").ok
+    made = list((press / "05-operational-observations").iterdir())
+    assert len(made) == 1 and made[0].name.startswith("SIG-") and (made[0] / "anregung.md").is_file()
+    assert not list((press / "10-ideas").iterdir())                    # a signal, not yet an idea

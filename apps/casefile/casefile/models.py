@@ -24,7 +24,7 @@ class Action(BaseModel):
     entry_status: str = "info"                   # the status the thread entry carries ("approved", "info", …)
     payload: list[str] = Field(default_factory=list)    # payload fields the surface must send, e.g. ["amount", "date"]
     actor: str | None = None                     # who may do it; None = the stage's turn
-    handover: dict | None = None                 # demo: after the step, files go to a partner world (world, match, files, action, by, note)
+    handover: dict | None = None                 # after the step, a hand-off to another application (domain/handoff.py: target, mode, files, …)
     seal: bool = False                           # a gate whose passing is a decision that holds: the surface stamps it (the second colour, ADR-021 addendum)
     compile: str | None = None                   # after the move, the core writes a document from the case's data: "canon" (decisions over a draft → canon.md); "handoff" (the rule matrix's action); "rate" (questionnaire × rate table → angebot.md, before the move); "compose" (result × approved modules → the document, aufbau.json)
 

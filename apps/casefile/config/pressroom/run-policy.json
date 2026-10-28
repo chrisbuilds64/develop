@@ -66,5 +66,9 @@
       "web": true,
       "model": "claude-opus-5-5"
     }
-  }
+  },
+  "agents": [
+    "fact-checker",
+    "boundaries-reviewer"
+  ]
 }

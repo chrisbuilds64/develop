@@ -49,5 +49,6 @@
       "never": "Entscheidet. Erfindet, was nicht in der Akte steht.",
       "rules": []
     }
-  }
+  },
+  "agents": []
 }

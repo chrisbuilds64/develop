@@ -221,6 +221,21 @@ def run_home(args, data: Path | None, workspace_id: str, run_id: str) -> tuple[P
     return _build_home(args, data, workspace_id, run_id)
 
 
+def _allowed(data: Path | None) -> dict:
+    """The skills and agents a run in this tree may see, from its run-policy.json: `skills` (plus the built-in question)
+    and `agents`. None for a kind the tree does not declare."""
+    try:
+        policy = json.loads((data / "run-policy.json").read_text(encoding="utf-8")) if data is not None else {}
+    except (OSError, ValueError):
+        policy = {}
+    out: dict = {"skills": None, "agents": None}
+    if isinstance(policy.get("skills"), dict):
+        out["skills"] = set(policy["skills"]) | {"ask"}
+    if isinstance(policy.get("agents"), list):
+        out["agents"] = {str(a) for a in policy["agents"]}
+    return out
+
+
 def _build_home(args, data: Path | None, workspace_id: str, run_id: str) -> tuple[Path, Path]:
     """A HOME for this one run, so that `~/ChrisBuilds64/pressroom` points at the workspace the order belongs to.
 
@@ -241,10 +256,18 @@ def _build_home(args, data: Path | None, workspace_id: str, run_id: str) -> tupl
             (ws / name).symlink_to((base / name).resolve())
     if data is not None:
         (ws / "pressroom").symlink_to(data.parent if data.name == "flow" else data)
+    allowed = _allowed(data)
     for name in ("skills", "agents"):
         src = base / ".claude" / name
-        if src.exists():
+        if not src.exists():
+            continue
+        if allowed.get(name) is None:                   # the tree declares nothing: everything, as before
             (ws / ".claude" / name).symlink_to(src.resolve())
+            continue
+        (ws / ".claude" / name).mkdir()                 # only what this application's run-policy names: no content skill in a claim
+        for item in sorted(src.resolve().iterdir()):
+            if (item.stem if name == "agents" else item.name) in allowed[name]:
+                (ws / ".claude" / name / item.name).symlink_to(item)
     if (base / ".claude" / "settings.json").is_file():
         shutil.copy(base / ".claude" / "settings.json", ws / ".claude" / "settings.json")
     text = (base / "CLAUDE.md").read_text(encoding="utf-8") if (base / "CLAUDE.md").is_file() else ""
@@ -928,6 +951,12 @@ def main(argv=None) -> int:
             took = True
             f, run = job
             log.info("taking %s in %s (by %s)", run["id"], wid, run.get("requested_by", "?"))
+            skills = _allowed(data)["skills"]
+            if skills is not None and run["skill"] not in skills:   # an order for a skill this application does not have never starts
+                run.update(status="failed", finished=now(), exit=77, result=f"'{run['skill']}' is not a skill of this application (run-policy.json)")
+                f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                log.warning("refused %s in %s: skill not in the run-policy", run["id"], wid)
+                break
             try:
                 execute(f, run, policy_for(policy, run["skill"]), args, data, wid)
             except Exception as exc:                      # the loop survives one broken order; the order records why

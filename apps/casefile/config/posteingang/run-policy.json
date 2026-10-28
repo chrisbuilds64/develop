@@ -1,12 +1,37 @@
 {
   "$comment": "The inbox's helper reads a mail and proposes one row of the rule matrix. It never acts: a person confirms.",
-  "default": {"orderable_by": ["operator"], "permission_mode": "acceptEdits", "write": ["{container}"], "tools": ["Read", "Write", "Glob"], "web": false, "timeout": 300, "agent": "KI", "model": "claude-sonnet-5-5"},
+  "default": {
+    "orderable_by": [
+      "operator"
+    ],
+    "permission_mode": "acceptEdits",
+    "write": [
+      "{container}"
+    ],
+    "tools": [
+      "Read",
+      "Write",
+      "Glob"
+    ],
+    "web": false,
+    "timeout": 300,
+    "agent": "KI",
+    "model": "claude-sonnet-5-5"
+  },
   "skills": {
     "posteingang-einordnen": {
       "does": "Liest die Mail und ihre Anhänge, erkennt die Art (zum Beispiel Schadensmeldung), die Dringlichkeit und die Daten, die die Zielakte braucht, und schlägt eine Zeile der Regel-Matrix vor, mit Begründung und Zitaten.",
       "never": "Legt selbst eine Akte an. Antwortet dem Absender. Erfindet Daten, die nicht in der Mail stehen.",
-      "rules": ["Nur, was in der Mail steht", "Eine Zeile der Matrix oder keine"]
+      "rules": [
+        "Nur, was in der Mail steht",
+        "Eine Zeile der Matrix oder keine"
+      ]
     },
-    "ask": {"does": "Beantwortet eine freie Frage zur Mail.", "never": "Handelt.", "rules": []}
-  }
+    "ask": {
+      "does": "Beantwortet eine freie Frage zur Mail.",
+      "never": "Handelt.",
+      "rules": []
+    }
+  },
+  "agents": []
 }

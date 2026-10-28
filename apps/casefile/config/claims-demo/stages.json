@@ -18,24 +18,29 @@
             "date"
           ],
           "handover": {
-            "world": "egutachten",
-            "create": {
-              "label": "KH",
-              "stage": "10-auftrag",
-              "external_prefix": "GA-",
+            "target": "egutachten",
+            "mode": "create",
+            "label": "KH",
+            "stage": "10-auftrag",
+            "number": "source",
+            "slug": "source",
+            "external_id": "GA-{year}-0{seq}",
+            "link": "gutachten_auftrag",
+            "meta": {
+              "title": "{source.title}",
+              "subtitle": "{source.subtitle}",
               "client": "Nordlicht Versicherung",
-              "title": "Auftrag von {claim}"
+              "schaden_nr": "{source.external_id}"
             },
-            "match": "gutachten_auftrag",
-            "files": [
-              "meldung.md",
-              "fotos-*.jpg"
-            ],
-            "rename": {
-              "meldung.md": "auftrag.md"
+            "files": {
+              "meldung.md": "auftrag.md",
+              "fotos-*.jpg": ""
             },
             "by": "innendienst",
-            "note": "Gutachtenauftrag {ref} zum Schaden {claim} über das GDV Schadennetz eingegangen. Schadenmeldung und Fotos des Versicherers liegen bei. Besichtigung einplanen."
+            "entry": {
+              "title": "Auftrag von {source.external_id}",
+              "text": "Gutachtenauftrag {ref} zum Schaden {source.external_id} über das GDV Schadennetz eingegangen. Schadenmeldung und Fotos des Versicherers liegen bei. Besichtigung einplanen."
+            }
           }
         }
       ]

@@ -19,6 +19,8 @@ def may_order(config: DomainConfig, skill: str, person: Person) -> str | None:
     """None when the person may order this skill, else the sentence that refuses."""
     if not config.run_policy:
         return "no run-policy.json at the pipeline root — nothing is ordered without a declared policy"
+    if skill != "ask" and skill not in config.run_policy.get("skills", {}):   # the built-in question aside, only what this application names
+        return f"'{skill}' is not a skill of this application"
     allowed = policy_for(config, skill).get("orderable_by", [])
     if not allowed:
         return f"'{skill}' may not be ordered by anyone right now"
