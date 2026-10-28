@@ -36,7 +36,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
   const agent = config.people.find((p) => p.kind === "agent")?.name ?? "Claude";
-  const current = route.name === "group" ? route.key : route.name === "home" ? "you" : null;
+  const current = route.name === "group" ? route.key : route.name === "case" && route.group ? route.group : route.name === "home" ? "you" : null;
   const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
   return (
     <nav className={`menu${open ? " open" : ""}`} aria-label={w.menu}>

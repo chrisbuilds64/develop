@@ -17,6 +17,14 @@ from .models import Action, Deliverable, Person, Stage
 ROOT_FILES = ("artifacts.json", "vocabulary.json", "people.json", "calendar.json", "run-policy.json")
 
 
+def _merge(base: dict, over: dict) -> dict:
+    """`over` wins key by key; nested tables merge, so a tree that names a few words keeps all the others."""
+    out = dict(base)
+    for k, v in over.items():
+        out[k] = _merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
 def _read(p: Path) -> dict | None:
     return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else None
 
@@ -46,6 +54,8 @@ class DomainConfig:
         for name in ROOT_FILES:
             doc = (_read(root / name) if root else None) or _read(domain_dir / name)
             docs[name] = doc or {}
+        if root and _read(root / "vocabulary.json"):      # a tree's words add to the domain's, they do not erase the rest
+            docs["vocabulary.json"] = _merge(_read(domain_dir / "vocabulary.json") or {}, docs["vocabulary.json"])
         people = [Person(**p) for p in docs["people.json"].get("people", [])]
         # A running pipeline's people.json may know the persons but not their roles (the PressRoom's did, 2026-10-24);
         # the domain's own people.json then lends the roles to the same ids, so the gates know whose move it is.

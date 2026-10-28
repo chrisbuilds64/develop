@@ -21,16 +21,18 @@ import { HouseScreen } from "./screens/House";
 import { words } from "./words";
 import { presenting, setPresenting } from "./moments";
 
-export type Route = { name: "home" } | { name: "case"; id: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
+export type Route = { name: "home" } | { name: "case"; id: string; group?: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
-  const path = full.startsWith(BASE) ? full.slice(BASE.length) || "/" : full;
+  const [bare, search = ""] = full.split("?");
+  const path = bare.startsWith(BASE) ? bare.slice(BASE.length) || "/" : bare;
+  const group = new URLSearchParams(search).get("g") || undefined;     // the group the case was opened from: the list stays there
   const d = path.match(/^\/doc\/([^/]+)\/([^/]+)/);
   if (d) return { name: "doc", id: decodeURIComponent(d[1]), file: decodeURIComponent(d[2]) };
   const t = path.match(/^\/case\/([^/]+)\/(gespraech|ergebnis|kanon|vorort)/);
   if (t) return { name: t[2] === "gespraech" ? "talk" : t[2] === "kanon" ? "canon" : t[2] === "vorort" ? "onsite" : "outcome", id: decodeURIComponent(t[1]) };
   const m = path.match(/^\/case\/([^/]+)/);
-  if (m) return { name: "case", id: decodeURIComponent(m[1]) };
+  if (m) return { name: "case", id: decodeURIComponent(m[1]), ...(group ? { group } : {}) };
   if (path.startsWith("/board") || path.startsWith("/workshop")) return { name: "board" };
   if (path.startsWith("/list")) return { name: "list" };
   if (path.startsWith("/rules")) return { name: "rules" };
@@ -42,9 +44,9 @@ export function parse(full: string): Route {
 }
 
 export function useRoute(): [Route, (path: string) => void] {
-  const [path, setPath] = useState(window.location.pathname);
+  const [path, setPath] = useState(window.location.pathname + window.location.search);
   useEffect(() => {
-    const on = () => setPath(window.location.pathname);
+    const on = () => setPath(window.location.pathname + window.location.search);
     window.addEventListener("popstate", on);
     return () => window.removeEventListener("popstate", on);
   }, []);
