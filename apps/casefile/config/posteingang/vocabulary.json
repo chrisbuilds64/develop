@@ -42,6 +42,8 @@
     },
     "texts": {
       "mail_in": "Mail eingegangen",
+      "sorted_by_rule": "Von einer Regel entschieden; keine KI hat diese Mail gelesen.",
+      "never_ai": "Diesen Absender liest keine KI",
       "done": "Erledigt.",
       "deliver": "Abgelegt.",
       "detected": "Von Hand verschoben",
@@ -106,6 +108,8 @@
     },
     "texts": {
       "mail_in": "Mail received",
+      "sorted_by_rule": "Decided by a rule; no AI read this mail.",
+      "never_ai": "No AI reads this sender",
       "done": "Done.",
       "deliver": "Put in.",
       "detected": "Moved by hand",

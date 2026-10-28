@@ -40,8 +40,13 @@ holds and the skills and agents that work on it (Chris, 28.10.). Two places did 
    refused, in the core and again in the runner. The built-in question (`ask`) stays everywhere. `agents` names the
    agents a run may use. The runner links only the named skills and agents into the run's home; a tree that declares no
    `agents` keeps all of them, as before.
-6. **The mail sorter's place.** The inbox and its matrix are the first consumer; the standalone mail sorter
-   (`apps/mailsort`) is meant to become the core's way in for mail later, feeding the same matrix.
+6. **Sorting before reading, in the core** (`casefile/domain/sorting.py`, from the mail sorter). A row of the matrix may
+   carry `sort`: sender domains (longest wins, subdomains count), subject keywords, a subject pattern whose named groups
+   become fields (`SN-2026-00430` → `fields.reference`), mailing-list or machine-sent headers. A row that decides writes
+   the reading itself (`by: rule`) and no AI reads the mail; with `approval: auto` the case is confirmed or filed at
+   once. `privacy.never_ai` names sender domains no AI reads; such mail waits for a person. What no rule decides goes to
+   the helper, as before. Nothing is deleted. The standalone mail sorter (`apps/mailsort`, personal mailboxes into
+   folders) makes its decision through the same function.
 
 ## Consequences
 

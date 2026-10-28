@@ -65,14 +65,19 @@ def _now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def matrix(store: FsStore, config: DomainConfig) -> list[dict]:
+def matrix_doc(store: FsStore, config: DomainConfig) -> dict:
+    """The whole rule matrix document (rules, privacy); the pipeline root's copy wins over the domain's."""
     for p in (store.root / "regeln.json", (config.dir / "regeln.json") if config.dir else None):
         if p and p.is_file():
             try:
-                return [r for r in json.loads(p.read_text(encoding="utf-8")).get("rules", []) if isinstance(r, dict) and r.get("id")]
+                return json.loads(p.read_text(encoding="utf-8"))
             except ValueError:
-                return []
-    return []
+                return {}
+    return {}
+
+
+def matrix(store: FsStore, config: DomainConfig) -> list[dict]:
+    return [r for r in matrix_doc(store, config).get("rules", []) if isinstance(r, dict) and r.get("id")]
 
 
 def targets(store: FsStore) -> dict:

@@ -1,6 +1,7 @@
 """Stage a: the deterministic rules. Local only — nothing here leaves the machine."""
 
 import os
+import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,27 +34,22 @@ def load(path: Path = RULES) -> tuple[list[Folder], list[str], str]:
     return folders, never_ai, data.get("newsletter_fallback", "")
 
 
-def _domain_match(domain: str, rule: str) -> bool:
-    return domain == rule or domain.endswith("." + rule)
+def _core():
+    """The decision lives in the casefile core (casefile/domain/sorting.py, standard library only); one implementation."""
+    try:
+        from casefile.domain import sorting
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "casefile"))
+        from casefile.domain import sorting
+    return sorting
 
 
 def classify(h: dict, folders: list[Folder], newsletter_fallback: str = "") -> Decision:
-    best = None
-    for f in folders:
-        for d in f.domains:
-            if _domain_match(h["domain"], d) and (best is None or len(d) > len(best[1])):
-                best = (f, d)
-    if best:
-        return Decision(best[0].path, "a", f"domain {best[1]}")
-    subj = h["subject"].lower()
-    for f in folders:
-        for kw in f.subject:
-            if kw in subj:
-                return Decision(f.path, "a", f"subject '{kw}'")
-    bulk = h["list_id"] or h["unsubscribe"] or h["precedence"] in ("bulk", "list", "junk")
-    auto = h["auto_submitted"] and h["auto_submitted"] != "no"
-    if auto and not bulk:
-        return Decision("_Benachrichtigungen", "a", f"auto-submitted: {h['auto_submitted']}")
-    if bulk and newsletter_fallback:
-        return Decision(newsletter_fallback, "a", "list/bulk headers, no folder of its own")
-    return Decision(UNDECIDED, "-", "no rule")
+    rows = [{"id": f.path, "sort": {"domains": f.domains, "subject": f.subject}} for f in folders]
+    rows.append({"id": "_Benachrichtigungen", "sort": {"auto": True}})
+    if newsletter_fallback:
+        rows.append({"id": newsletter_fallback, "sort": {"bulk": True}})
+    hit = _core().classify(h, rows)
+    if hit is None:
+        return Decision(UNDECIDED, "-", "no rule")
+    return Decision(hit[0]["id"], "a", hit[1])

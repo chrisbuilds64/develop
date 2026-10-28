@@ -32,3 +32,6 @@ python -m mailsort.preview --inventory <dir>                # where the inbox ba
 ```
 
 Mailboxes are opened read-only and headers fetched with `BODY.PEEK`, so no flag changes.
+
+The decision itself lives in the casefile core (`apps/casefile/casefile/domain/sorting.py`, ADR-023): the same rules
+sort a casefile inbox before its helper reads anything. `mailsort.rules` maps the folders of `rules.toml` onto it.

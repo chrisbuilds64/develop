@@ -54,7 +54,9 @@ def parse(raw: bytes) -> dict:
     except (TypeError, ValueError):
         date = _now()
     sender = getaddresses([str(msg.get("from", ""))])
-    return {"message_id": str(msg.get("message-id") or "").strip() or "sha1:" + hashlib.sha1(raw).hexdigest(),
+    headers = {"list_id": str(msg.get("list-id") or "").strip(), "unsubscribe": bool(msg.get("list-unsubscribe")),
+               "precedence": str(msg.get("precedence") or "").strip().lower(), "auto_submitted": str(msg.get("auto-submitted") or "").strip().lower()}
+    return {"message_id": str(msg.get("message-id") or "").strip() or "sha1:" + hashlib.sha1(raw).hexdigest(), "headers": headers,
             "from_name": sender[0][0] if sender else "", "from": sender[0][1] if sender else "",
             "to": ", ".join(a for _, a in getaddresses([str(msg.get("to", ""))])), "subject": str(msg.get("subject") or "").strip(),
             "date": date, "text": text.strip(), "attachments": attachments}
@@ -102,7 +104,7 @@ def ingest(store: FsStore, config: DomainConfig, raw: bytes, by: str = "", sourc
     store.mkcase(stage, cid)
     meta = {"configVersion": config.config_version, "label": label, "number": number, "title": m["subject"] or "—",
             "subtitle": m["from_name"] or m["from"], "created": m["date"][:10], "message_id": m["message_id"], "from": m["from"],
-            "from_name": m["from_name"], "received": m["date"], "source": source}
+            "from_name": m["from_name"], "received": m["date"], "source": source, "headers": {k: v for k, v in m["headers"].items() if v}}
     store.write_json(f"{stage}/{cid}/meta.json", meta)
     store.put_bytes(cid, "mail.eml", raw)
     store.write_atomic(f"{stage}/{cid}/mail.md", render(m, config.lang))
@@ -120,11 +122,40 @@ def ingest(store: FsStore, config: DomainConfig, raw: bytes, by: str = "", sourc
     stepping._append_entry(store, config, cid, stage, {"author": m["from_name"] or m["from"] or "?", "status": "info",
                            "title": config.word("texts", "mail_in", None, "Mail received"), "text": (m["text"][:600] + ("…" if len(m["text"]) > 600 else "")) or "—",
                            "files": ["mail.md", *names]})
+    orderer = by or next((p.id for p in config.people if p.kind == "human" and "operator" in p.roles), "")
+    if _sort(store, config, cid, stage, m, orderer):
+        return cid, True
     helper = conf.get("helper")
     if helper and helper in (config.run_policy.get("skills") or {}):
-        orderer = by or next((p.id for p in config.people if p.kind == "human" and "operator" in p.roles), "")
         ordering.order(store, config, cid, stage, helper, orderer, f"message={m['message_id']}", request_id=f"mail-{hashlib.sha1(m['message_id'].encode()).hexdigest()[:16]}")
     return cid, True
+
+
+def _sort(store: FsStore, config: DomainConfig, cid: str, stage: str, m: dict, orderer: str) -> bool:
+    """The deterministic rules first (domain/sorting.py): a rule that decides writes the reading itself, and with
+    `approval: auto` the case is confirmed at once; a sender on the privacy list waits for a person. True when no helper
+    is to read this message."""
+    from ..domain import handoff, sorting
+    doc = handoff.matrix_doc(store, config)
+    h = {"domain": sorting.domain_of(m["from"]), "subject": m["subject"], **m["headers"]}
+    hit = sorting.classify(h, handoff.matrix(store, config))
+    if hit is None:
+        if sorting.never_ai(h, doc):
+            stepping._append_entry(store, config, cid, stage, {"author": config.name, "status": "open", "title": config.word("texts", "never_ai", None, "No AI reads this sender"),
+                                   "text": f"{h['domain']} · privacy.never_ai"})
+            return True
+        return False
+    rule, reason, fields = hit
+    reading = {"kind": rule.get("kind", ""), "rule": rule["id"], "confidence": "high", "by": "rule", "summary": "",
+               "fields": {"title": m["subject"], **fields}, "reasons": [reason]}
+    store.write_json(f"{stage}/{cid}/einordnung.json", reading)
+    stepping._append_entry(store, config, cid, stage, {"author": config.name, "status": "info", "title": f"{rule['id']} · {reason}"[:120],
+                           "text": config.word("texts", "sorted_by_rule", None, "Decided by a rule; no AI read this mail."), "files": ["einordnung.json"]})
+    if rule.get("approval") == "auto" and orderer:
+        from ..models import StepRequest
+        action = "file_away" if rule.get("action") == "file_away" and any(a.id == "file_away" for s in config.stages for a in s.actions) else "confirm"
+        stepping.step(store, config, cid, StepRequest(action=action, step_id=f"auto-{cid}"[:80], payload={"text": reason}), orderer)
+    return True
 
 
 def poll_imap(store: FsStore, config: DomainConfig, host: str, user: str, password: str, port: int = 993, folder: str = "INBOX",
