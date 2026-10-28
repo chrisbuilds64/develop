@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+# DOAG 2026 demo world: an order-management schema in production that cannot rebuild itself, and the way out.
+#
+#   doag reset            set the stage: PROD as it really is, TEST behind, a fresh repository with the CVS export
+#   doag scripts TEST     the classic way: drop the schema, replay install + every patch from the folder
+#   doag harvest PROD     SQLcl project export from PROD into the repository: the baseline
+#   doag compare TEST     export TEST next to the baseline and diff (empty diff = same database)
+#   doag rebuild TEST     drop the schema, rebuild it from the repository alone (SQLcl project deploy)
+#
+# Runs on the database host. Needs: docker container oracle-free, SQLcl in $DOAG/sqlcl, git, $DOAG/.env with APP_PW.
+set -euo pipefail
+
+DOAG=${DOAG:-/opt/doag}
+KIT=$DOAG/kit
+REPO=$DOAG/repo
+OUT=$DOAG/out
+SQL=$DOAG/sqlcl/bin/sql
+APP=SDLC_APP
+WS=SDLC
+# shellcheck disable=SC1091
+source "$DOAG/.env"
+mkdir -p "$OUT" "$DOAG/tmp"
+export LANG=C.UTF-8 LC_ALL=C.UTF-8 JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8"
+
+say() { printf '%s  %s\n' "$(date +%H:%M:%S)" "$*"; }
+
+sys() {   # sys <PDB>  — SQL on stdin, as SYSDBA inside that PDB
+  { echo "ALTER SESSION SET CONTAINER = $1;"; echo "WHENEVER SQLERROR EXIT FAILURE"; cat; echo "EXIT"; } |
+    docker exec -i -u oracle oracle-free sqlplus -s -L / as sysdba
+}
+
+app() {   # app <PDB>  — SQL on stdin, as the application schema. Via a script file: SQLcl reads stdin as Latin-1.
+  local pdb=$1 f rc=0
+  f=$(mktemp "$DOAG/tmp/run.XXXXXX.sql")
+  { echo "WHENEVER SQLERROR EXIT FAILURE"; cat; echo; echo "EXIT"; } > "$f"
+  "$SQL" -S -L "$APP/\"$APP_PW\"@localhost:1521/$pdb" "@$f" 2>&1 | grep -v '^Picked up JAVA_TOOL_OPTIONS' || rc=${PIPESTATUS[0]}
+  rm -f "$f"
+  return "$rc"
+}
+
+fresh_schema() {   # drop the application schema and its APEX workspace, create both empty
+  local pdb=$1
+  sys "$pdb" <<EOF
+SET SERVEROUTPUT ON
+BEGIN
+  FOR w IN (SELECT 1 FROM apex_workspaces WHERE workspace = '$WS') LOOP
+    apex_instance_admin.remove_workspace('$WS', 'N', 'N');
+  END LOOP;
+  FOR u IN (SELECT 1 FROM dba_users WHERE username = '$APP') LOOP
+    EXECUTE IMMEDIATE 'DROP USER $APP CASCADE';
+  END LOOP;
+END;
+/
+CREATE USER $APP IDENTIFIED BY "$APP_PW" DEFAULT TABLESPACE sdlc_data QUOTA UNLIMITED ON sdlc_data;
+GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE, CREATE PROCEDURE, CREATE TRIGGER, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO $APP;
+BEGIN
+  apex_instance_admin.add_workspace(p_workspace => '$WS', p_primary_schema => '$APP');
+  COMMIT;
+END;
+/
+EOF
+}
+
+run_files() {   # run_files <PDB> <file>...  — each file as the application schema, in order
+  local pdb=$1; shift
+  for f in "$@"; do
+    say "  $pdb  @ ${f#"$KIT"/}"
+    app "$pdb" < "$f" > "$OUT/last-run.log" 2>&1 || { cat "$OUT/last-run.log"; exit 1; }
+  done
+  echo "EXEC DBMS_UTILITY.COMPILE_SCHEMA(USER, FALSE)" | app "$pdb" > /dev/null
+}
+
+install_app() {   # install_app <PDB> <export.sql>  — the old monolith APEX export
+  local pdb=$1 file=$2
+  say "  $pdb  APEX @ ${file#"$DOAG"/}"
+  { cat <<EOF
+BEGIN
+  apex_application_install.set_workspace('$WS');
+  apex_application_install.set_application_id(106);
+  apex_application_install.set_schema('$APP');
+END;
+/
+EOF
+    cat "$file"; } | app "$pdb" > "$OUT/last-run.log" 2>&1 || { cat "$OUT/last-run.log"; exit 1; }
+}
+
+inventory() {   # what is in the schema, one line per object, for the stage and the log
+  app "$1" <<'EOF'
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 200
+SELECT RPAD(object_type, 14) || object_name || DECODE(status, 'VALID', '', '  (' || status || ')')
+FROM user_objects WHERE object_name NOT LIKE 'SYS\_%' ESCAPE '\' AND object_name NOT LIKE 'ISEQ$$%' AND object_type <> 'LOB'
+ORDER BY object_type, object_name;
+SELECT 'APEX          ' || application_id || ' ' || application_name || ' (' || pages || ' pages)' FROM apex_applications WHERE workspace = 'SDLC';
+EOF
+}
+
+cmd_reset() {
+  local P=$KIT/altbestand/patches
+  say "PROD: what really runs"
+  fresh_schema PROD > /dev/null
+  run_files PROD "$KIT/altbestand/install/ov_install_2016.sql" "$P/P001_2018-03_index_status.sql" "$P/P002_2021-11_mahnstufe.sql" \
+    "$KIT/world/prod_index_2022.sql" "$KIT/world/prod_hotfix_2024-11.sql" "$P/P004_2026-06_auftraege_app.sql" \
+    "$KIT/world/prod_bewegungsdaten.sql" "$KIT/world/prod_auftraege_daten.sql"
+  install_app PROD "$KIT/altbestand/apex/f106.sql"
+  say "TEST: two years behind"
+  fresh_schema TEST > /dev/null
+  run_files TEST "$KIT/altbestand/install/ov_install_2016.sql" "$P/P001_2018-03_index_status.sql"
+  say "repository: the CVS export, nothing else"
+  rm -rf "$REPO" && mkdir -p "$REPO" && cd "$REPO"
+  git init -q -b main && git config user.name "DOAG Demo" && git config user.email demo@localhost
+  cp -r "$KIT/altbestand" "$REPO/altbestand"
+  git add -A && git commit -q -m "Import aus CVS: Auftragsverwaltung (install 2016, patches P001-P004, APEX f106)"
+  app PROD <<EOF > "$OUT/last-run.log" 2>&1 || { cat "$OUT/last-run.log"; exit 1; }
+cd $REPO
+project init -name auftragsverwaltung -schemas $APP
+EOF
+  git add -A && git commit -q -m "SQLcl-Projekt angelegt"
+  rm -f "$OUT"/*.diff "$OUT"/*.txt
+  say "done. PROD:"
+  inventory PROD | tee "$OUT/prod-inventory.txt"
+}
+
+cmd_scripts() {
+  local pdb=${1:?which PDB}
+  [[ $pdb == PROD ]] && { echo "never on PROD"; exit 2; }
+  local t0=$SECONDS P=$KIT/altbestand/patches
+  say "$pdb: schema dropped, rebuilt from the script folder"
+  fresh_schema "$pdb" > /dev/null
+  run_files "$pdb" "$KIT/altbestand/install/ov_install_2016.sql" "$P"/P0*.sql
+  install_app "$pdb" "$KIT/altbestand/apex/f106.sql"
+  say "$pdb from scripts in $((SECONDS - t0)) s"
+  inventory "$pdb" | tee "$OUT/${pdb,,}-scripts-inventory.txt"
+}
+
+export_into() {   # export_into <PDB> <dir>  — SQLcl project export of that PDB into a working copy
+  local pdb=$1 dir=$2
+  app "$pdb" <<EOF > "$OUT/last-run.log" 2>&1 || { cat "$OUT/last-run.log"; exit 1; }
+cd $dir
+project export
+EOF
+}
+
+cmd_harvest() {
+  local pdb=${1:-PROD} t0=$SECONDS
+  cd "$REPO"
+  git checkout -q -B ernte
+  say "harvest $pdb: every object as a file, the APEX app as APEXLang"
+  export_into "$pdb" "$REPO"
+  say "the APEX app once more as an installable SQL export (APEXLang cannot be imported yet)"
+  mkdir -p "$REPO/apex"
+  app "$pdb" <<EOF > "$OUT/last-run.log" 2>&1 || { cat "$OUT/last-run.log"; exit 1; }
+cd $REPO/apex
+apex export -applicationid 106 -skipExportDate
+EOF
+  say "reference data: customers and articles"
+  mkdir -p "$REPO/data"
+  app "$pdb" <<'EOF' > "$REPO/data/stammdaten.sql"
+SET SQLFORMAT INSERT
+SET FEEDBACK OFF
+SELECT name, email, ort, land, aktiv FROM ov_kunden ORDER BY knr;
+SELECT bezeichnung, einheit, preis, lagerbestand, min_bestand, aktiv FROM ov_artikel ORDER BY anr;
+EOF
+  sed -i -e '/^$/d' -e 's/^Insert into OV_/INSERT INTO ov_/' "$REPO/data/stammdaten.sql"
+  echo "COMMIT;" >> "$REPO/data/stammdaten.sql"
+  git add -A && git commit -q -m "Baseline aus $pdb geerntet ($(date +%F))"
+  say "stage: Liquibase changesets from the harvest, then release 1.0 on main"
+  app "$pdb" <<EOF > "$OUT/harvest.log" 2>&1 || { cat "$OUT/harvest.log"; exit 1; }
+cd $REPO
+project stage
+EOF
+  git add -A && git commit -q -m "Changesets fuer die Baseline"
+  git checkout -q main && git merge -q --no-ff ernte -m "Baseline uebernommen"
+  app "$pdb" <<EOF >> "$OUT/harvest.log" 2>&1 || { cat "$OUT/harvest.log"; exit 1; }
+cd $REPO
+project release -version 1.0
+EOF
+  git add -A && git commit -q -m "Release 1.0: die Baseline"
+  if grep -q -E "ORA-|ERROR" "$OUT/harvest.log"; then cat "$OUT/harvest.log"; exit 1; fi
+  say "baseline in $((SECONDS - t0)) s: $(git ls-files src data | wc -l) files, commit $(git rev-parse --short HEAD)"
+  git ls-files src data | sed 's#^src/database/sdlc_app/##' | tee "$OUT/baseline-files.txt" > /dev/null
+}
+
+cmd_compare() {
+  local pdb=${1:?which PDB} work=$DOAG/compare
+  rm -rf "$work" && git clone -q "$REPO" "$work"
+  find "$work/src" -type f -delete 2>/dev/null || true
+  say "export $pdb next to the baseline"
+  export_into "$pdb" "$work"
+  cd "$work" && git add -A src
+  local diff="$OUT/${pdb,,}-vs-baseline.diff"
+  git diff --cached -I '^-- sqlcl_snapshot' -- src > "$diff" || true
+  git diff --cached -I '^-- sqlcl_snapshot' --stat -- src | tee "$OUT/${pdb,,}-vs-baseline.txt"
+  if [[ ! -s $diff ]]; then
+    say "no difference: $pdb is the baseline"
+  else
+    say "$(git diff --cached -I '^-- sqlcl_snapshot' --name-only -- src | wc -l) files differ: $diff"
+  fi
+}
+
+cmd_rebuild() {
+  local pdb=${1:?which PDB}
+  [[ $pdb == PROD ]] && { echo "never on PROD"; exit 2; }
+  local t0=$SECONDS
+  cd "$REPO"
+  say "$pdb: schema and workspace dropped"
+  fresh_schema "$pdb" > /dev/null
+  say "artifact from release 1.0, deployed with SQLcl (Liquibase underneath)"
+  app "$pdb" <<EOF > "$OUT/rebuild.log" 2>&1 || { cat "$OUT/rebuild.log"; exit 1; }
+cd $REPO
+project gen-artifact -version 1.0 -force
+project deploy -file artifact/auftragsverwaltung-1.0.zip
+EOF
+  if grep -q -E "ORA-|ERROR" "$OUT/rebuild.log"; then cat "$OUT/rebuild.log"; exit 1; fi
+  install_app "$pdb" "$REPO/apex/f106.sql"
+  say "reference data from the repository"
+  app "$pdb" < "$REPO/data/stammdaten.sql" >> "$OUT/rebuild.log" 2>&1 || { cat "$OUT/rebuild.log"; exit 1; }
+  say "$pdb rebuilt from the repository in $((SECONDS - t0)) s"
+  inventory "$pdb" | tee "$OUT/${pdb,,}-rebuild-inventory.txt"
+}
+
+case ${1:-} in
+  reset) cmd_reset ;;
+  scripts) cmd_scripts "${2:-}" ;;
+  harvest) cmd_harvest "${2:-PROD}" ;;
+  compare) cmd_compare "${2:-}" ;;
+  rebuild) cmd_rebuild "${2:-}" ;;
+  *) sed -n '2,10p' "$0"; exit 2 ;;
+esac
