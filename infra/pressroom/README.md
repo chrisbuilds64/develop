@@ -23,6 +23,10 @@ Standard library only; Python 3.11+.
 ([example](envs.example.toml)). The tool renders the cockpit configuration, the systemd units, the
 runner's workspace and the nginx locations from it. Nothing is edited by hand twice.
 
+**What we use and show lives in production.** The sample worlds and the live demos (Gatehouse, inbox, the DOAG
+files) are set up on the showcase stage only — by default the one that is no clone target (`showcase` in `envs.toml`).
+ENTW and TEST carry the PressRoom alone.
+
 **Test data is production, cloned.** `clone` copies the production team folder onto the stage on the
 disk (`rsync`), leaves the run queue behind, writes `flow/environment.json` as the marker, and tells
 Nextcloud to rescan. A developer never works against an invented pipeline. Nothing flows back: a

@@ -29,6 +29,7 @@ port = 8200
 base_path = ""
 ref = "main"
 clone_from = ""
+# showcase = true                  # sample worlds and live demos; default: true where clone_from is empty (production)
 
 [env.test]
 label = "TEST"

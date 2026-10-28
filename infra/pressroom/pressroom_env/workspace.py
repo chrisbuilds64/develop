@@ -72,7 +72,8 @@ def _mkdir(path: Path, user: str, mode: int = 0o755) -> Path:
     return path
 
 
-WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo", "posteingang", "posteingang-live", "angebot", "angebot-live")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
+WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo", "posteingang", "posteingang-live", "angebot", "angebot-live",
+                "bestandsakte", "aenderungsakte")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
 
 
 def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
@@ -148,8 +149,8 @@ def notes_worktree(settings: Settings, env: Env) -> Path | None:
 
 def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     """The registry of this stage: the applications from the checkout, the shared PressRoom on the team folder
-    (read from the disk, written through the mount), and two sample workspaces from the worlds. Written once;
-    the sample workspaces are added whenever they are missing (idempotent)."""
+    (read from the disk, written through the mount), and — on a showcase stage — the sample and demo workspaces from
+    the worlds. Written once; the workspaces are added whenever they are missing (idempotent)."""
     s = settings.server
     d = env.dir(s)
     cp = d / "cockpit"
@@ -182,7 +183,9 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
              "posteingang": {"label": "Posteingang", "config_dir": str(cfg / "posteingang"), "template": str(d / "worlds" / "posteingang-live"), "mode": "live"},
              "posteingang-muster": {"label": "Posteingang · Muster", "config_dir": str(cfg / "posteingang"), "template": str(d / "worlds" / "posteingang"), "mode": "replay"},
              "angebot": {"label": "Angebotsakte", "config_dir": str(cfg / "angebot"), "template": str(d / "worlds" / "angebot-live"), "mode": "live"},
-             "angebot-muster": {"label": "Angebotsakte · Muster", "config_dir": str(cfg / "angebot"), "template": str(d / "worlds" / "angebot"), "mode": "replay"}}
+             "angebot-muster": {"label": "Angebotsakte · Muster", "config_dir": str(cfg / "angebot"), "template": str(d / "worlds" / "angebot"), "mode": "replay"},
+             "bestandsakte": {"label": "Bestandsakte", "config_dir": str(cfg / "bestandsakte"), "template": str(d / "worlds" / "bestandsakte"), "mode": "replay"},
+             "aenderungsakte": {"label": "Änderungsakte", "config_dir": str(cfg / "aenderungsakte"), "template": str(d / "worlds" / "aenderungsakte"), "mode": "replay"}}
     grew = [k for k, v in later.items() if k not in data["applications"] and Path(v["template"]).is_dir()]
     for k in grew:
         data["applications"][k] = later[k]
@@ -192,11 +195,15 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
     have = {w["id"] for w in data["workspaces"]}
     venv = cp / ".venv"
     added = []
+    # what we use and show lives where production lives; a clone stage carries the PressRoom alone and gets a sample when a test needs one
     samples = [("schadenakte-muster", "claims", "Schadenakte · Muster", []), ("gutachtenakte-muster", "egutachten", "Gutachtenakte · Muster", []),
-               ("gatehouse-muster", "gatehouse-muster", "Gatehouse · Muster", []), ("gatehouse", "gatehouse", f"Gatehouse {env.label}", ["chris", "akhil"]),
+               ("gatehouse-muster", "gatehouse-muster", "Gatehouse · Muster", []), ("gatehouse", "gatehouse", "Gatehouse", ["chris", "akhil"]),
                ("gatehouse-vorfuehrung", "gatehouse-vorfuehrung", "Gatehouse · Vorführung", ["chris"]),
-               ("posteingang-muster", "posteingang-muster", "Posteingang · Muster", []), ("posteingang", "posteingang", f"Posteingang {env.label}", ["chris"]),
-               ("angebot-muster", "angebot-muster", "Angebotsakte · Muster", [])]
+               ("posteingang-muster", "posteingang-muster", "Posteingang · Muster", []), ("posteingang", "posteingang", "Posteingang", ["chris"]),
+               ("angebot-muster", "angebot-muster", "Angebotsakte · Muster", []),
+               ("bestandsakte-muster", "bestandsakte", "Bestandsakte · Muster", []), ("aenderungsakte-muster", "aenderungsakte", "Änderungsakte · Muster", [])]
+    if not env.showcase:
+        samples = []
     for wid, app, label, members in samples:
         if wid in have or app not in data["applications"]:
             continue

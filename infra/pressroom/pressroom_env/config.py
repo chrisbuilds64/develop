@@ -50,6 +50,7 @@ class Env:
     ref: str                    # git ref of develop deployed to this stage
     clone_from: str             # the stage this one is cloned from; "" = never a clone target
     notes_branch: str = ""      # agents learn on this branch of control (a worktree per stage); "" = agents read control, never write
+    showcase: bool = False      # the sample worlds and live demos are set up here; by default only where production lives (Chris, 2026-10-28)
 
     def dir(self, server: Server) -> Path:
         return server.envs_root / self.name
@@ -124,6 +125,7 @@ def load(path: Path) -> Settings:
             mount=Path(_need(e, "mount", w)), port=port, base_path=base_path,
             ref=str(e.get("ref", "main")), clone_from=str(e.get("clone_from", "")),
             notes_branch=str(e.get("notes_branch", "")),
+            showcase=bool(e.get("showcase", not e.get("clone_from"))),
         )
     if not envs:
         raise OpsError(f"{path.name}: no [env.<name>] tables — nothing to manage")
