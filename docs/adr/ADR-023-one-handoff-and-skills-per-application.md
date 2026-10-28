@@ -54,5 +54,4 @@ holds and the skills and agents that work on it (Chris, 28.10.). Two places did 
 - A topic suggestion by mail lands in PressRoom as a signal in `05-operational-observations`, not as an idea: an idea
   enters through the ideas backlog, a person decides.
 - A target only accepts files it has a slot for (`artifacts.json`); the claim gained `rueckfrage.md` for follow-ups.
-- PressRoom's own `run-policy.json` at the team folder declares no `agents` yet, so its runs still see all agents until
-  it does.
+- PressRoom's own `run-policy.json` at the team folder names its agents (fact-checker, boundaries-reviewer) since 28.10.
