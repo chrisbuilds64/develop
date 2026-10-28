@@ -86,6 +86,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
   const talkSlot = v.slots.find((s) => s.shape === "interview");
   const outcomeReady = v.slots.some((s) => s.shape === "data" && s.present);
+  // a draft decided line by line without a conversation before it (theme.interview.draft present on its own)
+  const draftHere = v.slots.some((s) => s.file === ((config.theme as { interview?: { draft?: string } }).interview?.draft) && s.present);
   const byHelper = (s: { by: string; by_word: string }) => s.by === "claude" || (!!s.by_word && s.by_word === v.agent);
   // a numbered series (fotos-1 … fotos-16) asks for its next place only, not for every empty one
   const seriesOf = (f: string) => /^(.+)-\d+\.(\w+)$/.exec(f)?.slice(1).join(".");
@@ -135,8 +137,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
                 <span className="hint">{w.talkOpenHint}</span>
               </button>
             )}
-            {talkSlot && outcomeReady && (
-              <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "approve_canon") ? " mine" : ""}`} data-help="cf.outcome-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>
+            {((talkSlot && outcomeReady) || (!talkSlot && draftHere)) && (
+              <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "approve_canon") ? " mine" : ""}`} data-help="cf.outcome-tile" data-outcome="1" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>
                 <span className="head"><span className="name">{w.outcomeOpen}</span></span>
                 <span className="hint">{w.outcomeOpenHint}</span>
               </button>

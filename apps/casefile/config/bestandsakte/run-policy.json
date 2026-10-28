@@ -1,0 +1,32 @@
+{
+  "$comment": "The steps of an inventory. ernte, skripte, neuaufbau and nachweis are the core's: SQLcl on the database host, nothing an AI decides. abgleich is the helper's: it reads the diff and explains it, and never touches a database.",
+  "default": {"orderable_by": ["owner", "operator"], "permission_mode": "acceptEdits", "write": ["{container}"], "tools": ["Read", "Write", "Glob"], "web": false, "timeout": 600, "agent": "KI", "model": "claude-opus-5-5"},
+  "skills": {
+    "ernte": {
+      "does": "Kern: exportiert das Schema aus PROD mit SQLcl Projects ins Repository, Objekt für Objekt, die APEX-App als APEXLang, die Stammdaten als Inserts. Auf einem Zweig, dann Merge und Release 1.0.",
+      "never": "Ändert etwas an PROD. Entscheidet, was gilt.",
+      "rules": ["PROD wird nur gelesen"]
+    },
+    "skripte": {
+      "does": "Kern: baut das Schema in TEST so, wie es heute jeder versucht: Erstinstallation und jeder Patch aus dem Ordner, in Nummernfolge. Exportiert TEST danach neben die Baseline und vergleicht.",
+      "never": "Läuft gegen PROD.",
+      "rules": ["Nur TEST"]
+    },
+    "abgleich": {
+      "does": "Liest den Vergleich und den Altbestand. Erklärt jede Abweichung mit Beleg aus beiden Seiten und schlägt je Abweichung vor, was gelten soll.",
+      "never": "Verbindet sich mit einer Datenbank. Entscheidet. Behauptet etwas ohne Beleg aus Diff oder Datei.",
+      "rules": ["Beleg oder nichts", "Vorschlagen, nicht entscheiden"]
+    },
+    "neuaufbau": {
+      "does": "Kern: löscht das Schema in TEST und baut es allein aus dem Repository neu: Release 1.0 mit SQLcl deploy, die App aus dem Repository, die Stammdaten.",
+      "never": "Läuft gegen PROD. Liest etwas außerhalb des Repositorys.",
+      "rules": ["Nur TEST", "Nur das Repository"]
+    },
+    "nachweis": {
+      "does": "Kern: exportiert TEST erneut und vergleicht mit der Baseline. Leer heißt: gleiche Datenbank.",
+      "never": "Wertet den Vergleich schön.",
+      "rules": ["Der Diff spricht"]
+    },
+    "ask": {"does": "Beantwortet eine freie Frage zum Bestand.", "never": "Entscheidet. Erfindet, was nicht in der Akte steht.", "rules": []}
+  }
+}

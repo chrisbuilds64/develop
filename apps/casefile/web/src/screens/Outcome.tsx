@@ -149,18 +149,18 @@ export function OutcomeScreen({ id, config, go, w }: { id: string; config: Confi
           <span className="says">{v.canon && !approveTurn ? w.canonReady : v.open_lines ? w.draftHint : w.allDecided}</span>
           {approveTurn && (v.open_lines > 0
             ? <span className="gate-count" aria-live="polite"><b>{v.open_lines}</b> {w.openLinesShort(v.open_lines)} {w.stillOpen}</span>
-            : <button type="button" className="btn arrive" disabled={approve.isPending} onClick={() => approve.mutate()}>{w.approve} →</button>)}
+            : <button type="button" className="btn arrive" data-approve="1" disabled={approve.isPending} onClick={() => approve.mutate()}>{w.approve} →</button>)}
         </footer>
       )}
       {sealing && (
         <div className="seal-stage" role="dialog" aria-modal="true" aria-label={w.sealed} onClick={() => setSealing(null)}>
           <div className="seal-sheet" onClick={(e) => e.stopPropagation()}>
-            <span className="seal-stamp" style={{ animationDelay: "380ms" }} aria-hidden="true"><span><b>v0.1</b><small>{w.sealed}</small></span></span>
+            <span className="seal-stamp" style={{ animationDelay: "380ms" }} aria-hidden="true"><span><b>{w.sealVersion}</b><small>{w.sealed}</small></span></span>
             <h2>{w.sealTitle(v.title)}</h2>
             <ul className="seal-lines">{sealing.lines.map((t, i) => <li key={i} style={{ animationDelay: `${60 + i * 50}ms` }}>{t}</li>)}</ul>
             <p className="seal-sum" style={{ animationDelay: "900ms" }}>{w.sealSum(sealing.rules, sealing.voices, sealing.quotes).map((x, i) => <span key={i}>{i ? ", " : ""}<em>{x}</em></span>)}. {w.sealNow}</p>
             <div className="seal-acts" style={{ animationDelay: "1150ms" }}>
-              <button type="button" className="btn link" onClick={() => setSealing(null)}>{w.close}</button>
+              <button type="button" className="btn link" data-seal="close" onClick={() => setSealing(null)}>{w.close}</button>
               <button type="button" className="btn seal" onClick={() => { setSealing(null); go(`/case/${encodeURIComponent(id)}/kanon`); }}>{w.openCanon}</button>
             </div>
           </div>
@@ -186,7 +186,7 @@ function LineRow({ l, can, busy, who, where, w, onDecide }: { l: Line; can: bool
   const verdict = l.decision.verdict;
   const shown = verdict === "edit" ? l.decision.text : l.text;
   return (
-    <div className={`kline${verdict ? ` ${verdict}` : ""}`}>
+    <div className={`kline${verdict ? ` ${verdict}` : ""}`} data-line={l.id}>
       <div className="kline-main">
         <span className="mono kline-id">{l.id}</span>
         {editing ? (
@@ -202,15 +202,15 @@ function LineRow({ l, can, busy, who, where, w, onDecide }: { l: Line; can: bool
         {can && (editing ? (
           <>
             <button type="button" className="btn link small" onClick={() => { setEditing(false); setText(l.decision.text ?? l.text); }}>{w.cancel}</button>
-            <button type="button" className="btn small" disabled={busy || !text.trim()} onClick={() => { onDecide("edit", text); setEditing(false); }}>{w.takeOver}</button>
+            <button type="button" className="btn small" data-take="1" disabled={busy || !text.trim()} onClick={() => { onDecide("edit", text); setEditing(false); }}>{w.takeOver}</button>
           </>
         ) : verdict ? (
           <button type="button" className="btn link small" disabled={busy} onClick={() => onDecide("undo")}>{w.undoDecision}</button>
         ) : (
           <div className="kline-acts">
-            <button type="button" className="chip act accept" disabled={busy} onClick={() => onDecide("accept")}><Check /> {w.accept}</button>
-            <button type="button" className="chip act" disabled={busy} onClick={() => setEditing(true)}><Pen /> {w.edit}</button>
-            <button type="button" className="chip act reject" disabled={busy} onClick={() => onDecide("reject")}><Cross /> {w.reject}</button>
+            <button type="button" className="chip act accept" data-verdict="accept" disabled={busy} onClick={() => onDecide("accept")}><Check /> {w.accept}</button>
+            <button type="button" className="chip act" data-verdict="edit" disabled={busy} onClick={() => setEditing(true)}><Pen /> {w.edit}</button>
+            <button type="button" className="chip act reject" data-verdict="reject" disabled={busy} onClick={() => onDecide("reject")}><Cross /> {w.reject}</button>
           </div>
         ))}
       </div>

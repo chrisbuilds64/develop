@@ -1,0 +1,183 @@
+{
+  "$comment": "Every word the surface shows for an inventory, in German and English.",
+  "de": {
+    "product": "Bestandsakte",
+    "labels": {
+      "BA": "Bestandsakte"
+    },
+    "stations": {
+      "inventory": "Bestand",
+      "baseline": "Baseline",
+      "compare": "Abgleich",
+      "decide": "Entscheid",
+      "valid": "Gültig",
+      "rebuilt": "Neuaufbau",
+      "proven": "Bewiesen"
+    },
+    "stages": {
+      "10-bestand": "Bestand in PROD, nichts im Repository",
+      "20-baseline": "Baseline aus PROD im Repository",
+      "30-abgleich": "Skripte in TEST eingespielt, Abweichungen sichtbar",
+      "40-entscheid": "Abweichungen erklärt, Entscheid je Zeile",
+      "50-gueltig": "Gültiger Stand festgelegt",
+      "60-neuaufbau": "TEST aus dem Repository neu aufgebaut",
+      "70-bewiesen": "Bewiesen: TEST ist die Baseline"
+    },
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "Läuft gerade",
+      "others": "Bei anderen",
+      "date": "Termin",
+      "planned": "Geplant",
+      "out": "Bewiesen",
+      "ideas": "Neu",
+      "archive": "Archiv"
+    },
+    "actions": {
+      "harvest": "PROD ernten",
+      "replay_scripts": "Skripte in TEST einspielen",
+      "explain": "Abweichungen erklären lassen",
+      "approve_canon": "Stand festlegen",
+      "rebuild": "TEST aus dem Repository aufbauen",
+      "prove": "Vergleichen",
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten"
+    },
+    "reasons": {
+      "running": "es läuft gerade",
+      "failed": "der letzte Lauf ist gescheitert",
+      "missing": "es fehlt noch etwas"
+    },
+    "markers": {
+      "is": "ist",
+      "should": "soll",
+      "open": "offen"
+    },
+    "texts": {
+      "done": "Erledigt.",
+      "deliver": "Abgelegt.",
+      "detected": "Von Hand verschoben",
+      "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter.",
+      "canon_title": "Gültiger Stand",
+      "canon_lead": "Je Abweichung vom Eigentümer entschieden. Was verworfen wurde, steht nicht hier.",
+      "canon_scope": "Grundlage: Baseline aus PROD, Release 1.0 im Repository. Was hier steht, baut jede neue Datenbank.",
+      "canon_foot": "Festgelegt von {who} am {date}, Eigentümer des Schemas SDLC_APP.",
+      "question_word": "Datei"
+    },
+    "files": {
+      "auftrag.md": "Auftrag",
+      "baseline.md": "Baseline",
+      "skripte-test.md": "TEST aus den Skripten",
+      "befund.json": "Befund",
+      "abweichungen.json": "Abweichungen",
+      "entscheide.json": "Entscheide",
+      "canon.md": "Gültiger Stand",
+      "neuaufbau.md": "Neuaufbau",
+      "nachweis.md": "Nachweis"
+    },
+    "roles": {
+      "owner": "Eigentümer",
+      "decider": "Eigentümer",
+      "operator": "Betrieb"
+    },
+    "words": {
+      "external_id": "Schema"
+    }
+  },
+  "en": {
+    "product": "Inventory",
+    "labels": {
+      "BA": "Inventory"
+    },
+    "stations": {
+      "inventory": "Legacy",
+      "baseline": "Baseline",
+      "compare": "Compare",
+      "decide": "Decide",
+      "valid": "Valid",
+      "rebuilt": "Rebuild",
+      "proven": "Proven"
+    },
+    "stages": {
+      "10-bestand": "legacy in PROD, nothing in the repository",
+      "20-baseline": "baseline from PROD in the repository",
+      "30-abgleich": "scripts replayed into TEST, differences visible",
+      "40-entscheid": "differences explained, a decision per line",
+      "50-gueltig": "valid state fixed",
+      "60-neuaufbau": "TEST rebuilt from the repository",
+      "70-bewiesen": "proven: TEST is the baseline"
+    },
+    "groups": {
+      "you": "Your move",
+      "claude": "Running",
+      "others": "With others",
+      "date": "Dated",
+      "planned": "Planned",
+      "out": "Proven",
+      "ideas": "New",
+      "archive": "Archive"
+    },
+    "actions": {
+      "harvest": "Harvest PROD",
+      "replay_scripts": "Replay the scripts into TEST",
+      "explain": "Have the differences explained",
+      "approve_canon": "Fix the state",
+      "rebuild": "Rebuild TEST from the repository",
+      "prove": "Compare",
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "File",
+      "see_failure": "See what went wrong",
+      "wait": "Wait"
+    },
+    "reasons": {
+      "running": "running",
+      "failed": "the last run failed",
+      "missing": "something is missing"
+    },
+    "markers": {
+      "is": "is",
+      "should": "should",
+      "open": "open"
+    },
+    "texts": {
+      "done": "Done.",
+      "deliver": "Filed.",
+      "detected": "Moved by hand",
+      "detected_text": "The case was found in {stage}; the thread last knew {known}.",
+      "delivered_title": "Filed: {files}",
+      "replay_moved": "Moved on.",
+      "canon_title": "Valid state",
+      "canon_lead": "Decided by the owner, difference by difference. What was rejected is not here.",
+      "canon_scope": "Basis: baseline from PROD, release 1.0 in the repository. What stands here builds every new database.",
+      "canon_foot": "Fixed by {who} on {date}, owner of schema SDLC_APP.",
+      "question_word": "file"
+    },
+    "files": {
+      "auftrag.md": "Order",
+      "baseline.md": "Baseline",
+      "skripte-test.md": "TEST from the scripts",
+      "befund.json": "Findings",
+      "abweichungen.json": "Differences",
+      "entscheide.json": "Decisions",
+      "canon.md": "Valid state",
+      "neuaufbau.md": "Rebuild",
+      "nachweis.md": "Proof"
+    },
+    "roles": {
+      "owner": "Owner",
+      "decider": "Owner",
+      "operator": "Operations"
+    },
+    "words": {
+      "external_id": "Schema"
+    }
+  }
+}

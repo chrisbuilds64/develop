@@ -1,0 +1,7 @@
+{
+  "$comment": "Default people of an inventory workspace; a workspace's own people.json wins. The owner orders the database steps and decides what is valid.",
+  "people": [
+    {"id": "chris", "name": "Chris", "kind": "human", "roles": ["owner", "decider", "operator"]},
+    {"id": "ki", "name": "KI", "kind": "agent", "roles": []}
+  ]
+}

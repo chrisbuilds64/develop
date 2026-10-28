@@ -1,0 +1,85 @@
+{
+  "name": "Bestandsakte",
+  "lang": "de",
+  "accent": "your-move",
+  "$comment": "`interview` names the files of the decision screen (findings, draft, decisions) without a conversation before it; `words` replaces the decision screen's Gatehouse words for this application ({0}, {1} … are the arguments).",
+  "interview": {
+    "helper": "",
+    "draft": "abweichungen.json",
+    "decisions": "entscheide.json",
+    "findings": "befund.json"
+  },
+  "covers": {
+    "by": "label",
+    "colors": {
+      "BA": "#b5452b"
+    },
+    "fallback": "#5a6270"
+  },
+  "words": {
+    "de": {
+      "outcomeOpen": "Abweichungen entscheiden",
+      "outcomeOpenHint": "Befund der KI, Entscheid je Zeile",
+      "findings": "Befund",
+      "mirror": "Was die Skripte sagen und was PROD hat",
+      "saidDone": "Die Abweichungen",
+      "said": "Skripte (Altbestand)",
+      "done2": "PROD (Baseline)",
+      "limits": "Was dieser Vergleich nicht sieht",
+      "draftTitle": "Was gilt",
+      "draftHint": "Je Abweichung entscheidet der Eigentümer. Was die KI vorschlägt, gilt erst, wenn ein Mensch es angenommen hat.",
+      "approve": "Stand festlegen",
+      "canonReady": "Der gültige Stand liegt in der Akte",
+      "openCanon": "Gültigen Stand lesen",
+      "noOutcome": "Noch kein Befund.",
+      "onlyDecider": "Entscheiden darf der Eigentümer des Schemas. Du siehst den Stand.",
+      "sealed": "Festgelegt",
+      "sealedBand": "Gültiger Stand · festgelegt {0}",
+      "sealSum": [
+        "{0} Zeilen gelten",
+        "{1} Seiten verglichen",
+        "{2} Belege"
+      ],
+      "sealNow": "Ab jetzt gilt das Repository.",
+      "sealTitle": "Gültiger Stand · {0}",
+      "canonKind": "Gültiger Stand · Schema und App",
+      "factRules": "Entscheide",
+      "factVoices": "Seiten",
+      "factQuotes": "Belege",
+      "canonFoot": "Festgelegt vom Eigentümer, Zeile für Zeile. Die KI hat verglichen und vorgeschlagen; entschieden hat ein Mensch.",
+      "sealVersion": "1.0"
+    },
+    "en": {
+      "outcomeOpen": "Decide the differences",
+      "outcomeOpenHint": "The AI's findings, a decision per line",
+      "findings": "Findings",
+      "mirror": "What the scripts say and what PROD has",
+      "saidDone": "The differences",
+      "said": "scripts (legacy)",
+      "done2": "PROD (baseline)",
+      "limits": "What this comparison does not see",
+      "draftTitle": "What is valid",
+      "draftHint": "The owner decides every difference. What the AI proposes holds only once a person has accepted it.",
+      "approve": "Fix the state",
+      "canonReady": "The valid state is in the case",
+      "openCanon": "Read the valid state",
+      "noOutcome": "No findings yet.",
+      "onlyDecider": "The schema's owner decides. You see where it stands.",
+      "sealed": "Fixed",
+      "sealedBand": "Valid state · fixed {0}",
+      "sealSum": [
+        "{0} lines hold",
+        "{1} sides compared",
+        "{2} pieces of evidence"
+      ],
+      "sealNow": "From now on the repository is what holds.",
+      "sealTitle": "Valid state · {0}",
+      "canonKind": "Valid state · schema and app",
+      "factRules": "Decisions",
+      "factVoices": "Sides",
+      "factQuotes": "Evidence",
+      "canonFoot": "Fixed by the owner, line by line. The AI compared and proposed; a person decided.",
+      "sealVersion": "1.0"
+    }
+  }
+}

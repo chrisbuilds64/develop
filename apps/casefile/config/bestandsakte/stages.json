@@ -1,0 +1,21 @@
+{
+  "$comment": "An inventory of a database as configuration (DOAG 2026): harvest the production schema into Git, replay the old script folder into TEST and compare, let the helper explain every difference, a person decides line by line what is valid, then TEST is rebuilt from the repository alone and compared again. The core runs the database steps (SQLcl on the database host); the helper only reads and explains.",
+  "name": "Bestandsakte",
+  "lang": "de",
+  "configVersion": "1",
+  "stages": [
+    {"folder": "10-bestand", "key": "inventory", "group": "you", "turn": "role:owner",
+     "actions": [{"id": "harvest", "label": "harvest", "to": "20-baseline", "run": "ernte", "entry_status": "info"}]},
+    {"folder": "20-baseline", "key": "baseline", "group": "you", "turn": "role:owner",
+     "actions": [{"id": "replay_scripts", "label": "replay_scripts", "to": "30-abgleich", "run": "skripte", "requires": ["baseline.md"], "entry_status": "info"}]},
+    {"folder": "30-abgleich", "key": "compare", "group": "you", "turn": "role:owner",
+     "actions": [{"id": "explain", "label": "explain", "to": "40-entscheid", "run": "abgleich", "requires": ["skripte-test.md"], "entry_status": "info"}]},
+    {"folder": "40-entscheid", "key": "decide", "group": "you", "turn": "role:decider",
+     "actions": [{"id": "approve_canon", "label": "approve_canon", "to": "50-gueltig", "requires": ["decided:abweichungen.json:entscheide.json"], "compile": "canon", "entry_status": "approved", "seal": true}]},
+    {"folder": "50-gueltig", "key": "valid", "group": "you", "turn": "role:owner",
+     "actions": [{"id": "rebuild", "label": "rebuild", "to": "60-neuaufbau", "run": "neuaufbau", "requires": ["canon.md"], "entry_status": "info"}]},
+    {"folder": "60-neuaufbau", "key": "rebuilt", "group": "you", "turn": "role:owner",
+     "actions": [{"id": "prove", "label": "prove", "to": "70-bewiesen", "run": "nachweis", "requires": ["neuaufbau.md"], "entry_status": "approved", "seal": true}]},
+    {"folder": "70-bewiesen", "key": "proven", "group": "out", "turn": null}
+  ]
+}

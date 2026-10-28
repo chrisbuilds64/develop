@@ -113,7 +113,7 @@ const W = {
     dayLead: (n: number) => (n === 1 ? "Heute hast du eine Akte durch ein Tor gebracht." : `Heute hast du ${n} Akten durch ein Tor gebracht.`),
     daySum: (s: number, t: number) => `${s} ${s === 1 ? "Tor" : "Tore"}, ${t} ${t === 1 ? "Schritt" : "Schritte"} heute. Feierabend.`,
     weekLine: (n: number) => `Diese Woche: ${n} ${n === 1 ? "Akte" : "Akten"} durch ein Tor.`,
-    sealed: "Besiegelt", sealedBand: (d: string) => `Kanon v0.1 · freigegeben ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "Regel" : "Regeln"}`, `${v} ${v === 1 ? "Stimme" : "Stimmen"}`, `${q} ${q === 1 ? "Zitat" : "Zitate"}`],
+    sealed: "Besiegelt", sealVersion: "v0.1", sealedBand: (d: string) => `Kanon v0.1 · freigegeben ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "Regel" : "Regeln"}`, `${v} ${v === 1 ? "Stimme" : "Stimmen"}`, `${q} ${q === 1 ? "Zitat" : "Zitate"}`],
     sealNow: "Ab jetzt gilt das.", sealTitle: (t: string) => `Bereichskanon v0.1 · ${t}`, stillOpen: "noch offen", openLinesShort: (n: number) => (n === 1 ? "Zeile" : "Zeilen"),
     chapterDone: (t: string) => `„${t}“ ist fertig.`, chapterFilled: (f: string, n: number) => `Dein Fach „${f}“ trägt jetzt ${n} ${n === 1 ? "Zitat" : "Zitate"}.`, nextChapter: (t: string) => `Weiter mit „${t}“`, pauseHere: "Hier pausieren",
     scope: (q: number, c: number) => `${q} Fragen in ${c} Kapiteln. Zwei Sitzungen sind normal; du kannst jederzeit aufhören und später genau hier weitermachen.`,
@@ -231,7 +231,7 @@ const W = {
     dayLead: (n: number) => (n === 1 ? "Today you brought one case through a gate." : `Today you brought ${n} cases through a gate.`),
     daySum: (s: number, t: number) => `${s} ${s === 1 ? "gate" : "gates"}, ${t} ${t === 1 ? "step" : "steps"} today. Done for the day.`,
     weekLine: (n: number) => `This week: ${n} ${n === 1 ? "case" : "cases"} through a gate.`,
-    sealed: "Sealed", sealedBand: (d: string) => `Canon v0.1 · approved ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "rule" : "rules"}`, `${v} ${v === 1 ? "voice" : "voices"}`, `${q} ${q === 1 ? "quote" : "quotes"}`],
+    sealed: "Sealed", sealVersion: "v0.1", sealedBand: (d: string) => `Canon v0.1 · approved ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "rule" : "rules"}`, `${v} ${v === 1 ? "voice" : "voices"}`, `${q} ${q === 1 ? "quote" : "quotes"}`],
     sealNow: "From now on, this holds.", sealTitle: (t: string) => `Area canon v0.1 · ${t}`, stillOpen: "still open", openLinesShort: (n: number) => (n === 1 ? "line" : "lines"),
     chapterDone: (t: string) => `“${t}” is done.`, chapterFilled: (f: string, n: number) => `Your compartment “${f}” now holds ${n} ${n === 1 ? "quote" : "quotes"}.`, nextChapter: (t: string) => `On to “${t}”`, pauseHere: "Pause here",
     scope: (q: number, c: number) => `${q} questions in ${c} chapters. Two sittings are normal; stop any time and carry on exactly here.`,
@@ -240,8 +240,19 @@ const W = {
   },
 };
 
-export function words(lang: string) {
-  return W[(lang === "de" ? "de" : "en") as Lang];
+export function words(lang: string, over?: Record<string, unknown>) {
+  const base = W[(lang === "de" ? "de" : "en") as Lang];
+  if (!over) return base;
+  // a domain's own words (theme.words.<lang>): a string replaces a string; for a function, "{0}", "{1}" … take its arguments
+  const fill = (s: string, a: unknown[]) => s.replace(/\{(\d)\}/g, (_, i) => String(a[Number(i)] ?? ""));
+  const out: Record<string, unknown> = { ...base };
+  for (const [k, v] of Object.entries(over)) {
+    if (!(k in base)) continue;
+    if (typeof (base as Record<string, unknown>)[k] === "function") {
+      out[k] = Array.isArray(v) ? (...a: unknown[]) => v.map((s) => fill(String(s), a)) : (...a: unknown[]) => fill(String(v), a);
+    } else if (typeof v === "string") out[k] = v;
+  }
+  return out as typeof base;
 }
 
 export function ago(iso: string, lang: string): string {

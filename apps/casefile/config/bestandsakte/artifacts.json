@@ -1,0 +1,23 @@
+{
+  "$comment": "What an inventory holds. The core writes what the database says (baseline, replay, rebuild, proof); the helper writes its findings and the draft; the owner decides line by line; canon.md is the valid state the core compiles from the decisions.",
+  "common": [
+    {"file": "meta.json", "stage": "10-bestand", "by": "human", "shape": "text"},
+    {"file": "review.md", "stage": "10-bestand", "by": "human", "shape": "text"}
+  ],
+  "formats": {
+    "BA": {
+      "primary": "canon.md",
+      "artifacts": [
+        {"file": "auftrag.md", "stage": "10-bestand", "by": "role:owner", "shape": "text"},
+        {"file": "baseline.md", "stage": "20-baseline", "by": "ernte", "shape": "text"},
+        {"file": "skripte-test.md", "stage": "30-abgleich", "by": "skripte", "shape": "text"},
+        {"file": "befund.json", "stage": "40-entscheid", "by": "abgleich", "shape": "data"},
+        {"file": "abweichungen.json", "stage": "40-entscheid", "by": "abgleich", "shape": "data"},
+        {"file": "entscheide.json", "stage": "40-entscheid", "by": "role:decider", "shape": "data"},
+        {"file": "canon.md", "stage": "50-gueltig", "by": "role:decider", "shape": "text"},
+        {"file": "neuaufbau.md", "stage": "60-neuaufbau", "by": "neuaufbau", "shape": "text"},
+        {"file": "nachweis.md", "stage": "70-bewiesen", "by": "nachweis", "shape": "text"}
+      ]
+    }
+  }
+}

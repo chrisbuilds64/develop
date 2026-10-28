@@ -122,7 +122,7 @@ export function App() {
   const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries({ queryKey: ["case"] }); await Promise.all([qc.resetQueries({ queryKey: ["groups"] }), qc.resetQueries({ queryKey: ["turns"] }), qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["config"] })]); };
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
   const onLang = async (l: string) => { await api.setLang(l); await qc.invalidateQueries(); };
-  const w = words(lang);
+  const w = words(lang, ((config.data?.theme as Record<string, unknown> | undefined)?.words as Record<string, Record<string, unknown>> | undefined)?.[lang]);
   const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id;
   const isPhone = window.matchMedia("(max-width: 900px)").matches;
   const showList = !isPhone || route.name === "home" || route.name === "group";

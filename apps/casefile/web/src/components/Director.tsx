@@ -117,6 +117,7 @@ export function Director() {
       case "tap":                                     // any visible control by selector: a view's sample, the AI button, a hint's answer
         await aim(await find(s.target ?? "main"));
         await sleep(900);
+        (document.activeElement as HTMLElement | null)?.blur?.();   // a field the tap opened (autoFocus) would swallow the clicker
         return "next";
       case "type": {
         if (s.target) {                                // a field by selector, typed into and left as it is (the next step presses)

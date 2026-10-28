@@ -115,7 +115,7 @@ def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path,
     e = reply.get("entry") or {}
     note = str(doc.get("note") or "").strip()
     text = str(e.get("text", "")).replace("{note}", note)
-    entry = {"author": agent.name if agent else "Claude", "status": e.get("status", "info"), "title": str(e.get("title", doc.get("skill", "")))[:120], "text": text, "files": files_written}
+    entry = {"author": e.get("author") or (agent.name if agent else "Claude"), "status": e.get("status", "info"), "title": str(e.get("title", doc.get("skill", "")))[:120], "text": text, "files": files_written}
     if e.get("for"):
         entry["for"] = e["for"]
     with store.lock(case_id):
