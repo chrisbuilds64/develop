@@ -24,6 +24,19 @@ STEP_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 BUILTIN = ("answer", "note", "done", "deliver", "ask")
 
 
+def _done_by(store: FsStore, case_id: str, action: str) -> set[str]:
+    """Who did this action on this case, from the journals."""
+    out = set()
+    for name in store.journals():
+        try:
+            doc = store.read_json(f"_steps/{name}")
+        except (OSError, ValueError):
+            continue
+        if doc.get("case") == case_id and doc.get("action") == action and doc.get("status") == "done":
+            out.add(str(doc.get("by")))
+    return out
+
+
 def _now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -103,6 +116,10 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             author = primary_author(config, case)
             if author and author == person.id:
                 return _refuse(store, j, "four eyes: you wrote the newest version and cannot approve it")
+        if action.four_eyes_of:
+            earlier = _done_by(store, case_id, action.four_eyes_of)
+            if person.id in earlier:
+                return _refuse(store, j, f"four eyes: {person.name} did '{action.four_eyes_of}' on this case; somebody else does this")
         for field in action.payload:
             if not str(req.payload.get(field, "")).strip():
                 return _refuse(store, j, f"'{field}' is required for {req.action}")

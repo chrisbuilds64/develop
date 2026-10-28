@@ -20,6 +20,7 @@ class Action(BaseModel):
     run: str | None = None                       # a skill to order instead of (or besides) moving
     requires: list[str] = Field(default_factory=list)   # deliverable file names that must be present
     four_eyes: bool = False                      # the person acting must not be the author of the primary deliverable
+    four_eyes_of: str | None = None              # the person acting must not be the one who did this earlier action on the case (TEST released → PROD by somebody else)
     entry_status: str = "info"                   # the status the thread entry carries ("approved", "info", …)
     payload: list[str] = Field(default_factory=list)    # payload fields the surface must send, e.g. ["amount", "date"]
     actor: str | None = None                     # who may do it; None = the stage's turn

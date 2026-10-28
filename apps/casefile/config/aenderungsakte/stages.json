@@ -1,0 +1,109 @@
+{
+  "$comment": "A database change through the gates (DOAG 2026, talk 2 'Pipeline statt Hoffnung'). The core captures the change from ENTW and deploys (SQLcl on the database host); the helper analyses migration and impact and prepares the package, and executes nothing. A person releases TEST, a second person releases PROD; the house rule 'no DDL on PROD without a restore point' is checked by the core before every PROD deploy.",
+  "name": "Änderungsakte",
+  "lang": "de",
+  "configVersion": "1",
+  "stages": [
+    {
+      "folder": "10-entw",
+      "key": "change",
+      "group": "you",
+      "turn": "role:developer",
+      "actions": [
+        {
+          "id": "capture",
+          "label": "capture",
+          "to": "20-erfasst",
+          "run": "erfassen",
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "20-erfasst",
+      "key": "captured",
+      "group": "you",
+      "turn": "role:developer",
+      "actions": [
+        {
+          "id": "analyse",
+          "label": "analyse",
+          "to": "30-analysiert",
+          "run": "analyse",
+          "requires": [
+            "erfasst.md"
+          ],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "30-analysiert",
+      "key": "analysed",
+      "group": "you",
+      "turn": "role:developer",
+      "actions": [
+        {
+          "id": "prepare",
+          "label": "prepare",
+          "to": "40-bereit",
+          "run": "vorbereitung",
+          "requires": [
+            "analyse.md"
+          ],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "40-bereit",
+      "key": "ready",
+      "group": "you",
+      "turn": "role:approver_test",
+      "actions": [
+        {
+          "id": "approve_test",
+          "label": "approve_test",
+          "to": "50-test",
+          "run": "einspielen-test",
+          "requires": [
+            "paket.md"
+          ],
+          "entry_status": "approved",
+          "seal": true
+        }
+      ]
+    },
+    {
+      "folder": "50-test",
+      "key": "test",
+      "group": "you",
+      "turn": "role:approver_prod",
+      "actions": [
+        {
+          "id": "approve_prod",
+          "label": "approve_prod",
+          "run": "einspielen-prod",
+          "requires": [
+            "test.md"
+          ],
+          "four_eyes_of": "approve_test",
+          "entry_status": "approved"
+        },
+        {
+          "id": "set_restore_point",
+          "label": "set_restore_point",
+          "run": "restore-point",
+          "actor": "role:dba",
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "60-prod",
+      "key": "prod",
+      "group": "out",
+      "turn": null
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "$comment": "What a change holds. The core writes what the database says (capture, deploys, restore point); the helper writes the analysis and the package.",
+  "common": [
+    {
+      "file": "meta.json",
+      "stage": "10-entw",
+      "by": "human",
+      "shape": "text"
+    },
+    {
+      "file": "review.md",
+      "stage": "10-entw",
+      "by": "human",
+      "shape": "text"
+    }
+  ],
+  "formats": {
+    "AE": {
+      "primary": "paket.md",
+      "artifacts": [
+        {
+          "file": "aenderung.md",
+          "stage": "10-entw",
+          "by": "role:developer",
+          "shape": "text"
+        },
+        {
+          "file": "erfasst.md",
+          "stage": "20-erfasst",
+          "by": "erfassen",
+          "shape": "text"
+        },
+        {
+          "file": "analyse.md",
+          "stage": "30-analysiert",
+          "by": "analyse",
+          "shape": "text"
+        },
+        {
+          "file": "paket.md",
+          "stage": "40-bereit",
+          "by": "vorbereitung",
+          "shape": "text"
+        },
+        {
+          "file": "test.md",
+          "stage": "50-test",
+          "by": "einspielen-test",
+          "shape": "text"
+        },
+        {
+          "file": "restore-point.md",
+          "stage": "50-test",
+          "by": "restore-point",
+          "shape": "text"
+        },
+        {
+          "file": "prod.md",
+          "stage": "60-prod",
+          "by": "einspielen-prod",
+          "shape": "text"
+        }
+      ]
+    }
+  }
+}

@@ -7,6 +7,17 @@
 #   doag compare TEST     export TEST next to the baseline and diff (empty diff = same database)
 #   doag rebuild TEST     drop the schema, rebuild it from the repository alone (SQLcl project deploy)
 #
+# Talk 2, a change through the gates (after the above):
+#   doag adopt PROD       record release 1.0 as present in PROD (built by scripts, so Liquibase must not run it there)
+#   doag entw             ENTW gets the baseline beside the workshop's apps
+#   doag change           a developer adds liefertermin in ENTW
+#   doag capture          branch, export ENTW, changesets plus the backfill
+#   doag impact PROD      read-only questions to PROD, each with its query
+#   doag prepare          merge, release 1.1, artifact, the way back
+#   doag deploy TEST      release 1.1 into TEST (then: doag compare TEST)
+#   doag deploy PROD      refused without a guaranteed restore point younger than two hours
+#   doag restore-point PROD
+#
 # Runs on the database host. Needs: docker container oracle-free, SQLcl in $DOAG/sqlcl, git, $DOAG/.env with APP_PW.
 set -euo pipefail
 
@@ -30,10 +41,11 @@ sys() {   # sys <PDB>  — SQL on stdin, as SYSDBA inside that PDB
 }
 
 app() {   # app <PDB>  — SQL on stdin, as the application schema. Via a script file: SQLcl reads stdin as Latin-1.
-  local pdb=$1 f rc=0
+  local pdb=$1 f rc=0 pwv="${1}_APP_PW"
+  local pw=${!pwv:-$APP_PW}                        # ENTW keeps its own password (the workshop's apps use it)
   f=$(mktemp "$DOAG/tmp/run.XXXXXX.sql")
   { echo "WHENEVER SQLERROR EXIT FAILURE"; cat; echo; echo "EXIT"; } > "$f"
-  "$SQL" -S -L "$APP/\"$APP_PW\"@localhost:1521/$pdb" "@$f" 2>&1 | grep -v '^Picked up JAVA_TOOL_OPTIONS' || rc=${PIPESTATUS[0]}
+  "$SQL" -S -L "$APP/\"$pw\"@localhost:1521/$pdb" "@$f" 2>&1 | grep -v '^Picked up JAVA_TOOL_OPTIONS' || rc=${PIPESTATUS[0]}
   rm -f "$f"
   return "$rc"
 }
@@ -191,7 +203,7 @@ cmd_compare() {
   git diff --cached -I '^-- sqlcl_snapshot' -- src > "$diff" || true
   git diff --cached -I '^-- sqlcl_snapshot' --stat -- src | tee "$OUT/${pdb,,}-vs-baseline.txt"
   if [[ ! -s $diff ]]; then
-    say "no difference: $pdb is the baseline"
+    say "no difference: $pdb is what the repository says"
   else
     say "$(git diff --cached -I '^-- sqlcl_snapshot' --name-only -- src | wc -l) files differ: $diff"
   fi
@@ -218,11 +230,178 @@ EOF
   inventory "$pdb" | tee "$OUT/${pdb,,}-rebuild-inventory.txt"
 }
 
+# ----------------------------------------------------------------------------- talk 2: a change through the gates
+
+deploy_release() {   # deploy_release <PDB> <version>  — SQLcl deploys the artifact; Liquibase runs only what is new there
+  local pdb=$1 v=$2
+  cd "$REPO"
+  app "$pdb" <<EOF > "$OUT/deploy-${pdb,,}.log" 2>&1 || { cat "$OUT/deploy-${pdb,,}.log"; exit 1; }
+cd $REPO
+project gen-artifact -version $v -force
+project deploy -file artifact/auftragsverwaltung-$v.zip
+EOF
+  if grep -q -E "ORA-|ERROR" "$OUT/deploy-${pdb,,}.log"; then cat "$OUT/deploy-${pdb,,}.log"; exit 1; fi
+  grep -E "^Run:|Previously run:" "$OUT/deploy-${pdb,,}.log" | tail -2 | sed "s/^/  $pdb  /"
+}
+
+cmd_adopt() {   # PROD was built by scripts: record release 1.0 as present, so Liquibase never runs it there
+  local pdb=${1:-PROD}
+  cd "$REPO"
+  say "$pdb: release 1.0 recorded as already present (changelog-sync), nothing executed"
+  app "$pdb" <<EOF > "$OUT/adopt.log" 2>&1 || { cat "$OUT/adopt.log"; exit 1; }
+cd $REPO/dist
+lb changelog-sync -changelog-file releases/main.changelog.xml
+EOF
+  if grep -q -E "ORA-|ERROR" "$OUT/adopt.log"; then cat "$OUT/adopt.log"; exit 1; fi
+}
+
+cmd_entw() {   # ENTW gets the baseline beside the workshop's apps (100, 103, 106 stay; their table AUFTRAEGE comes back with its rows)
+  say "ENTW: schema objects dropped (APEX apps stay), release 1.0 deployed, development data"
+  app ENTW <<'EOF' > "$OUT/last-run.log" 2>&1 || { cat "$OUT/last-run.log"; exit 1; }
+BEGIN
+  FOR o IN (SELECT object_name, object_type FROM user_objects
+            WHERE object_type IN ('TABLE', 'PACKAGE', 'VIEW', 'SEQUENCE', 'TRIGGER') AND object_name NOT LIKE 'ISEQ$$%' AND object_name NOT LIKE 'SYS\_%' ESCAPE '\') LOOP
+    BEGIN
+      EXECUTE IMMEDIATE 'DROP ' || o.object_type || ' "' || o.object_name || '"' || CASE o.object_type WHEN 'TABLE' THEN ' CASCADE CONSTRAINTS PURGE' END;
+    EXCEPTION WHEN OTHERS THEN NULL;     -- a trigger or sequence that went with its table
+    END;
+  END LOOP;
+END;
+/
+EOF
+  deploy_release ENTW 1.0
+  run_files ENTW "$REPO/data/stammdaten.sql" "$KIT/world/prod_bewegungsdaten.sql" "$KIT/world/prod_auftraege_daten.sql"
+}
+
+cmd_change() {   # the developer's change, made in ENTW
+  say "ENTW: a developer adds liefertermin (column, package, function)"
+  run_files ENTW "$KIT/world/entw_change_liefertermin.sql"
+}
+
+cmd_capture() {   # the change from ENTW into the repository: a branch, the export, Liquibase changesets, the backfill as a custom changeset
+  cd "$REPO"
+  git checkout -q main && git checkout -q -B feature/liefertermin
+  say "export ENTW on branch feature/liefertermin"
+  export_into ENTW "$REPO"
+  # only this application's schema objects travel; the workshop's apps in ENTW and the APEX export are not part of the change
+  git checkout -q -- src/database/sdlc_app/apex_apps 2>/dev/null || true
+  git clean -q -fd src/database/sdlc_app/apex_apps
+  # a file that differs only in SQLcl's snapshot line (sysdate vs SYSDATE after a deploy) is no change
+  local f
+  for f in $(git diff --name-only -- src); do
+    git diff --quiet -I '^-- sqlcl_snapshot' -- "$f" && git checkout -q -- "$f"
+  done
+  git add -A src && git commit -q -m "liefertermin: Spalte, pkg_auftrag"
+  git diff --stat main -- src | tee "$OUT/change-stat.txt"
+  git diff -I '^-- sqlcl_snapshot' main -- src > "$OUT/change.diff"
+  say "stage: changesets for the difference to main, plus the backfill"
+  app ENTW <<EOF > "$OUT/capture.log" 2>&1 || { cat "$OUT/capture.log"; exit 1; }
+cd $REPO
+project stage
+project stage add-custom -file-name backfill_liefertermin.sql
+EOF
+  local custom
+  custom=$(find dist/releases/next -name backfill_liefertermin.sql | head -1)
+  [[ -n $custom ]] || { cat "$OUT/capture.log"; echo "no custom changeset file"; exit 1; }
+  { head -n 3 "$custom"; cat "$KIT/world/backfill_liefertermin.sql"; } > "$custom.new" && mv "$custom.new" "$custom"
+  cp "$(find dist/releases/next -path '*tables/ov_auftraege.sql' | head -1)" "$OUT/changeset-raw-ov_auftraege.sql"   # as stage generated it
+  git add -A && git commit -q -m "liefertermin: Changesets und Backfill"
+  find dist/releases/next -type f | sort | tee "$OUT/changesets.txt"
+}
+
+cmd_impact() {   # read-only questions to PROD, every answer with the query it came from
+  local pdb=${1:-PROD}
+  say "impact in $pdb (read only)"
+  app "$pdb" <<'EOF' | tee "$OUT/impact.txt"
+SET FEEDBACK OFF PAGESIZE 100 LINESIZE 160
+PROMPT -- Q1: wer haengt an pkg_auftrag und ov_auftraege?
+PROMPT SELECT name, type, referenced_name FROM user_dependencies WHERE referenced_name IN ('PKG_AUFTRAG', 'OV_AUFTRAEGE') AND name <> referenced_name;
+SELECT name, type, referenced_name FROM user_dependencies WHERE referenced_name IN ('PKG_AUFTRAG', 'OV_AUFTRAEGE') AND name <> referenced_name ORDER BY 3, 1;
+PROMPT -- Q2: wie viele Zeilen hat ov_auftraege, wie viele trifft der Backfill?
+PROMPT SELECT status, COUNT(*), SUM(CASE WHEN status IN ('NEU','BESTAETIGT','IN_LIEFERUNG') THEN 1 ELSE 0 END) backfill FROM ov_auftraege GROUP BY status;
+SELECT status, COUNT(*) anzahl, SUM(CASE WHEN status IN ('NEU','BESTAETIGT','IN_LIEFERUNG') THEN 1 ELSE 0 END) backfill FROM ov_auftraege GROUP BY status ORDER BY 1;
+PROMPT -- Q3: steht ov_auftraege in einer APEX-App?
+PROMPT SELECT application_id, page_id, region_name FROM apex_application_page_regions WHERE UPPER(table_name) = 'OV_AUFTRAEGE';
+SELECT application_id, page_id, region_name FROM apex_application_page_regions WHERE UPPER(table_name) = 'OV_AUFTRAEGE';
+PROMPT -- Q4: was ist heute in PROD eingespielt?
+PROMPT SELECT COUNT(*), MAX(dateexecuted) FROM databasechangelog;
+SELECT COUNT(*) changesets, MAX(dateexecuted) zuletzt FROM databasechangelog;
+EOF
+}
+
+cmd_prepare() {   # the package for the gates: release 1.1, artifact, the way back
+  cd "$REPO"
+  git checkout -q feature/liefertermin
+  # the analysis found statements that change nothing or fail (spelling of a default, an existing constraint): keep only the change
+  local cs
+  cs=$(find dist/releases/next -path '*tables/ov_auftraege.sql' | head -1)
+  python3 "$KIT/bin/trim_changeset.py" "$cs" | tee "$OUT/changeset-trimmed.txt"
+  git add -A && git commit -q -m "liefertermin: Changeset geprueft, nur die neue Spalte"
+  git checkout -q main && git merge -q --no-ff feature/liefertermin -m "liefertermin uebernommen"
+  app ENTW <<EOF > "$OUT/prepare.log" 2>&1 || { cat "$OUT/prepare.log"; exit 1; }
+cd $REPO
+project release -version 1.1
+project gen-artifact -version 1.1 -force
+EOF
+  if grep -q -E "ORA-|ERROR" "$OUT/prepare.log"; then cat "$OUT/prepare.log"; exit 1; fi
+  mkdir -p rollback/1.1
+  local P=src/database/sdlc_app base
+  base=$(git log --format=%h --grep '^Release 1.0' -1)
+  { echo "-- Rueckweg 1.1 -> 1.0. Die Spalte ist nach dem Backfill nur mit Datenverlust zurueckzunehmen;"
+    echo "-- ohne Datenverlust geht es nur ueber den Restore Point, der vor dem Einspielen gesetzt wurde."
+    echo "ALTER TABLE sdlc_app.ov_auftraege DROP COLUMN liefertermin;"
+    git show "$base:$P/package_specs/pkg_auftrag.sql" | grep -v sqlcl_snapshot
+    git show "$base:$P/package_bodies/pkg_auftrag.sql" | grep -v sqlcl_snapshot; } > rollback/1.1/rollback.sql
+  git add -A && git commit -q -m "Release 1.1: liefertermin, mit Rueckweg"
+  say "release 1.1: artifact/auftragsverwaltung-1.1.zip, rollback/1.1/rollback.sql, commit $(git rev-parse --short HEAD)"
+}
+
+restore_point() {   # the newest guaranteed restore point of that PDB younger than two hours, or nothing
+  sys "$1" <<'EOF' | grep -v -e '^$' -e 'Session altered' || true
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT name || ' ' || TO_CHAR(time, 'YYYY-MM-DD HH24:MI') FROM v$restore_point
+WHERE guarantee_flashback_database = 'YES' AND con_id = SYS_CONTEXT('USERENV', 'CON_ID') AND time > SYSTIMESTAMP - INTERVAL '2' HOUR
+ORDER BY time DESC FETCH FIRST 1 ROW ONLY;
+EOF
+}
+
+cmd_deploy() {
+  local pdb=${1:?which PDB} v=${2:-1.1}
+  if [[ $pdb == PROD ]]; then
+    local rp; rp=$(restore_point PROD)
+    if [[ -z $rp ]]; then
+      say "REFUSED: house rule — no DDL on PROD without a restore point. None younger than two hours. Nothing deployed."
+      exit 3
+    fi
+    say "restore point present: $rp"
+  fi
+  say "$pdb: release $v"
+  deploy_release "$pdb" "$v"
+  say "$pdb is on release $v"
+}
+
+cmd_restore_point() {
+  local pdb=${1:-PROD} name="VOR_${2:-1_1}"
+  say "$pdb: guaranteed restore point $name"
+  sys "$pdb" <<EOF > /dev/null
+CREATE RESTORE POINT $name GUARANTEE FLASHBACK DATABASE;
+EOF
+  say "$(restore_point "$pdb")"
+}
+
 case ${1:-} in
   reset) cmd_reset ;;
   scripts) cmd_scripts "${2:-}" ;;
   harvest) cmd_harvest "${2:-PROD}" ;;
   compare) cmd_compare "${2:-}" ;;
   rebuild) cmd_rebuild "${2:-}" ;;
-  *) sed -n '2,10p' "$0"; exit 2 ;;
+  adopt) cmd_adopt "${2:-PROD}" ;;
+  entw) cmd_entw ;;
+  change) cmd_change ;;
+  capture) cmd_capture ;;
+  impact) cmd_impact "${2:-PROD}" ;;
+  prepare) cmd_prepare ;;
+  deploy) cmd_deploy "${2:-}" "${3:-1.1}" ;;
+  restore-point) cmd_restore_point "${2:-PROD}" "${3:-1_1}" ;;
+  *) sed -n '2,20p' "$0"; exit 2 ;;
 esac

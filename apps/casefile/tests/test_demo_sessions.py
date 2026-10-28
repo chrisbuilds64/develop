@@ -179,3 +179,21 @@ def test_the_round_trip_between_the_claim_and_the_e_report(tmp_path):
     client.post("/api/demo/session", json={})
     assert client.cookies.get("cf_demo") != claims_sid
     assert json.loads("{}") == {}
+
+
+def test_inside_the_cockpit_the_shells_language_holds_until_the_viewer_picks_one(tmp_path):
+    """Mounted in the cockpit, a workspace speaks the shell's language (cookie `lang`); its own choice still wins. Standalone, `lang` means nothing."""
+    build_claims(tmp_path / "w" / "claims")
+
+    def client(shell):
+        settings = Settings(secret="t", demo=True, samples_dir=HERE / "samples", replies_dir=None, sessions_dir=tmp_path / f"s-{bool(shell)}", shell=shell,
+                            worlds={"claims": World(config_dir=CONFIG / "claims-demo", template=tmp_path / "w" / "claims", person="du", lang="de")})
+        c = TestClient(create_app(settings))
+        c.cookies.set("lang", "en")
+        return c
+
+    inside = client("/")
+    assert inside.get("/api/me").json()["lang"] == "en"
+    inside.post("/api/session/lang", json={"lang": "de"})
+    assert inside.get("/api/me").json()["lang"] == "de"
+    assert client(None).get("/api/me").json()["lang"] == "de"

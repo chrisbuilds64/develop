@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, BASE } from "../api";
 
-type Step = { do: "go" | "open" | "press" | "tap" | "type" | "read" | "close" | "follow" | "wait" | "show" | "say"; say: string;
+type Step = { do: "go" | "open" | "press" | "tap" | "type" | "read" | "close" | "follow" | "wait" | "show" | "say" | "as"; say: string; person?: string;
   ws?: string; path?: string; case?: string; action?: string; text?: string; file?: string; target?: string; until?: "idle"; ms?: number;
   date?: number; amount?: string };                // press: a date (days from today) or an amount the action asks for, entered first
 type Flow = { id: string; title: string; summary: string; person: string; workspaces: Record<string, string>; suite?: { id: string; title: string }; steps: Step[] };
@@ -91,6 +91,9 @@ export function Director() {
     switch (s.do) {
       case "say":
         return "next";
+      case "as":                                      // another person takes over (open identity in a sample workspace): sign in, reload where we are
+        await api.signIn(s.person ?? "");
+        return away(window.location.pathname + window.location.search);
       case "go":
         if (s.ws && s.ws !== HERE) return away(`${ROOT}/w/${s.ws}${s.path ?? "/"}`);
         navigate(s.path ?? "/");

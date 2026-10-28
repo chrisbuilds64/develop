@@ -1,0 +1,29 @@
+{
+  "$comment": "Default people of a change workspace. Chris develops and releases TEST; Jana (fictional) is the DBA and releases PROD. Nobody here is operator: an operator may act on every move, and then two eyes would do.",
+  "people": [
+    {
+      "id": "chris",
+      "name": "Chris",
+      "kind": "human",
+      "roles": [
+        "developer",
+        "approver_test"
+      ]
+    },
+    {
+      "id": "jana",
+      "name": "Jana · DBA",
+      "kind": "human",
+      "roles": [
+        "approver_prod",
+        "dba"
+      ]
+    },
+    {
+      "id": "ki",
+      "name": "KI",
+      "kind": "agent",
+      "roles": []
+    }
+  ]
+}

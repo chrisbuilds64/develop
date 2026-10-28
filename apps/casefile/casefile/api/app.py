@@ -607,7 +607,8 @@ def create_app(settings: Settings) -> FastAPI:
     def ctx(request: Request, response: Response) -> Ctx:
         """The store and configuration this request works on, in the viewer's language if they chose one the domain speaks."""
         c = _ctx(request, response)
-        lang = request.cookies.get(LANG_COOKIE, "")
+        # inside the cockpit, the shell's language holds until the viewer picks one here
+        lang = request.cookies.get(LANG_COOKIE, "") or (request.cookies.get("lang", "") if settings.shell else "")
         return replace(c, lang=lang) if lang and lang != c.lang and lang in c.config.vocabulary else c
 
     def _ctx(request: Request, response: Response) -> Ctx:

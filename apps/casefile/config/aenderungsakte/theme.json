@@ -1,0 +1,12 @@
+{
+  "name": "Änderungsakte",
+  "lang": "de",
+  "accent": "your-move",
+  "covers": {
+    "by": "label",
+    "colors": {
+      "AE": "#2b5f8a"
+    },
+    "fallback": "#5a6270"
+  }
+}

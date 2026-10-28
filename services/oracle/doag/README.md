@@ -36,6 +36,23 @@ doag compare TEST   # → no difference: TEST is the baseline
 Needs SQLcl (a copy in `$DOAG/sqlcl`), git, the `oracle-free` container and `$DOAG/.env` with `APP_PW`.
 The password never lives in this repository.
 
+## Talk 2: a change through the gates
+
+```
+doag adopt PROD       # PROD was built by scripts: record release 1.0 as present (changelog-sync), execute nothing
+doag entw             # ENTW gets the baseline beside the workshop's apps
+doag change           # a developer adds liefertermin in ENTW (column, package, function)
+doag capture          # branch, export ENTW, changesets plus the backfill as a custom changeset
+doag impact PROD      # read-only questions to PROD, each printed with its query
+doag prepare          # trim the generated changeset, merge, release 1.1, artifact, rollback
+doag deploy TEST      # 5 changesets run, 22 skipped; then doag compare TEST → no difference
+doag deploy PROD      # refused: no guaranteed restore point younger than two hours
+doag restore-point PROD && doag deploy PROD
+```
+
+The restore point needs a Fast Recovery Area on the CDB (`db_recovery_file_dest`), which the demo database does not
+have yet.
+
 ## What we found on the way (SQLcl 25.1, APEX 26.1, Oracle AI Database 26ai Free)
 
 - `project export` writes APEX applications as **APEXLang** (`apex_apps/f106/**/*.apx`) when the database runs
@@ -49,3 +66,10 @@ The password never lives in this repository.
 - After a deploy, SQLcl's `-- sqlcl_snapshot` line records a column default as it was spelled in the DDL
   (`sysdate` instead of `SYSDATE`). The DDL itself is identical; `compare` ignores the snapshot line.
 - Liquibase leaves its tracking tables (`DATABASECHANGELOG*`) in the target schema; the project export ignores them.
+- After a deploy, `project stage` reads the spelling difference `SYSDATE`/`sysdate` as a change: it generates
+  `modify (… default sysdate)` statements that change nothing and re-adds an existing check constraint, with the DROP
+  before it commented out for review. Deployed as generated, that changeset fails (ORA-02264). `capture` leaves out files
+  that differ only in the snapshot line; `prepare` keeps only the statements that carry the change
+  (`bin/trim_changeset.py`). The raw changeset stays as evidence.
+- A database built by scripts has no Liquibase history. Before the first deploy there, `lb changelog-sync` records the
+  baseline release as present without executing it (`doag adopt`).

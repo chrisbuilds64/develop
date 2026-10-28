@@ -1,0 +1,72 @@
+{
+  "$comment": "erfassen, einspielen-test, einspielen-prod and restore-point are the core's: SQLcl on the database host. analyse and vorbereitung are the helper's: read-only queries and files, never a write to a database.",
+  "default": {
+    "orderable_by": [
+      "developer",
+      "approver_test",
+      "approver_prod",
+      "dba"
+    ],
+    "permission_mode": "acceptEdits",
+    "write": [
+      "{container}"
+    ],
+    "tools": [
+      "Read",
+      "Write",
+      "Glob"
+    ],
+    "web": false,
+    "timeout": 600,
+    "agent": "KI",
+    "model": "claude-opus-5-5"
+  },
+  "skills": {
+    "erfassen": {
+      "does": "Kern: exportiert ENTW auf einen Zweig, lässt SQLcl daraus Changesets erzeugen, legt den Backfill als eigenes Changeset dazu.",
+      "never": "Schreibt in eine Datenbank.",
+      "rules": [
+        "ENTW wird nur gelesen"
+      ]
+    },
+    "analyse": {
+      "does": "Migrations-Analyse und Impact-Bewertung: welche DDL, was umkehrbar ist, welche Zeilen der Backfill trifft, wer abhängt. Jede Aussage mit der Abfrage, aus der sie stammt (Nur-Lese-Verbindung).",
+      "never": "Schreibt in eine Datenbank. Führt ein Changeset aus. Behauptet etwas ohne Abfrage oder Datei.",
+      "rules": [
+        "Nur lesen",
+        "Jede Aussage mit Quelle"
+      ]
+    },
+    "vorbereitung": {
+      "does": "Stellt das Paket zusammen: Release, Artefakt, Rückweg, Prüfliste für die Tore.",
+      "never": "Spielt ein. Setzt einen Restore Point.",
+      "rules": [
+        "Vorbereiten, nicht ausführen"
+      ]
+    },
+    "einspielen-test": {
+      "does": "Kern: spielt das Release in TEST ein und vergleicht TEST danach mit dem Repository.",
+      "never": "Läuft gegen PROD.",
+      "rules": [
+        "Nur nach Freigabe"
+      ]
+    },
+    "einspielen-prod": {
+      "does": "Kern: prüft die Hausregel (Restore Point jünger als zwei Stunden), spielt dann das Release in PROD ein und vergleicht.",
+      "never": "Spielt ohne Restore Point ein.",
+      "rules": [
+        "Keine DDL an PROD ohne Restore Point"
+      ]
+    },
+    "restore-point": {
+      "does": "Kern: setzt in PROD einen garantierten Restore Point.",
+      "never": "Spielt etwas ein.",
+      "rules": []
+    },
+    "ask": {
+      "does": "Beantwortet eine freie Frage zur Änderung.",
+      "never": "Entscheidet.",
+      "rules": []
+    }
+  }
+}

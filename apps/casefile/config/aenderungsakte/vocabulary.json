@@ -1,0 +1,157 @@
+{
+  "$comment": "Every word the surface shows for a change, in German and English.",
+  "de": {
+    "product": "Änderungsakte",
+    "labels": {
+      "AE": "Änderung"
+    },
+    "stations": {
+      "change": "ENTW",
+      "captured": "Erfasst",
+      "analysed": "Analysiert",
+      "ready": "Bereit",
+      "test": "TEST",
+      "prod": "PROD"
+    },
+    "stages": {
+      "10-entw": "in ENTW geändert, nicht im Repository",
+      "20-erfasst": "im Repository, Changesets erzeugt",
+      "30-analysiert": "Migration und Impact analysiert",
+      "40-bereit": "Paket bereit, wartet auf Freigabe TEST",
+      "50-test": "in TEST, wartet auf Freigabe PROD",
+      "60-prod": "in PROD"
+    },
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "Läuft gerade",
+      "others": "Bei anderen",
+      "date": "Termin",
+      "planned": "Geplant",
+      "out": "In PROD",
+      "ideas": "Neu",
+      "archive": "Archiv"
+    },
+    "actions": {
+      "capture": "Ins Repository holen",
+      "analyse": "Analysieren lassen",
+      "prepare": "Paket vorbereiten lassen",
+      "approve_test": "Für TEST freigeben",
+      "approve_prod": "Für PROD freigeben",
+      "set_restore_point": "Restore Point setzen",
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten"
+    },
+    "reasons": {
+      "running": "es läuft gerade",
+      "failed": "der letzte Lauf ist gescheitert",
+      "missing": "es fehlt noch etwas"
+    },
+    "texts": {
+      "done": "Erledigt.",
+      "deliver": "Abgelegt.",
+      "detected": "Von Hand verschoben",
+      "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter."
+    },
+    "files": {
+      "aenderung.md": "Änderung",
+      "erfasst.md": "Erfasst",
+      "analyse.md": "Analyse",
+      "paket.md": "Paket",
+      "test.md": "TEST",
+      "restore-point.md": "Restore Point",
+      "prod.md": "PROD"
+    },
+    "roles": {
+      "developer": "Entwicklung",
+      "approver_test": "Freigabe TEST",
+      "approver_prod": "Freigabe PROD",
+      "dba": "DBA"
+    },
+    "words": {
+      "external_id": "Release"
+    }
+  },
+  "en": {
+    "product": "Change",
+    "labels": {
+      "AE": "Change"
+    },
+    "stations": {
+      "change": "ENTW",
+      "captured": "Captured",
+      "analysed": "Analysed",
+      "ready": "Ready",
+      "test": "TEST",
+      "prod": "PROD"
+    },
+    "stages": {
+      "10-entw": "changed in ENTW, not in the repository",
+      "20-erfasst": "in the repository, changesets generated",
+      "30-analysiert": "migration and impact analysed",
+      "40-bereit": "package ready, waiting for TEST",
+      "50-test": "in TEST, waiting for PROD",
+      "60-prod": "in PROD"
+    },
+    "groups": {
+      "you": "Your move",
+      "claude": "Running",
+      "others": "With others",
+      "date": "Dated",
+      "planned": "Planned",
+      "out": "In PROD",
+      "ideas": "New",
+      "archive": "Archive"
+    },
+    "actions": {
+      "capture": "Capture into the repository",
+      "analyse": "Have it analysed",
+      "prepare": "Have the package prepared",
+      "approve_test": "Release to TEST",
+      "approve_prod": "Release to PROD",
+      "set_restore_point": "Set a restore point",
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "File",
+      "see_failure": "See what went wrong",
+      "wait": "Wait"
+    },
+    "reasons": {
+      "running": "running",
+      "failed": "the last run failed",
+      "missing": "something is missing"
+    },
+    "texts": {
+      "done": "Done.",
+      "deliver": "Filed.",
+      "detected": "Moved by hand",
+      "detected_text": "The case was found in {stage}; the thread last knew {known}.",
+      "delivered_title": "Filed: {files}",
+      "replay_moved": "Moved on."
+    },
+    "files": {
+      "aenderung.md": "Change",
+      "erfasst.md": "Captured",
+      "analyse.md": "Analysis",
+      "paket.md": "Package",
+      "test.md": "TEST",
+      "restore-point.md": "Restore Point",
+      "prod.md": "PROD"
+    },
+    "roles": {
+      "developer": "Development",
+      "approver_test": "TEST release",
+      "approver_prod": "PROD release",
+      "dba": "DBA"
+    },
+    "words": {
+      "external_id": "Release"
+    }
+  }
+}
