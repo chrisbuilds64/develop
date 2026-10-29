@@ -34,7 +34,8 @@ chose the stack of gates (planning: `control/planning/2026-10-29_ux-durchbruch/`
 4. **The gate is the screen.** One piece in full depth: place line, headline, the path with dates, the situation as four
    lines (place · with whom since when · missing · last), the evidence with what is missing first (dashed circle), then
    what is present as rows with version · person · date, exactly one filled button, the locked gate as a sentence with
-   a lock, the second legitimate way as a text link. Behind it, folded in place: thread, all files, record, rules.
+   a lock, the second legitimate way as a text link. Every slot in sight, present and missing; behind it, folded in
+   place: thread, record, rules.
    "After" is the rest of the stack as rows with their one action. What counts is gates, not moves; ideas stand in the
    reserve.
 5. **The shell falls, the overview stays in sight.** Menu, case list, tile wall, thread column and modal dialogs
