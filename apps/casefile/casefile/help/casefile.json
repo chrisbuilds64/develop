@@ -79,6 +79,18 @@
       }
     },
     {
+      "key": "cf.your-move",
+      "since": "0.17.0",
+      "title": {
+        "de": "Dein Zug",
+        "en": "Your move"
+      },
+      "text": {
+        "de": "Genau eine Handlung als Knopf. Ein gesperrtes Tor steht als Satz mit Schloss und nennt, was noch in die Akte muss; ein zweiter Weg (Rückfrage, Nochmal) ist ein Textlink daneben. Hast du keinen Zug, steht hier, auf wen die Akte wartet.",
+        "en": "Exactly one action as a button. A locked gate stands as a sentence with a lock and names what still has to be in the file; a second way (a question, once more) is a text link beside it. When you have no move, this says whom the case waits for."
+      }
+    },
+    {
       "key": "cf.stations",
       "since": "0.16.1",
       "title": {

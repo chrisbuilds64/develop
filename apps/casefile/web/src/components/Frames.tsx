@@ -1,32 +1,35 @@
-// Empty frames in real shape. Tap or drop a file: it becomes the next version, nothing is overwritten.
+// What is missing, as a line: a dashed circle, the word, who owes it — and the place to drop or choose the file.
+// Tap or drop: the file becomes the next version, nothing is overwritten. The line, not a tile (ADR-024, rule 3).
 import { useRef, useState } from "react";
-import { BASE, type SlotView } from "../api";
+import type { SlotView } from "../api";
 import type { words } from "../words";
+import { Miss, You } from "./Icons";
 
-const SIZE: Record<string, [number, number]> = { "image-16x9": [208, 117], "image-4x5": [94, 117], image: [160, 117], "video-9x16": [66, 117], video: [160, 117], pdf: [124, 160], money: [200, 120], text: [170, 110] };
-
-export function Frame({ slot, mine, onFile, w, busy, sample, onSample, onOpen }: { slot: SlotView; mine: boolean; onFile: (f: File) => void; w: ReturnType<typeof words>; busy: boolean; sample?: boolean; onSample?: () => void; onOpen?: () => void }) {
+export function DropLine({ slot, mine, who, detail, onFile, w, busy, sample, onSample }:
+  { slot: SlotView; mine: boolean; who: string; detail?: string; onFile: (f: File) => void; w: ReturnType<typeof words>; busy: boolean; sample?: boolean; onSample?: () => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
-  const [wd, ht] = SIZE[slot.shape] ?? SIZE.text;
-  const newest = slot.versions[slot.versions.length - 1];
   const accept = slot.shape.startsWith("image") ? "image/*" : slot.shape.startsWith("video") ? "video/*" : slot.shape === "pdf" ? "application/pdf" : undefined;
-  const ratio = slot.shape.replace(/^(image|video)-/, "").replace("x", " : ");
+  const agent = !who || who === w.originUnknown || who === w.whoDelivers ? "ne" : "";
   return (
-    <div className="frame">
-      <button type="button" className={`box${slot.present ? " filled" : ""}${mine && !slot.present ? " mine" : ""}${over ? " over" : ""}`}
-              style={{ width: wd, height: ht }} disabled={busy}
-              onClick={() => { if (slot.present && onOpen) onOpen(); else input.current?.click(); }}
-              onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
-              onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}
-              aria-label={`${slot.word}${slot.present ? "" : ` · ${w.dropHere}`}`}>
-        {slot.present && newest && slot.shape.startsWith("image") ? <img src={BASE + newest.url} alt="" /> :
-         slot.present ? <span className="tick">✓ {slot.word}</span> :
-         <>{/^(image|video)/.test(slot.shape) ? <span>{ratio}</span> : <span>{slot.word}</span>}<span style={{ fontSize: 12 }}>{over ? w.dropHere : slot.shape === "pdf" ? "PDF" : w.tapToAdd}</span></>}
-      </button>
-      <input ref={input} type="file" accept={accept} hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
-      <span className="cap">{slot.word}{newest ? <small>{newest.name} · {w.version(Math.max(1, newest.version))}</small> : <small>{w.tapToAdd}</small>}</span>
-      {sample && !slot.present && onSample && <button type="button" className="chip" disabled={busy} onClick={onSample}>{w.sample(slot.word)}</button>}
-    </div>
+    <li className={`fehlt${mine ? " du" : ""}${over ? " over" : ""}`} data-slot={slot.file}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+        onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}>
+      <span className="zust">{mine ? <You /> : <Miss />}<span className="sr">{w.missingPos}{mine ? ` · ${w.waitingForYou}` : ""}</span></span>
+      <span className="was">
+        <b>{slot.word}</b>
+        <span className="meta"><span className="v">{slot.file}</span>{slot.required ? ` · ${w.requiredWord}` : ""}</span>
+        <span className={`wer ${agent}`}>{who || w.whoDelivers}</span>
+      </span>
+      {detail && <span className="detail">{detail}</span>}
+      <span className="drop">
+        <button type="button" className="droptext" disabled={busy} onClick={() => input.current?.click()}>{over ? w.dropHere : `${slot.word} · ${w.dropHere}`}</button>
+        <span className="dropacts">
+          {sample && onSample && <button type="button" className="link" disabled={busy} onClick={onSample}>{w.sample(slot.word)}</button>}
+          <button type="button" className="btn still klein" disabled={busy} onClick={() => input.current?.click()}>{w.chooseFile}</button>
+        </span>
+        <input ref={input} type="file" accept={accept} hidden aria-label={`${slot.word} · ${w.dropHere}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
+      </span>
+    </li>
   );
 }

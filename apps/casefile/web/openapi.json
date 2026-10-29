@@ -141,6 +141,40 @@
         }
       }
     },
+    "/api/demo/ablaeufe": {
+      "get": {
+        "summary": "Demo Flows",
+        "description": "The demonstrations a sample workspace offers: whole flows the surface plays step by step. They travel with the\nworld they were written for (`_ablaeufe/*.json` in the template, put there by whoever built the world), so a flow\nnever meets data it does not fit.",
+        "operationId": "demo_flows_api_demo_ablaeufe_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/reset": {
+      "post": {
+        "summary": "Demo Reset",
+        "description": "A sample workspace back to its world before a demonstration. Only where the shell named a world and its login lets\nthe person in; the public demo starts over with a fresh sandbox instead.",
+        "operationId": "demo_reset_api_demo_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me": {
       "get": {
         "summary": "Me",
@@ -823,6 +857,54 @@
                 "schema": {
                   "$ref": "#/components/schemas/AssetOut"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/vorort": {
+      "put": {
+        "summary": "Put Onsite",
+        "description": "The on-site view's working state (theme.onsite.state), merged: a photo's view, a hint ticked or answered. State, not a\ndeliverable version \u2014 the photos and the note are the versioned files; this only says what they are and what is settled.",
+        "operationId": "put_onsite_api_cases__case_id__vorort_put",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnsiteIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -2330,6 +2412,30 @@
         ],
         "title": "NewCaseOut"
       },
+      "OnsiteIn": {
+        "properties": {
+          "photos": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Photos",
+            "default": {}
+          },
+          "hints": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Hints",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "OnsiteIn",
+        "description": "The assessor's state at the car: which view each photo shows, what they ticked or answered of the AI's hints."
+      },
       "OutcomeOut": {
         "properties": {
           "case": {
@@ -3000,6 +3106,17 @@
           "step_id": {
             "type": "string",
             "title": "Step Id"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           }
         },
         "type": "object",
@@ -3402,6 +3519,33 @@
             "type": "boolean",
             "title": "Seal",
             "default": false
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": "nudge"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "default": ""
+          },
+          "lock": {
+            "type": "string",
+            "title": "Lock",
+            "default": ""
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "default": ""
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
           }
         },
         "type": "object",

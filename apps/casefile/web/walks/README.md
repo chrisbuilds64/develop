@@ -12,3 +12,7 @@ BASE_PATH=/demo node walks/loop-shot.mjs https://your-host /tmp/walk-out
 ```
 
 Every script prints what it saw and ends with `ISSUES (n)`: console errors, page errors and HTTP errors ≥ 400 it met on the way.
+
+`gate-shot.mjs` photographs the gate (ADR-024) in sample worlds at 1440 light/dark and 390 and measures what the design rules
+demand (targets ≥ 24 px, keyboard stops inside the viewport, no horizontal scroll). It takes `<base> <outdir> <workspace>:<case>:<person> …`;
+the stage comes from `control/demo/stage.py <worlds> <trees> <port> schadenakte-muster=claims pressroom-muster=pressroom …`.

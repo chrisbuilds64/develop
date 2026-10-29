@@ -21,3 +21,11 @@ export const Spark = () => <svg {...base}><path d="M12 3v4M12 17v4M3 12h4M17 12h
 export const Check = () => <svg {...base}><path d="M5 12.5l4.5 4.5L19 7" /></svg>;
 export const Pen = () => <svg {...base}><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>;
 export const Cross = () => <svg {...base}><path d="M7 7l10 10M17 7L7 17" /></svg>;
+// the gate's state marks (ADR-024, rule 15): every state carries a form beside its word
+export const Miss = () => <svg {...base} strokeWidth={1.75}><circle cx="12" cy="12" r="8.5" strokeDasharray="3 3" /></svg>;
+export const Wait = () => <svg {...base} strokeWidth={1.75}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>;
+export const You = () => <svg {...base} strokeWidth={1.75}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" /></svg>;
+export const Lock = () => <svg {...base} strokeWidth={1.75}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>;
+export const Seal = () => <svg {...base} strokeWidth={1.75}><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12l2.5 2.5 4.5-5" /></svg>;
+export const Chev = () => <svg {...base} strokeWidth={1.75}><path d="M9 6l6 6-6 6" /></svg>;
+export const Arrow = () => <svg {...base} strokeWidth={1.75}><path d="M5 12h14M13 6l6 6-6 6" /></svg>;

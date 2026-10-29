@@ -114,6 +114,15 @@ const W = {
     daySum: (s: number, t: number) => `${s} ${s === 1 ? "Tor" : "Tore"}, ${t} ${t === 1 ? "Schritt" : "Schritte"} heute. Feierabend.`,
     weekLine: (n: number) => `Diese Woche: ${n} ${n === 1 ? "Akte" : "Akten"} durch ein Tor.`,
     metaTitle: "Kopfdaten", metaTable: "Tabelle",
+    // the gate (ADR-024): four positions, the place line, what the stack's sentences do not carry
+    place: "Ort", withWhom: "Bei", missingPos: "Fehlt", presentPos: "Liegt vor", lastPos: "Zuletzt", yourTurn: "Dein Zug", behind: "Dahinter",
+    withYou: "dir", nobody: "niemandem", nothingMissing: "nichts", missingNone: "Nichts. Der Zug ist frei.", presentNone: "Noch nichts in der Akte.",
+    noEntry: "Noch kein Eintrag. Die erste Notiz legt den Verlauf an.", originUnknown: "Herkunft nicht erfasst", whoDelivers: "wer liefert, nicht erfasst",
+    waitingHeadline: (who: string, title: string) => `Warten auf ${who}: ${title}`, workingHeadline: (who: string, title: string) => `${who} arbeitet: ${title}`,
+    noTurn: (actor: string, missing: string) => (missing ? `Kein Zug bei dir. Der nächste kommt zu dir, wenn ${actor} ${missing} liefert.` : `Kein Zug bei dir. Die Akte liegt bei ${actor}.`),
+    noTurnAtAll: "Kein Zug bei dir. Niemand ist dran.", allFiles: "Alle Dateien", entriesCount: (n: number) => (n === 1 ? "1 Eintrag" : `${n} Einträge`),
+    lastBy: (who: string, d: string) => `zuletzt ${who}, ${d}`, chooseFile: "Datei wählen", earlierVersions: (n: number) => (n === 1 ? "1 frühere Fassung bleibt" : `${n} frühere Fassungen bleiben`),
+    requiredWord: "Pflicht", dueHere: "fällig hier", fourEyes: "Vier Augen", noTurnsOpen: "ohne Zug", sinceDate: (d: string) => `seit ${d}`,
     sealed: "Besiegelt", sealVersion: "v0.1", sealedBand: (d: string) => `Kanon v0.1 · freigegeben ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "Regel" : "Regeln"}`, `${v} ${v === 1 ? "Stimme" : "Stimmen"}`, `${q} ${q === 1 ? "Zitat" : "Zitate"}`],
     sealNow: "Ab jetzt gilt das.", sealTitle: (t: string) => `Bereichskanon v0.1 · ${t}`, stillOpen: "noch offen", openLinesShort: (n: number) => (n === 1 ? "Zeile" : "Zeilen"),
     chapterDone: (t: string) => `„${t}“ ist fertig.`, chapterFilled: (f: string, n: number) => `Dein Fach „${f}“ trägt jetzt ${n} ${n === 1 ? "Zitat" : "Zitate"}.`, nextChapter: (t: string) => `Weiter mit „${t}“`, pauseHere: "Hier pausieren",
@@ -233,6 +242,14 @@ const W = {
     daySum: (s: number, t: number) => `${s} ${s === 1 ? "gate" : "gates"}, ${t} ${t === 1 ? "step" : "steps"} today. Done for the day.`,
     weekLine: (n: number) => `This week: ${n} ${n === 1 ? "case" : "cases"} through a gate.`,
     metaTitle: "Details", metaTable: "Table",
+    place: "Place", withWhom: "With", missingPos: "Missing", presentPos: "Present", lastPos: "Last", yourTurn: "Your move", behind: "Behind",
+    withYou: "you", nobody: "nobody", nothingMissing: "nothing", missingNone: "Nothing. The move is free.", presentNone: "Nothing in the file yet.",
+    noEntry: "No entry yet. The first note starts the thread.", originUnknown: "origin not recorded", whoDelivers: "who delivers, not recorded",
+    waitingHeadline: (who: string, title: string) => `Waiting for ${who}: ${title}`, workingHeadline: (who: string, title: string) => `${who} is working: ${title}`,
+    noTurn: (actor: string, missing: string) => (missing ? `No move of yours. The next one reaches you once ${actor} delivers ${missing}.` : `No move of yours. The case is with ${actor}.`),
+    noTurnAtAll: "No move of yours. Nobody's move.", allFiles: "All files", entriesCount: (n: number) => (n === 1 ? "1 entry" : `${n} entries`),
+    lastBy: (who: string, d: string) => `last ${who}, ${d}`, chooseFile: "Choose a file", earlierVersions: (n: number) => (n === 1 ? "1 earlier version stays" : `${n} earlier versions stay`),
+    requiredWord: "required", dueHere: "due here", fourEyes: "Four eyes", noTurnsOpen: "no move", sinceDate: (d: string) => `since ${d}`,
     sealed: "Sealed", sealVersion: "v0.1", sealedBand: (d: string) => `Canon v0.1 · approved ${d}`, sealSum: (r: number, v: number, q: number) => [`${r} ${r === 1 ? "rule" : "rules"}`, `${v} ${v === 1 ? "voice" : "voices"}`, `${q} ${q === 1 ? "quote" : "quotes"}`],
     sealNow: "From now on, this holds.", sealTitle: (t: string) => `Area canon v0.1 · ${t}`, stillOpen: "still open", openLinesShort: (n: number) => (n === 1 ? "line" : "lines"),
     chapterDone: (t: string) => `“${t}” is done.`, chapterFilled: (f: string, n: number) => `Your compartment “${f}” now holds ${n} ${n === 1 ? "quote" : "quotes"}.`, nextChapter: (t: string) => `On to “${t}”`, pauseHere: "Pause here",
@@ -271,6 +288,34 @@ export function ago(iso: string, lang: string): string {
   const days = Math.round(h / 24);
   if (days < 7) return de ? `${days} Tag${days > 1 ? "en" : ""}` : `${days} day${days > 1 ? "s" : ""}`;
   return d.toLocaleDateString(de ? "de-DE" : "en-GB", { day: "numeric", month: "short" });
+}
+
+/** "28.09." / "28 Sep" — the short date of the situation lines. */
+export function dateShort(iso: string, lang: string): string {
+  if (!iso) return "";
+  const d = new Date(iso.slice(0, 10));
+  if (Number.isNaN(d.getTime())) return iso;
+  return lang === "de" ? d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+/** "28. Sept." / "28 Sept" — the date on the path of stations. */
+export function dateMon(iso: string, lang: string): string {
+  if (!iso) return "";
+  const d = new Date(iso.slice(0, 10));
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", { day: "numeric", month: "short" });
+}
+
+/** "25.–28. Sept." when both days share a month, else both dates in full; one date when they are the same day. */
+export function dateRange(from: string, to: string, lang: string): string {
+  if (!from) return "";
+  if (!to || to.slice(0, 10) === from.slice(0, 10)) return dateMon(from, lang);
+  const a = new Date(from.slice(0, 10)), b = new Date(to.slice(0, 10));
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return `${from}–${to}`;
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
+    return lang === "de" ? `${a.getDate()}.–${dateMon(to, lang)}` : `${a.getDate()}–${dateMon(to, lang)}`;
+  }
+  return `${dateMon(from, lang)} – ${dateMon(to, lang)}`;
 }
 
 export function dateWords(iso: string, lang: string): string {

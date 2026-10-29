@@ -162,7 +162,8 @@ def missing_words(config: DomainConfig, tokens: list[str], lang: str | None) -> 
         key = t.split(":")[0] + ":" if ":" in t and not t.endswith(".json") else t
         if t.startswith("decided:"):
             key = "decided:"
-        out.append(_lookup(config, "requires", key, lang) or config.word("files", t, lang, t))
+        # the whole token first ("shape:image" is its own word), then the family ("decided:"), then the file's word
+        out.append(_lookup(config, "requires", t, lang) or _lookup(config, "requires", key, lang) or config.word("files", t, lang, t))
     return out
 
 
