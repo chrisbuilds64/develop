@@ -1006,3 +1006,37 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 /* the thread panel is as tall as its entries, at most the column (restyle 29.10.) */
 .thread { align-self: flex-start; max-height: 100%; }
 .thread-scroll { flex: 0 1 auto; }
+
+/* the value lists (screens/Lists): an entry's colour only as its swatch; the status as shape and word in ink */
+.swatch { display: inline-block; width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--hairline-2); vertical-align: -4px; flex: none; }
+.swatch.none { background: repeating-linear-gradient(135deg, transparent 0 3px, var(--hairline) 3px 4px); border-style: dashed; border-color: var(--dashed); }
+.list-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px; }
+.list-head h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.list-head .btn { margin-left: auto; }
+.table-scroll { overflow-x: auto; }
+.list-table td { vertical-align: middle; }
+.list-table td.mono { font-size: 13px; white-space: nowrap; }
+.list-table .n { text-align: right; font-variant-numeric: tabular-nums; }
+.list-table td.desc { color: var(--ink-2); max-width: 46ch; }
+.list-table tr.retired td b, .list-table tr.retired td.mono { color: var(--muted); }
+.entry-status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--ink); }
+.entry-status.retired { color: var(--muted); }
+.status-pick { display: inline-flex; align-items: center; gap: 6px; }
+.status-pick select, .list-form select, .new-case-pick select { font: inherit; font-size: 14px; min-height: 32px; border: 1px solid var(--hairline-2); border-radius: var(--r-s); background: var(--surface); color: var(--ink); padding: 0 6px; }
+.list-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 12px; align-items: end; padding: 12px; border: 1px dashed var(--dashed); border-radius: var(--r-m); background: var(--surface); }
+.list-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.list-form label.wide { grid-column: span 2; }
+.list-form label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--ink); min-height: 36px; }
+.list-form .color-field > span { display: flex; align-items: center; gap: 6px; }
+.list-form .color-field > span input[type="checkbox"] { width: 16px; height: 16px; }
+.list-form input:not([type="checkbox"]):not([type="color"]) { font: inherit; font-size: 15px; min-height: 36px; border: 1px solid var(--hairline-2); border-radius: var(--r-s); padding: 0 10px; background: var(--surface); color: var(--ink); min-width: 0; }
+.list-form input.mono { font-family: var(--mono); }
+.list-form input[type="checkbox"] { width: 20px; height: 20px; margin: 0; }
+.list-form input[type="color"] { width: 100%; min-height: 36px; border: 1px solid var(--hairline-2); border-radius: var(--r-s); background: var(--surface); padding: 2px; }
+.list-form input[type="color"]:disabled { opacity: .4; }
+.list-form-do { display: flex; gap: 6px; align-items: center; }
+.list-form .talk-error { grid-column: 1 / -1; }
+.new-case-pick { display: flex; flex-direction: column; gap: 2px; flex: 1 1 100%; font-size: 12px; color: var(--muted); }
+.new-case-pick select { min-height: 40px; }
+.meta-listed { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 600px) { .list-form label.wide { grid-column: auto; } .list-table td.desc, .list-table th.desc { display: none; } .list-head .btn { margin-left: 0; } }

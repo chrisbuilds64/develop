@@ -5,6 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
+from ..domain import lists as value_lists
 from ..domain import turn as whose
 from ..models import Case, Entry, Run, Turn
 
@@ -80,6 +81,25 @@ class CaseView(CaseCard):
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
 
 
+class ListEntryView(BaseModel):
+    key: str
+    word: str                                             # in the viewer's language
+    words: dict = Field(default_factory=dict)             # every language, for the form that changes it
+    color: str = ""
+    description: str = ""
+    status: str                                           # planned | active | retired
+    cases: int = 0                                        # how many cases carry it (only on /api/lists)
+
+
+class ListView(BaseModel):
+    id: str
+    word: str
+    words: dict = Field(default_factory=dict)
+    field: str                                            # the meta key the list fills
+    on_create: bool = False                               # a new case asks for it
+    entries: list[ListEntryView] = []
+
+
 class ConfigView(BaseModel):
     product: str
     lang: str
@@ -89,6 +109,7 @@ class ConfigView(BaseModel):
     theme: dict
     words: dict                                           # the vocabulary for the language, flat
     videos: list[dict] = []                               # explainers for this language: key, where, title, url, poster, seconds
+    lists: list[ListView] = []                            # the value lists (SYS-105), words in this language
 
 
 def by_word(config: DomainConfig, by: str, lang: str) -> str:
@@ -129,11 +150,10 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> Cas
     g = group_of(config, case, main, viewer)
     ext = str(case.meta.get("external_id") or case.meta.get("claim_number") or "")
     tpl = str(config.theme.get("external_url") or "")
-    covers = config.theme.get("covers") or {}
-    tint = str((covers.get("colors") or {}).get(str(case.meta.get(covers.get("by") or "label") or ""), covers.get("fallback") or "")) if covers else ""
+    tint = value_lists.tint(config.lists, config.theme, case.meta)
     return CaseCard(id=case.id, number=str(case.meta.get("number") or ""), tint=tint, title=str(case.meta.get("title") or case.meta.get("working_title") or case.id), label=case.label,
                     external_id=ext, external_url=(tpl.replace("{external_id}", ext) if ext and tpl else ""),
-                    label_word=config.word("labels", case.label, lang, case.label), stage=case.stage,
+                    label_word=value_lists.value_word(config.lists, "label", case.label, lang, config.word("labels", case.label, lang, case.label)), stage=case.stage,
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,
                     group_word=config.word("groups", g, lang, g), since=case.since, date=str(case.meta.get("publishDate") or "")[:10],
                     turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))))
@@ -155,6 +175,17 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                     data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
 
+def list_views(config: DomainConfig, lang: str, counts: dict | None = None) -> list[ListView]:
+    out = []
+    for lst in config.lists.values():
+        n = (counts or {}).get(lst["id"], {})
+        out.append(ListView(id=lst["id"], word=value_lists.list_word(lst, lang, config.vocabulary), words=lst["word"], field=lst["field"], on_create=lst["on_create"],
+                            entries=[ListEntryView(key=e["key"], word=value_lists.in_lang(e["word"], lang, e["key"]), words=e["word"], color=e["color"],
+                                                   description=value_lists.in_lang(e["description"], lang), status=e["status"], cases=n.get(e["key"], 0))
+                                     for e in lst["entries"]]))
+    return out
+
+
 def config_view(config: DomainConfig, lang: str) -> ConfigView:
     v = config.vocabulary.get(lang) or config.vocabulary.get("en") or {}
     groups_order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
@@ -162,7 +193,7 @@ def config_view(config: DomainConfig, lang: str) -> ConfigView:
                       lang=lang, stations=[StationView(key=k, word=config.word("stations", k, lang, k), state="todo") for k in config.stations],
                       groups=[GroupView(key=g, word=config.word("groups", g, lang, g)) for g in groups_order],
                       people=[PersonView(id=p.id, name=p.name, kind=p.kind, roles=p.roles) for p in config.people],
-                      theme=config.theme, words=v,
+                      theme=config.theme, words=v, lists=list_views(config, lang),
                       videos=[{"key": x["key"], "where": list(x.get("where", [])), "title": (x.get("title") or {}).get(lang) or (x.get("title") or {}).get("en") or x["key"],
                                "url": f"/api/videos/{x['file']}", "poster": f"/api/videos/{x['poster']}" if x.get("poster") else "", "seconds": int(x.get("seconds", 0))}
                               for x in config.videos if not x.get("lang") or x.get("lang") == lang] or

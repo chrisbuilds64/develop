@@ -1,0 +1,51 @@
+{
+  "$comment": "Value lists (SYS-105): label from vocabulary.labels and theme.covers. A tree's own lists.json adds to these.",
+  "lists": {
+    "label": {
+      "word": {
+        "de": "Art",
+        "en": "Kind"
+      },
+      "field": "label",
+      "on_create": true,
+      "entries": [
+        {
+          "key": "HR",
+          "word": {
+            "de": "Hausrat",
+            "en": "Contents"
+          },
+          "color": "#2f6fed",
+          "status": "active"
+        },
+        {
+          "key": "WG",
+          "word": {
+            "de": "Wohngebäude",
+            "en": "Building"
+          },
+          "color": "#2fa36b",
+          "status": "active"
+        },
+        {
+          "key": "KFZ",
+          "word": {
+            "de": "Kfz",
+            "en": "Motor"
+          },
+          "color": "#e0a52a",
+          "status": "active"
+        },
+        {
+          "key": "HP",
+          "word": {
+            "de": "Haftpflicht",
+            "en": "Liability"
+          },
+          "color": "#8a5cf6",
+          "status": "active"
+        }
+      ]
+    }
+  }
+}

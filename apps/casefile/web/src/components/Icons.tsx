@@ -6,6 +6,7 @@ export const Send = () => <svg {...base}><path d="M5 12h13M13 6l6 6-6 6" /></svg
 export const Worlds = () => <svg {...base}><path d="M4 7h16M4 12h16M4 17h10" /></svg>;
 export const Sun = () => <svg {...base}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
 export const Moon = () => <svg {...base}><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>;
+export const ListsIcon = () => <svg {...base}><circle cx="5" cy="7" r="1.2" /><circle cx="5" cy="12" r="1.2" /><circle cx="5" cy="17" r="1.2" /><path d="M9 7h11M9 12h11M9 17h11" /></svg>;
 export const MenuIcon = () => <svg {...base}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
 export const Close = () => <svg {...base}><path d="M6 6l12 12M18 6L6 18" /></svg>;
 export const Back = () => <svg {...base}><path d="M19 12H6M12 6l-6 6 6 6" /></svg>;

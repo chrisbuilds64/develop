@@ -15,6 +15,10 @@ export type ConfigView = components["schemas"]["ConfigView"];
 export type Entry = components["schemas"]["Entry"];
 export type SlotView = components["schemas"]["SlotView"];
 export type RhythmOut = components["schemas"]["RhythmOut"];
+export type ListView = components["schemas"]["ListView"];
+export type ListEntryView = components["schemas"]["ListEntryView"];
+export type ListsOut = components["schemas"]["ListsOut"];
+export type ListChangeOut = components["schemas"]["ListChangeOut"];
 
 export class ApiError extends Error {
   status: number;
@@ -64,6 +68,10 @@ export const api = {
     call<StepResult>("POST", `/api/cases/${encodeURIComponent(id)}/entries`, body),
   run: (id: string, body: { skill?: string; note: string; request_id: string }) =>
     call<StepResult>("POST", `/api/cases/${encodeURIComponent(id)}/runs`, body),
+  lists: () => call<ListsOut>("GET", "/api/lists"),
+  putList: (body: { id: string; word: Record<string, string>; field?: string; on_create?: boolean; step_id: string }) => call<ListChangeOut>("POST", "/api/lists", body),
+  putEntry: (list: string, body: { key: string; word?: Record<string, string>; color?: string; description?: string; status?: string; step_id: string }) =>
+    call<ListChangeOut>("POST", `/api/lists/${encodeURIComponent(list)}/entries`, body),
   asset: (id: string, slot: string, step_id: string, file: File) => {
     const fd = new FormData();
     fd.append("slot", slot);
@@ -128,7 +136,7 @@ export const talk = {
   finish: (id: string, step_id: string) => call<{ ok: boolean; first: boolean }>("POST", `/api/cases/${cid(id)}/interview/finish`, { step_id }),
   outcome: (id: string) => call<Outcome>("GET", `/api/cases/${cid(id)}/outcome`),
   decide: (id: string, line: string, verdict: string, text: string, step_id: string) => call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/outcome/decide`, { line, verdict, text, step_id }),
-  create: (title: string, step_id: string) => call<{ id: string; stage: string }>("POST", "/api/cases", { title, step_id }),
+  create: (title: string, step_id: string, values: Record<string, string> = {}) => call<{ id: string; stage: string }>("POST", "/api/cases", { title, step_id, values }),
 };
 
 export const sample = (id: string, slot: string, step_id: string, source?: string) =>

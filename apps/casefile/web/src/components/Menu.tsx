@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Book, Close, Spark, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
+import { Book, Close, ListsIcon, Spark, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
 import { useState } from "react";
 import { setSound, soundOn, chime, paper as paperSound } from "../moments";
 
@@ -12,11 +12,15 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
     onFresh: (world?: string) => void; onPerson: (person: string) => void; onLang: (lang: string) => void; w: ReturnType<typeof words>; theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void }) {
   const [open, setOpen] = useState(false);
   const [sound, setSoundState] = useState(soundOn());
-  const create = (config.theme as { create?: { label?: string; roles?: string[] } }).create;
+  const create = (config.theme as { create?: { label?: string; roles?: string[]; meta?: Record<string, unknown> } }).create;
   const mayCreate = !!create && (create.roles ?? []).some((r) => me.roles.includes(r));
   const [making, setMaking] = useState(false);
   const [name, setName] = useState("");
   const [madeError, setMadeError] = useState<string | null>(null);
+  const asking = (config.lists ?? []).filter((l) => l.on_create && l.entries.some((e) => e.status !== "retired"));
+  const [values, setValues] = useState<Record<string, string>>({});
+  // what the domain sets on its own when nothing is chosen (theme.create: its label, its meta) — shown as the choice, not as "choose"
+  const defaults: Record<string, string> = { ...Object.fromEntries(Object.entries(create?.meta ?? {}).map(([k, v]) => [k, String(v)])), ...(create?.label ? { label: create.label } : {}) };
   const mailDrop = !!(config.theme as { mail_drop?: boolean }).mail_drop && me.roles.includes("operator");
   const dropMail = async (f: File | undefined) => {
     if (!f) return;
@@ -86,13 +90,24 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       <button type="button" className={`nav-row quiet${route.name === "rules" ? " on" : ""}`} onClick={() => goClose("/rules")} data-help="cf.rules">
         <span>{w.rules}</span><span className="n"><Book /></span>
       </button>
+      <button type="button" className={`nav-row quiet${route.name === "lists" ? " on" : ""}`} onClick={() => goClose("/lists")} data-help="cf.lists">
+        <span>{w.lists}</span><span className="n"><ListsIcon /></span>
+      </button>
       <div className="spacer" />
       {mailDrop ? (
         <label className="drop-in mail-drop" data-help="cf.drop-in">{w.dropMail}<input type="file" accept=".eml,message/rfc822" hidden onChange={(e) => dropMail(e.target.files?.[0])} />
           {madeError && <span className="talk-error">{madeError}</span>}</label>
       ) : mayCreate ? (making ? (
-        <form className="new-case" data-help="cf.new-case" onSubmit={async (e) => { e.preventDefault(); if (!name.trim()) return; try { const r = await talk.create(name.trim(), stepId("new")); setMaking(false); setName(""); setMadeError(null); goClose(`/case/${encodeURIComponent(r.id)}`); } catch (err) { setMadeError(err instanceof ApiError ? err.message : String(err)); } }}>
+        <form className="new-case" data-help="cf.new-case" onSubmit={async (e) => { e.preventDefault(); if (!name.trim()) return; try { const r = await talk.create(name.trim(), stepId("new"), values); setMaking(false); setName(""); setValues({}); setMadeError(null); goClose(`/case/${encodeURIComponent(r.id)}`); } catch (err) { setMadeError(err instanceof ApiError ? err.message : String(err)); } }}>
           <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={w.newCasePlaceholder} maxLength={120} onKeyDown={(e) => { if (e.key === "Escape") setMaking(false); }} />
+          {asking.map((l) => (
+            <label key={l.id} className="new-case-pick"><span>{l.word}</span>
+              <select value={values[l.field] ?? defaults[l.field] ?? ""} onChange={(e) => setValues({ ...values, [l.field]: e.target.value })}>
+                {!defaults[l.field] && <option value="">{w.pick}</option>}
+                {l.entries.filter((x) => x.status !== "retired").map((x) => <option key={x.key} value={x.key}>{x.word}{x.status === "planned" ? ` · ${w.entryStatus("planned")}` : ""}</option>)}
+              </select>
+            </label>
+          ))}
           <button type="submit" className="btn small" disabled={!name.trim()}>{w.create}</button>
           {madeError && <span className="talk-error">{madeError}</span>}
         </form>

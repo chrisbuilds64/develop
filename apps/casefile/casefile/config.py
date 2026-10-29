@@ -44,6 +44,7 @@ class DomainConfig:
     config_version: str = "1"
     dir: Path | None = None                       # where the domain files came from (replies for the demo live beside them)
     videos: list = field(default_factory=list)    # explainer videos (videos.json): key, where, title, file, poster, minutes
+    lists: dict = field(default_factory=dict)     # the value lists (domain/lists.py): id → {id, word, field, on_create, entries}
 
     # ------------------------------------------------------------------ loading
     @classmethod
@@ -65,7 +66,9 @@ class DomainConfig:
         for person in people:
             if not person.roles and lent.get(person.id):
                 person.roles = list(lent[person.id])
+        from .domain import lists as value_lists         # lists.json: the domain's, the tree's added; the older labels/covers translated in
         return cls(
+            lists=value_lists.load(domain_dir, root, docs["vocabulary.json"], theme),
             name=theme.get("name") or stages_doc.get("name") or domain_dir.name,
             stages=[Stage(**s) for s in stages_doc.get("stages", [])],
             artifacts=docs["artifacts.json"],
