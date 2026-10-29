@@ -348,6 +348,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lists */
+        get: operations["get_lists_api_lists_get"];
+        put?: never;
+        /**
+         * Post List
+         * @description Start a list (id, name, the field it fills, whether a new case asks for it), or change one's name or asking.
+         */
+        post: operations["post_list_api_lists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lists/{list_id}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post List Entry
+         * @description Add an entry, or change one's name, colour, description or status. Written to the tree's lists.json, one line in _lists/log.jsonl.
+         */
+        post: operations["post_list_entry_api_lists__list_id__entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stages": {
         parameters: {
             query?: never;
@@ -850,6 +891,11 @@ export interface components {
             videos: {
                 [key: string]: unknown;
             }[];
+            /**
+             * Lists
+             * @default []
+             */
+            lists: components["schemas"]["ListView"][];
         };
         /** DecideIn */
         DecideIn: {
@@ -1054,6 +1100,106 @@ export interface components {
             /** Lang */
             lang: string;
         };
+        /** ListChangeOut */
+        ListChangeOut: {
+            /** Ok */
+            ok: boolean;
+            /** Line */
+            line: {
+                [key: string]: unknown;
+            };
+            list: components["schemas"]["ListView"];
+        };
+        /** ListEntryIn */
+        ListEntryIn: {
+            /** Key */
+            key: string;
+            /** Word */
+            word?: {
+                [key: string]: string;
+            };
+            /** Color */
+            color?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Step Id */
+            step_id: string;
+        };
+        /** ListEntryView */
+        ListEntryView: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /** Words */
+            words?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Color
+             * @default
+             */
+            color: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Status */
+            status: string;
+            /**
+             * Cases
+             * @default 0
+             */
+            cases: number;
+        };
+        /** ListIn */
+        ListIn: {
+            /** Id */
+            id: string;
+            /** Word */
+            word?: {
+                [key: string]: string;
+            };
+            /** Field */
+            field?: string | null;
+            /** On Create */
+            on_create?: boolean | null;
+            /** Step Id */
+            step_id: string;
+        };
+        /** ListView */
+        ListView: {
+            /** Id */
+            id: string;
+            /** Word */
+            word: string;
+            /** Words */
+            words?: {
+                [key: string]: unknown;
+            };
+            /** Field */
+            field: string;
+            /**
+             * On Create
+             * @default false
+             */
+            on_create: boolean;
+            /**
+             * Entries
+             * @default []
+             */
+            entries: components["schemas"]["ListEntryView"][];
+        };
+        /** ListsOut */
+        ListsOut: {
+            /** May Edit */
+            may_edit: boolean;
+            /** Lists */
+            lists: components["schemas"]["ListView"][];
+        };
         /**
          * MatrixRow
          * @description One row of the rule matrix, in the viewer's words: when a mail is of this kind, this happens.
@@ -1131,6 +1277,10 @@ export interface components {
             label?: string | null;
             /** Step Id */
             step_id: string;
+            /** Values */
+            values?: {
+                [key: string]: string;
+            };
         };
         /** NewCaseOut */
         NewCaseOut: {
@@ -2249,6 +2399,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RulesOut"];
+                };
+            };
+        };
+    };
+    get_lists_api_lists_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListsOut"];
+                };
+            };
+        };
+    };
+    post_list_api_lists_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListChangeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_list_entry_api_lists__list_id__entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListEntryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListChangeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

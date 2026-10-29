@@ -132,7 +132,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         <p className="title">{v.title}</p>
         {headline && <p className="headline">{headline}</p>}
         <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span>
-          <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} /></p>
+          <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} lists={config.lists ?? []} /></p>
       </header>
 
       <div data-help="cf.stations"><Line stations={v.stations} mine={mine} label={v.stage_word} caseId={v.id} /></div>

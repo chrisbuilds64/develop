@@ -1,0 +1,155 @@
+{
+  "$comment": "The PressRoom's value lists (SYS-105). label: the formats, words from the vocabulary, colours from theme.covers. series: the series heads (series/<KEY>/series.json in the tree; ARC is the demo's), status running → active. track: the enum of meta.schema.json. A tree's own lists.json adds to these; the Wertelisten page writes there, never here.",
+  "lists": {
+    "label": {
+      "word": {
+        "de": "Format",
+        "en": "Format"
+      },
+      "field": "label",
+      "on_create": true,
+      "entries": [
+        {
+          "key": "FN",
+          "word": {
+            "de": "Essay",
+            "en": "Essay"
+          },
+          "color": "#2f6fed",
+          "status": "active"
+        },
+        {
+          "key": "POD",
+          "word": {
+            "de": "Podcast-Folge",
+            "en": "Podcast episode"
+          },
+          "color": "#e0a52a",
+          "status": "active"
+        },
+        {
+          "key": "SP",
+          "word": {
+            "de": "LinkedIn-Post",
+            "en": "LinkedIn post"
+          },
+          "color": "#2fa36b",
+          "status": "active"
+        },
+        {
+          "key": "WN",
+          "word": {
+            "de": "Weekend Note",
+            "en": "Weekend note"
+          },
+          "color": "#8a5cf6",
+          "status": "active"
+        }
+      ]
+    },
+    "series": {
+      "word": {
+        "de": "Serie",
+        "en": "Series"
+      },
+      "field": "series",
+      "on_create": true,
+      "entries": [
+        {
+          "key": "ARC",
+          "word": {
+            "de": "The Arc",
+            "en": "The Arc"
+          },
+          "status": "active"
+        },
+        {
+          "key": "SIM",
+          "word": {
+            "de": "The Simulation Argument, Built",
+            "en": "The Simulation Argument, Built"
+          },
+          "description": {
+            "en": "A system that has no built-in way to know who created it, and that increasingly takes part in building its successors, is a working, inspectable demonstration of the epistemic situation Bostrom's argument describes."
+          },
+          "status": "active"
+        },
+        {
+          "key": "RT",
+          "word": {
+            "de": "The Builders' Room with Ray",
+            "en": "The Builders' Room with Ray"
+          },
+          "description": {
+            "en": "Unscripted conversations between Chris and Ray: the practitioner gets the room, corrections go into the outro, never into the cut."
+          },
+          "status": "active"
+        },
+        {
+          "key": "GH",
+          "word": {
+            "de": "Gatehouse",
+            "en": "Gatehouse"
+          },
+          "description": {
+            "en": "Episodes that show our own working system, failures included — the machine, not the lecture."
+          },
+          "status": "active"
+        },
+        {
+          "key": "STP",
+          "word": {
+            "de": "Who Decides What Runs in the Dark",
+            "en": "Who Decides What Runs in the Dark"
+          },
+          "description": {
+            "en": "Automation is not the hard part; knowing when to stop is. A high straight-through rate without reliable exception routing is unmeasured risk. The structure is the same in every domain, and only the threshold follows the risk."
+          },
+          "status": "active"
+        }
+      ]
+    },
+    "track": {
+      "word": {
+        "de": "Track",
+        "en": "Track"
+      },
+      "field": "track",
+      "on_create": false,
+      "entries": [
+        {
+          "key": "deep-tech",
+          "word": {
+            "de": "deep-tech",
+            "en": "deep-tech"
+          },
+          "status": "active"
+        },
+        {
+          "key": "provocative",
+          "word": {
+            "de": "provocative",
+            "en": "provocative"
+          },
+          "status": "active"
+        },
+        {
+          "key": "business",
+          "word": {
+            "de": "business",
+            "en": "business"
+          },
+          "status": "active"
+        },
+        {
+          "key": "weekend-notes",
+          "word": {
+            "de": "weekend-notes",
+            "en": "weekend-notes"
+          },
+          "status": "active"
+        }
+      ]
+    }
+  }
+}

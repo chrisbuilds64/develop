@@ -11,6 +11,7 @@ import { CaseScreen } from "./screens/Case";
 import { Board } from "./screens/Board";
 import { Stacked } from "./screens/Stacked";
 import { Rules } from "./screens/Rules";
+import { Lists } from "./screens/Lists";
 import { Signals } from "./screens/Signals";
 import { DocWindow } from "./screens/DocWindow";
 import { InterviewScreen } from "./screens/Interview";
@@ -21,7 +22,7 @@ import { HouseScreen } from "./screens/House";
 import { words } from "./words";
 import { presenting, setPresenting } from "./moments";
 
-export type Route = { name: "home" } | { name: "case"; id: string; group?: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
+export type Route = { name: "home" } | { name: "case"; id: string; group?: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "lists" } | { name: "signals" } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
   const [bare, search = ""] = full.split("?");
@@ -34,6 +35,7 @@ export function parse(full: string): Route {
   const m = path.match(/^\/case\/([^/]+)/);
   if (m) return { name: "case", id: decodeURIComponent(m[1]), ...(group ? { group } : {}) };
   if (path.startsWith("/board") || path.startsWith("/workshop")) return { name: "board" };
+  if (path === "/lists" || path.startsWith("/lists/")) return { name: "lists" };     // before "/list", which it starts with
   if (path.startsWith("/list")) return { name: "list" };
   if (path.startsWith("/rules")) return { name: "rules" };
   if (path.startsWith("/signals")) return { name: "signals" };
@@ -153,6 +155,8 @@ export function App() {
         <Stacked config={config.data} go={go} w={w} />
       ) : route.name === "rules" ? (
         <Rules config={config.data} w={w} />
+      ) : route.name === "lists" ? (
+        <Lists config={config.data} w={w} />
       ) : route.name === "house" ? (
         <HouseScreen config={config.data} go={go} w={w} />
       ) : route.name === "signals" ? (

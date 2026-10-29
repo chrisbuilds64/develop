@@ -1,0 +1,29 @@
+{
+  "$comment": "Value lists (SYS-105): label from vocabulary.labels and theme.covers. A tree's own lists.json adds to these.",
+  "lists": {
+    "label": {
+      "field": "label",
+      "on_create": true,
+      "entries": [
+        {
+          "key": "KFZ",
+          "word": {
+            "de": "Kfz",
+            "en": "Motor"
+          },
+          "color": "#e0a52a",
+          "status": "active"
+        },
+        {
+          "key": "HR",
+          "word": {
+            "de": "Hausrat",
+            "en": "Contents"
+          },
+          "color": "#2f6fed",
+          "status": "active"
+        }
+      ]
+    }
+  }
+}

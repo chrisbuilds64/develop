@@ -288,6 +288,35 @@ class NewCaseIn(BaseModel):
     title: str
     label: str | None = None
     step_id: str
+    values: dict[str, str] = Field(default_factory=dict)   # field → key, from the lists a new case asks for (lists.json `on_create`)
+
+
+class ListsOut(BaseModel):
+    may_edit: bool                                        # the viewer runs the place (role operator): may start lists and change entries
+    lists: list[views.ListView]
+
+
+class ListIn(BaseModel):
+    id: str
+    word: dict[str, str] = Field(default_factory=dict)    # {de, en}
+    field: str | None = None                              # the meta key it fills; fixed once the list exists
+    on_create: bool | None = None
+    step_id: str
+
+
+class ListEntryIn(BaseModel):
+    key: str
+    word: dict[str, str] = Field(default_factory=dict)
+    color: str | None = None
+    description: str | None = None
+    status: str | None = None                             # planned | active | retired
+    step_id: str
+
+
+class ListChangeOut(BaseModel):
+    ok: bool
+    line: dict                                            # the log line in _lists/log.jsonl
+    list: views.ListView
 
 
 class RespondentOut(BaseModel):
@@ -927,6 +956,53 @@ def create_app(settings: Settings) -> FastAPI:
                   for r in handoff.matrix(c.store, c.config)]
         return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix)
 
+    # ------------------------------------------------------------ value lists (SYS-105): read by all, changed by the operators
+    from ..domain import lists as value_lists
+
+    def _lists_out(c: Ctx, who: str) -> ListsOut:
+        p = c.config.person(who)
+        return ListsOut(may_edit=bool(p and "operator" in p.roles), lists=views.list_views(c.config, c.lang, value_lists.counts(c.store, c.config.lists)))
+
+    def _lists_refused(c: Ctx, who: str) -> JSONResponse | None:
+        p = c.config.person(who)
+        if p and "operator" in p.roles:
+            return None
+        return JSONResponse(status_code=403, content={"ok": False, "reason": c.config.word("texts", "lists_refused", c.lang, "Only the people who run this place change its lists.")})
+
+    def _list_view(c: Ctx, list_id: str) -> views.ListView:
+        counts = value_lists.counts(c.store, c.config.lists)
+        return next(v for v in views.list_views(c.config, c.lang, counts) if v.id == list_id)
+
+    @app.get("/api/lists", response_model=ListsOut)
+    def get_lists(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        return _lists_out(c, who)
+
+    @app.post("/api/lists", response_model=ListChangeOut)
+    def post_list(body: ListIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Start a list (id, name, the field it fills, whether a new case asks for it), or change one's name or asking."""
+        if (refused := _lists_refused(c, who)) is not None:
+            return refused
+        if not stepping.STEP_ID.match(body.step_id):
+            return _refuse(Exception("step id must be 1–80 letters, digits, '-' or '_'"))
+        try:
+            line = value_lists.put_list(c.store, c.config, who, body.id.strip(), body.word, body.field, body.on_create, body.step_id)
+        except value_lists.ListError as exc:
+            return _refuse(exc)
+        return ListChangeOut(ok=True, line=line, list=_list_view(c, line["list"]))
+
+    @app.post("/api/lists/{list_id}/entries", response_model=ListChangeOut)
+    def post_list_entry(list_id: str, body: ListEntryIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Add an entry, or change one's name, colour, description or status. Written to the tree's lists.json, one line in _lists/log.jsonl."""
+        if (refused := _lists_refused(c, who)) is not None:
+            return refused
+        if not stepping.STEP_ID.match(body.step_id):
+            return _refuse(Exception("step id must be 1–80 letters, digits, '-' or '_'"))
+        try:
+            line = value_lists.put_entry(c.store, c.config, who, list_id, body.key, body.word, body.color, body.description, body.status, body.step_id)
+        except value_lists.ListError as exc:
+            return _refuse(exc)
+        return ListChangeOut(ok=True, line=line, list=_list_view(c, list_id))
+
     @app.get("/api/stages", response_model=list[StageOut])
     def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         out = []
@@ -1176,7 +1252,12 @@ def create_app(settings: Settings) -> FastAPI:
         title = body.title.strip()[:120]
         if not title:
             return _refuse(Exception(c.config.word("texts", "create_empty", c.lang, "Give it a name.")))
-        label = body.label or create.get("label", "X")
+        from ..domain import lists as chosen
+        try:
+            values = chosen.validate_choice(c.config.lists, body.values)       # what the lists that ask for it gave: field → key
+        except chosen.ListError as exc:
+            return _refuse(exc)
+        label = values.get("label") or body.label or create.get("label", "X")
         first = next((s.folder for s in c.config.stages if s.group != "archive"), None)
         if not first or first not in c.store.stages():
             return _refuse(Exception("the first stage folder is missing"))
@@ -1194,7 +1275,7 @@ def create_app(settings: Settings) -> FastAPI:
         except StoreError as exc:
             return _refuse(exc)
         meta = {"configVersion": c.config.config_version, "label": label, "number": number, "title": title, "created": _now()[:10], "created_by": p.id,
-                **{k: v for k, v in (create.get("meta") or {}).items()}}
+                **{k: v for k, v in (create.get("meta") or {}).items()}, **values}
         c.store.write_json(f"{first}/{cid}/meta.json", meta)
         c.store.write_json(f"_steps/{body.step_id}.json", {"step_id": body.step_id, "case": cid, "action": "create", "by": p.id, "status": "done", "created": _now(), "payload": {"title": title}})
         stepping._append_entry(c.store, c.config, cid, first, {"author": p.name, "status": "info", "title": c.config.word("texts", "created", c.lang, "Started"), "text": title, "step": body.step_id})

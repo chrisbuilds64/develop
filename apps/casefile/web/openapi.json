@@ -605,6 +605,111 @@
         }
       }
     },
+    "/api/lists": {
+      "get": {
+        "summary": "Get Lists",
+        "operationId": "get_lists_api_lists_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListsOut"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Post List",
+        "description": "Start a list (id, name, the field it fills, whether a new case asks for it), or change one's name or asking.",
+        "operationId": "post_list_api_lists_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListChangeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lists/{list_id}/entries": {
+      "post": {
+        "summary": "Post List Entry",
+        "description": "Add an entry, or change one's name, colour, description or status. Written to the tree's lists.json, one line in _lists/log.jsonl.",
+        "operationId": "post_list_entry_api_lists__list_id__entries_post",
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListEntryIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListChangeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/stages": {
       "get": {
         "summary": "Stages",
@@ -1773,6 +1878,14 @@
             "type": "array",
             "title": "Videos",
             "default": []
+          },
+          "lists": {
+            "items": {
+              "$ref": "#/components/schemas/ListView"
+            },
+            "type": "array",
+            "title": "Lists",
+            "default": []
           }
         },
         "type": "object",
@@ -2204,6 +2317,239 @@
         ],
         "title": "LangIn"
       },
+      "ListChangeOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "line": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Line"
+          },
+          "list": {
+            "$ref": "#/components/schemas/ListView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "line",
+          "list"
+        ],
+        "title": "ListChangeOut"
+      },
+      "ListEntryIn": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Word"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "step_id"
+        ],
+        "title": "ListEntryIn"
+      },
+      "ListEntryView": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "words": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Words"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word",
+          "status"
+        ],
+        "title": "ListEntryView"
+      },
+      "ListIn": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "word": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Word"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "on_create": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Create"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "step_id"
+        ],
+        "title": "ListIn"
+      },
+      "ListView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "words": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Words"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "on_create": {
+            "type": "boolean",
+            "title": "On Create",
+            "default": false
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/ListEntryView"
+            },
+            "type": "array",
+            "title": "Entries",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "word",
+          "field"
+        ],
+        "title": "ListView"
+      },
+      "ListsOut": {
+        "properties": {
+          "may_edit": {
+            "type": "boolean",
+            "title": "May Edit"
+          },
+          "lists": {
+            "items": {
+              "$ref": "#/components/schemas/ListView"
+            },
+            "type": "array",
+            "title": "Lists"
+          }
+        },
+        "type": "object",
+        "required": [
+          "may_edit",
+          "lists"
+        ],
+        "title": "ListsOut"
+      },
       "MatrixRow": {
         "properties": {
           "id": {
@@ -2385,6 +2731,13 @@
           "step_id": {
             "type": "string",
             "title": "Step Id"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Values"
           }
         },
         "type": "object",

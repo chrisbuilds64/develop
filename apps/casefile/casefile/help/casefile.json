@@ -163,6 +163,42 @@
       }
     },
     {
+      "key": "cf.lists",
+      "since": "0.21.0",
+      "title": {
+        "de": "Wertelisten",
+        "en": "Value lists"
+      },
+      "text": {
+        "de": "Die festen Werte, die eine Akte tragen kann — Formate, Serien, Sparten, was die Domäne führt. Je Liste die Einträge mit Farbe, Status und wie viele Akten sie tragen. Wer den Betrieb führt, legt hier Listen und Einträge an; jede Änderung wird protokolliert.",
+        "en": "The fixed values a case can carry — formats, series, lines of business, whatever the domain keeps. Each list shows its entries with colour, status and how many cases carry them. Whoever runs the place starts lists and entries here; every change is logged."
+      }
+    },
+    {
+      "key": "cf.lists-entry",
+      "since": "0.21.0",
+      "title": {
+        "de": "Eintrag anlegen",
+        "en": "Add an entry"
+      },
+      "text": {
+        "de": "Ein neuer Wert für diese Liste: Kürzel aus Großbuchstaben und Ziffern, Name in beiden Sprachen, Farbe und Beschreibung nach Bedarf. Geplant und aktiv wird bei neuen Akten angeboten; beendet bleibt an den Akten sichtbar, die ihn tragen.",
+        "en": "A new value for this list: a key of capitals and digits, a name in both languages, colour and description as needed. Planned and active are offered to new cases; retired stays visible on the cases that carry it."
+      }
+    },
+    {
+      "key": "cf.lists-new",
+      "since": "0.21.0",
+      "title": {
+        "de": "Liste anlegen",
+        "en": "Add a list"
+      },
+      "text": {
+        "de": "Eine neue Werteliste ohne Programmierung: Kennung, Name, das Feld der Akte, das sie füllt, und ob neue Akten danach fragen. Das Feld steht fest, sobald die Liste besteht.",
+        "en": "A new value list without code: an id, a name, the field of the case it fills, and whether new cases ask for it. The field is fixed once the list exists."
+      }
+    },
+    {
       "key": "cf.back",
       "since": "0.17.1",
       "title": {
