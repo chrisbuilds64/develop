@@ -477,5 +477,9 @@
   "ws.waiting": "{n} für dich",
   "home.skip": "Weiter",
   "home.week_one": "Diese Woche: eine Akte durch ein Tor.",
-  "home.week_many": "Diese Woche: {n} Akten durch ein Tor."
+  "home.week_many": "Diese Woche: {n} Akten durch ein Tor.",
+  "ws.in_use": "Im Einsatz",
+  "ws.in_use_hint": "Echte Arbeit. Was hier geschieht, gilt.",
+  "ws.showcase": "Vorführung",
+  "ws.showcase_hint": "Musterdaten mit Abläufen. Jederzeit zurücksetzbar, nichts davon ist echt."
 }

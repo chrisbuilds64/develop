@@ -880,3 +880,6 @@ body.opening { overflow: hidden; }
 .ws-waiting { align-self: flex-start; font-size: 12px; font-weight: 700; color: var(--your-move-on); background: var(--your-move); border-radius: 999px; padding: 2px 9px; }
 @media (prefers-reduced-motion: reduce) { .opener { display: none !important; } ::view-transition-group(*) { animation: none; } }
 .week-line { margin: 2px 0 0; font-size: 14px; color: var(--seal-ink); }
+
+/* the dashboard's two kinds of workspace: real work and resettable showcases (29.10.) */
+.ws-lead { margin: 0 0 10px; color: var(--muted); font-size: 13px; }

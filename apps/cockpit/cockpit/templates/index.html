@@ -21,9 +21,13 @@
 {% if ws_error %}<p class="notice err">{{ t('ws.registry_broken') }}: {{ ws_error }}</p>{% endif %}
 
 {% if applications %}
-<h2 class="section" style="margin:0 0 10px">{{ t('ws.title') }}</h2>
+{% set live = workspaces|selectattr('mode', 'equalto', 'live')|list %}
+{% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
+<h2 class="section" style="margin:0 0 4px">{{ t('ws.in_use') }}</h2>
+<p class="ws-lead">{{ t('ws.in_use_hint') }}</p>
 <div class="ws-grid">
-  {% for w in workspaces %}
+{% set group = live %}
+  {% for w in group %}
   <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
     <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
     <span class="title">{{ w.label }}</span>
@@ -38,6 +42,26 @@
   {% endfor %}
   <a class="ws-card new" href="/workspaces/new">{{ t('ws.new') }}</a>
 </div>
+{% if samples %}
+<h2 class="section" style="margin:22px 0 4px">{{ t('ws.showcase') }}</h2>
+<p class="ws-lead">{{ t('ws.showcase_hint') }}</p>
+<div class="ws-grid">
+{% set group = samples %}
+  {% for w in group %}
+  <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
+    <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
+    <span class="title">{{ w.label }}</span>
+    <span class="meta">
+      <span>{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}</span>
+      {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
+      {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
+    </span>
+    <span class="ws-waiting" hidden data-tpl="{{ t('ws.waiting') }}"></span>
+    {% if w.id in ws_failures %}<span class="fail">{{ ws_failures[w.id] }}</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
 {% endif %}
 
 {% if cards %}
