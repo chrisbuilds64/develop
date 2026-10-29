@@ -155,10 +155,17 @@ export function Director() {
         await sleep(900);
         return "next";
       }
-      case "read":
+      case "read": {
+        // a reader the presenter opened by hand hides the tiles: close it first, so the flow reads the file it means
+        const shown = (el: Element | null) => !!el && (el as HTMLElement).getClientRects().length > 0;
+        if (!shown(document.querySelector(`[data-file="${s.file}"]`)) && document.querySelector(".reader")) {
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+          await sleep(400);
+        }
         await aim(await find(`[data-file="${s.file}"]`));
         await sleep(500);
         return "next";
+      }
       case "close":
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
         await sleep(400);
