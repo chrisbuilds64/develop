@@ -18,7 +18,7 @@ export function Board({ config, go, w }: { config: ConfigView; go: (p: string) =
         {(stages.data ?? []).map((s) => (
           <section key={s.folder} className={`col${s.cases.length === 0 ? " empty" : ""}`} aria-label={s.word}>
             <h3><span>{s.station || s.word}</span><span className="n">{s.cases.length}</span></h3>
-            <span className="folder">{s.station ? s.word : ""}<span className="mono"> {s.folder}</span></span>
+            {s.station && s.cases.length > 0 && <span className="folder">{s.word}</span>}
             <div className="col-cards">
               {s.cases.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet={!c.mine} />)}
             </div>

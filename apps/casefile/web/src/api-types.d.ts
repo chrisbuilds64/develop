@@ -62,6 +62,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/ablaeufe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Demo Flows
+         * @description The demonstrations a sample workspace offers: whole flows the surface plays step by step. They travel with the
+         *     world they were written for (`_ablaeufe/*.json` in the template, put there by whoever built the world), so a flow
+         *     never meets data it does not fit.
+         */
+        get: operations["demo_flows_api_demo_ablaeufe_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Demo Reset
+         * @description A sample workspace back to its world before a demonstration. Only where the shell named a world and its login lets
+         *     the person in; the public demo starts over with a fresh sandbox instead.
+         */
+        post: operations["demo_reset_api_demo_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -404,6 +447,27 @@ export interface paths {
          * @description The demo's 'put the sample invoice in': a bundled file lands in the slot as a delivered version.
          */
         post: operations["post_sample_api_cases__case_id__samples_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/vorort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Onsite
+         * @description The on-site view's working state (theme.onsite.state), merged: a photo's view, a hint ticked or answered. State, not a
+         *     deliverable version — the photos and the note are the versioned files; this only says what they are and what is settled.
+         */
+        put: operations["put_onsite_api_cases__case_id__vorort_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1076,6 +1140,28 @@ export interface components {
             stage: string;
         };
         /**
+         * OnsiteIn
+         * @description The assessor's state at the car: which view each photo shows, what they ticked or answered of the AI's hints.
+         */
+        OnsiteIn: {
+            /**
+             * Photos
+             * @default {}
+             */
+            photos: {
+                [key: string]: string;
+            };
+            /**
+             * Hints
+             * @default {}
+             */
+            hints: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        /**
          * OutcomeOut
          * @description The outcome: the findings, the draft with each line's decision, and the compiled canon when there is one.
          */
@@ -1413,6 +1499,8 @@ export interface components {
             slot: string;
             /** Step Id */
             step_id: string;
+            /** Source */
+            source?: string | null;
         };
         /** SealOut */
         SealOut: {
@@ -1584,6 +1672,28 @@ export interface components {
              * @default false
              */
             seal: boolean;
+            /**
+             * Kind
+             * @default nudge
+             */
+            kind: string;
+            /**
+             * Headline
+             * @default
+             */
+            headline: string;
+            /**
+             * Lock
+             * @default
+             */
+            lock: string;
+            /**
+             * Date
+             * @default
+             */
+            date: string;
+            /** Missing */
+            missing?: string[];
         };
         /** TurnOut */
         TurnOut: {
@@ -1738,6 +1848,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_flows_api_demo_ablaeufe_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    demo_reset_api_demo_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -2285,6 +2435,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_onsite_api_cases__case_id__vorort_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnsiteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

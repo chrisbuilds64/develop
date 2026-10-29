@@ -42,7 +42,7 @@ export function Thread({ entries, meName, agentName, lang, w, onAnswer, onDone, 
           </div>
         );
       })}
-      {entries.length === 0 && <p className="empty" aria-label={agentName}></p>}
+      {entries.length === 0 && <p className="empty" aria-label={agentName}>{w.threadEmpty}</p>}
     </>
   );
 }

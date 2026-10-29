@@ -25,7 +25,7 @@ export function Frame({ slot, mine, onFile, w, busy, sample, onSample, onOpen }:
          <>{/^(image|video)/.test(slot.shape) ? <span>{ratio}</span> : <span>{slot.word}</span>}<span style={{ fontSize: 12 }}>{over ? w.dropHere : slot.shape === "pdf" ? "PDF" : w.tapToAdd}</span></>}
       </button>
       <input ref={input} type="file" accept={accept} hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
-      <span className="cap">{slot.word}{newest ? <small>{newest.name} · {w.version(Math.max(1, newest.version))}</small> : <small>{w.tapToAdd}</small>}</span>
+      <span className="cap">{slot.word}{newest ? <small>{newest.name} · {w.version(Math.max(1, newest.version))}</small> : slot.by_word ? <small className="who">{w.delivers(slot.by_word)}</small> : <small>{w.tapToAdd}</small>}</span>
       {sample && !slot.present && onSample && <button type="button" className="chip" disabled={busy} onClick={onSample}>{w.sample(slot.word)}</button>}
     </div>
   );
