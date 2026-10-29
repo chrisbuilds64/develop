@@ -38,6 +38,7 @@ class DomainConfig:
     people: list[Person]
     calendar: dict = field(default_factory=dict)
     run_policy: dict = field(default_factory=dict)
+    order: list = field(default_factory=list)     # the stack's rule, `order` in stages.json: which kinds of move come first (default: turn.ORDER)
     theme: dict = field(default_factory=dict)
     lang: str = "en"
     config_version: str = "1"
@@ -75,6 +76,7 @@ class DomainConfig:
             theme=theme,
             lang=theme.get("lang") or stages_doc.get("lang") or "en",
             config_version=str(stages_doc.get("configVersion") or "1"),
+            order=[str(k) for k in (stages_doc.get("order") or [])],
             dir=domain_dir,
             videos=[v for v in ((_read(domain_dir / "videos.json") or {}).get("videos") or []) if isinstance(v, dict) and v.get("key") and v.get("file")],
         )

@@ -168,6 +168,10 @@ class Turn(BaseModel):
     entry: str | None = None                     # the entry this move answers, when it is an answer
     payload: list[str] = Field(default_factory=list)   # what the surface must ask for: amount, date, url, note
     seal: bool = False                                  # passing this gate is stamped
+    kind: str = "nudge"                                 # what this move is, for the stack's order: date | seal | gate | gap | nudge (ADR-024)
+    headline: str = ""                                  # the move as a sentence, from the vocabulary's headlines: "Rechnung fehlt, dann freigeben"
+    lock: str = ""                                      # the locked gate as a sentence with its condition, when blocked: "Freigeben … öffnet sich, sobald …"
+    date: str = ""                                      # the date that puts this move first, when the case has one
 
 
 # ----------------------------------------------------------------------------- a step

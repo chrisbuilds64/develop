@@ -68,7 +68,10 @@
       "detected": "Moved by hand",
       "detected_text": "The folder was found in {stage}; the thread last knew {known}.",
       "delivered_title": "Delivered: {files}",
-      "replay_moved": "Moved on."
+      "replay_moved": "Moved on.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
     },
     "files": {
       "source.md": "Source material",
@@ -123,6 +126,28 @@
       "created": "Created",
       "label": "Format",
       "number": "Number"
+    },
+    "headlines": {
+      "approve_to_visual": "Approve the text: {title}",
+      "approve_visual": "Approve the visual: {title}",
+      "schedule": "Pick a date: {title}",
+      "published": "Mark as published: {title}",
+      "work_out": "Work it out: {title}",
+      "rework": "Rework: {title}",
+      "answer": "Answer: {title}",
+      "deliver": "File {first}: {title}",
+      "see_failure": "See what went wrong: {title}"
+    },
+    "locks": {
+      "approve_to_visual": "Approve and send to Akhil. A seal; opens once {missing} is in the file.",
+      "approve_visual": "Approve the visual. A seal; opens once {missing} is in the file."
+    },
+    "requires": {
+      "shape:image": "an image",
+      "shape:video": "a video",
+      "primary": "the draft",
+      "answered": "an answer",
+      "decided:": "your decisions"
     }
   },
   "de": {
@@ -193,7 +218,10 @@
       "detected": "Von Hand verschoben",
       "detected_text": "Der Ordner lag in {stage}; der Verlauf kannte zuletzt {known}.",
       "delivered_title": "Abgelegt: {files}",
-      "replay_moved": "Weiter."
+      "replay_moved": "Weiter.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
     },
     "files": {
       "source.md": "Ausgangsmaterial",
@@ -248,6 +276,28 @@
       "created": "Angelegt",
       "label": "Format",
       "number": "Nummer"
+    },
+    "headlines": {
+      "approve_to_visual": "Text freigeben: {title}",
+      "approve_visual": "Bild freigeben: {title}",
+      "schedule": "Termin wählen: {title}",
+      "published": "Veröffentlicht melden: {title}",
+      "work_out": "Ausarbeiten lassen: {title}",
+      "rework": "Nochmal: {title}",
+      "answer": "Antworten: {title}",
+      "deliver": "{first} ablegen: {title}",
+      "see_failure": "Nachsehen, was schiefging: {title}"
+    },
+    "locks": {
+      "approve_to_visual": "Freigeben und an Akhil schicken. Ein Siegel; öffnet sich, sobald {missing} in der Akte liegt.",
+      "approve_visual": "Bild freigeben. Ein Siegel; öffnet sich, sobald {missing} in der Akte liegt."
+    },
+    "requires": {
+      "shape:image": "ein Bild",
+      "shape:video": "ein Video",
+      "primary": "der Entwurf",
+      "answered": "eine Antwort",
+      "decided:": "deine Entscheide"
     }
   }
 }
