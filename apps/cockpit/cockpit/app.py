@@ -92,7 +92,7 @@ def create_app(config: Config) -> FastAPI:
         # Readers, Markdown and templates all write root-relative paths ("/m/pipeline/…"); nobody downstream
         # knows about the prefix. It is added here, once, on every HTML page that leaves — the one place that
         # knows where this instance is served. Media and JSON pass untouched.
-        _ATTR = re.compile(rb'((?:\s(?:href|src|action|hx-get|hx-post|poster)=")|location\.href=\')/(?!/)')
+        _ATTR = re.compile(rb'((?:\s(?:href|src|action|hx-get|hx-post|poster|data-href)=")|location\.href=\')/(?!/)')
         _prefix = base.encode()
 
         @app.middleware("http")
