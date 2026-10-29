@@ -37,9 +37,13 @@ chose the stack of gates (planning: `control/planning/2026-10-29_ux-durchbruch/`
    a lock, the second legitimate way as a text link. Behind it, folded in place: thread, all files, record, rules.
    "After" is the rest of the stack as rows with their one action. What counts is gates, not moves; ideas stand in the
    reserve.
-5. **The shell falls.** Menu, case list, progress line, tile wall, thread column and modal dialogs leave. Kanban and
-   stacked list stay as a second view for the role "operations", never as the entry. A session with an agent is a
-   position in the piece, not a dialog.
+5. **The shell falls, the overview stays in sight.** Menu, case list, tile wall, thread column and modal dialogs
+   leave. The pipeline stays visible: a band over the stack with every stage and its count (a graphic, click to
+   filter), and in the gate the stations as a dotted line with dates under the headline. Kanban and stacked list stay
+   as views behind a visible switch ("stack · kanban · list"); the stack is the entry, never the only view. Every row
+   carries the case's cover (format tint, label, number), every piece shows all its slots without unfolding. A session
+   with an agent is a position in the piece, not a dialog. *(Corrected after Chris's first look on 2026-10-29: "the
+   pipeline is gone", "list and kanban are gone", "only text, before it was at least a graphic overview".)*
 6. **What is not in this round:** the seal bound to a file version that breaks when a new version arrives (the engine
    has `seal` as a flag on the step only); the stack across workspaces in the cockpit; glass mode; a reading view for
    a case nobody has a move on.
