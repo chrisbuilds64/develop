@@ -73,7 +73,10 @@
       "canon_scope": "Schicht: Bereich, Prozess und Verfahren. Basis und Marke stehen darüber und gehen vor.",
       "canon_lead": "Zeile für Zeile freigegeben. Was verworfen wurde, steht nicht hier; was geändert wurde, steht in der neuen Fassung.",
       "canon_foot": "Freigegeben von {who} am {date}. Version 0.1: ein Entwurf des Betriebs, kein Endstand. Der zweite Durchgang nach vier Wochen echtem Betrieb gehört dazu.",
-      "question_word": "Frage"
+      "question_word": "Frage",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
     },
     "files": {
       "gespraech.json": "Gespräch",
@@ -94,6 +97,22 @@
     },
     "words": {
       "external_id": "Erhebung"
+    },
+    "requires": {
+      "shape:image": "mindestens ein Foto",
+      "shape:pdf": "ein PDF",
+      "shape:video": "ein Video",
+      "answered": "eine Antwort",
+      "decided:": "deine Entscheide",
+      "primary": "das Hauptdokument"
+    },
+    "headlines": {
+      "evaluate": "{title}: {first} fehlt, dann auswerten lassen",
+      "approve_canon": "{title}: {first}, dann Kanon freigeben"
+    },
+    "locks": {
+      "evaluate": "Auswerten lassen; öffnet sich, sobald {missing} vorliegt.",
+      "approve_canon": "Kanon freigeben. Ein Siegel; öffnet sich, sobald {missing} getroffen sind."
     }
   },
   "en": {
@@ -169,7 +188,10 @@
       "canon_scope": "Layer: area, process and procedures. The basis and the brand stand above it and take precedence.",
       "canon_lead": "Approved line by line. What was rejected is not here; what was changed stands in its new wording.",
       "canon_foot": "Approved by {who} on {date}. Version 0.1: a draft of the operation, not its final state. The second pass after four weeks of real work belongs to it.",
-      "question_word": "question"
+      "question_word": "question",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
     },
     "files": {
       "gespraech.json": "Conversation",
@@ -190,6 +212,22 @@
     },
     "words": {
       "external_id": "Elicitation"
+    },
+    "requires": {
+      "shape:image": "at least one photo",
+      "shape:pdf": "a PDF",
+      "shape:video": "a video",
+      "answered": "an answer",
+      "decided:": "your decisions",
+      "primary": "the primary document"
+    },
+    "headlines": {
+      "evaluate": "{title}: {first} is missing, then evaluate",
+      "approve_canon": "{title}: {first}, then approve the canon"
+    },
+    "locks": {
+      "evaluate": "Evaluate; opens once {missing} is there.",
+      "approve_canon": "Approve the canon. A seal; opens once {missing} are made."
     }
   }
 }
