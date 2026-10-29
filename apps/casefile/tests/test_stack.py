@@ -23,7 +23,11 @@ def test_headline_and_lock_come_from_the_vocabulary(store, config):
     assert t.headline.startswith("Text freigeben: ")
     assert "öffnet sich, sobald" in t.lock and "Entwurf" in t.lock                       # 'substack.md' is the primary → its word
     free = main(store, config, "FN-105-the-review-that-reads-itself", "de")
-    assert free.lock == ""                                                               # nothing blocks: no lock sentence
+    assert free.lock == "" and free.missing == []                                        # nothing blocks: no lock sentence
+    assert t.missing == ["Entwurf"]                                                      # the gap as a word, for every surface
+    config.vocabulary["de"]["headlines"]["approve_to_visual"] = "{first} fehlt, dann freigeben"
+    assert main(store, config, "FN-105-the-review-that-reads-itself", "de").headline.startswith("Freigeben")   # a gap template on a free gate: the plain form
+    del config.vocabulary["de"]["headlines"]["approve_to_visual"]
     assert main(store, config, "FN-101-the-quiet-audit", "en").headline.startswith("Work it out: ")
 
 

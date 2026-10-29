@@ -3,7 +3,7 @@
 {% set hour = now[11:13]|int %}
 {% set greeting = t('home.morning' if hour < 11 else 'home.afternoon' if hour < 18 else 'home.evening', name=(', ' ~ user.display.split(' ')[0]) if user else '') %}
 {# The opener: once per browser session, the idea in four seconds — a line, its stations, a marker that turns blue where it is your move. #}
-<div class="opener" id="opener" hidden data-help="shell.opener" data-none="{{ t('home.waiting_none') }}" data-one="{{ t('home.waiting_one') }}" data-many="{{ t('home.waiting_many') }}">
+<div class="opener" id="opener" hidden data-help="shell.opener" data-none="{{ t('stack.waiting_none') }}" data-one="{{ t('stack.waiting_one') }}" data-many="{{ t('stack.waiting_many') }}">
   <svg class="op-line" viewBox="0 0 600 40" aria-hidden="true">
     <path class="op-rail" d="M10 20 H590" />
     {% for i in range(6) %}<circle class="op-st" cx="{{ 10 + i * 116 }}" cy="20" r="6" style="animation-delay: {{ 700 + i * 140 }}ms" />{% endfor %}
@@ -13,60 +13,206 @@
   <p class="op-waiting" aria-live="polite">&nbsp;</p>
   <button type="button" class="op-skip">{{ t('home.skip') }}</button>
 </div>
-<div class="page-head">
-  <div><h1>{{ greeting }}</h1><p class="waiting-line" id="waiting-line"></p><p class="week-line" id="week-line" hidden data-one="{{ t('home.week_one') }}" data-many="{{ t('home.week_many') }}"></p></div>
-  <span class="stamp">{{ t('app.as_of', when=now) }}{% if user %} · {{ user.role }}{% endif %}</span>
-</div>
-{% if err %}<p class="notice err">{{ err }}</p>{% endif %}
-{% if ws_error %}<p class="notice err">{{ t('ws.registry_broken') }}: {{ ws_error }}</p>{% endif %}
 
-{% if applications %}
-<h2 class="section" style="margin:0 0 10px">{{ t('ws.title') }}</h2>
-<div class="ws-grid">
-  {% for w in workspaces %}
-  <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
-    <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
-    <span class="title">{{ w.label }}</span>
-    <span class="meta">
-      <span>{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}</span>
-      {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
-      {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
-    </span>
-    <span class="ws-waiting" hidden data-tpl="{{ t('ws.waiting') }}"></span>
-    {% if w.id in ws_failures %}<span class="fail">{{ ws_failures[w.id] }}</span>{% endif %}
-  </a>
-  {% endfor %}
-  <a class="ws-card new" href="/workspaces/new">{{ t('ws.new') }}</a>
-</div>
-{% endif %}
+{# The stack (ADR-024): one column. The place as a sentence, the count, the rule, the first gate in full depth, the rest as rows,
+   what has no gate as numbers, the workspaces folded behind. The frame is rendered here; the gates are filled by the script below
+   from every workspace's own answer (/w/<id>/api/me/turns). Without the script the workspaces stay readable under "Behind". #}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="st-miss" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 3"/></symbol>
+  <symbol id="st-you" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="st-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+  <symbol id="st-seal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="st-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="st-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="st-date" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16M8 3v5M16 3v5"/></symbol>
+</svg>
 
-{% if cards %}
-<h2 class="section" style="margin:0 0 10px">{{ t('app.workshop') }}</h2>
-{% include "grid.html" %}
-{% endif %}
+<section class="stack" id="stack" data-lang="{{ lang }}" aria-busy="true">
+  <p class="place"><b>{{ t('app.dashboard') }}</b> <span class="sep">·</span> {{ t('stack.yours') }} <span class="sep">·</span> {{ t('stack.all_workspaces') }} <span class="sep">·</span> <span class="stamp">{% if user %}{{ user.display }}, {% endif %}{{ t('app.as_of', when=now) }}</span></p>
+  {% if err %}<p class="notice err">{{ err }}</p>{% endif %}
+  {% if ws_error %}<p class="notice err">{{ t('ws.registry_broken') }}: {{ ws_error }}</p>{% endif %}
+
+  <div class="count" id="stack-count" data-help="shell.stack">
+    <p class="waiting" id="stack-waiting" aria-live="polite">{{ t('stack.loading') }}</p>
+    <div class="filt" id="stack-filter" role="group" aria-label="{{ t('stack.filter') }}" hidden></div>
+    <p class="order" id="stack-order" hidden>
+      <span>{{ t('stack.order') }}</span> <span class="rule" id="stack-rule"></span>
+      <details class="why"><summary>{{ t('stack.why') }}</summary>
+        <div class="body"><b>{{ t('stack.kind.date') }}:</b> {{ t('stack.why.date') }} <b>{{ t('stack.kind.seal') }}:</b> {{ t('stack.why.seal') }} <b>{{ t('stack.kind.gate') }}:</b> {{ t('stack.why.gate') }} <b>{{ t('stack.kind.gap') }}:</b> {{ t('stack.why.gap') }} <b>{{ t('stack.kind.nudge') }}:</b> {{ t('stack.why.nudge') }} {{ t('stack.why.inside') }} {{ t('stack.why.config') }}</div>
+      </details>
+    </p>
+  </div>
+
+  <article class="gate" id="stack-gate" data-help="shell.gate" hidden aria-labelledby="stack-headline"></article>
+  <p class="empty" id="stack-empty" hidden role="status"></p>
+
+  <section class="after" id="stack-after" hidden aria-labelledby="h-after">
+    <h2 id="h-after">{{ t('stack.after') }}</h2>
+    <ul class="rows" id="stack-after-rows"></ul>
+  </section>
+
+  <section class="without" id="stack-without" data-help="shell.without" hidden aria-labelledby="h-without">
+    <h2 id="h-without">{{ t('stack.without') }}</h2>
+    <ul class="rows" id="stack-without-rows"></ul>
+  </section>
+
+  {% if applications %}
+  <section class="behind" aria-labelledby="h-behind">
+    <h2 id="h-behind">{{ t('stack.behind') }}</h2>
+    <details class="d" id="stack-behind" data-help="shell.behind" open>
+      <summary><svg class="i" aria-hidden="true"><use href="#st-chev"/></svg>{{ t('ws.title') }} <span class="c">{{ workspaces|length }}</span></summary>
+      <ul class="rows ws" id="stack-ws">
+        {% for w in workspaces %}
+        <li data-ws="{{ w.id }}" data-label="{{ w.label }}" data-mode="{{ w.mode }}" data-href="/w/{{ w.id }}/"{% if w.id in ws_failures %} data-failed="{{ ws_failures[w.id] }}"{% endif %}>
+          <span class="t">{{ w.label }} <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span></span>
+          <span class="s">{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}{% if w.mode == 'replay' %} · {{ t('ws.sample') }}{% endif %}{% if w.cloned_from %} · <span class="mono">← {{ w.cloned_from }}</span>{% endif %}{% if w.id in ws_failures %} · {{ ws_failures[w.id] }}{% endif %}</span>
+          <a class="act" href="/w/{{ w.id }}/">{{ t('app.open') }}</a>
+        </li>
+        {% endfor %}
+        <li class="new"><a href="/workspaces/new" class="act">{{ t('ws.new') }}</a></li>
+      </ul>
+    </details>
+  </section>
+  {% endif %}
+
+  {% if cards %}
+  <section class="behind" aria-labelledby="h-workshop">
+    <h2 id="h-workshop">{{ t('app.workshop') }}</h2>
+    <details class="d" data-help-skip="explained by shell.workshop">
+      <summary><svg class="i" aria-hidden="true"><use href="#st-chev"/></svg>{{ t('app.workshop') }} <span class="c">{{ cards|length }}</span></summary>
+      {% include "grid.html" %}
+    </details>
+  </section>
+  {% endif %}
+</section>
+
+<script type="application/json" id="stack-words">{{ {
+  'none': t('stack.waiting_none'), 'one': t('stack.waiting_one'), 'many': t('stack.waiting_many'),
+  'all': t('stack.filter_all'), 'kinds': {'date': t('stack.kind.date'), 'seal': t('stack.kind.seal'), 'gate': t('stack.kind.gate'), 'gap': t('stack.kind.gap'), 'nudge': t('stack.kind.nudge')},
+  'gate_of': t('stack.gate_of'), 'since': t('stack.since'), 'on_date': t('stack.on_date'), 'missing': t('stack.missing'), 'locked': t('stack.locked'), 'open_case': t('stack.open_case'),
+  'sample_gates': t('stack.sample_gates'), 'sample_hint': t('stack.sample_hint'), 'show': t('stack.show'),
+  'reserve': t('stack.reserve'), 'reserve_one': t('stack.reserve_one'), 'reserve_many': t('stack.reserve_many'), 'reserve_mixed': t('stack.reserve_mixed'),
+  'others': t('stack.others'), 'others_cases': t('stack.others_cases'), 'others_empty': t('stack.others_empty'), 'others_none': t('stack.others_none'),
+  'samples': t('stack.samples'), 'sample_word': t('ws.sample'), 'week': t('stack.week'), 'week_one': t('home.week_one'), 'week_many': t('home.week_many'),
+  'empty': t('stack.empty'), 'empty_others': t('stack.empty_others'), 'empty_reserve': t('stack.empty_reserve'), 'empty_quiet': t('stack.empty_quiet'),
+  'open': t('app.open')
+}|tojson }}</script>
 <script>
-// Who waits for you, honestly: each live workspace answers for itself (its own "your move" list); sample worlds do not count.
+// The stack, built in the browser from every workspace's own answer: /w/<id>/api/me/turns is this person's moves there,
+// each with its kind (date · seal · gate · gap · nudge), its headline and its lock. A 401 (not a member, no open identity)
+// is silence, not an error. Gates are the moves whose kind is not "nudge"; nudges are the reserve.
 (function () {
-  var cards = [].slice.call(document.querySelectorAll('.ws-card[data-mode="live"]'));
-  var total = Promise.all(cards.map(function (c) {
-    return fetch(new URL('api/me/turns', c.href), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
-      .then(function (turns) {
-        var n = new Set(turns.map(function (t) { return t.case.id; })).size, b = c.querySelector('.ws-waiting');
-        if (n && b) { b.textContent = b.dataset.tpl.replace('{n}', n); b.hidden = false; c.classList.add('mine'); }
-        return n;
-      });
-  })).then(function (ns) { return ns.reduce(function (a, b) { return a + b; }, 0); });
-  // the week, honestly: gates passed by this person in the last seven days, summed over the live workspaces — a rhythm, no streak
-  Promise.all(cards.map(function (c) {
-    return fetch(new URL('api/me/rhythm', c.href), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
-      .then(function (r) { return r.week_seals || 0; });
-  })).then(function (ns) {
-    var n = ns.reduce(function (a, b) { return a + b; }, 0), el = document.getElementById('week-line');
-    if (n > 0) { el.textContent = n === 1 ? el.dataset.one : el.dataset.many.replace('{n}', n); el.hidden = false; }
+  var W = JSON.parse(document.getElementById('stack-words').textContent), lang = document.getElementById('stack').dataset.lang || 'de';
+  var ORDER = ['date', 'seal', 'gate', 'gap', 'nudge'];
+  var behind = document.getElementById('stack-behind'); if (behind) behind.open = false;      // folded once the script runs; open without it
+  var reg = [].slice.call(document.querySelectorAll('#stack-ws li[data-ws]')).map(function (li, i) {
+    return { id: li.dataset.ws, label: li.dataset.label, replay: li.dataset.mode === 'replay', href: li.dataset.href, index: i, failed: li.dataset.failed || '' };
   });
-  var op = document.getElementById('opener'), line = document.getElementById('waiting-line');
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function svg(id, cls) { var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', cls || 'i'); s.setAttribute('aria-hidden', 'true');
+    var u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#' + id); s.appendChild(u); return s; }
+  function fill(tpl, kv) { return Object.keys(kv).reduce(function (s, k) { return s.split('{' + k + '}').join(kv[k]); }, tpl); }
+  function day(iso) { if (!iso) return ''; var d = new Date(iso.length === 10 ? iso + 'T00:00:00' : iso); if (isNaN(d)) return iso.slice(0, 10);
+    try { return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short' }).format(d); } catch (e) { return iso.slice(0, 10); } }
+  function key(c) { return c.external_id || (c.number ? (c.label ? c.label + '-' : '') + c.number : c.id); }
+  function caseHref(ws, c) { return ws.href + 'case/' + encodeURIComponent(c.id); }
+  function api(ws, path) { return fetch(ws.href + 'api/' + path, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
+
+  var filter = null;                                                                  // null = all; else a workspace id
+  var moves = [], others = [], week = 0;                                             // every move with its workspace; workspaces where nothing is mine
+  function rank(m) { var k = ORDER.indexOf(m.turn.kind); return [k < 0 ? ORDER.length : k, m.ws.replay ? 1 : 0, m.turn.date || '', m.turn.since || '', m.ws.index]; }
+  function cmp(a, b) { var x = rank(a), y = rank(b); for (var i = 0; i < x.length; i++) { if (x[i] < y[i]) return -1; if (x[i] > y[i]) return 1; } return 0; }
+
+  function render() {
+    var all = moves.filter(function (m) { return !filter || m.ws.id === filter; });
+    var gates = all.filter(function (m) { return m.turn.kind !== 'nudge'; }).sort(cmp), nudges = all.filter(function (m) { return m.turn.kind === 'nudge'; });
+    var n = gates.length, waiting = $('stack-waiting');
+    waiting.innerHTML = '';
+    if (n === 0) waiting.textContent = W.none; else if (n === 1) waiting.textContent = W.one; else { var b = el('b', 'n', String(n)); waiting.appendChild(b); waiting.appendChild(document.createTextNode(W.many.replace('{n}', '').replace(/^\s+/, ' '))); }
+    waiting.classList.toggle('mine', n > 0);
+    // chips: only workspaces with gates, "all" first — the one place workspaces are offered prominently (rule 6)
+    var byWs = {}; moves.forEach(function (m) { if (m.turn.kind !== 'nudge') byWs[m.ws.id] = (byWs[m.ws.id] || 0) + 1; });
+    var filt = $('stack-filter'); filt.innerHTML = ''; var withGates = reg.filter(function (w) { return byWs[w.id]; });
+    if (withGates.length) {
+      [{ id: null, label: W.all, n: moves.filter(function (m) { return m.turn.kind !== 'nudge'; }).length }].concat(withGates.map(function (w) { return { id: w.id, label: w.label, n: byWs[w.id] }; })).forEach(function (c) {
+        var btn = el('button', 'chip'); btn.type = 'button'; btn.setAttribute('aria-pressed', String(filter === c.id)); btn.appendChild(document.createTextNode(c.label + ' ')); btn.appendChild(el('span', 'c', String(c.n)));
+        btn.addEventListener('click', function () { filter = c.id; render(); }); filt.appendChild(btn);
+      });
+    }
+    filt.hidden = !withGates.length;
+    var order = $('stack-order'); order.hidden = !n; $('stack-rule').textContent = ORDER.map(function (k) { return W.kinds[k]; }).join(' → ');
+    // the first gate in full depth
+    var g = $('stack-gate'), first = gates[0]; g.innerHTML = ''; g.hidden = !first;
+    if (first) {
+      var c = first.case, t = first.turn, blocked = t.blocked_by.filter(function (x) { return x.indexOf('four eyes:') !== 0; });
+      g.className = 'gate' + (blocked.length ? ' locked' : ' du');
+      var wo = el('p', 'wo'); wo.appendChild(el('span', '', '')); wo.firstChild.innerHTML = fill(W.gate_of, { i: '<span class="mono">1</span>', n: '<span class="mono">' + n + '</span>' });
+      wo.appendChild(el('b', '', first.ws.label)); wo.appendChild(el('span', 'mono', key(c))); wo.appendChild(el('span', '', c.stage_word));
+      wo.appendChild(el('span', '', t.date ? fill(W.on_date, { when: day(t.date) }) : fill(W.since, { when: day(t.since || c.since) })));
+      g.appendChild(wo);
+      var h = el('h1', '', t.headline || (t.label + ': ' + c.title)); h.id = 'stack-headline'; h.tabIndex = -1; g.appendChild(h);
+      if (t.reason && t.reason !== c.stage_word) g.appendChild(el('p', 'reason', t.reason));   // the engine's reason for a stage move is the stage word, already on the place line
+      if (blocked.length) {
+        var ul = el('ul', 'missing'); ul.setAttribute('aria-label', W.missing);
+        var pos = el('li', 'pos', W.missing + ' '); pos.appendChild(el('span', 'c', String(blocked.length))); ul.appendChild(pos);
+        blocked.forEach(function (m) { var li = el('li', 'miss'); li.appendChild(svg('st-miss')); li.appendChild(el('span', '', m.replace(/^(shape|decided):/, '').replace(/:.*$/, ''))); ul.appendChild(li); });
+        g.appendChild(ul);
+      }
+      var tun = el('div', 'tun'); var a = el('a', 'btn', ''); a.href = caseHref(first.ws, c); a.appendChild(document.createTextNode(W.open_case + ' ')); a.appendChild(svg('st-arrow')); tun.appendChild(a);
+      if (blocked.length && t.lock) { var z = el('p', 'ziel' + (t.seal ? ' seal' : '')); z.appendChild(svg('st-lock')); var s = el('span', '', ''); s.appendChild(el('b', '', t.label + '. ')); s.appendChild(document.createTextNode(t.lock)); z.appendChild(s); tun.appendChild(z); }
+      else if (t.seal) { var z2 = el('p', 'ziel seal'); z2.appendChild(svg('st-seal')); z2.appendChild(el('span', '', t.label)); tun.appendChild(z2); }
+      g.appendChild(tun);
+    }
+    // after: the rest as rows; a sample workspace's gates fold into one row while "all" is shown
+    var after = $('stack-after'), rows = $('stack-after-rows'); rows.innerHTML = ''; var rest = gates.slice(1), folded = {};
+    rest.forEach(function (m) {
+      if (!filter && m.ws.replay) { folded[m.ws.id] = folded[m.ws.id] || { ws: m.ws, n: 0 }; folded[m.ws.id].n++; return; }
+      var li = el('li'), a = el('a'); a.href = caseHref(m.ws, m.case); var tt = el('span', 't'); tt.appendChild(el('span', 'id', key(m.case))); tt.appendChild(document.createTextNode(m.case.title)); a.appendChild(tt);
+      a.appendChild(el('span', 's', m.ws.label + ' · ' + m.case.stage_word + ' · ' + (m.turn.date ? fill(W.on_date, { when: day(m.turn.date) }) : fill(W.since, { when: day(m.turn.since || m.case.since) }))));
+      var act = el('span', 'act' + (m.turn.seal ? ' seal' : '')); act.appendChild(svg(m.turn.kind === 'date' ? 'st-date' : m.turn.seal ? 'st-seal' : m.turn.blocked_by.length ? 'st-lock' : 'st-you')); act.appendChild(document.createTextNode(m.turn.label)); a.appendChild(act);
+      li.appendChild(a); rows.appendChild(li);
+    });
+    Object.keys(folded).forEach(function (id) {
+      var f = folded[id], li = el('li'), a = el('a'); a.href = f.ws.href; a.appendChild(el('span', 't', fill(W.sample_gates, { n: f.n, ws: f.ws.label }))); a.appendChild(el('span', 's', W.sample_hint));
+      var act = el('span', 'act other'); act.appendChild(svg('st-chev')); act.appendChild(document.createTextNode(W.show)); a.appendChild(act); li.appendChild(a); rows.appendChild(li);
+    });
+    after.hidden = !rows.children.length;
+    // without a gate: reserve · at others · samples · the week — numbers and one link per row
+    var wo2 = $('stack-without'), wrows = $('stack-without-rows'); wrows.innerHTML = '';
+    function row(label, count, text, href, linkText) { var li = el('li', 'row'); var tt = el('span', 't', label + ' '); tt.appendChild(el('span', 'c', String(count))); li.appendChild(tt);
+      li.appendChild(el('span', 's', text)); if (href) { var a = el('a', 'act', linkText || W.open); a.href = href; li.appendChild(a); } wrows.appendChild(li); }
+    var resv = {}; nudges.forEach(function (m) { var r = resv[m.ws.id] = resv[m.ws.id] || { ws: m.ws, n: 0, labels: {} }; r.n++; r.labels[m.turn.label] = 1; });
+    var rk = Object.keys(resv);
+    if (rk.length) row(W.reserve, nudges.length, rk.map(function (id) { var r = resv[id], ls = Object.keys(r.labels); return fill(ls.length === 1 ? (r.n === 1 ? W.reserve_one : W.reserve_many) : W.reserve_mixed, { n: r.n, ws: r.ws.label, label: ls[0] }); }).join(' · '), resv[rk[0]].ws.href);
+    var oth = others.filter(function (o) { return !o.ws.replay && (!filter || o.ws.id === filter); });
+    if (oth.length) row(W.others, oth.reduce(function (a, o) { return a + o.cases; }, 0), oth.map(function (o) { return fill(o.cases ? W.others_cases : W.others_empty, { ws: o.ws.label, n: o.cases }); }).join(' · '), oth[0].ws.href);
+    var samples = reg.filter(function (w) { return w.replay; });
+    if (samples.length && !filter) row(W.samples, samples.length, samples.map(function (w) { return w.label; }).join(', ') + ' · ' + W.sample_word, samples[0].href);
+    if (week > 0) row(W.week, week, week === 1 ? W.week_one : W.week_many.replace('{n}', week));
+    wo2.hidden = !wrows.children.length;
+    // empty: a sentence with what lies elsewhere, no frame
+    var empty = $('stack-empty'); empty.hidden = !!n;
+    if (!n) { var parts = [W.empty]; if (oth.some(function (o) { return o.cases; })) parts.push(fill(W.empty_others, { list: oth.filter(function (o) { return o.cases; }).map(function (o) { return fill(W.others_cases, { ws: o.ws.label, n: o.cases }); }).join(', ') }));
+      if (nudges.length) parts.push(fill(W.empty_reserve, { n: nudges.length })); if (parts.length === 1) parts.push(W.empty_quiet); empty.textContent = parts.join(' '); }
+    document.getElementById('stack').setAttribute('aria-busy', 'false');
+  }
+
+  var total = Promise.all(reg.map(function (ws) {
+    if (ws.failed) return Promise.resolve(0);
+    return api(ws, 'me/turns').then(function (turns) {
+      if (!turns) return 0;
+      turns.forEach(function (t) { moves.push({ ws: ws, case: t.case, turn: t.turn }); });
+      if (turns.length) return turns.filter(function (t) { return t.turn.kind !== 'nudge'; }).length;
+      return api(ws, 'cases').then(function (groups) { others.push({ ws: ws, cases: (groups || []).reduce(function (a, g) { return a + (g.cases || []).length; }, 0) }); return 0; });
+    });
+  })).then(function (ns) { render(); return ns.reduce(function (a, b) { return a + b; }, 0); });
+  // the week, honestly: gates passed by this person in the last seven days, summed over the live workspaces — a rhythm, no streak
+  Promise.all(reg.filter(function (w) { return !w.replay && !w.failed; }).map(function (ws) { return api(ws, 'me/rhythm').then(function (r) { return (r && r.week_seals) || 0; }); }))
+    .then(function (ns) { week = ns.reduce(function (a, b) { return a + b; }, 0); if (week) total.then(render); });
+
+  var op = document.getElementById('opener');
   function words(n) { var d = op.dataset; return n === 0 ? d.none : n === 1 ? d.one : d.many.replace('{n}', '<b>' + n + '</b>'); }
-  total.then(function (n) { line.innerHTML = words(n).replace(/^(\d+)/, '<b>$1</b>'); line.classList.toggle('mine', n > 0); });
   var seen = false; try { seen = sessionStorage.getItem('cockpit-opened') === '1'; sessionStorage.setItem('cockpit-opened', '1'); } catch (e) {}
   if (seen || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   op.hidden = false; document.body.classList.add('opening');

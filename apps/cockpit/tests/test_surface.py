@@ -148,7 +148,7 @@ def test_every_piece_with_a_meta_gets_a_cover_drawn_from_it(client, world):
 def test_the_overview_greets_the_person_and_the_side_menu_lists_only_their_modules(client):
     sign_in(client, "sam")
     page = client.get("/").text
-    assert 'class="page-head"' in page and ", Sam" in page and 'class="side"' in page
+    assert 'class="place"' in page and ", Sam" in page and 'class="side"' in page       # the stack's place line names the person (ADR-024); the greeting lives in the opener
     side = page.split('<nav class="side"')[1].split("</nav>")[0]
     assert 'href="/m/pipeline"' in side and 'href="/m/audits"' not in side       # sam may not open audits
     assert 'class="card-glyph"' in page and 'href="/setup"' not in side

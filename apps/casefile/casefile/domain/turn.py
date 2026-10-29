@@ -193,6 +193,8 @@ def sentence(config: DomainConfig, case: Case, t: Turn, lang: str | None) -> tup
         return s.strip()
 
     head = _lookup(config, "headlines", t.action, lang) or ""
+    if head and not words and ("{missing}" in head or "{first}" in head):   # a template about a gap, but nothing is missing: the plain form
+        head = ""
     headline = fill(head) if head else (fill(config.word("texts", "headline_default", lang, "{label}: {title}")))
     lock = ""
     if words:
@@ -211,6 +213,7 @@ def enrich(case: Case, turns: list[Turn], config: DomainConfig, lang: str | None
         if date and t.kind in ("seal", "gate", "gap"):
             t.kind, t.date = "date", date
         t.headline, t.lock = sentence(config, case, t, lang)
+        t.missing = missing_words(config, t.blocked_by, lang)
     return turns
 
 

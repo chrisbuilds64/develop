@@ -172,6 +172,7 @@ class Turn(BaseModel):
     headline: str = ""                                  # the move as a sentence, from the vocabulary's headlines: "Rechnung fehlt, dann freigeben"
     lock: str = ""                                      # the locked gate as a sentence with its condition, when blocked: "Freigeben … öffnet sich, sobald …"
     date: str = ""                                      # the date that puts this move first, when the case has one
+    missing: list[str] = Field(default_factory=list)    # blocked_by as words, in the viewer's language ("Rechnung", "mindestens ein Foto")
 
 
 # ----------------------------------------------------------------------------- a step

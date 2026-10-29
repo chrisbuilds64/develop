@@ -14,8 +14,8 @@
         "en": "Dashboard"
       },
       "text": {
-        "de": "Der Überblick: deine Workspaces auf einen Blick.",
-        "en": "The overview: your workspaces at a glance."
+        "de": "Der Stapel: was über alle Workspaces bei dir liegt, ein Tor nach dem anderen.",
+        "en": "The stack: what waits for you across all workspaces, one gate at a time."
       }
     },
     {
@@ -184,6 +184,54 @@
       "text": {
         "de": "Einmal je Sitzung: die Linie, ihre Stationen und ein Marker, der dort blau wird, wo du dran bist. Die Zahl ist echt: was in deinen Workspaces auf dich wartet. Jede Taste oder „Weiter“ überspringt.",
         "en": "Once per session: the line, its stations and a marker that turns blue where it is your move. The number is real: what waits for you in your workspaces. Any key or “Continue” skips it."
+      }
+    },
+    {
+      "key": "shell.stack",
+      "since": "0.20.0",
+      "title": {
+        "de": "Der Stapel",
+        "en": "The stack"
+      },
+      "text": {
+        "de": "Wie viele Tore auf dich warten, je Workspace zum Eingrenzen, und die Regel, nach der sie geordnet sind: Termin, Siegel, Tor, Lücke, Anstoß. Du sortierst nicht; du grenzt ein.",
+        "en": "How many gates wait for you, per workspace to narrow down, and the rule that orders them: date, seal, gate, gap, nudge. You do not sort; you narrow."
+      }
+    },
+    {
+      "key": "shell.gate",
+      "since": "0.20.0",
+      "title": {
+        "de": "Das erste Tor",
+        "en": "The first gate"
+      },
+      "text": {
+        "de": "Das eine Stück in voller Tiefe: Workspace, Kennung, Station, seit wann, die Handlung als Satz, was fehlt. Ein Knopf öffnet die Akte; dort wird das Tor passiert. Ein gesperrtes Tor ist ein Satz mit Schloss, kein zweiter Knopf.",
+        "en": "The one piece in full depth: workspace, id, station, since when, the move as a sentence, what is missing. One button opens the file; the gate is passed there. A locked gate is a sentence with a lock, not a second button."
+      }
+    },
+    {
+      "key": "shell.without",
+      "since": "0.20.0",
+      "title": {
+        "de": "Ohne Tor",
+        "en": "Without a gate"
+      },
+      "text": {
+        "de": "Was kein Tor ist, nur als Zahlen: der Vorrat (erlaubt, nicht fällig), was bei anderen liegt, die Muster, die Woche.",
+        "en": "What is not a gate, as numbers only: the reserve (allowed, not due), what lies with others, the samples, the week."
+      }
+    },
+    {
+      "key": "shell.behind",
+      "since": "0.20.0",
+      "title": {
+        "de": "Dahinter",
+        "en": "Behind"
+      },
+      "text": {
+        "de": "Deine Workspaces als Zeilen, zugeklappt: Name, gemeinsam oder meiner, Mitglieder, öffnen. Ein neuer Workspace entsteht hier.",
+        "en": "Your workspaces as rows, folded: name, shared or mine, members, open. A new workspace starts here."
       }
     }
   ]
