@@ -73,7 +73,7 @@ def _mkdir(path: Path, user: str, mode: int = 0o755) -> Path:
 
 
 WORLDS_LATER = ("gatehouse", "gatehouse-live", "gatehouse-demo", "posteingang", "posteingang-live", "angebot", "angebot-live",
-                "bestandsakte", "aenderungsakte")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
+                "bestandsakte", "aenderungsakte", "pressroom-muster")       # ADR-021: the elicitation sample world and the empty tree a live elicitation starts from
 
 
 def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
@@ -191,7 +191,9 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
              "angebot": {"label": "Angebotsakte", "config_dir": str(cfg / "angebot"), "template": str(d / "worlds" / "angebot-live"), "mode": "live"},
              "angebot-muster": {"label": "Angebotsakte · Muster", "config_dir": str(cfg / "angebot"), "template": str(d / "worlds" / "angebot"), "mode": "replay"},
              "bestandsakte": {"label": "Bestandsakte", "config_dir": str(cfg / "bestandsakte"), "template": str(d / "worlds" / "bestandsakte"), "mode": "replay"},
-             "aenderungsakte": {"label": "Änderungsakte", "config_dir": str(cfg / "aenderungsakte"), "template": str(d / "worlds" / "aenderungsakte"), "mode": "replay"}}
+             "aenderungsakte": {"label": "Änderungsakte", "config_dir": str(cfg / "aenderungsakte"), "template": str(d / "worlds" / "aenderungsakte"), "mode": "replay"},
+             # the PressRoom sample (2026-10-29): real pieces on the stages one flow needs; not the public demo's sandbox world `pressroom`
+             "pressroom-muster": {"label": "PressRoom · Muster", "config_dir": str(cfg / "pressroom"), "template": str(d / "worlds" / "pressroom-muster"), "mode": "replay"}}
     grew = [k for k, v in later.items() if k not in data["applications"] and Path(v["template"]).is_dir()]
     for k in grew:
         data["applications"][k] = later[k]
@@ -207,7 +209,8 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
                ("gatehouse-vorfuehrung", "gatehouse-vorfuehrung", "Gatehouse · Vorführung", ["chris"]),
                ("posteingang-muster", "posteingang-muster", "Posteingang · Muster", []), ("posteingang", "posteingang", "Posteingang", ["chris"]),
                ("angebot-muster", "angebot-muster", "Angebotsakte · Muster", []),
-               ("bestandsakte-muster", "bestandsakte", "Bestandsakte · Muster", []), ("aenderungsakte-muster", "aenderungsakte", "Änderungsakte · Muster", [])]
+               ("bestandsakte-muster", "bestandsakte", "Bestandsakte · Muster", []), ("aenderungsakte-muster", "aenderungsakte", "Änderungsakte · Muster", []),
+               ("pressroom-muster", "pressroom-muster", "PressRoom · Muster", [])]
     if not env.showcase:
         samples = []
     for wid, app, label, members in samples:
