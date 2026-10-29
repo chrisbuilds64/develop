@@ -120,6 +120,7 @@ const W = {
     scope: (q: number, c: number) => `${q} Fragen in ${c} Kapiteln. Zwei Sitzungen sind normal; du kannst jederzeit aufhören und später genau hier weitermachen.`,
     othersDone: (d: number, n: number) => `${d} von ${n} anderen ${n === 1 ? "ist" : "sind"} fertig. Was sie sagen, siehst du nicht — das bleibt so, bis ausgewertet wird.`,
     newCase: (what: string) => `+ Neue ${what}`, newCasePlaceholder: "Name, z. B. Angebotsprozess", create: "Anlegen",
+    threadEmpty: "Noch kein Eintrag. Die erste Notiz legt den Verlauf an.", originUnknown: "Herkunft nicht erfasst", delivers: (who: string) => `liefert ${who}`, deskEmpty: "Noch nichts in der Akte.", locked: "gesperrt",
   },
   en: {
     nothing: "Nothing waits for you.",
@@ -239,6 +240,7 @@ const W = {
     scope: (q: number, c: number) => `${q} questions in ${c} chapters. Two sittings are normal; stop any time and carry on exactly here.`,
     othersDone: (d: number, n: number) => `${d} of ${n} others are done. What they say you do not see — that stays so until the evaluation.`,
     newCase: (what: string) => `+ New ${what.toLowerCase()}`, newCasePlaceholder: "Name, e.g. quoting process", create: "Create",
+    threadEmpty: "No entry yet. The first note starts the thread.", originUnknown: "origin not recorded", delivers: (who: string) => `${who} delivers`, deskEmpty: "Nothing in the case yet.", locked: "locked",
   },
 };
 

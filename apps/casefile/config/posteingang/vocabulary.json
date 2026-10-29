@@ -50,7 +50,10 @@
       "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
       "delivered_title": "Abgelegt: {files}",
       "replay_moved": "Weiter.",
-      "mail_refused": "Mails wirft der Posteingang ein."
+      "mail_refused": "Mails wirft der Posteingang ein.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
     },
     "files": {
       "mail.md": "Mail",
@@ -72,6 +75,15 @@
       "message_id": "Message-ID",
       "source": "Quelle",
       "headers": "Kopfzeilen"
+    },
+    "requires": {
+      "einordnung.json": "die Einordnung"
+    },
+    "headlines": {
+      "confirm": "{title}: {first} fehlt, dann bestätigen"
+    },
+    "locks": {
+      "confirm": "Bestätigen. Ein Siegel; öffnet sich, sobald {missing} vorliegt."
     }
   },
   "en": {
@@ -125,7 +137,10 @@
       "detected_text": "The folder was found in {stage}; the thread last knew {known}.",
       "delivered_title": "Put in: {files}",
       "replay_moved": "Moved on.",
-      "mail_refused": "Only the inbox's operators put mail in."
+      "mail_refused": "Only the inbox's operators put mail in.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
     },
     "files": {
       "mail.md": "Mail",
@@ -147,6 +162,15 @@
       "message_id": "Message-ID",
       "source": "Source",
       "headers": "Headers"
+    },
+    "requires": {
+      "einordnung.json": "the reading"
+    },
+    "headlines": {
+      "confirm": "{title}: {first} is missing, then confirm"
+    },
+    "locks": {
+      "confirm": "Confirm. A seal; opens once {missing} is there."
     }
   },
   "$comment": "Every word the inbox shows, German and English."

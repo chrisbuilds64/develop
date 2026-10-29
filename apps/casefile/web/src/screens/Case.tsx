@@ -94,7 +94,20 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const seriesOf = (f: string) => /^(.+)-\d+\.(\w+)$/.exec(f)?.slice(1).join(".");
   const firstFree = new Set<string>();
   const nextOfSeries = (s: { file: string; present: boolean }) => { const k = seriesOf(s.file); if (!k) return true; if (firstFree.has(k)) return false; firstFree.add(k); return true; };
-  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6)))))).filter(nextOfSeries);
+  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6)))))).filter(nextOfSeries)
+    .sort((a, b) => Number(blocked.includes(b.file)) - Number(blocked.includes(a.file)));
+  // who put a file on the desk, and when: the slot's own word, else the newest entry that names the file; else said so, not hidden
+  const originOf = (s: { by_word: string; versions: { name: string }[] }) => {
+    const names = new Set(s.versions.map((x) => x.name));
+    const e = [...v.entries].reverse().find((x) => (x.files ?? []).some((f) => names.has(f) || names.has(f.split("/").pop() ?? f)));
+    return { who: s.by_word || e?.author || "", when: e?.date ? dateWords(e.date, lang) : "" };
+  };
+  const tileMeta = (s: { by_word: string; versions: { name: string; version: number }[] }) => {
+    const newest = s.versions[s.versions.length - 1];
+    const o = originOf(s);
+    return <>{w.version(Math.max(1, newest.version))}{o.who ? ` · ${o.who}` : <> · <em>{w.originUnknown}</em></>}{o.when ? ` · ${o.when}` : ""}</>;
+  };
+  const headline = (v.my_turns[0] ?? v.turns[0])?.headline ?? "";
   const onsiteHere = ((config.theme as { onsite?: { stages?: string[] } }).onsite?.stages ?? []).includes(v.stage);
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const docs = docsOf(v);
@@ -117,6 +130,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
         <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
         <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>
         <p className="title">{v.title}</p>
+        {headline && <p className="headline">{headline}</p>}
         <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span>
           <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} /></p>
       </header>
@@ -153,7 +167,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
             )}
             {primary?.present && (
               <button type="button" className="file wide stack" data-file={primary.file} onClick={() => setReading(primary.versions[primary.versions.length - 1].name)}>
-                <span className="head"><span className="name">{primary.word}</span><span className="meta">{w.version(Math.max(1, primary.versions[primary.versions.length - 1].version))}{primary.by_word ? ` · ${primary.by_word}` : ""}</span></span>
+                <span className="head"><span className="name">{primary.word}</span><span className="meta">{tileMeta(primary)}</span></span>
                 {primary.versions.length > 1 && <span className="hint">{w.keeps}</span>}
               </button>
             )}
@@ -163,11 +177,11 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
                 <button key={s.file} type="button" className={`file${s.versions.length > 1 ? " stack" : ""}${landed === s.file ? " landed" : ""}`} data-file={s.file} onClick={() => setReading(newest.name)}>
                   {s.shape.startsWith("image") && <img src={BASE + newest.url} alt="" />}
                   <span className="name">{s.word}</span>
-                  <span className="meta">{w.version(Math.max(1, newest.version))}{s.by_word ? ` · ${s.by_word}` : ""}</span>
+                  <span className="meta">{tileMeta(s)}</span>
                 </button>
               );
             })}
-            {desk.length === 0 && !primary?.present && !talkSlot && <span className="empty">—</span>}
+            {desk.length === 0 && !primary?.present && !talkSlot && <span className="empty">{w.deskEmpty}</span>}
           </div>
 
           {missing.length > 0 && (
@@ -213,12 +227,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
           <span className="says">{w.fillFrames(blocked.map(blockedWord).join(", "))}</span>
         ) : primaryTurn ? (
           <>
-            {blocked.length > 0 && <span className="says">{w.firstHere}: {blocked.map(blockedWord).join(", ")}</span>}
+            {blocked.length > 0 && <span className="says lock"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5 7V5a3 3 0 0 1 6 0v2" /></svg><span className="sr">{w.locked}: </span>{primaryTurn.lock || `${w.firstHere}: ${blocked.map(blockedWord).join(", ")}`}</span>}
             {blocked.length > 0 && talkSlot && outcomeReady && <button type="button" className="btn ghost" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>{w.outcomeOpen} →</button>}
             {blocked.length === 0 && needsAmount && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" autoFocus /></label>}
             {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
             {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
-            {blocked.length === 0 && <button type="button" className={`btn${primaryTurn.seal ? " arrive" : ""}`} disabled={!canPress} data-action={primaryTurn.action} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>}
+            {blocked.length === 0 && <button type="button" className={`btn${primaryTurn.seal ? " arrive seal" : ""}`} disabled={!canPress} data-action={primaryTurn.action} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>}
           </>
         ) : main ? (
           <span className="says">{main.actor === "claude" ? w.isWorking(v.agent) : `${w.waitingFor(roleWord(main.actor))}`}</span>

@@ -56,7 +56,10 @@
       "detected": "Von Hand verschoben",
       "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
       "delivered_title": "Abgelegt: {files}",
-      "replay_moved": "Weiter."
+      "replay_moved": "Weiter.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
     },
     "files": {
       "aenderung.md": "Änderung",
@@ -75,6 +78,14 @@
     },
     "words": {
       "external_id": "Release"
+    },
+    "requires": {
+      "shape:image": "mindestens ein Foto",
+      "shape:pdf": "ein PDF",
+      "shape:video": "ein Video",
+      "answered": "eine Antwort",
+      "decided:": "deine Entscheide",
+      "primary": "das Hauptdokument"
     }
   },
   "en": {
@@ -133,7 +144,10 @@
       "detected": "Moved by hand",
       "detected_text": "The case was found in {stage}; the thread last knew {known}.",
       "delivered_title": "Filed: {files}",
-      "replay_moved": "Moved on."
+      "replay_moved": "Moved on.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
     },
     "files": {
       "aenderung.md": "Change",
@@ -152,6 +166,14 @@
     },
     "words": {
       "external_id": "Release"
+    },
+    "requires": {
+      "shape:image": "at least one photo",
+      "shape:pdf": "a PDF",
+      "shape:video": "a video",
+      "answered": "an answer",
+      "decided:": "your decisions",
+      "primary": "the primary document"
     }
   }
 }

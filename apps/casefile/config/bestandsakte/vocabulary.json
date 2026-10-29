@@ -68,7 +68,10 @@
       "canon_lead": "Je Abweichung vom Eigentümer entschieden. Was verworfen wurde, steht nicht hier.",
       "canon_scope": "Grundlage: Baseline aus PROD, Release 1.0 im Repository. Was hier steht, baut jede neue Datenbank.",
       "canon_foot": "Festgelegt von {who} am {date}, Eigentümer des Schemas SDLC_APP.",
-      "question_word": "Datei"
+      "question_word": "Datei",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
     },
     "files": {
       "auftrag.md": "Auftrag",
@@ -88,6 +91,14 @@
     },
     "words": {
       "external_id": "Schema"
+    },
+    "requires": {
+      "shape:image": "mindestens ein Foto",
+      "shape:pdf": "ein PDF",
+      "shape:video": "ein Video",
+      "answered": "eine Antwort",
+      "decided:": "deine Entscheide",
+      "primary": "das Hauptdokument"
     }
   },
   "en": {
@@ -158,7 +169,10 @@
       "canon_lead": "Decided by the owner, difference by difference. What was rejected is not here.",
       "canon_scope": "Basis: baseline from PROD, release 1.0 in the repository. What stands here builds every new database.",
       "canon_foot": "Fixed by {who} on {date}, owner of schema SDLC_APP.",
-      "question_word": "file"
+      "question_word": "file",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
     },
     "files": {
       "auftrag.md": "Order",
@@ -178,6 +192,14 @@
     },
     "words": {
       "external_id": "Schema"
+    },
+    "requires": {
+      "shape:image": "at least one photo",
+      "shape:pdf": "a PDF",
+      "shape:video": "a video",
+      "answered": "an answer",
+      "decided:": "your decisions",
+      "primary": "the primary document"
     }
   }
 }

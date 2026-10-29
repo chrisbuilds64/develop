@@ -15,15 +15,20 @@ export function Board({ config, go, w }: { config: ConfigView; go: (p: string) =
         <span className="hint">{total} · {config.product}</span>
       </header>
       <div className="kanban">
-        {(stages.data ?? []).map((s) => (
+        {(stages.data ?? []).map((s, _i, all) => {
+          // two stages of one station (inspection, then the AI's reconciliation): the stage's own word heads the column
+          const shared = !!s.station && all.filter((x) => x.station === s.station).length > 1;
+          const head = shared ? s.word : (s.station || s.word);
+          return (
           <section key={s.folder} className={`col${s.cases.length === 0 ? " empty" : ""}`} aria-label={s.word}>
-            <h3><span>{s.station || s.word}</span><span className="n">{s.cases.length}</span></h3>
-            <span className="folder">{s.station ? s.word : ""}<span className="mono"> {s.folder}</span></span>
+            <h3><span>{head}</span><span className="n">{s.cases.length}</span></h3>
+            {s.station && s.cases.length > 0 && <span className="folder">{shared ? s.station : s.word}</span>}
             <div className="col-cards">
               {s.cases.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet={!c.mine} />)}
             </div>
           </section>
-        ))}
+          );
+        })}
       </div>
     </main>
   );

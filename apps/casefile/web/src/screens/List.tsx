@@ -12,15 +12,18 @@ export function Card({ c, go, w, lang, quiet, on, from }: { c: CaseCard; go: (p:
   const t = c.turn;
   const running = t?.actor === "claude";
   const state = t ? (c.mine ? c.stage_word : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;
+  // the short identifier: the external number, label and number, or the id without its slug — never number and slug twice
+  const num = c.external_id || (c.number ? `${c.label}-${c.number}` : c.id.replace(/-[a-z][a-z0-9]*(-.*)?$/, ""));
+  const yours = c.mine && !quiet;                       // colour only where the group is "you"; elsewhere the row stays quiet
   return (
-    <a className={`card${c.mine ? " mine" : ""}${quiet ? " quiet" : ""}${on ? " on" : ""}`} aria-current={on ? "true" : undefined} href={`${BASE}${to}`} onClick={(e) => { e.preventDefault(); go(to); }}>
+    <a className={`card${yours ? " mine" : ""}${quiet ? " quiet" : ""}${on ? " on" : ""}`} aria-current={on ? "true" : undefined} href={`${BASE}${to}`} onClick={(e) => { e.preventDefault(); go(to); }}>
       <Cover label={c.label} number={c.number || c.id.split("-")[1] || ""} tint={c.tint} />
       <span className="card-body">
         {!quiet && <span className="ref">{c.label_word}</span>}
-        <span className="num">{c.external_id || (c.number ? `${c.label}-${c.number}` : c.id)}</span>
-        <span className="title">{c.title}</span>
+        <span className="num">{num}</span>
+        <span className="title" title={c.title}>{c.title}</span>
+        {yours && <span className="yours"><i className="dot mine" aria-hidden="true" />{w.yourMove}</span>}
         <span className="state">{state}</span>
-        {c.mine && <span className="yours">{w.yourMove}</span>}
         {running && <span className="bar"><i /></span>}
       </span>
     </a>
