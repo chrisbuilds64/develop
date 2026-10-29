@@ -66,13 +66,25 @@ export function App() {
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups, enabled: !!me.data?.person });
   const config = useQuery({ queryKey: ["config"], queryFn: api.config, refetchInterval: false });
   const [route, go] = useRoute();
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
-    try { return (localStorage.getItem("cf.theme") as "light" | "dark" | "system") || "system"; } catch { return "system"; }
-  });
+  // one choice for the whole shell: the cockpit keeps it as `cockpit-theme` (light | dark | auto), same origin; the app reads
+  // that first, writes both, and follows a change made in another tab
+  const readTheme = (): "light" | "dark" | "system" => {
+    try {
+      const shell = localStorage.getItem("cockpit-theme");
+      if (shell) return shell === "auto" ? "system" : (shell as "light" | "dark");
+      return (localStorage.getItem("cf.theme") as "light" | "dark" | "system") || "system";
+    } catch { return "system"; }
+  };
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(readTheme);
   useEffect(() => {
-    try { localStorage.setItem("cf.theme", theme); } catch { /* private window */ }
+    try { localStorage.setItem("cf.theme", theme); localStorage.setItem("cockpit-theme", theme === "system" ? "auto" : theme); } catch { /* private window */ }
     if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
   }, [theme]);
+  useEffect(() => {
+    const on = (e: StorageEvent) => { if (e.key === "cockpit-theme" || e.key === "cf.theme") setTheme(readTheme()); };
+    window.addEventListener("storage", on);
+    return () => window.removeEventListener("storage", on);
+  }, []);
   const [side, setSide] = useState<"left" | "right">(() => {
     try { return (localStorage.getItem("cf.side") as "left" | "right") || "left"; } catch { return "left"; }
   });
