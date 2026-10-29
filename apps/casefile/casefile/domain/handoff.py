@@ -162,16 +162,18 @@ def create(store: FsStore, config: DomainConfig, case_id: str, tgt: Target, spec
     """A new case in the target. Idempotent: a case that is already there is the answer, nothing is written twice."""
     ctx = ctx or _context(store, config, case_id)
     case = ctx.pop("_case", None) or reading.load(store, config, case_id)
-    stage = spec.get("stage") or tgt.stage or next((s.folder for s in tgt.config.stages if s.group != "archive"), None)
+    born = tgt.config.theme.get("create") or {}              # how a case starts in the target, when the spec does not say: same rule as the form
+    stage = spec.get("stage") or tgt.stage or born.get("stage") or next((s.folder for s in tgt.config.stages if s.group != "archive"), None)
     if not stage or stage not in tgt.store.stages():
         raise HandoffError(f"the stage '{stage}' is missing in {tgt.label}")
-    label = spec.get("label") or "X"
+    label = spec.get("label") or born.get("label") or "X"
     year = dt.date.today().year
     if spec.get("number") == "source" and case.meta.get("number"):
         number = str(case.meta["number"])
     else:
-        nums = [int(x.group(1)) for st in tgt.store.stages() for c in tgt.store.cases(st) if (x := re.match(rf"^{re.escape(label)}-{year}-(\d+)", c))]
-        number = f"{year}-{(max(nums) + 1) if nums else 1:04d}"
+        from . import numbering
+        rule = spec.get("number") if spec.get("number") not in (None, "", "source") else born.get("number") or ["{year}-{seq:04}"]
+        number = numbering.next_number(tgt.store, label, rule, {k: v for k, v in (spec.get("values") or {}).items()})
     y, _, seq = number.partition("-")
     ctx.update(number=number, year=y or str(year), seq=seq or number)
     meta_t = dict(spec.get("meta") or {})

@@ -12,7 +12,7 @@
      "action": "note_to_case", "action_word": {"de": "Als Notiz an die Akte hängen", "en": "Add as a note to the file"}, "target": "schadenakte", "approval": "human",
      "sort": {"pattern": "(?P<reference>SN-\\d{4}-\\d{5})"}, "match": {"key": "external_id", "value": "{fields.reference}"}, "carry": {"mail.md": "rueckfrage.md"}},
     {"id": "R-04", "kind": "themenvorschlag", "word": {"de": "Themenvorschlag", "en": "Topic suggestion"}, "when": {"de": "Jemand schlägt ein Thema für Beiträge vor", "en": "Someone suggests a topic"},
-     "action": "create_case", "action_word": {"de": "Als Signal in den PressRoom", "en": "Into PressRoom as a signal"}, "target": "pressroom", "label": "SIG", "stage": "05-operational-observations", "approval": "human",
+     "action": "create_case", "action_word": {"de": "Als Idee in den PressRoom", "en": "Into PressRoom as an idea"}, "target": "pressroom", "approval": "human",
      "carry": {"mail.md": "anregung.md"}, "meta": {"title": "{fields.title}"}},
     {"id": "R-05", "kind": "angebotsanfrage-kfz", "word": {"de": "Angebotsanfrage (Kfz)", "en": "Quote request (motor)"}, "when": {"de": "Kunde möchte ein Fahrzeug versichern oder wechseln", "en": "A customer wants a vehicle insured or to switch"},
      "action": "create_case", "action_word": {"de": "Akte in der Angebotsakte anlegen", "en": "Open a quote file"}, "target": "angebot", "label": "KFZ", "approval": "human",

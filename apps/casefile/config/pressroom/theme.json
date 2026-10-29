@@ -12,5 +12,19 @@
       "WN": "#8a5cf6"
     },
     "fallback": "#5a6270"
+  },
+  "create": {
+    "$comment": "A new piece starts as an idea, like a claim starts as a report (Chris, 2026-10-29). Format and series come from the value lists; the number follows the PressRoom rule: in a series it counts there (SIM-03), else the placeholder xxx until it is numbered.",
+    "label": "FN",
+    "roles": [
+      "author",
+      "operator"
+    ],
+    "stage": "10-ideas",
+    "number": [
+      "{series}-{seq:02}",
+      "xxx"
+    ],
+    "meta": {}
   }
 }

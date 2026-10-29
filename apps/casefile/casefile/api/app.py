@@ -1258,16 +1258,15 @@ def create_app(settings: Settings) -> FastAPI:
         except chosen.ListError as exc:
             return _refuse(exc)
         label = values.get("label") or body.label or create.get("label", "X")
-        first = next((s.folder for s in c.config.stages if s.group != "archive"), None)
+        first = create.get("stage") or next((s.folder for s in c.config.stages if s.group != "archive"), None)   # where a new case starts
         if not first or first not in c.store.stages():
             return _refuse(Exception("the first stage folder is missing"))
         for prior in c.store.journals():                        # the same step id twice is the same case
             j = c.store.read_json(f"_steps/{prior}")
             if j.get("step_id") == body.step_id and j.get("action") == "create":
                 return NewCaseOut(id=j["case"], stage=c.store.find(j["case"]) or first)
-        year = dt.date.today().year
-        numbers = [int(m.group(1)) for st in c.store.stages() for cid in c.store.cases(st) if (m := re.match(rf"^{re.escape(label)}-{year}-(\d+)", cid))]
-        number = f"{year}-{(max(numbers) + 1) if numbers else 1:02d}"
+        from ..domain import numbering
+        number = numbering.next_number(c.store, label, create.get("number"), values)   # the domain's own rule: in a year, in a series, or a placeholder
         slug = re.sub(r"[^a-z0-9]+", "-", title.lower().translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}))).strip("-")[:40] or "akte"
         cid = f"{label}-{number}-{slug}"
         try:

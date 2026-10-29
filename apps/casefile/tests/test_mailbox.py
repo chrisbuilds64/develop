@@ -105,7 +105,7 @@ def test_a_question_reaches_the_claim_it_names_or_nothing_moves(world):
     assert "Fragt nach dem Stand." in (claim / "review.md").read_text()
 
 
-def test_a_topic_mail_becomes_a_signal_in_pressroom(world, tmp_path):
+def test_a_topic_mail_becomes_an_idea_in_pressroom(world, tmp_path):
     store, config, _ = world
     press = tmp_path / "press"
     for st in ("00-archive", "05-operational-observations", "10-ideas"):
@@ -116,6 +116,6 @@ def test_a_topic_mail_becomes_a_signal_in_pressroom(world, tmp_path):
     cid, _ = mailbox.ingest(store, config, mail("Idee: Agenten im Schadenprozess", with_photo=False))
     (store.root / "10-eingang" / cid / "einordnung.json").write_text(json.dumps({"kind": "themenvorschlag", "rule": "R-04", "fields": {"title": "Agenten im Schadenprozess"}}))
     assert stepping.step(store, config, cid, StepRequest(action="confirm", step_id="t1"), "chris").ok
-    made = list((press / "05-operational-observations").iterdir())
-    assert len(made) == 1 and made[0].name.startswith("SIG-") and (made[0] / "anregung.md").is_file()
-    assert not list((press / "10-ideas").iterdir())                    # a signal, not yet an idea
+    made = list((press / "10-ideas").iterdir())                        # the target's own rule: an idea, like the form would start it
+    assert len(made) == 1 and made[0].name.startswith("FN-xxx-") and (made[0] / "anregung.md").is_file()
+    assert not list((press / "05-operational-observations").iterdir())
