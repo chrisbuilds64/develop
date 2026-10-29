@@ -63,7 +63,10 @@
       "detected": "Von Hand verschoben",
       "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
       "delivered_title": "Abgelegt: {files}",
-      "replay_moved": "Weiter."
+      "replay_moved": "Weiter.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
     },
     "files": {
       "auftrag.pdf": "Gutachtenauftrag",
@@ -107,6 +110,26 @@
       "fictional": "Erfunden",
       "client": "Auftraggeber",
       "schaden_nr": "Schadennummer"
+    },
+    "requires": {
+      "diktat.md": "das Diktat",
+      "ergebnis.json": "das Ergebnis",
+      "kalkulation.pdf": "die Kalkulation",
+      "pruefbericht.md": "der Prüfbericht",
+      "anschreiben.md": "das Anschreiben",
+      "gutachten.md": "das Gutachten"
+    },
+    "headlines": {
+      "approve_report": "{title}: {first} fehlt, dann freigeben",
+      "send": "{title}: {first} fehlt, dann versenden",
+      "deliver_draft": "{title}: {first} fehlt, dann übergeben",
+      "close_inspection": "{title}: {first} fehlt, dann Besichtigung abschließen",
+      "capture_result": "{title}: {first} fehlt, dann Ergebnis erfassen",
+      "compose_report": "{title}: {first} fehlt, dann Gutachten zusammenstellen"
+    },
+    "locks": {
+      "approve_report": "Gutachten freigeben. Ein Siegel; öffnet sich, sobald {missing} in der Akte liegt.",
+      "send": "Versenden. Ein Siegel; öffnet sich, sobald {missing} in der Akte liegt."
     }
   },
   "en": {
@@ -172,7 +195,10 @@
       "detected": "Moved by hand",
       "detected_text": "The file was in {stage}; the thread last knew {known}.",
       "delivered_title": "Dropped in: {files}",
-      "replay_moved": "On."
+      "replay_moved": "On.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
     },
     "files": {
       "auftrag.pdf": "Assessment order",
@@ -216,6 +242,26 @@
       "fictional": "Fictional",
       "client": "Client",
       "schaden_nr": "Claim number"
+    },
+    "requires": {
+      "diktat.md": "the dictation",
+      "ergebnis.json": "the result",
+      "kalkulation.pdf": "the calculation",
+      "pruefbericht.md": "the review report",
+      "anschreiben.md": "the cover letter",
+      "gutachten.md": "the report"
+    },
+    "headlines": {
+      "approve_report": "{title}: {first} is missing, then approve",
+      "send": "{title}: {first} is missing, then send",
+      "deliver_draft": "{title}: {first} is missing, then deliver",
+      "close_inspection": "{title}: {first} is missing, then close the inspection",
+      "capture_result": "{title}: {first} is missing, then capture the result",
+      "compose_report": "{title}: {first} is missing, then compose the report"
+    },
+    "locks": {
+      "approve_report": "Approve the report. A seal; opens once {missing} is in the file.",
+      "send": "Send. A seal; opens once {missing} is in the file."
     }
   }
 }

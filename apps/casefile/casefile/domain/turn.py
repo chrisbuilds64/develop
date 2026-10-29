@@ -141,12 +141,96 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
     return out
 
 
+ORDER = ("date", "seal", "gate", "gap", "nudge")       # the stack's rule (Chris, 2026-10-29): a date first, then gates with a seal, gates without,
+                                                        # moves that wait for something, then nudges; inside a group the longest-waiting first
+DATE_KEYS = ("due", "publishDate", "deadline")          # a meta key that puts a case on a date
+
+
+def _lookup(config: DomainConfig, kind: str, key: str, lang: str | None) -> str | None:
+    """A word from the vocabulary, or None — unlike `config.word`, which falls back to the key."""
+    v = config.vocabulary.get(lang or config.lang) or config.vocabulary.get("en") or {}
+    section = v.get(kind)
+    return section.get(key) if isinstance(section, dict) and section.get(key) else None
+
+
+def missing_words(config: DomainConfig, tokens: list[str], lang: str | None) -> list[str]:
+    """The words for what is missing: a file name through `files`, a token (`shape:image`, `answered`, `decided:…`) through `requires`."""
+    out = []
+    for t in tokens:
+        if t.startswith("four eyes:"):
+            continue
+        key = t.split(":")[0] + ":" if ":" in t and not t.endswith(".json") else t
+        if t.startswith("decided:"):
+            key = "decided:"
+        # the whole token first ("shape:image" is its own word), then the family ("decided:"), then the file's word
+        out.append(_lookup(config, "requires", t, lang) or _lookup(config, "requires", key, lang) or config.word("files", t, lang, t))
+    return out
+
+
+def classify(case: Case, action: Action | None, t: Turn) -> str:
+    """Which group of the stack a move belongs to. A move that waits for something is a gap whatever its gate would be."""
+    if t.action == "wait":
+        return "nudge"
+    if any(not b.startswith("four eyes:") for b in t.blocked_by):
+        return "gap"
+    if t.seal:
+        return "seal"
+    if t.action in ("answer", "see_failure", "interview"):
+        return "gate"
+    if action is not None and action.to:
+        return "gate"
+    return "nudge"
+
+
+def sentence(config: DomainConfig, case: Case, t: Turn, lang: str | None) -> tuple[str, str]:
+    """(headline, lock) from the vocabulary's templates, with {title}, {label}, {missing}, {first}, {n} filled; defaults when none is configured."""
+    title = str(case.meta.get("title") or case.meta.get("working_title") or case.id)
+    words = missing_words(config, t.blocked_by, lang)
+    ctx = {"title": title, "label": t.label, "missing": ", ".join(words), "first": words[0] if words else "", "n": str(len(words))}
+
+    def fill(s: str) -> str:
+        for k, v in ctx.items():
+            s = s.replace("{" + k + "}", v)
+        return s.strip()
+
+    head = _lookup(config, "headlines", t.action, lang) or ""
+    if head and not words and ("{missing}" in head or "{first}" in head):   # a template about a gap, but nothing is missing: the plain form
+        head = ""
+    headline = fill(head) if head else (fill(config.word("texts", "headline_default", lang, "{label}: {title}")))
+    lock = ""
+    if words:
+        lk = _lookup(config, "locks", t.action, lang) or config.word("texts", "lock_default", lang, "{label} — {missing}")
+        lock = fill(lk)
+    return headline, lock
+
+
+def enrich(case: Case, turns: list[Turn], config: DomainConfig, lang: str | None = None) -> list[Turn]:
+    """Kind, headline, lock and date on every move of a case — the stack's vocabulary, computed once from the configuration."""
+    stage = config.stage(case.stage)
+    actions = {a.id: a for a in (stage.actions if stage else [])}
+    date = next((str(case.meta[k])[:10] for k in DATE_KEYS if case.meta.get(k)), "")
+    for t in turns:
+        t.kind = classify(case, actions.get(t.action), t)
+        if date and t.kind in ("seal", "gate", "gap"):
+            t.kind, t.date = "date", date
+        t.headline, t.lock = sentence(config, case, t, lang)
+        t.missing = missing_words(config, t.blocked_by, lang)
+    return turns
+
+
+def rank(config: DomainConfig, case: Case, t: Turn) -> tuple:
+    order = list(config.order or ORDER)
+    pos = order.index(t.kind) if t.kind in order else len(order)
+    return (pos, t.date or "", t.since or "", case.id)
+
+
 def turns_for(person_id: str, cases: list[Case], config: DomainConfig, lang: str | None = None) -> list[tuple[Case, Turn]]:
-    """Every (case, turn) where this person is the actor — the 'your move' list. Main turns first."""
+    """Every (case, turn) where this person is the actor — the stack. Ordered by the stack's rule (`order` in stages.json, else ORDER),
+    inside a group by date, then the longest-waiting first."""
     out: list[tuple[Case, Turn]] = []
     for c in cases:
-        for t in turn(c, config, lang):
+        for t in enrich(c, turn(c, config, lang), config, lang):
             if t.actor == person_id or config.may_act(person_id, t.actor):
                 out.append((c, t))
-    out.sort(key=lambda ct: (ct[1].since or "", ct[0].id))
+    out.sort(key=lambda ct: rank(config, ct[0], ct[1]))
     return out

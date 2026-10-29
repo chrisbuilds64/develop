@@ -58,7 +58,10 @@
       "detected": "Von Hand verschoben",
       "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
       "delivered_title": "Abgelegt: {files}",
-      "replay_moved": "Weiter."
+      "replay_moved": "Weiter.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
     },
     "files": {
       "meldung.md": "Schadenmeldung",
@@ -105,6 +108,27 @@
       "fictional": "Erfunden",
       "policy": "Police",
       "gutachten_auftrag": "Gutachtenauftrag"
+    },
+    "headlines": {
+      "approve_settlement": "{title}: {first} fehlt, dann freigeben",
+      "order_assessment": "Gutachten beauftragen: {title}",
+      "deliver_report": "Gutachten übergeben: {title}",
+      "ask_assessor": "Rückfrage an den Gutachter: {title}",
+      "paid": "Als reguliert melden: {title}",
+      "answer": "Antworten: {title}",
+      "deliver": "{first} ablegen: {title}",
+      "see_failure": "Nachsehen, was schiefging: {title}"
+    },
+    "locks": {
+      "approve_settlement": "Freigeben und zur Regulierung. Ein Siegel; öffnet sich, sobald {missing} in der Akte liegt.",
+      "deliver_report": "Gutachten übergeben; öffnet sich, sobald {missing} in der Akte liegt."
+    },
+    "requires": {
+      "shape:image": "mindestens ein Foto",
+      "shape:pdf": "ein PDF",
+      "answered": "eine Antwort",
+      "decided:": "deine Entscheide",
+      "primary": "das Hauptdokument"
     }
   },
   "en": {
@@ -165,7 +189,10 @@
       "detected": "Moved by hand",
       "detected_text": "The file was found in {stage}; the thread last knew {known}.",
       "delivered_title": "Added: {files}",
-      "replay_moved": "Moved on."
+      "replay_moved": "Moved on.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
     },
     "files": {
       "meldung.md": "Claim report",
@@ -212,6 +239,27 @@
       "fictional": "Fictional",
       "policy": "Policy",
       "gutachten_auftrag": "Assessment order"
+    },
+    "headlines": {
+      "approve_settlement": "{title}: {first} is missing, then approve",
+      "order_assessment": "Order the assessment: {title}",
+      "deliver_report": "Deliver the report: {title}",
+      "ask_assessor": "Question to the assessor: {title}",
+      "paid": "Mark as settled: {title}",
+      "answer": "Answer: {title}",
+      "deliver": "File {first}: {title}",
+      "see_failure": "See what went wrong: {title}"
+    },
+    "locks": {
+      "approve_settlement": "Approve and settle. A seal; opens once {missing} is in the file.",
+      "deliver_report": "Deliver the report; opens once {missing} is in the file."
+    },
+    "requires": {
+      "shape:image": "at least one photo",
+      "shape:pdf": "a PDF",
+      "answered": "an answer",
+      "decided:": "your decisions",
+      "primary": "the primary document"
     }
   }
 }

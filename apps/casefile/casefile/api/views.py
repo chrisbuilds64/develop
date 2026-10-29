@@ -123,7 +123,7 @@ def group_of(config: DomainConfig, case: Case, main: Turn | None, viewer: str | 
 
 
 def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> CaseCard:
-    turns = whose.turn(case, config, lang)
+    turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     main = turns[0] if turns else None
     key, idx = station_of(config, case.stage)
     g = group_of(config, case, main, viewer)
@@ -141,7 +141,7 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> Cas
 
 def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url) -> CaseView:
     c = card(config, case, viewer, lang)
-    turns = whose.turn(case, config, lang)
+    turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     mine = [t for t in turns if viewer and (t.actor == viewer or config.may_act(viewer, t.actor))]
     stations = [StationView(key=k, word=config.word("stations", k, lang, k), state="done" if i < c.station_index else "current" if i == c.station_index else "todo")
                 for i, k in enumerate(config.stations)]
