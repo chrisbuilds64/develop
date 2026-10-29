@@ -1773,6 +1773,14 @@
             "type": "array",
             "title": "Videos",
             "default": []
+          },
+          "order": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Order",
+            "default": []
           }
         },
         "type": "object",

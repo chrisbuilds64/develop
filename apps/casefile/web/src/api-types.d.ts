@@ -850,6 +850,11 @@ export interface components {
             videos: {
                 [key: string]: unknown;
             }[];
+            /**
+             * Order
+             * @default []
+             */
+            order: string[];
         };
         /** DecideIn */
         DecideIn: {

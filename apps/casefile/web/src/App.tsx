@@ -1,13 +1,12 @@
-// The shell: menu and one of three views on the same folders — the cases (list + case), the board, the stacked list.
-// Routes, read from the location: /, /case/<id>, /group/<key> (cases), /board, /list, and /doc/<id>/<name> as the reader in its own window.
+// The surface: a bar and one column (ADR-024, step 2 — the shell fell). Routes, read from the location: / (the stack of this
+// workspace), /case/<id> (one gate of it), /group/<key> (a group as rows), the ways into a case (/case/<id>/gespraech|ergebnis|
+// vorort|kanon), the second views (/board, /list), /rules, /signals, /kanon, and /doc/<id>/<name> as the reader in its own window.
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, BASE } from "./api";
 import { Gate } from "./screens/Gate";
-import { Menu } from "./components/Menu";
-import { TopBar } from "./components/TopBar";
-import { List } from "./screens/List";
-import { CaseScreen } from "./screens/Case";
+import { TopBar, type Side, type Theme } from "./components/TopBar";
+import { GroupScreen, Place, Stack, ident } from "./screens/Stack";
 import { Board } from "./screens/Board";
 import { Stacked } from "./screens/Stacked";
 import { Rules } from "./screens/Rules";
@@ -26,7 +25,7 @@ export type Route = { name: "home" } | { name: "case"; id: string; group?: strin
 export function parse(full: string): Route {
   const [bare, search = ""] = full.split("?");
   const path = bare.startsWith(BASE) ? bare.slice(BASE.length) || "/" : bare;
-  const group = new URLSearchParams(search).get("g") || undefined;     // the group the case was opened from: the list stays there
+  const group = new URLSearchParams(search).get("g") || undefined;     // the group the case was opened from (older links keep working)
   const d = path.match(/^\/doc\/([^/]+)\/([^/]+)/);
   if (d) return { name: "doc", id: decodeURIComponent(d[1]), file: decodeURIComponent(d[2]) };
   const t = path.match(/^\/case\/([^/]+)\/(gespraech|ergebnis|kanon|vorort)/);
@@ -54,6 +53,7 @@ export function useRoute(): [Route, (path: string) => void] {
     window.history.pushState(null, "", BASE + p);
     setPath(p);
     window.scrollTo({ top: 0 });
+    document.querySelector(".stack-main")?.scrollTo({ top: 0 });
   };
   return [parse(path), go];
 }
@@ -62,29 +62,30 @@ export function App() {
   const qc = useQueryClient();
   const me = useQuery({ queryKey: ["me"], queryFn: api.me, refetchInterval: false });
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups, enabled: !!me.data?.person });
+  const turns = useQuery({ queryKey: ["turns"], queryFn: api.turns, enabled: !!me.data?.person });
   const config = useQuery({ queryKey: ["config"], queryFn: api.config, refetchInterval: false });
   const [route, go] = useRoute();
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
-    try { return (localStorage.getItem("cf.theme") as "light" | "dark" | "system") || "system"; } catch { return "system"; }
+  const [theme, setTheme] = useState<Theme>(() => {
+    try { return (localStorage.getItem("cf.theme") as Theme) || "system"; } catch { return "system"; }
   });
   useEffect(() => {
     try { localStorage.setItem("cf.theme", theme); } catch { /* private window */ }
     if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
   }, [theme]);
-  const [side, setSide] = useState<"left" | "right">(() => {
-    try { return (localStorage.getItem("cf.side") as "left" | "right") || "left"; } catch { return "left"; }
+  const [side, setSide] = useState<Side>(() => {
+    try { return (localStorage.getItem("cf.side") as Side) || "right"; } catch { return "right"; }
   });
   useEffect(() => { try { localStorage.setItem("cf.side", side); } catch { /* private window */ } }, [side]);
   useEffect(() => { if (config.data) { document.title = config.data.product; document.documentElement.lang = config.data.lang; } }, [config.data]);
 
-  // What is open right now, for whoever stands beside the person (the cockpit's side panel, ADR-020): the case on
-  // the screen — chosen in the URL or, on the start page, the first one of the group — and the document if one is open.
-  const wide = !window.matchMedia("(max-width: 900px)").matches;
-  const focusId = route.name === "case" || route.name === "doc" || route.name === "talk" || route.name === "outcome" || route.name === "onsite" || route.name === "canon" ? route.id
-    : (route.name === "home" || route.name === "group") && wide
-      ? (route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id)
-      : undefined;
-  const focusCard = focusId ? groups.data?.flatMap((g) => g.cases).find((c) => c.id === focusId) : undefined;
+  // What is open right now, for whoever stands beside the person (the cockpit's side panel, ADR-020): the case on the screen —
+  // chosen in the URL or, on the stack, its first gate — and the document if one is open.
+  const cards = groups.data?.flatMap((g) => g.cases) ?? [];
+  const cardOf = (id: string) => cards.find((c) => c.id === id);
+  const firstGate = turns.data?.find((t) => t.turn.kind !== "nudge")?.case.id;
+  const focusId = "id" in route && route.name !== "doc" ? route.id : route.name === "doc" ? route.id
+    : route.name === "home" ? firstGate : route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : undefined;
+  const focusCard = focusId ? cardOf(focusId) : undefined;
   useEffect(() => {
     const detail = focusCard
       ? { case: focusCard.id, item: `${focusCard.stage}/${focusCard.id}`, title: focusCard.title, stage: focusCard.stage_word,
@@ -124,45 +125,46 @@ export function App() {
   const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries({ queryKey: ["case"] }); await Promise.all([qc.resetQueries({ queryKey: ["groups"] }), qc.resetQueries({ queryKey: ["turns"] }), qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["config"] })]); };
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
   const onLang = async (l: string) => { await api.setLang(l); await qc.invalidateQueries(); };
+  const onSignOut = async () => { await api.signOut(); if (me.data?.shell) { window.location.href = `${me.data.shell.replace(/\/?$/, "/")}logout`; return; } qc.invalidateQueries(); };
   const w = words(lang, ((config.data?.theme as Record<string, unknown> | undefined)?.words as Record<string, Record<string, unknown>> | undefined)?.[lang]);
-  const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id;
-  const isPhone = window.matchMedia("(max-width: 900px)").matches;
-  const showList = !isPhone || route.name === "home" || route.name === "group";
-  const showMain = !isPhone || route.name !== "home";
+  const cfg = config.data, who = me.data;
 
-  if (route.name === "doc") return <div className="shell"><DocWindow id={route.id} name={route.file} config={config.data} w={w} /></div>;
+  if (route.name === "doc") return <div className="shell"><DocWindow id={route.id} name={route.file} config={cfg} w={w} /></div>;
+
+  // the place line over a screen that is not the stack: workspace › (case ›) here (rule 6)
+  const inCase = (id: string, word: string) => [{ text: cardOf(id) ? ident(cardOf(id)!) : id, to: `/case/${encodeURIComponent(id)}` }, { text: word }];
+  const column = (parts: { text: string; to?: string }[], screen: React.ReactNode) => (
+    <div className="col"><Place config={cfg} go={go} parts={parts} />{screen}</div>
+  );
 
   return (
     <>
-    <TopBar config={config.data} me={me.data} w={w} onSwap={() => setSide(side === "left" ? "right" : "left")} onFresh={() => onFresh()} />
-    <div className={`shell ${side}`} style={{ viewTransitionName: (/\/w\/([^/]+)/.exec(BASE)?.[1] ? `ws-${/\/w\/([^/]+)/.exec(BASE)![1]}` : undefined) }}>
-      <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
-            onSignOut={async () => { await api.signOut(); if (me.data?.shell) { window.location.href = `${me.data.shell.replace(/\/?$/, "/")}logout`; return; } qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
-            theme={theme} onTheme={setTheme} onLang={onLang} />
-      {route.name === "talk" ? (
-        <InterviewScreen id={route.id} config={config.data} go={go} w={w} />
+    <TopBar config={cfg} me={who} w={w} side={side} onSide={setSide} onFresh={onFresh} onPerson={onPerson} onLang={onLang} theme={theme} onTheme={setTheme} onSignOut={onSignOut} />
+    <div className="shell" style={{ viewTransitionName: (/\/w\/([^/]+)/.exec(BASE)?.[1] ? `ws-${/\/w\/([^/]+)/.exec(BASE)![1]}` : undefined) }}>
+      {route.name === "home" ? (
+        <Stack config={cfg} me={who} go={go} w={w} onFresh={onFresh} />
+      ) : route.name === "case" ? (
+        <Stack config={cfg} me={who} go={go} w={w} id={route.id} onFresh={onFresh} />
+      ) : route.name === "group" ? (
+        <GroupScreen config={cfg} go={go} w={w} groupKey={route.key} />
+      ) : route.name === "talk" ? (
+        column(inCase(route.id, w.talkOpen), <InterviewScreen id={route.id} config={cfg} go={go} w={w} />)
       ) : route.name === "canon" ? (
-        <CanonScreen id={route.id} config={config.data} go={go} w={w} />
+        column(inCase(route.id, w.house), <CanonScreen id={route.id} config={cfg} go={go} w={w} />)
       ) : route.name === "outcome" ? (
-        <OutcomeScreen id={route.id} config={config.data} go={go} w={w} />
+        column(inCase(route.id, w.outcomeOpen), <OutcomeScreen id={route.id} config={cfg} go={go} w={w} />)
       ) : route.name === "onsite" ? (
-        <OnSiteScreen id={route.id} config={config.data} go={go} w={w} />
+        column(inCase(route.id, w.onsite), <OnSiteScreen id={route.id} config={cfg} go={go} w={w} />)
       ) : route.name === "board" ? (
-        <Board config={config.data} go={go} w={w} />
+        column([{ text: w.board }], <Board config={cfg} go={go} w={w} />)
       ) : route.name === "list" ? (
-        <Stacked config={config.data} go={go} w={w} />
+        column([{ text: w.stacked }], <Stacked config={cfg} go={go} w={w} />)
       ) : route.name === "rules" ? (
-        <Rules config={config.data} w={w} />
+        column([{ text: w.rules }], <Rules config={cfg} w={w} />)
       ) : route.name === "house" ? (
-        <HouseScreen config={config.data} go={go} w={w} />
-      ) : route.name === "signals" ? (
-        <Signals config={config.data} go={go} w={w} />
+        column([{ text: w.house }], <HouseScreen config={cfg} go={go} w={w} />)
       ) : (
-        <>
-          {showList && <List config={config.data} route={route} go={go} w={w} me={me.data.person ?? ""} />}
-          {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} />}
-          {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} /> : <main className="main" />)}
-        </>
+        column([{ text: w.signals }], <Signals config={cfg} go={go} w={w} />)
       )}
     </div>
     </>

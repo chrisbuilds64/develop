@@ -2,8 +2,8 @@
   "$comment": "Help for the casefile surface: one topic per data-help anchor in web/src. `cockpit help check` fails when an anchor and a topic do not match — change both in the same commit.",
   "surface": "casefile",
   "intro": {
-    "de": "Hier arbeitest du Fälle ab. Links siehst du, was auf dich wartet, in der Mitte den offenen Fall, rechts das Gespräch dazu.",
-    "en": "This is where you work cases. On the left what waits for you, in the middle the open case, on the right its conversation."
+    "de": "Hier arbeitest du Akten ab, eine nach der anderen: oben der Stapel dessen, was auf dich wartet, darunter das erste Tor in voller Tiefe, danach der Rest als Zeilen.",
+    "en": "This is where you work cases, one at a time: at the top the stack of what waits for you, below it the first gate in full depth, then the rest as rows."
   },
   "topics": [
     {
@@ -14,8 +14,8 @@
         "en": "Support"
       },
       "text": {
-        "de": "Rechts in der Leiste: Hilfe zu dieser Seite mit Tour, die Erklärvideos der Anwendung, die vorführbaren Abläufe, das Zurücksetzen eines Muster-Workspaces und dein Team. Auf dem Handy sammelt der Knopf „Support“ alles in einem Blatt.",
-        "en": "On the right of the bar: help for this page with a tour, the application's explainer videos, the demonstrable flows, putting a sample workspace back, and your team. On a phone the “Support” button gathers it all in one sheet."
+        "de": "Rechts in der Leiste: die vorführbaren Abläufe, Hilfe zu dieser Seite mit Tour, die Erklärvideos der Anwendung, das Zurücksetzen eines Muster-Workspaces und dein Team. Auf dem Handy sammelt das Menü alles in einem Blatt.",
+        "en": "On the right of the bar: the demonstrable flows, help for this page with a tour, the application's explainer videos, putting a sample workspace back, and your team. On a phone the menu gathers it all in one sheet."
       }
     },
     {
@@ -26,44 +26,44 @@
         "en": "Where you are"
       },
       "text": {
-        "de": "Die Leiste oben zeigt den Workspace mit ganzem Namen und die Stufe (ENTW, TEST). „← Cockpit“ führt zurück zur Übersicht.",
-        "en": "The bar at the top shows the workspace by its whole name and the stage (ENTW, TEST). “← Cockpit” leads back to the overview."
+        "de": "Die Leiste oben zeigt den Workspace mit ganzem Namen und die Stufe (ENTW, TEST). „← Cockpit“ führt zurück zur Übersicht. Darunter steht der Ort als Satz: Workspace › Akte · Station.",
+        "en": "The bar at the top shows the workspace by its whole name and the stage (ENTW, TEST). “← Cockpit” leads back to the overview. Below it the place stands as a sentence: workspace › case · station."
       }
     },
     {
       "key": "cf.groups",
       "since": "0.16.1",
       "title": {
-        "de": "Was auf dich wartet",
-        "en": "What waits for you"
+        "de": "Nach Gruppe",
+        "en": "By group"
       },
       "text": {
-        "de": "„you“ zählt die Fälle, bei denen du dran bist. Darunter: was bei Claude liegt, bei anderen, was raus ist, und das Archiv.",
-        "en": "“you” counts the cases where it is your move. Below: what lies with Claude, with others, what is out, and the archive."
+        "de": "Bei dir: der Stapel. Bei anderen und Draußen: dieselben Akten als Zeilen. Jede Akte liegt in genau einer Gruppe.",
+        "en": "With you: the stack. With others and out: the same cases as rows. Every case lies in exactly one group."
       }
     },
     {
       "key": "cf.views",
       "since": "0.16.1",
       "title": {
-        "de": "Ansichten",
-        "en": "Views"
+        "de": "Zweite Ansichten",
+        "en": "Second views"
       },
       "text": {
-        "de": "Dieselben Fälle dreimal: als Akten (eine nach der anderen), als Board nach Stationen, als Liste.",
-        "en": "The same cases three ways: as files (one after the other), as a board by station, as a list."
+        "de": "Dieselben Akten als Kanban nach Stationen oder als dichte Liste — für den Betrieb, nie als Einstieg.",
+        "en": "The same cases as a board by station or as a dense list — for operations, never as the entry."
       }
     },
     {
       "key": "cf.list",
       "since": "0.16.1",
       "title": {
-        "de": "Deine Liste",
-        "en": "Your list"
+        "de": "Eine Gruppe",
+        "en": "One group"
       },
       "text": {
-        "de": "Die Fälle der gewählten Gruppe. Ein Klick öffnet den Fall in der Mitte. „Your move“ heißt: der nächste Schritt ist deiner.",
-        "en": "The cases of the chosen group. A click opens the case in the middle. “Your move” means the next step is yours."
+        "de": "Die Akten der gewählten Gruppe als Zeilen, jede mit ihrem Hauptzug und wer dran ist. Eine Zeile öffnet die Akte als Tor; Esc führt zum Stapel.",
+        "en": "The cases of the chosen group as rows, each with its main move and whose it is. A row opens the case as a gate; Esc leads to the stack."
       }
     },
     {
@@ -74,8 +74,8 @@
         "en": "The case"
       },
       "text": {
-        "de": "Art, Nummer und Titel des Falls. Der Punkt zeigt, ob du dran bist, und seit wann.",
-        "en": "Kind, number and title of the case. The dot shows whether it is your move, and since when."
+        "de": "Wo das Tor im Stapel steht, Art, Nummer und Titel der Akte; die Überschrift ist dein Zug als Satz. Der Weg darunter nennt die Stationen mit Datum, die aktuelle fett, und wer dort dran ist.",
+        "en": "Where the gate stands in the stack, kind, number and title of the case; the headline is your move as a sentence. The path below names the stations with their dates, the current one bold, and whose move it is there."
       }
     },
     {
@@ -130,12 +130,12 @@
       "key": "cf.drop-in",
       "since": "0.16.1",
       "title": {
-        "de": "Neues ablegen",
-        "en": "Drop something in"
+        "de": "Etwas hineinlegen",
+        "en": "Put something in"
       },
       "text": {
-        "de": "Leg eine Datei oder Idee ab — daraus wird ein neuer Fall.",
-        "en": "Drop a file or an idea in — it becomes a new case."
+        "de": "Eine neue Akte oder eine Mail — oder, in der offenen Akte, eine Datei in die Zeile, die noch fehlt.",
+        "en": "A new case or a mail — or, in the open case, a file into the line that is still missing."
       }
     },
     {
@@ -544,6 +544,102 @@
       "text": {
         "de": "Je Art von Mail, was geschieht: wenn Schadensmeldung, dann Akte in der Schadenakte anlegen. Die KI schlägt eine Zeile vor, ein Mensch bestätigt. Grau: noch nicht verbunden.",
         "en": "Per kind of mail, what happens: when a claim report, open a claim file. The AI proposes a row, a person confirms. Grey: not connected yet."
+      }
+    },
+    {
+      "key": "cf.stack",
+      "since": "0.21.0",
+      "title": {
+        "de": "Der Stapel",
+        "en": "The stack"
+      },
+      "text": {
+        "de": "Wie viele Tore auf dich warten. Ein Tor ist ein Zug, der die Akte weiterbringt; was nur angestoßen werden darf, zählt nicht mit. Die Chips grenzen nach Gruppe ein.",
+        "en": "How many gates wait for you. A gate is a move that takes the case further; what may merely be nudged does not count. The chips narrow by group."
+      }
+    },
+    {
+      "key": "cf.order",
+      "since": "0.21.0",
+      "title": {
+        "de": "Die Reihenfolge",
+        "en": "The order"
+      },
+      "text": {
+        "de": "Was zuerst kommt, kommt zuerst, weil die Regel es sagt: Termin, Siegel, Tor, Lücke, Anstoß; innerhalb das Ältere zuerst. Die Regel ist Konfiguration je Workspace, niemand sortiert um. J und K springen zum nächsten und vorigen Tor, Esc führt zum Stapel.",
+        "en": "What comes first comes first because the rule says so: date, seal, gate, gap, nudge; inside each group the oldest first. The rule is configuration per workspace, nobody re-sorts. J and K jump to the next and previous gate, Esc leads to the stack."
+      }
+    },
+    {
+      "key": "cf.after",
+      "since": "0.21.0",
+      "title": {
+        "de": "Danach",
+        "en": "After"
+      },
+      "text": {
+        "de": "Der Rest des Stapels als Zeilen: Kennung, Titel, Station, seit wann, rechts der Zug mit seiner Form — Siegel, Schloss (wartet noch auf etwas), Kalender (hat einen Termin), Punkt. Anstöße stehen gefaltet dahinter.",
+        "en": "The rest of the stack as rows: number, title, station, since when, on the right the move with its form — seal, lock (still waits for something), calendar (has a date), dot. Nudges stand folded behind."
+      }
+    },
+    {
+      "key": "cf.no-gate",
+      "since": "0.21.0",
+      "title": {
+        "de": "Ohne Tor",
+        "en": "No gate"
+      },
+      "text": {
+        "de": "Was gerade nicht auf dich wartet: bei der KI, bei anderen, mit Termin, geplant, draußen, Ideen, Archiv — je Gruppe eine Zeile mit Zahl und dem Weg hinein.",
+        "en": "What does not wait for you right now: with the AI, with others, dated, planned, out, ideas, archive — one row per group with its count and the way in."
+      }
+    },
+    {
+      "key": "cf.behind",
+      "since": "0.21.0",
+      "title": {
+        "de": "Dahinter",
+        "en": "Behind"
+      },
+      "text": {
+        "de": "Zugeklappt, an Ort und Stelle: Kanban und Liste als zweite Ansichten, Regelwerk, Signale, Haus-Kanon, die Beispielwelten, der Weg, etwas hineinzulegen, und die Frage an die KI (⌘K).",
+        "en": "Folded, in place: the board and the list as second views, the rulebook, the signals, the house canon, the sample worlds, the way to put something in, and the question to the AI (⌘K)."
+      }
+    },
+    {
+      "key": "cf.menu",
+      "since": "0.21.0",
+      "title": {
+        "de": "Das Menü",
+        "en": "The menu"
+      },
+      "text": {
+        "de": "Ein Knopf, ein Blatt: Sprache, Hell/Dunkel/System, Ton, Hand, wer du bist (in Musterwelten), Neu starten, Abmelden. Esc schließt es und gibt den Fokus zurück.",
+        "en": "One button, one sheet: language, light/dark/system, sound, hand, who you are (in sample worlds), start over, sign out. Esc closes it and gives the focus back."
+      }
+    },
+    {
+      "key": "cf.hand",
+      "since": "0.21.0",
+      "title": {
+        "de": "Hand",
+        "en": "Hand"
+      },
+      "text": {
+        "de": "Auf welcher Seite Menü-Knopf und Blatt liegen: links für die linke Hand, rechts für die rechte.",
+        "en": "On which side the menu button and the sheet sit: left for the left hand, right for the right."
+      }
+    },
+    {
+      "key": "cf.sign-out",
+      "since": "0.21.0",
+      "title": {
+        "de": "Abmelden",
+        "en": "Sign out"
+      },
+      "text": {
+        "de": "Beendet deine Anmeldung in diesem Workspace.",
+        "en": "Ends your sign-in to this workspace."
       }
     }
   ]

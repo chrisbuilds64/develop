@@ -2,11 +2,12 @@
 // situation in four lines, the evidence — what is missing first, then what is present, every line with its origin —
 // exactly one filled button, a locked gate as a sentence with a lock, the second way as a text link. Behind it, folded in
 // place: the ways into a conversation, the outcome or the site; the thread; every file; the record.
-// Everything comes from CaseView and the vocabulary; nothing here names a domain.
+// Everything comes from CaseView and the vocabulary; nothing here names a domain. The screen around it is the stack (screens/Stack):
+// this component is the one piece, the stack gives it the column, "after" and "behind" (ADR-024, step 2).
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type ConfigView, type Entry, type MeOut, type SlotView, type Turn } from "../api";
-import { DropLine } from "../components/Frames";
+import { DropLine, type DropMode } from "../components/Frames";
 import { Thread } from "../components/Thread";
 import { Cover } from "../components/Cover";
 import { Arrow, Check, Chev, Lock, Send, Wait, You } from "../components/Icons";
@@ -29,9 +30,9 @@ export function docsOf(v: CaseView): Doc[] {
   return ordered.map((s) => ({ word: s.word, shape: s.shape, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) }));
 }
 
-type Gap = { key: string; word: string; slot?: SlotView; who: string; mine: boolean };
+type Gap = { key: string; token: string; word: string; slot?: SlotView; who: string; mine: boolean };
 
-export function CaseScreen({ id, config, me, go, w }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words> }) {
+export function CaseScreen({ id, config, me, go, w, stack }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words>; stack?: { i: number; n: number } }) {
   const qc = useQueryClient();
   const lang = config.lang;
   const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false, refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
@@ -77,8 +78,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  if (q.isLoading) return <main className="main gate-main"><p className="empty">…</p></main>;
-  if (!q.data) return <main className="main gate-main"><p className="empty">{q.error instanceof ApiError && q.error.status === 404 ? w.notHere : q.error ? w.unreachable : "…"}</p></main>;
+  if (q.isLoading) return <p className="empty">…</p>;
+  if (!q.data) return <p className="empty">{q.error instanceof ApiError && q.error.status === 404 ? w.notHere : q.error ? w.unreachable : "…"}</p>;
   const v = q.data;
   const busy = step.isPending || entry.isPending || run.isPending || upload.isPending || sampleIn.isPending;
 
@@ -102,20 +103,18 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const free = actionTurns.filter((t) => t.blocked_by.length === 0);
   const locked = actionTurns.filter((t) => t.blocked_by.length > 0 && t.action !== "deliver");
   const deliverTurn = actionTurns.find((t) => t.action === "deliver");
-  const primaryTurn: Turn | undefined = free[0];
-  const secondary = free.slice(1);
-  const asks = primaryTurn?.payload ?? [];
-  const needsAmount = asks.includes("amount");
-  const needsDate = asks.includes("date");
-  const needsUrl = asks.includes("url");
-  const needsNote = asks.includes("note");
-  const canPress = !!primaryTurn && (!needsAmount || amount.trim()) && (!needsDate || date) && (!needsNote || note.trim()) && !busy;
-  const payload: Record<string, unknown> = {};
-  if (needsAmount) payload.amount = amount.trim();
-  if (needsDate) payload.date = date;
-  if (needsUrl) payload.url = note.trim() || "https://example.invalid/";
-  if (note.trim() && !needsUrl) payload.note = note.trim();
-  const press = (t: Turn) => t.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : t.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: t.action, payload });
+  let primaryTurn: Turn | undefined = free[0];
+  let secondary = free.slice(1);
+  const press = (t: Turn) => t.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : t.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: t.action, payload: payloadFor(t) });
+  const payloadFor = (t: Turn): Record<string, unknown> => {
+    const asks = t.payload ?? [];
+    const out: Record<string, unknown> = {};
+    if (asks.includes("amount")) out.amount = amount.trim();
+    if (asks.includes("date")) out.date = date;
+    if (asks.includes("url")) out.url = note.trim() || "https://example.invalid/";
+    if (note.trim() && !asks.includes("url")) out.note = note.trim();
+    return out;
+  };
 
   // ---- what is missing: the tokens of the moves that wait (the viewer's, else the case's); the core has already put them into
   // words (`Turn.missing`, in the viewer's language), here each token also finds its slots
@@ -138,16 +137,24 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
     if (slots.length === 0) {
       const who = b === "answered" ? v.turns.filter((t) => t.action.startsWith("interview")).map((t) => actorWord(t.actor)).join(", ")
         : b.startsWith("decided:") ? (myTokens.has(b) ? w.you : actorWord(mainTurn?.actor ?? "")) : "";
-      gaps.push({ key: b, word: missingWord(b), who, mine: false });
+      gaps.push({ key: b, token: b, word: missingWord(b), who, mine: false });
       continue;
     }
-    for (const s of slots) { seen.add(s.file); gaps.push({ key: s.file, word: s.word, slot: s, who: s.by_word, mine: mine && myTokens.has(b) }); }
+    for (const s of slots) { seen.add(s.file); gaps.push({ key: s.file, token: b, word: s.word, slot: s, who: s.by_word, mine: mine && myTokens.has(b) }); }
   }
   // and the frames the station asks for anyway: required, or due here, not made by a helper, one place per series
   for (const s of v.slots.filter((s) => !s.present && isDoc(s) && !byHelper(s) && (s.required || s.due_station === v.station) && !seen.has(s.file)).filter(nextOfSeries)) {
-    seen.add(s.file); gaps.push({ key: s.file, word: s.word, slot: s, who: s.by_word, mine: false });
+    seen.add(s.file); gaps.push({ key: s.file, token: s.file, word: s.word, slot: s, who: s.by_word, mine: false });
   }
+  // who may deliver a frame: the person it names, a role the viewer holds, or anybody ("human", nobody named)
+  const mayDeliver = (s: SlotView) => s.by === "" || s.by === "human" || s.by === me.person || (s.by.startsWith("role:") && me.roles.includes(s.by.slice(5)));
+  // the viewer's main move is locked by a file the viewer may bring: then the drop is the move — its line carries the one filled
+  // button, and the free second move becomes a text link (ADR-024, step 2, correction 1)
+  const mainTokens = new Set(mine ? (mainTurn?.blocked_by ?? []) : []);
+  const dropGap = mine && mainTokens.size > 0 ? gaps.find((g) => g.slot && mainTokens.has(g.token) && mayDeliver(g.slot)) : undefined;
+  const dropMode = (g: Gap): DropMode => (g === dropGap ? "button" : g.slot && mayDeliver(g.slot) ? "zone" : "compact");
   const gapWords = [...new Set(gapTokens.map(missingWord))];          // the situation names the condition ("ein Bild"), the evidence lists the frames
+  if (dropGap) { secondary = free; primaryTurn = undefined; }        // the button sits on the drop line; every free move is a link
 
   // ---- what is present: newest version each, the primary first, who made it from the slot or the entry that delivered it
   const present = v.slots.filter((s) => s.present && isDoc(s));
@@ -190,6 +197,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const noTurnText = !t0 ? w.noTurnAtAll : t0.actor === "claude" ? w.isWorking(v.agent)
     : (voc.texts?.no_turn && gapWords.length ? fill(voc.texts.no_turn, { actor: actorWord(t0.actor), missing: gapWords.join(", ") }) : w.noTurn(actorWord(t0.actor), gapWords.join(", ")));
   const lockText = (t: Turn) => t.lock || `${t.label}; ${fourEyes.join("; ")}`;
+  const asks = primaryTurn?.payload ?? [];
+  const needsAmount = asks.includes("amount");
+  const needsDate = asks.includes("date");
+  const needsUrl = asks.includes("url");
+  const needsNote = asks.includes("note");
+  const canPress = !!primaryTurn && (!needsAmount || amount.trim()) && (!needsDate || date) && (!needsNote || note.trim()) && !busy;
   const bold = (s: string) => { const m = /^(.*?[.;])\s(.*)$/s.exec(s); return m ? <><b>{m[1]}</b> {m[2]}</> : <b>{s}</b>; };
   const fileCount = v.slots.reduce((n, s) => n + s.versions.length, 0);
   const missingCount = v.slots.filter((s) => !s.present && isDoc(s)).length;
@@ -199,10 +212,11 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   );
 
   return (
-    <main className="main gate-main">
-      <article className={`tor${mine ? " du" : ""}`} aria-labelledby="tor-h1">
+    <>
+      <article className={`tor${mine ? " du" : ""}`} aria-labelledby="tor-h1" data-case={id}>
         <header className="tor-head" data-help="cf.case-head">
           <p className="wo">
+            {stack && <span className="nr">{w.gateOf(stack.i, stack.n)}</span>}
             <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} />
             <b>{v.label_word}</b>
             <span className="mono">{ident}</span>
@@ -246,7 +260,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
               <ul className="belege" aria-label={`${w.missingPos} · ${w.presentPos}`}>
                 <li className="pos">{w.missingPos} <span className="c">{gaps.length}</span>{gaps.length === 0 && <span className="satz">{w.missingNone}</span>}</li>
                 {gaps.map((g) => g.slot ? (
-                  <DropLine key={g.key} slot={g.slot} mine={g.mine} who={g.who} w={w} busy={busy} onFile={(f) => upload.mutate({ slot: g.slot!.file, file: f })}
+                  <DropLine key={g.key} slot={g.slot} mode={dropMode(g)} who={g.who} w={w} busy={busy} onFile={(f) => upload.mutate({ slot: g.slot!.file, file: f })}
                             sample={samples.includes(g.slot.file)} onSample={() => sampleIn.mutate(g.slot!.file)} />
                 ) : (
                   <li key={g.key} className="fehlt"><span className="zust"><Wait /><span className="sr">{w.missingPos}</span></span>
@@ -288,72 +302,72 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
               {needsAmount && <label className="money"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" /></label>}
               {needsDate && <label className="date"><span>{w.date}</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>}
               {(needsUrl || needsNote) && <label className="ask"><span className="sr">{needsUrl ? w.link : primaryTurn.label}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder={needsUrl ? `${w.link} …` : `${primaryTurn.label} …`} /></label>}
-              <button type="button" className={`btn${primaryTurn.seal ? " seal" : ""}`} disabled={!canPress} data-action={primaryTurn.action} onClick={() => press(primaryTurn)}>{primaryTurn.label} <Arrow /></button>
+              <button type="button" className={`btn${primaryTurn.seal ? " seal" : ""}`} disabled={!canPress} data-action={primaryTurn.action} onClick={() => press(primaryTurn!)}>{primaryTurn.label} <Arrow /></button>
             </div>
           )}
-          {deliverTurn && <p className="ziel du"><You /><span>{w.fillFrames(deliverTurn.blocked_by.map(missingWord).join(", "))}</span></p>}
+          {(dropGap || deliverTurn) && <p className="ziel du"><You /><span>{w.fillFrames(dropGap ? dropGap.word : deliverTurn!.blocked_by.map(missingWord).join(", "))}</span></p>}
           {locked.map((t) => <p key={t.action} className={`ziel${t.seal ? " seal" : ""}`} data-lock={t.action}><Lock /><span>{bold(lockText(t))}</span></p>)}
           {secondary.length > 0 && <span className="chips">{secondary.map(chip)}</span>}
           {!mine && <p className="keiner" role="status">{noTurnText}</p>}
         </div>
-      </article>
 
-      <section className="dahinter" aria-label={w.behind}>
-        <h2>{w.behind}</h2>
-        {(talkOpen || (talkSlot && outcomeReady) || (!talkSlot && draftHere) || onsiteHere) && (
-          <ul className="zeilen">
-            {talkOpen && (
-              <li><button type="button" className={`row${v.my_turns.some((t) => t.action.startsWith("interview")) ? " mine" : ""}`} data-talk="1" data-help="cf.talk-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/gespraech`)}>
-                <span className="t">{w.talkOpen}</span><span className="s">{w.talkOpenHint}</span><span className="act"><Chev />{w.open}</span></button></li>
-            )}
-            {((talkSlot && outcomeReady) || (!talkSlot && draftHere)) && (
-              <li><button type="button" className={`row${v.my_turns.some((t) => t.action === "approve_canon") ? " mine" : ""}`} data-outcome="1" data-help="cf.outcome-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>
-                <span className="t">{w.outcomeOpen}</span><span className="s">{w.outcomeOpenHint}</span><span className="act"><Chev />{w.open}</span></button></li>
-            )}
-            {onsiteHere && (
-              <li><button type="button" className={`row${mine ? " mine" : ""}`} data-onsite="1" onClick={() => go(`/case/${encodeURIComponent(id)}/vorort`)}>
-                <span className="t">{w.onsite}</span><span className="s">{w.onsiteHint}</span><span className="act"><Chev />{w.open}</span></button></li>
-            )}
-          </ul>
-        )}
-        <details className="d thread" data-help="cf.thread" open={threadOpen} onToggle={(e) => setThreadOpen((e.currentTarget as HTMLDetailsElement).open)}>
-          <summary><Chev />{w.conversation} <span className="c">{w.entriesCount(v.entries.length)}</span>{last && <span className="hint">{w.lastBy(last.author, dateShort(last.date, lang))}</span>}</summary>
-          <div className="body">
-            <div className="verlauf">
-              <Thread entries={v.entries} meName={me.name ?? ""} agentName={v.agent} lang={lang} w={w} busy={busy} stageWord={stageWord}
-                      onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
-                      onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })} />
-              {v.entries.length === 0 && <p className="prosa-klein">{w.noEntry}</p>}
+        {/* behind the piece, folded in place: the ways into a conversation, the outcome or the site; the thread; every file; the record */}
+        <div className="mehr">
+          {(talkOpen || (talkSlot && outcomeReady) || (!talkSlot && draftHere) || onsiteHere) && (
+            <ul className="zeilen">
+              {talkOpen && (
+                <li><button type="button" className={`row${v.my_turns.some((t) => t.action.startsWith("interview")) ? " mine" : ""}`} data-talk="1" data-help="cf.talk-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/gespraech`)}>
+                  <span className="t">{w.talkOpen}</span><span className="s">{w.talkOpenHint}</span><span className="act"><Chev />{w.open}</span></button></li>
+              )}
+              {((talkSlot && outcomeReady) || (!talkSlot && draftHere)) && (
+                <li><button type="button" className={`row${v.my_turns.some((t) => t.action === "approve_canon") ? " mine" : ""}`} data-outcome="1" data-help="cf.outcome-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>
+                  <span className="t">{w.outcomeOpen}</span><span className="s">{w.outcomeOpenHint}</span><span className="act"><Chev />{w.open}</span></button></li>
+              )}
+              {onsiteHere && (
+                <li><button type="button" className={`row${mine ? " mine" : ""}`} data-onsite="1" onClick={() => go(`/case/${encodeURIComponent(id)}/vorort`)}>
+                  <span className="t">{w.onsite}</span><span className="s">{w.onsiteHint}</span><span className="act"><Chev />{w.open}</span></button></li>
+              )}
+            </ul>
+          )}
+          <details className="d thread" data-help="cf.thread" open={threadOpen} onToggle={(e) => setThreadOpen((e.currentTarget as HTMLDetailsElement).open)}>
+            <summary><Chev />{w.conversation} <span className="c">{w.entriesCount(v.entries.length)}</span>{last && <span className="hint">{w.lastBy(last.author, dateShort(last.date, lang))}</span>}</summary>
+            <div className="body">
+              <div className="verlauf">
+                <Thread entries={v.entries} meName={me.name ?? ""} agentName={v.agent} lang={lang} w={w} busy={busy} stageWord={stageWord}
+                        onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
+                        onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })} />
+                {v.entries.length === 0 && <p className="prosa-klein">{w.noEntry}</p>}
+              </div>
+              <form className="ask" onSubmit={(e) => { e.preventDefault(); if (!ask.trim()) return; if (pending) { step.mutate({ action: pending.action, payload: { note: ask.trim(), text: ask.trim() } }); setPending(null); setAsk(""); } else run.mutate(ask.trim()); }}>
+                <span className="sr">{pending ? pending.label : w.notePlaceholder(v.agent)}</span>
+                {pending && <button type="button" className="chip on small" onClick={() => setPending(null)}>{pending.label} ×</button>}
+                <input ref={askRef} value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={pending ? `${pending.label} …` : w.notePlaceholder(v.agent)} />
+                <button type="submit" className="send" disabled={busy || !ask.trim()} aria-label={pending ? pending.label : w.askClaude(v.agent)}><Send /></button>
+              </form>
             </div>
-            <form className="ask" onSubmit={(e) => { e.preventDefault(); if (!ask.trim()) return; if (pending) { step.mutate({ action: pending.action, payload: { note: ask.trim(), text: ask.trim() } }); setPending(null); setAsk(""); } else run.mutate(ask.trim()); }}>
-              <span className="sr">{pending ? pending.label : w.notePlaceholder(v.agent)}</span>
-              {pending && <button type="button" className="chip on small" onClick={() => setPending(null)}>{pending.label} ×</button>}
-              <input ref={askRef} value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={pending ? `${pending.label} …` : w.notePlaceholder(v.agent)} />
-              <button type="submit" className="send" disabled={busy || !ask.trim()} aria-label={pending ? pending.label : w.askClaude(v.agent)}><Send /></button>
-            </form>
+          </details>
+          <details className="d" open={filesOpen} onToggle={(e) => setFilesOpen((e.currentTarget as HTMLDetailsElement).open)}>
+            <summary><Chev />{w.allFiles} <span className="c">{fileCount}</span>{missingCount > 0 && <span className="hint">{missingCount} {w.missingCount(missingCount)}</span>}</summary>
+            <div className="body"><ul className="dateien">
+              {v.slots.map((s) => s.present ? [...s.versions].reverse().map((ver, i) => {
+                const e = entryFor(ver.name);
+                const who = (i === 0 && s.by_word) || e?.author || "";
+                return (
+                  <li key={ver.name}><span className="n">{ver.name}</span><span className="l">{s.word}, {w.version(Math.max(1, ver.version))}</span>
+                    <span className="w">{who ? `${who}${e?.date ? ` · ${dateShort(e.date, lang)}` : ""}` : w.originUnknown}</span>
+                    {isDoc(s) && <button type="button" className="link open" onClick={() => setReading(ver.name)}>{w.open}</button>}</li>
+                );
+              }) : (
+                <li key={s.file} className="miss"><span className="n">{s.file}</span><span className="l">{s.word}</span><span className="w">{w.missingPos}{s.by_word ? ` · ${s.by_word}` : ""}</span></li>
+              ))}
+            </ul></div>
+          </details>
+          <div className="d row">
+            <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} />
           </div>
-        </details>
-        <details className="d" open={filesOpen} onToggle={(e) => setFilesOpen((e.currentTarget as HTMLDetailsElement).open)}>
-          <summary><Chev />{w.allFiles} <span className="c">{fileCount}</span>{missingCount > 0 && <span className="hint">{missingCount} {w.missingCount(missingCount)}</span>}</summary>
-          <div className="body"><ul className="dateien">
-            {v.slots.map((s) => s.present ? [...s.versions].reverse().map((ver, i) => {
-              const e = entryFor(ver.name);
-              const who = (i === 0 && s.by_word) || e?.author || "";
-              return (
-                <li key={ver.name}><span className="n">{ver.name}</span><span className="l">{s.word}, {w.version(Math.max(1, ver.version))}</span>
-                  <span className="w">{who ? `${who}${e?.date ? ` · ${dateShort(e.date, lang)}` : ""}` : w.originUnknown}</span>
-                  {isDoc(s) && <button type="button" className="link open" onClick={() => setReading(ver.name)}>{w.open}</button>}</li>
-              );
-            }) : (
-              <li key={s.file} className="miss"><span className="n">{s.file}</span><span className="l">{s.word}</span><span className="w">{w.missingPos}{s.by_word ? ` · ${s.by_word}` : ""}</span></li>
-            ))}
-          </ul></div>
-        </details>
-        <div className="d row">
-          <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} />
         </div>
-      </section>
+      </article>
       {toast && <div className={`toast${toast.sealed ? " sealed" : ""}`} role="status">{toast.sealed && <span className="stampmark">{w.sealed}</span>}<span>{toast.text}</span>{toast.undo && <button type="button" onClick={toast.undo}>{w.undo}</button>}<button type="button" onClick={() => go("/")}>{w.yourMove} →</button></div>}
-    </main>
+    </>
   );
 }

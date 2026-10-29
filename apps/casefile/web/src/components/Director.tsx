@@ -100,8 +100,17 @@ export function Director() {
         await sleep(600);
         return "next";
       case "open": {
-        const card = await find(`a.card[href*="/case/${s.case}"]`).catch(() => null);
-        if (card) await aim(card);
+        // the case is a row of the stack or of a group (a link) — or already the open gate: then the pointer shows it; else by the API
+        const until = Date.now() + 8000;
+        let link: HTMLElement | null = null, here: HTMLElement | null = null;
+        while (Date.now() < until && !link && !here) {
+          here = document.querySelector<HTMLElement>(`.tor[data-case^="${s.case}"] h1`);
+          link = document.querySelector<HTMLElement>(`a.row[href*="/case/${s.case}"], a.card[href*="/case/${s.case}"]`);
+          if (link && link.getClientRects().length === 0) link = null;
+          if (!link && !here) await sleep(200);
+        }
+        if (here) await aim(here, false);
+        else if (link) await aim(link);
         else {
           const all = (await api.groups()).flatMap((g) => g.cases);
           const hit = all.find((c) => c.id.startsWith(s.case ?? "\u0000"));

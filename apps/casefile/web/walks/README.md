@@ -16,3 +16,8 @@ Every script prints what it saw and ends with `ISSUES (n)`: console errors, page
 `gate-shot.mjs` photographs the gate (ADR-024) in sample worlds at 1440 light/dark and 390 and measures what the design rules
 demand (targets ≥ 24 px, keyboard stops inside the viewport, no horizontal scroll). It takes `<base> <outdir> <workspace>:<case>:<person> …`;
 the stage comes from `control/demo/stage.py <worlds> <trees> <port> schadenakte-muster=claims pressroom-muster=pressroom …`.
+
+`stack-shot.mjs` photographs the stack (ADR-024, step 2): a workspace's start page at 1440 light/dark and 390, plus named cases as
+the gate, and measures the same rules plus one more — at most one surface framed in `--your-move`, and only the piece that waits
+for the viewer. It takes `<base> <outdir> <workspace>:<person>[:<case>,<case>] …`; the stage is the same as for `gate-shot.mjs`.
+Restart the stage after a rebuild: it serves the asset names it read at start.

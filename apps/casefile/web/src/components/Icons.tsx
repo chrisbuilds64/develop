@@ -29,3 +29,5 @@ export const Lock = () => <svg {...base} strokeWidth={1.75}><rect x="5" y="11" w
 export const Seal = () => <svg {...base} strokeWidth={1.75}><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12l2.5 2.5 4.5-5" /></svg>;
 export const Chev = () => <svg {...base} strokeWidth={1.75}><path d="M9 6l6 6-6 6" /></svg>;
 export const Arrow = () => <svg {...base} strokeWidth={1.75}><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
+export const Calendar = () => <svg {...base} strokeWidth={1.75}><rect x="4" y="6" width="16" height="14" rx="2" /><path d="M4 10h16M8 3v4M16 3v4" /></svg>;
+export const Dot = () => <svg {...base} strokeWidth={1.75}><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" /></svg>;

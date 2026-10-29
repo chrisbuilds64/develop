@@ -1,7 +1,7 @@
 // The board: every case as a card in the column of its stage — the second view on the same folders. Click a card, the case opens.
 import { useQuery } from "@tanstack/react-query";
 import { api, type ConfigView } from "../api";
-import { Card } from "./List";
+import { Card } from "../components/Card";
 import type { words } from "../words";
 
 export function Board({ config, go, w }: { config: ConfigView; go: (p: string) => void; w: ReturnType<typeof words> }) {
