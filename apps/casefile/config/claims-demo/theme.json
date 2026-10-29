@@ -14,5 +14,21 @@
       "HP": "#8a5cf6"
     },
     "fallback": "#5a6270"
+  },
+  "create": {
+    "$comment": "A claim starts as a report, by hand as well as by mail (Chris, 2026-10-29). The kind comes from the value list; the number counts within the year, the reference follows it.",
+    "label": "HR",
+    "roles": [
+      "approver",
+      "operator"
+    ],
+    "stage": "10-meldung",
+    "number": [
+      "{year}-{seq:04}"
+    ],
+    "external_id": "SN-{year}-{seq:05}",
+    "meta": {
+      "fictional": true
+    }
   }
 }

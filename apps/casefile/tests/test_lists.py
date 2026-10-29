@@ -3,6 +3,7 @@ the log line, a retired entry staying readable — and a list no configuration k
 to a new case."""
 
 import json
+from pathlib import Path
 import shutil
 
 import pytest
@@ -157,3 +158,24 @@ def test_a_list_no_configuration_knows_is_started_filled_and_offered_to_a_new_ca
     c = DomainConfig.load(cfg, root)
     assert value_lists.entry(c.lists, "channel", "LI")["word"]["de"] == "LinkedIn"
     assert value_lists.counts(FsStore(root), c.lists)["channel"] == {"SUB": 1}
+
+
+def test_a_claim_starts_by_hand_as_a_report_numbered_in_its_year(tmp_path):
+    """The same act as a mail: a claim in its first stage, the kind from the list, the number and reference by the domain's rule."""
+    import datetime as dt
+    claims = Path(__file__).resolve().parents[1] / "config" / "claims-demo"
+    root = tmp_path / "claims"
+    for s in json.loads((claims / "stages.json").read_text())["stages"]:
+        (root / s["folder"]).mkdir(parents=True)
+    y = dt.date.today().year
+    (root / "30-pruefung" / f"HR-{y}-0417-wasser").mkdir()
+    (root / "30-pruefung" / f"HR-{y}-0417-wasser" / "meta.json").write_text(json.dumps({"label": "HR", "title": "Wasser"}))
+    client = TestClient(create_app(Settings(root=root, config_dir=claims, lang="de", secret="test")))
+    assert client.post("/api/session", json={"person": "du"}).status_code == 200
+    r = client.post("/api/cases", json={"title": "Rohrbruch Keller", "values": {"label": "HR"}, "step_id": "claim-1"})
+    assert r.status_code == 200, r.text
+    assert r.json()["stage"] == "10-meldung" and r.json()["id"].startswith(f"HR-{y}-0418-")
+    meta = json.loads((root / "10-meldung" / r.json()["id"] / "meta.json").read_text())
+    assert meta["external_id"] == f"SN-{y}-00418" and meta["fictional"] is True
+    kfz = client.post("/api/cases", json={"title": "Auffahrunfall", "values": {"label": "KFZ"}, "step_id": "claim-2"}).json()
+    assert kfz["id"].startswith(f"KFZ-{y}-0001-")                                 # each kind counts on its own

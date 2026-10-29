@@ -1275,6 +1275,10 @@ def create_app(settings: Settings) -> FastAPI:
             return _refuse(exc)
         meta = {"configVersion": c.config.config_version, "label": label, "number": number, "title": title, "created": _now()[:10], "created_by": p.id,
                 **{k: v for k, v in (create.get("meta") or {}).items()}, **values}
+        if create.get("external_id"):                           # the domain's outside reference, from the same number: SN-{year}-{seq:05}
+            from ..domain import handoff
+            m = re.match(r"^(?:(\d{4})-)?\D*?(\d+)$", number)
+            meta["external_id"] = handoff.fill(str(create["external_id"]), {**values, "number": number, "year": (m.group(1) if m and m.group(1) else str(dt.date.today().year)), "seq": (m.group(2) if m else number)})
         c.store.write_json(f"{first}/{cid}/meta.json", meta)
         c.store.write_json(f"_steps/{body.step_id}.json", {"step_id": body.step_id, "case": cid, "action": "create", "by": p.id, "status": "done", "created": _now(), "payload": {"title": title}})
         stepping._append_entry(c.store, c.config, cid, first, {"author": p.name, "status": "info", "title": c.config.word("texts", "created", c.lang, "Started"), "text": title, "step": body.step_id})

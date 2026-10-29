@@ -5,5 +5,28 @@
   "$comment": "Same tokens as the claims file; the one accent means only: this waits for you.",
   "external_label": "Angebotsnummer",
   "external_url": "",
-  "covers": {"by": "label", "colors": {"KFZ": "#e0a52a", "HR": "#2f6fed"}, "fallback": "#5a6270"}
+  "covers": {
+    "by": "label",
+    "colors": {
+      "KFZ": "#e0a52a",
+      "HR": "#2f6fed"
+    },
+    "fallback": "#5a6270"
+  },
+  "create": {
+    "$comment": "A quote request may come by mail or be taken by hand.",
+    "label": "KFZ",
+    "roles": [
+      "operator",
+      "approver"
+    ],
+    "stage": "10-anfrage",
+    "number": [
+      "{year}-{seq:04}"
+    ],
+    "external_id": "AN-{year}-{seq:05}",
+    "meta": {
+      "fictional": true
+    }
+  }
 }

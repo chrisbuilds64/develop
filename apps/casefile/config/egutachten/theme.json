@@ -65,5 +65,21 @@
         "word": "Weiteres Foto"
       }
     ]
+  },
+  "create": {
+    "$comment": "An order may come from the claim (hand-off) or be taken by hand.",
+    "label": "KH",
+    "roles": [
+      "approver",
+      "operator"
+    ],
+    "stage": "10-auftrag",
+    "number": [
+      "{year}-{seq:04}"
+    ],
+    "external_id": "GA-{year}-{seq:05}",
+    "meta": {
+      "fictional": true
+    }
   }
 }
