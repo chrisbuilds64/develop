@@ -1002,3 +1002,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .meta-row a { color: inherit; }
 .meta-json, .meta-raw { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .meta-empty { opacity: .5; }
+
+/* the thread panel is as tall as its entries, at most the column (restyle 29.10.) */
+.thread { align-self: flex-start; max-height: 100%; }
+.thread-scroll { flex: 0 1 auto; }
