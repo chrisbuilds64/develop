@@ -1,0 +1,11 @@
+{
+  "id": "20261029-221033_posteingang-einordnen_MAIL-2026-0005-hausratversicherung-fuer-unsere-neue-woh",
+  "skill": "posteingang-einordnen",
+  "container": "10-eingang/MAIL-2026-0005-hausratversicherung-fuer-unsere-neue-woh",
+  "requested_by": "du",
+  "runner": "claude-code",
+  "status": "queued",
+  "created": "2026-10-29T22:10:33+01:00",
+  "note": "message=<demo-hausrat@demo.invalid>",
+  "request_id": "mail-7a09f8fb3af68b63"
+}

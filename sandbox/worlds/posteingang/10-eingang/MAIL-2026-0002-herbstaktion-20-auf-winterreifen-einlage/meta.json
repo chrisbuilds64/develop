@@ -1,0 +1,14 @@
+{
+  "configVersion": "1",
+  "label": "MAIL",
+  "number": "2026-0002",
+  "title": "Herbstaktion: 20 % auf Winterreifen-Einlagerung",
+  "subtitle": "Fuhrpark-Profi Newsletter",
+  "created": "2026-10-26",
+  "message_id": "<demo-news@demo.invalid>",
+  "from": "news@fuhrpark-profi.example",
+  "from_name": "Fuhrpark-Profi Newsletter",
+  "received": "2026-10-26T06:05:00+01:00",
+  "source": "muster",
+  "headers": {}
+}

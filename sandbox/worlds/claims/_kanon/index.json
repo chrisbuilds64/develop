@@ -1,0 +1,336 @@
+{
+ "house": "Nordlicht Versicherung (fiktiv)",
+ "lead": "Fiktive Demo: die Hausordnung einer erfundenen Versicherung. Gefunden, erhoben, ergänzt — und was davon gilt.",
+ "updated": "2026-10-26",
+ "areas": [
+  {
+   "id": "kfz",
+   "title": "Kfz-Schaden",
+   "lead": "von der Meldung bis zur Regulierung"
+  },
+  {
+   "id": "sach",
+   "title": "Sachschaden",
+   "lead": "Gebäude und Hausrat"
+  }
+ ],
+ "docs": [
+  {
+   "file": "basis/verhaltenskodex.md",
+   "title": "Verhaltenskodex",
+   "layer": "basis",
+   "depth": 1,
+   "kind": "Grundsatz",
+   "scope": "ganzes Haus",
+   "status": "freigegeben",
+   "evidence": "Vorstand, Fassung 2023",
+   "owner": "Vorstand",
+   "lead": "Fair, nachvollziehbar, eine Ablehnung entscheidet ein Mensch",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Im Intranet, Fassung 2023. Unverändert übernommen."
+   }
+  },
+  {
+   "file": "basis/ki-im-schaden.md",
+   "title": "KI im Schaden",
+   "layer": "basis",
+   "depth": 1,
+   "kind": "Grundsatz",
+   "scope": "ganzes Haus",
+   "status": "freigegeben",
+   "evidence": "Vorstand, 14.10.2026",
+   "owner": "Vorstand",
+   "implements": [
+    "Schadenakte: Hinweise der KI gekennzeichnet",
+    "Schadenakte: Ablehnung nur am menschlichen Tor"
+   ],
+   "lead": "Die KI schlägt vor, ein Mensch entscheidet",
+   "origin": {
+    "kind": "ergaenzt",
+    "text": "Fehlte. Die KI lief schon in der Schadenakte, ohne dass irgendwo stand, was sie darf."
+   }
+  },
+  {
+   "file": "basis/datenschutz-schadenfotos.md",
+   "title": "Fotos und Daten",
+   "layer": "basis",
+   "depth": 3,
+   "kind": "Richtlinie",
+   "scope": "ganzes Haus",
+   "status": "freigegeben",
+   "evidence": "Datenschutzbeauftragte, 2024",
+   "owner": "Datenschutzbeauftragte",
+   "lead": "Kennzeichen Dritter schwärzen, Gesundheitsdaten nur in der Akte",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Rundschreiben des Datenschutzes, 2024."
+   }
+  },
+  {
+   "file": "marke/haltung-im-schadenfall.md",
+   "title": "Haltung im Schadenfall",
+   "layer": "marke",
+   "depth": 1,
+   "kind": "Grundsatz",
+   "scope": "Marke Nordlicht",
+   "status": "freigegeben",
+   "evidence": "Leitbild 2022, Vorstand",
+   "owner": "Leitung Kommunikation",
+   "lead": "Wir prüfen den Schaden, nicht den Menschen",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Im Leitbild von 2022 — bekannt, aber nirgends mit der Arbeit verbunden."
+   }
+  },
+  {
+   "file": "marke/kandidat-rueckruf.md",
+   "title": "Rückmeldung am ersten Werktag",
+   "layer": "marke",
+   "depth": 1,
+   "kind": "Grundsatz",
+   "scope": "Marke Nordlicht",
+   "status": "vorgeschlagen",
+   "owner": "Leitung Kommunikation",
+   "lead": "Kandidat aus einer Prozessbefragung — gilt noch nicht",
+   "origin": {
+    "kind": "erhoben",
+    "text": "Aus der Erhebung zum Gutachtenauftrag. Reicht über den Bereich hinaus, deshalb entscheidet nicht die Teamleitung.",
+    "trail": [
+     {
+      "step": "gesagt",
+      "date": "2026-10-06",
+      "who": "Erhebung ERH-2026-07 · Gutachtenauftrag Kfz",
+      "quotes": [
+       {
+        "who": "Selin Kaya, Sachbearbeitung Kfz",
+        "quote": "Wer einen Unfall hatte, will einen Menschen hören. Am selben Tag, wenn es geht."
+       }
+      ]
+     },
+     {
+      "step": "festgestellt",
+      "date": "2026-10-09",
+      "who": "Befund der Erhebung",
+      "text": "Eine Aussage über die Haltung des Hauses, nicht über den Ablauf. Sie reicht über den Bereich hinaus."
+     },
+     {
+      "step": "vorgeschlagen",
+      "date": "2026-10-09",
+      "who": "Kandidat für die Marke",
+      "text": "„Wer einen Schaden meldet, hört innerhalb eines Werktags von einem Menschen.“ Zur Entscheidung bei der Leitung Kommunikation — ein Prozessgespräch allein macht eine Aussage über die Identität des Hauses nicht gültig."
+     }
+    ]
+   }
+  },
+  {
+   "file": "marke/sprache-gegenueber-versicherten.md",
+   "title": "Sprache gegenüber Versicherten",
+   "layer": "marke",
+   "depth": 3,
+   "kind": "Richtlinie",
+   "scope": "Marke Nordlicht",
+   "status": "freigegeben",
+   "evidence": "Leitung Kommunikation, 2025",
+   "owner": "Leitung Kommunikation",
+   "implements": [
+    "Textbausteine der Schadenakte",
+    "Prüfung der Anschreiben durch die KI"
+   ],
+   "lead": "Kurze Sätze, kein Paragraf ohne Erklärung",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Schreibleitfaden 2025."
+   }
+  },
+  {
+   "file": "kfz/prozess-kfz-schaden.md",
+   "title": "Prozess Kfz-Schaden",
+   "layer": "bereich",
+   "area": "kfz",
+   "depth": 2,
+   "kind": "Prozess",
+   "scope": "Bereich Kfz-Schaden",
+   "status": "freigegeben",
+   "evidence": "Prozesslandkarte 2021, angepasst 10/2026",
+   "owner": "Petra Brandt, Teamleitung Kfz",
+   "implements": [
+    "Schadenakte: Stufen und Tore"
+   ],
+   "lead": "Sechs Stufen, drei menschliche Tore",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Prozesslandkarte 2021, an die Schadenakte angepasst."
+   }
+  },
+  {
+   "file": "kfz/va-gutachten-beauftragen.md",
+   "title": "Gutachten beauftragen",
+   "layer": "bereich",
+   "area": "kfz",
+   "depth": 3,
+   "kind": "Verfahrensanweisung",
+   "scope": "Verfahren Gutachtenauftrag Kfz",
+   "status": "freigegeben",
+   "version": 1,
+   "evidence": "Petra Brandt, 20.10.2026",
+   "owner": "Petra Brandt, Teamleitung Kfz",
+   "implements": [
+    "Schadenakte: Aktion „Gutachten beauftragen“"
+   ],
+   "lead": "Schwelle 1.500 Euro, Haftpflicht mit Fremdschaden immer",
+   "origin": {
+    "kind": "ergaenzt",
+    "text": "Fehlte. Die Befragung zeigte zwei Schwellen in Gebrauch und keine schriftliche Regel.",
+    "trail": [
+     {
+      "step": "gesagt",
+      "date": "2026-10-06",
+      "who": "Erhebung ERH-2026-07 · Gutachtenauftrag Kfz",
+      "text": "Drei Befragte, drei Antworten auf die Frage, wann ein Gutachter kommt.",
+      "quotes": [
+       {
+        "who": "Selin Kaya, Sachbearbeitung Kfz",
+        "quote": "Ab tausend Euro schicke ich eigentlich immer einen Gutachter raus."
+       },
+       {
+        "who": "Jonas Wendt, Sachbearbeitung Kfz",
+        "quote": "Bei Haftpflicht immer, egal wie klein. Da will ich nichts riskieren."
+       },
+       {
+        "who": "Petra Brandt, Teamleitung Kfz",
+        "quote": "Steht nirgends. Macht jeder so, wie er es gelernt hat."
+       }
+      ]
+     },
+     {
+      "step": "festgestellt",
+      "date": "2026-10-09",
+      "who": "Befund der Erhebung",
+      "text": "Zwei Schwellen in Gebrauch, keine schriftliche Regel. Was dem Gutachter mitgegeben wird, entscheidet jeder selbst; HIS-Hinweise kommen mal mit, mal nicht."
+     },
+     {
+      "step": "vorgeschlagen",
+      "date": "2026-10-09",
+      "who": "Regelkandidat und Artefaktbedarf",
+      "text": "Eine Verfahrensanweisung „Gutachten beauftragen“ mit einer Schwelle und einer festen Liste, dazu eine Vorlage für den Auftrag."
+     },
+     {
+      "step": "beschlossen",
+      "date": "2026-10-20",
+      "who": "Petra Brandt, Teamleitung Kfz",
+      "text": "Schwelle 1.500 Euro, Haftpflicht mit Fremdschaden immer. Vorlage Gutachtenauftrag v1 freigegeben."
+     },
+     {
+      "step": "angewendet",
+      "date": "2026-10-22",
+      "who": "Fall KFZ-2026-0811",
+      "text": "Erster Fall nach dem neuen Verfahren. Der Auftrag im Fall ist Nachweis, keine Regel."
+     }
+    ]
+   }
+  },
+  {
+   "file": "kfz/vorlage-gutachtenauftrag.md",
+   "title": "Vorlage Gutachtenauftrag",
+   "layer": "bereich",
+   "area": "kfz",
+   "depth": 4,
+   "kind": "Vorlage",
+   "scope": "Verfahren Gutachtenauftrag Kfz",
+   "status": "freigegeben",
+   "version": 1,
+   "evidence": "Petra Brandt, 20.10.2026",
+   "owner": "Petra Brandt, Teamleitung Kfz",
+   "implements": [
+    "Schadenakte: Auftragsformular"
+   ],
+   "lead": "Sieben Felder, HIS-Hinweise Pflicht",
+   "origin": {
+    "kind": "ergaenzt",
+    "text": "Als Artefaktbedarf aus derselben Erhebung entstanden."
+   }
+  },
+  {
+   "file": "kfz/textbaustein-regulierung.md",
+   "title": "Regulierungsschreiben",
+   "layer": "bereich",
+   "area": "kfz",
+   "depth": 4,
+   "kind": "Vorlage",
+   "scope": "Bereich Kfz-Schaden",
+   "status": "freigegeben",
+   "evidence": "Textbausteinsammlung, angepasst 2025",
+   "owner": "Petra Brandt, Teamleitung Kfz",
+   "lead": "Was wir übernehmen, wie es sich zusammensetzt, wann es kommt",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Textbausteinsammlung, an die Sprachrichtlinie angepasst."
+   }
+  },
+  {
+   "file": "sach/prozess-sachschaden.md",
+   "title": "Prozess Sachschaden",
+   "layer": "bereich",
+   "area": "sach",
+   "depth": 2,
+   "kind": "Prozess",
+   "scope": "Bereich Sachschaden",
+   "status": "freigegeben",
+   "evidence": "Prozesslandkarte 2021",
+   "owner": "Teamleitung Sach",
+   "lead": "Mit Sofortmaßnahmen vor der Besichtigung",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Prozesslandkarte 2021."
+   }
+  },
+  {
+   "file": "sach/richtlinie-leitungswasser.md",
+   "title": "Sofortmaßnahmen Leitungswasser",
+   "layer": "bereich",
+   "area": "sach",
+   "depth": 3,
+   "kind": "Richtlinie",
+   "scope": "Bereich Sachschaden",
+   "status": "freigegeben",
+   "evidence": "Teamleitung Sach, 2023",
+   "owner": "Teamleitung Sach",
+   "lead": "Haupthahn, Strom, Trocknung am selben Tag",
+   "origin": {
+    "kind": "gefunden",
+    "text": "Checkliste am Arbeitsplatz, 2023."
+   }
+  }
+ ],
+ "gaps": [
+  {
+   "layer": "bereich",
+   "area": "sach",
+   "depth": 3,
+   "title": "Gutachter bei Mehrfamilienhaus",
+   "lead": "Wer beauftragt, wenn mehrere Parteien betroffen sind — heute je nach Fall"
+  },
+  {
+   "layer": "bereich",
+   "area": "kfz",
+   "depth": 3,
+   "title": "Rückfrage an den Gutachter",
+   "lead": "Fristen und Form fehlen"
+  }
+ ],
+ "records": [
+  {
+   "title": "Gutachtenauftrag KFZ-2026-0811",
+   "file": "records/kfz-0811-gutachtenauftrag.md",
+   "case": "KFZ-2026-0811-auffahrunfall-a3-kleinwagen",
+   "layer": "bereich",
+   "area": "kfz",
+   "lead": "Der erste Auftrag nach dem neuen Verfahren",
+   "uses": [
+    "kfz/va-gutachten-beauftragen.md",
+    "kfz/vorlage-gutachtenauftrag.md"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1 @@
+Fiktive Schadenfälle für die Demonstration. Jeder Name, jede Adresse, jede Nummer und jeder Betrag ist erfunden; die Fotos sind generiert (Nano Banana Pro), die Dokumente nach dem Muster echter Unterlagen gesetzt.

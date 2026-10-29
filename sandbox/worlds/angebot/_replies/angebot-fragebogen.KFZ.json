@@ -1,0 +1,14 @@
+{
+  "delay_s": 6,
+  "files": {
+    "fragebogen.json": "files/fragebogen-octavia.json",
+    "fragebogen.md": "files/fragebogen-octavia.md"
+  },
+  "entry": {
+    "title": "Fragebogen ausgefüllt",
+    "text": "Alle zehn Angaben stehen in der Anfrage, jede mit den Worten des Kunden. Den jüngsten Fahrer habe ich aus „Jahrgang 1988“ gerechnet: 38 Jahre.\n\nVollständig · der Tarifrechner kann rechnen."
+  },
+  "model": "replay",
+  "cost_usd": 0.0,
+  "turns": 1
+}

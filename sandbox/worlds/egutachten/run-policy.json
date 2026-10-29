@@ -1,0 +1,94 @@
+{
+  "$comment": "In the public demo, AI results are prepared and replayed (ADR-016); the policy still says who may order what, and what each skill never does. `does` and `never` are read by the rulebook view.",
+  "default": {
+    "orderable_by": [
+      "approver",
+      "operator",
+      "assessor"
+    ],
+    "permission_mode": "acceptEdits",
+    "write": [
+      "{container}"
+    ],
+    "tools": [],
+    "web": false,
+    "timeout": 600,
+    "agent": "KI",
+    "model": "claude-sonnet-5-5"
+  },
+  "skills": {
+    "vorpruefung": {
+      "does": "Prüft Fotos gegen Schadenpositionen, die Kalkulation auf Plausibilität, den Entwurf auf Lücken, Widersprüche und Formfehler. Schreibt den Prüfbericht mit Begründung.",
+      "never": "Gibt ein Gutachten frei, streicht eine Position, stellt einen Schaden fest.",
+      "rules": [
+        "R-02 Fotostandard",
+        "R-03 Plausibilität Kalkulation",
+        "R-04 Wertminderung",
+        "R-05 Vier-Augen-Schwelle"
+      ]
+    },
+    "anschreiben": {
+      "does": "Entwirft das Anschreiben an den Versicherer aus den freigegebenen Bausteinen und den Daten der Akte.",
+      "never": "Versendet. Formuliert eine fachliche Aussage, die nicht aus einem freigegebenen Baustein stammt.",
+      "rules": [
+        "B-01 Haftungshinweis",
+        "B-07 Restwert und Wiederbeschaffung",
+        "B-08 Schlussformel"
+      ]
+    },
+    "belegpruefung": {
+      "does": "Vergleicht die Rechnung mit Gutachten und Kalkulation, benennt Abweichungen mit Begründung.",
+      "never": "Kürzt. Bezeichnet etwas als Betrug.",
+      "rules": [
+        "R-03 Plausibilität Kalkulation",
+        "R-06 Belegabgleich"
+      ]
+    },
+    "ask": {
+      "does": "Beantwortet eine freie Frage aus dem Inhalt der Akte.",
+      "never": "Entscheidet. Erfindet, was nicht in der Akte steht.",
+      "rules": []
+    },
+    "fotohinweis": {
+      "does": "Vergleicht die Aufnahmen mit dem Fotostandard und mit ähnlichen Fällen aus dem Bestand. Nennt fehlende Ansichten und wahrscheinliche verdeckte Schäden, solange der Gutachter noch am Fahrzeug steht.",
+      "never": "Stellt einen Schaden fest. Entscheidet über die Besichtigungsart.",
+      "rules": [
+        "R-02 Fotostandard",
+        "R-01 Vorschäden"
+      ],
+      "orderable_by": [
+        "assessor",
+        "operator",
+        "approver"
+      ]
+    },
+    "muster": {
+      "does": "Sucht über alle Akten nach Dubletten, Wiederholungen und Abweichungen: gleiche Fotos, gleiche Fahrzeuge oder Halter in kurzer Folge, Werkstätten mit systematischen Abweichungen, Kalkulationen außerhalb der Erfahrungswerte. Schreibt Hinweise mit Begründung.",
+      "never": "Bezeichnet etwas als Betrug. Hält eine Akte an. Entscheidet.",
+      "rules": [
+        "R-01 Vorschäden",
+        "R-03 Plausibilität Kalkulation",
+        "R-06 Belegabgleich"
+      ],
+      "orderable_by": [
+        "operator",
+        "approver"
+      ]
+    },
+    "ergebnis": {
+      "does": "Liest das Diktat des Gutachters und die Kalkulation und hält das Ergebnis als Daten fest: jeder Wert mit den Worten, aus denen er stammt. Daraus stellt der Kern das Gutachten aus freigegebenen Bausteinen zusammen.",
+      "never": "Schreibt einen Satz des Gutachtens. Stellt einen Schaden fest, den der Gutachter nicht diktiert hat. Rechnet Werte um, die nicht in Diktat oder Kalkulation stehen.",
+      "rules": [
+        "R-01 Vorschäden",
+        "R-04 Wertminderung",
+        "R-07 Totalschadengrenze und Restwert"
+      ],
+      "orderable_by": [
+        "assessor",
+        "approver",
+        "operator"
+      ]
+    }
+  },
+  "agents": []
+}

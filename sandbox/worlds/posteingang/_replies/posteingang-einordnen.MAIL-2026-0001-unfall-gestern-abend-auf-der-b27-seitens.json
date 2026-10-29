@@ -1,0 +1,11 @@
+{
+  "delay_s": 5,
+  "files": {
+    "einordnung.json": "files/einordnung-kfz.json"
+  },
+  "entry": {
+    "title": "Eingeordnet",
+    "text": "Seitenschaden an einem VW Golf nach Vorfahrtsverstoß des Unfallgegners, Polizei war vor Ort. Die Kundin braucht das Auto für die Arbeit und fragt nach dem weiteren Vorgehen.\n\nVorschlag: R-01"
+  },
+  "model": "replay"
+}

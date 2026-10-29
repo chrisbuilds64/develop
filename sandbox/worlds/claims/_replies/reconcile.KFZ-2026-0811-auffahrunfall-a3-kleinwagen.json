@@ -1,0 +1,14 @@
+{
+  "delay_s": 5,
+  "files": {
+    "abgleich.md": "abgleich-0811.md"
+  },
+  "entry": {
+    "title": "eGutachten mit Kostenvoranschlag abgeglichen",
+    "text": "Das eGutachten GA-2026-01182 ist über das GDV Schadennetz eingegangen, mit drei Fotos und dem Anschreiben des Gutachters. Kalkulation des Gutachters 2.900 € netto gegen Kostenvoranschlag Autohaus Kern 2.900 € netto: Position für Position identisch, Heckrahmen vermessen ohne Befund. Offen: die Wertminderung ist im Gutachten noch nicht ausgewiesen; Nutzungsausfall Gruppe C, 4 Tage. Vorschlag: 2.900 € freigeben, Wertminderung beim Gutachter nachfragen.\n\nVorschlag mit Begründung · du entscheidest."
+  },
+  "to": "30-pruefung",
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

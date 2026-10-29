@@ -1,0 +1,13 @@
+{
+  "delay_s": 4,
+  "files": {
+    "anschreiben.md": "files/anschreiben-octavia.md"
+  },
+  "entry": {
+    "title": "Anschreiben entworfen",
+    "text": "Aus B-01, B-04 und B-09, die Beträge aus dem Tarifrechner übernommen. Keine Aussage außerhalb der Bausteine.\n\nEntwurf · du versendest."
+  },
+  "model": "replay",
+  "cost_usd": 0.0,
+  "turns": 1
+}

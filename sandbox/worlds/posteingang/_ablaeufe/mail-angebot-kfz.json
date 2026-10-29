@@ -1,0 +1,99 @@
+{
+  "id": "mail-angebot-kfz",
+  "title": "Anfrage per Mail → Angebot (Kfz)",
+  "summary": "Posteingang, Fragebogen, Tarifrechner, Freigabe, Anschreiben, Versand.",
+  "person": "du",
+  "steps": [
+    {
+      "do": "go",
+      "ws": "posteingang-muster",
+      "path": "/",
+      "say": "Der Posteingang einer Versicherungsagentur."
+    },
+    {
+      "do": "say",
+      "say": "Fünf Mails sind eingegangen. Die KI hat sie gelesen und eingeordnet, gehandelt hat sie nicht."
+    },
+    {
+      "do": "open",
+      "case": "MAIL-2026-0004",
+      "say": "Herr Hartmann bekommt einen neuen Skoda und möchte ihn bei uns versichern."
+    },
+    {
+      "do": "show",
+      "target": "[data-help='cf.triage']",
+      "say": "Die KI erkennt eine Angebotsanfrage Kfz und schlägt die Zeile R-05 der Regel-Matrix vor. Die Zitate aus der Mail stehen dabei."
+    },
+    {
+      "do": "press",
+      "action": "confirm",
+      "say": "Ein Mensch bestätigt. Erst jetzt wird etwas ausgeführt."
+    },
+    {
+      "do": "follow",
+      "say": "Die Anfrage liegt jetzt als Akte in der Angebotsakte."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "fragebogen.md",
+      "say": "Die KI füllt den Fragebogen aus der Mail aus. Zu jeder Angabe stehen die Worte des Kunden."
+    },
+    {
+      "do": "read",
+      "file": "fragebogen.md",
+      "say": "Alle zehn Angaben sind da. Den jüngsten Fahrer hat sie aus „Jahrgang 1988“ errechnet."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "calculate",
+      "say": "Angebot rechnen. Das macht der Tarifrechner, nicht die KI."
+    },
+    {
+      "do": "read",
+      "file": "angebot.md",
+      "say": "Jede Zeile zeigt Grundbeitrag, Faktor und die Antwort, aus der der Faktor stammt. Jahresbeitrag 587,09 €."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "approve_quote",
+      "say": "Freigabe durch eine Person, mit Siegel. Danach entwirft die KI das Anschreiben."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "anschreiben.md",
+      "say": "Das Anschreiben entsteht aus freigegebenen Textbausteinen, die Beträge kommen aus dem Rechner."
+    },
+    {
+      "do": "read",
+      "file": "anschreiben.md",
+      "say": "B-01, B-04, B-09: Die KI sagt nichts, was nicht in einem Baustein steht."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "send",
+      "say": "Versenden an den Kunden. Auch dieser Schritt ist eine Entscheidung mit Siegel."
+    }
+  ],
+  "suite": {
+    "id": "agentur",
+    "title": "Versicherungsagentur"
+  },
+  "workspaces": {
+    "posteingang-muster": "posteingang",
+    "angebot-muster": "angebot"
+  }
+}

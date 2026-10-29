@@ -1,0 +1,20 @@
+{
+  "$comment": "Fiktive Agentur. Du bist Innendienst und gibst frei; die KI ist Kollegin im Verlauf.",
+  "people": [
+    {
+      "id": "du",
+      "name": "Du",
+      "kind": "human",
+      "roles": [
+        "operator",
+        "approver"
+      ]
+    },
+    {
+      "id": "ki",
+      "name": "KI",
+      "kind": "agent",
+      "roles": []
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "delay_s": 4,
+  "files": {
+    "abgleich.md": "abgleich-carport.md"
+  },
+  "entry": {
+    "title": "Rechnung abgeglichen",
+    "text": "Rechnung ZR-26-R-091, Angebot ZR-26-077 und Kurzgutachten stimmen in allen vier Positionen überein: 3.550 € netto, 4.224,50 € brutto. Keine Abweichung, keine Vorschäden. Vorschlag: 3.550 € freigeben.\n\nVorschlag mit Begründung · du entscheidest."
+  },
+  "to": "30-pruefung",
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

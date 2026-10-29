@@ -1,0 +1,102 @@
+{
+  "id": "ein-unfall-zwei-haeuser",
+  "title": "Ein Unfall, zwei Häuser",
+  "summary": "Schadenakte beauftragt, Gutachtenakte prüft und versendet, das eGutachten kommt in der Schadenakte an.",
+  "person": "du",
+  "steps": [
+    {
+      "do": "go",
+      "ws": "schadenakte-muster",
+      "path": "/case/KFZ-2026-0815-parkschaden-tiefgarage",
+      "say": "Die Schadenakte des Versicherers. Neu gemeldet: ein Parkschaden in der Tiefgarage."
+    },
+    {
+      "do": "read",
+      "file": "meldung.md",
+      "say": "Die Meldung des Kunden, mit Fotos."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "order_assessment",
+      "date": 2,
+      "say": "Gutachten beauftragen, mit Besichtigungstermin. Der Auftrag geht an den Sachverständigen."
+    },
+    {
+      "do": "go",
+      "ws": "gutachtenakte-muster",
+      "path": "/case/KH-2026-0815-parkschaden-tiefgarage",
+      "say": "Die Gutachtenakte des Sachverständigen-Dienstleisters: Der Auftrag ist angekommen, mit Meldung und Fotos."
+    },
+    {
+      "do": "say",
+      "say": "Im echten Betrieb läuft dieser Weg über das GDV Schadennetz."
+    },
+    {
+      "do": "open",
+      "case": "KH-2026-1182",
+      "say": "Ein anderer Fall ist weiter: Das Gutachten zum Auffahrunfall auf der A3 liegt vor, die KI hat es vorgeprüft."
+    },
+    {
+      "do": "read",
+      "file": "pruefbericht.md",
+      "say": "Der Prüfbericht der KI: zwei Befunde mit Begründung. Entscheiden tut der Prüfer."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "approve_report",
+      "say": "Freigeben. Die KI entwirft das Anschreiben an den Versicherer aus Bausteinen."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "anschreiben.md",
+      "say": "Das Anschreiben entsteht."
+    },
+    {
+      "do": "read",
+      "file": "anschreiben.md",
+      "say": "B-01, B-07, B-08, die Zahlen aus dem Gutachten."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "send",
+      "say": "Versenden. Das eGutachten geht zurück an den Versicherer."
+    },
+    {
+      "do": "go",
+      "ws": "schadenakte-muster",
+      "path": "/case/KFZ-2026-0811-auffahrunfall-a3-kleinwagen",
+      "say": "Zurück in der Schadenakte: Das eGutachten ist bei Schaden SN-2026-00811 angekommen."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "say": "Die KI gleicht das Gutachten gegen den Kostenvoranschlag ab."
+    },
+    {
+      "do": "show",
+      "target": "[data-help='cf.thread']",
+      "say": "Abweichungen mit Begründung. Über die Regulierung entscheidet der Sachbearbeiter."
+    }
+  ],
+  "suite": {
+    "id": "schaden",
+    "title": "Versicherer und Sachverständige"
+  },
+  "workspaces": {
+    "schadenakte-muster": "claims",
+    "gutachtenakte-muster": "egutachten"
+  }
+}

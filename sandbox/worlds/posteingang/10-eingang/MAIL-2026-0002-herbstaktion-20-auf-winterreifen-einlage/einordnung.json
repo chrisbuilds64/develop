@@ -1,0 +1,12 @@
+{
+  "kind": "werbung",
+  "rule": "R-09",
+  "urgency": "low",
+  "confidence": "high",
+  "summary": "Werbemail eines Reifendienstes, keine Aufgabe.",
+  "fields": {},
+  "reasons": [
+    "„Herbstaktion: 20 % auf Winterreifen-Einlagerung“",
+    "Abmeldelink im Fuß"
+  ]
+}

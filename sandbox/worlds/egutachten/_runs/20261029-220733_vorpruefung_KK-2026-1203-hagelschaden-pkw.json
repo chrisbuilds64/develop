@@ -1,0 +1,9 @@
+{
+  "id": "20261029-220733_vorpruefung_KK-2026-1203-hagelschaden-pkw",
+  "skill": "vorpruefung",
+  "container": "30-vorpruefung/KK-2026-1203-hagelschaden-pkw",
+  "requested_by": "kaya",
+  "runner": "claude-code",
+  "status": "queued",
+  "created": "2026-10-29T22:07:33+01:00"
+}

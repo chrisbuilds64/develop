@@ -1,0 +1,122 @@
+{
+  "id": "mail-angebot-hausrat",
+  "title": "Hausrat mit Rückfrage",
+  "summary": "Angaben fehlen: erst fragen, dann rechnen.",
+  "person": "du",
+  "steps": [
+    {
+      "do": "go",
+      "ws": "posteingang-muster",
+      "path": "/",
+      "say": "Wieder der Posteingang, diesmal eine Hausrat-Anfrage."
+    },
+    {
+      "do": "open",
+      "case": "MAIL-2026-0005",
+      "say": "Frau Okafor zieht um und möchte zwei teure Fahrräder mitversichern."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "einordnung.json",
+      "say": "Die KI liest die Mail gerade."
+    },
+    {
+      "do": "show",
+      "target": "[data-help='cf.triage']",
+      "say": "Angebotsanfrage Hausrat, Zeile R-06."
+    },
+    {
+      "do": "press",
+      "action": "confirm",
+      "say": "Bestätigen."
+    },
+    {
+      "do": "follow",
+      "say": "Weiter in die Angebotsakte."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "rueckfrage.md",
+      "say": "Die KI füllt aus, was in der Mail steht, und merkt, dass drei Angaben fehlen."
+    },
+    {
+      "do": "read",
+      "file": "fragebogen.md",
+      "say": "Wohnfläche, Vorschäden, Elementarschäden: Die KI rät nicht, sie markiert die Lücken."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "calculate",
+      "say": "Trotzdem rechnen? Der Rechner verweigert und nennt, was fehlt."
+    },
+    {
+      "do": "read",
+      "file": "rueckfrage.md",
+      "say": "Die Rückfrage an die Kundin liegt schon als Entwurf aus Baustein B-02 bereit."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "ask_customer",
+      "say": "Rückfrage senden. Die Akte wartet jetzt auf die Kundin."
+    },
+    {
+      "do": "type",
+      "action": "answer_in",
+      "text": "78 m², keine Vorschäden, Elementar ja",
+      "say": "Die Antwort kommt. Wir tragen sie ein."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "say": "Die KI trägt die Antwort in den Fragebogen ein, als neue Fassung."
+    },
+    {
+      "do": "press",
+      "action": "calculate",
+      "say": "Jetzt rechnet der Tarifrechner: 224,20 € im Jahr."
+    },
+    {
+      "do": "read",
+      "file": "angebot.md",
+      "say": "Wohnfläche mal Satz, Zone, Elementar, Fahrrad. Jede Zahl lässt sich nachrechnen."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "approve_quote",
+      "say": "Freigeben, das Anschreiben entsteht."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "anschreiben.md",
+      "say": "Bausteine plus Zahlen aus dem Rechner."
+    },
+    {
+      "do": "press",
+      "action": "send",
+      "say": "Versenden."
+    }
+  ],
+  "suite": {
+    "id": "agentur",
+    "title": "Versicherungsagentur"
+  },
+  "workspaces": {
+    "posteingang-muster": "posteingang",
+    "angebot-muster": "angebot"
+  }
+}

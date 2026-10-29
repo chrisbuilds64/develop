@@ -1,0 +1,35 @@
+{
+  "product": "HR",
+  "fields": [
+    {
+      "id": "wohnflaeche",
+      "word": "Wohnfläche (m²)",
+      "value": 62,
+      "quote": "62 qm"
+    },
+    {
+      "id": "tarifzone",
+      "word": "Tarifzone (aus der PLZ)",
+      "value": "1",
+      "quote": "72108 Rottenburg — Zone 1"
+    },
+    {
+      "id": "vorschaeden",
+      "word": "Vorschäden letzte 5 Jahre",
+      "value": "0",
+      "quote": "keine"
+    },
+    {
+      "id": "elementar",
+      "word": "Elementarschäden",
+      "value": "nein",
+      "quote": "brauchen wir nicht, 3. OG"
+    },
+    {
+      "id": "fahrrad",
+      "word": "Fahrraddiebstahl",
+      "value": "nein",
+      "quote": "kein Fahrrad"
+    }
+  ]
+}

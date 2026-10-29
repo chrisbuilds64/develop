@@ -1,0 +1,11 @@
+{
+  "delay_s": 5,
+  "files": {
+    "einordnung.json": "files/einordnung-hr.json"
+  },
+  "entry": {
+    "title": "Eingeordnet",
+    "text": "Leitungswasserschaden nach Rohrbruch hinter der Dusche, Decke im Flur und Parkett in Bad und Flur betroffen. Der Kunde fragt, ob er aufräumen darf.\n\nVorschlag: R-02"
+  },
+  "model": "replay"
+}

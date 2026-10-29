@@ -1,0 +1,11 @@
+{
+  "delay_s": 5,
+  "files": {
+    "einordnung.json": "files/einordnung-news.json"
+  },
+  "entry": {
+    "title": "Eingeordnet",
+    "text": "Werbemail eines Reifendienstes, keine Aufgabe.\n\nVorschlag: R-09"
+  },
+  "model": "replay"
+}

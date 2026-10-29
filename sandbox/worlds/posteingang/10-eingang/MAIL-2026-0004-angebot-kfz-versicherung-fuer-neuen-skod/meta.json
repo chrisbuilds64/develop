@@ -1,0 +1,14 @@
+{
+  "configVersion": "1",
+  "label": "MAIL",
+  "number": "2026-0004",
+  "title": "Angebot Kfz-Versicherung für neuen Skoda Octavia",
+  "subtitle": "Lukas Hartmann",
+  "created": "2026-10-27",
+  "message_id": "<demo-octavia@demo.invalid>",
+  "from": "l.hartmann@example.invalid",
+  "from_name": "Lukas Hartmann",
+  "received": "2026-10-27T07:52:00+01:00",
+  "source": "muster",
+  "headers": {}
+}

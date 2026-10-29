@@ -1,0 +1,64 @@
+{
+  "id": "gutachten-bausteine",
+  "title": "Gutachten aus Bausteinen",
+  "summary": "Diktat, Ergebnis, Regeln wählen Bausteine, der Kern setzt das Gutachten.",
+  "person": "du",
+  "steps": [
+    {
+      "do": "go",
+      "ws": "gutachtenakte-muster",
+      "path": "/case/KK-2026-1190-parkschaden-tiefgarage",
+      "say": "Die Gutachtenakte. Die Gutachterin war in der Tiefgarage am Fahrzeug."
+    },
+    {
+      "do": "read",
+      "file": "diktat.md",
+      "say": "Ihr Diktat, am Fahrzeug gesprochen: Befund, Reparaturweg, Kalkulation, Werte."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "capture_result",
+      "say": "Die KI erfasst das Ergebnis aus Diktat und Kalkulation. Sie hält fest, sie formuliert nicht."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "ergebnis.md",
+      "say": "23 Werte, jeder mit den Worten der Gutachterin."
+    },
+    {
+      "do": "read",
+      "file": "ergebnis.md",
+      "say": "Reparaturkosten 8,7 % des Wiederbeschaffungswerts. Daraus folgt die Regel."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "press",
+      "action": "compose_report",
+      "say": "Das Gutachten aus Bausteinen zusammenstellen. Das macht der Kern."
+    },
+    {
+      "do": "read",
+      "file": "gutachten.md",
+      "say": "Jeder Abschnitt ist ein freigegebener Satz des Hauses mit Fassung: kein Totalschaden nach R-07, Kasko-Nutzungsausfall, Wertminderung 0 € mit Grund."
+    },
+    {
+      "do": "say",
+      "say": "Ein anderes Ergebnis ergibt ein anderes Gutachten: ab 100 % Totalschaden mit Restwert, bei Haftpflicht Nutzungsausfall nach Tabelle."
+    }
+  ],
+  "suite": {
+    "id": "gutachten",
+    "title": "Sachverständige"
+  },
+  "workspaces": {
+    "gutachtenakte-muster": "egutachten"
+  }
+}

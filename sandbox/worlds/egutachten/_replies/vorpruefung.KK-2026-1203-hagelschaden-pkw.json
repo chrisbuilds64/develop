@@ -1,0 +1,14 @@
+{
+  "delay_s": 5,
+  "files": {
+    "pruefbericht.md": "pruefbericht-1203.md"
+  },
+  "entry": {
+    "title": "Vorprüfung abgeschlossen",
+    "text": "Fotos gegen Positionen: alle drei Bauteile belegt. Kalkulation plausibel: 78 Dellen zu 35 € je Delle plus Dachhimmel, marktüblich für Ausbeulen ohne Lackieren. Wertminderung mit 0 € ausgewiesen und begründet. Keine Befunde.\n\nVorschlag mit Begründung · der Prüfer entscheidet."
+  },
+  "to": "40-fachpruefung",
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

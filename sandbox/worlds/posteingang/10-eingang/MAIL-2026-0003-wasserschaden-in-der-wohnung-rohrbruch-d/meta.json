@@ -1,0 +1,14 @@
+{
+  "configVersion": "1",
+  "label": "MAIL",
+  "number": "2026-0003",
+  "title": "Wasserschaden in der Wohnung – Rohrbruch Dusche",
+  "subtitle": "Jonas Weller",
+  "created": "2026-10-26",
+  "message_id": "<demo-hr@demo.invalid>",
+  "from": "j.weller@example.invalid",
+  "from_name": "Jonas Weller",
+  "received": "2026-10-26T08:20:00+01:00",
+  "source": "muster",
+  "headers": {}
+}

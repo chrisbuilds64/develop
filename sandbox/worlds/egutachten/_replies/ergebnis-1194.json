@@ -1,0 +1,119 @@
+{
+  "fields": {
+    "order": {
+      "value": "GA-2026-01194",
+      "word": "Auftragsnummer",
+      "quote": "Auftrag GA-2026-01194"
+    },
+    "sparte": {
+      "value": "Kasko",
+      "word": "Sparte",
+      "quote": "Kasko"
+    },
+    "sparte_typ": {
+      "value": "kasko",
+      "word": "Versicherungsart",
+      "quote": "Kasko"
+    },
+    "fahrzeug": {
+      "value": "Kompaktwagen, MS-KL 194, EZ 2022",
+      "word": "Fahrzeug",
+      "quote": "Kompaktwagen, weiß, MS-KL 194, EZ 2022 (Auftrag)"
+    },
+    "fin": {
+      "value": "WXX00000000001194",
+      "word": "FIN",
+      "quote": "(Foto Fahrgestellnummer)"
+    },
+    "besichtigung": {
+      "value": "28.10.2026",
+      "word": "Besichtigung",
+      "quote": "(heute, vor Ort)"
+    },
+    "ort": {
+      "value": "beim VN, Tiefgarage Hafenstraße",
+      "word": "Ort",
+      "quote": "(Auftrag)"
+    },
+    "gutachter": {
+      "value": "Gutachterin Kaya",
+      "word": "Gutachter",
+      "quote": "(Diktat von Gutachterin Kaya)"
+    },
+    "hergang": {
+      "value": "Laut Versicherungsnehmer beim Ausparken an einem Pfeiler entlanggeschrammt.",
+      "word": "Hergang",
+      "quote": "VN: beim Ausparken am Pfeiler entlang"
+    },
+    "befund": {
+      "value": "Linke Seite: beide Türen und Schweller verkratzt, Delle in der Fahrertür auf Stoßfängerhöhe. Lackschicht im Bereich der Erstlackierung, Schwellerfalz ohne Stauchung.",
+      "word": "Befund",
+      "quote": "Linke Seite, beide Türen und Schweller verkratzt, Delle in der Fahrertür auf Stoßfängerhöhe · Tür 110–125 µm, Erstlack"
+    },
+    "vorschaeden": {
+      "value": "ja",
+      "word": "Vorschäden",
+      "quote": "Laut VN Parkplatzrempler 2025"
+    },
+    "reparaturweg": {
+      "value": "Fahrertür ausbeulen und lackieren, hintere Tür und Schweller lackieren.",
+      "word": "Reparaturweg",
+      "quote": "(aus Befund und Kalkulation)"
+    },
+    "fotos": {
+      "value": 8,
+      "word": "Fotos",
+      "quote": "(acht Aufnahmen vor Ort)"
+    },
+    "kalk_system": {
+      "value": "DAT SilverDAT",
+      "word": "Kalkulationssystem",
+      "quote": "(Kalkulation)"
+    },
+    "rk_netto": {
+      "value": 1640.0,
+      "word": "Reparaturkosten netto",
+      "quote": "(Kalkulation)"
+    },
+    "rk_brutto": {
+      "value": 1951.6,
+      "word": "Reparaturkosten brutto",
+      "quote": "(Kalkulation)"
+    },
+    "dauer": {
+      "value": "ca. 2 Arbeitstage",
+      "word": "Reparaturdauer",
+      "quote": "(Kalkulation)"
+    },
+    "wbw": {
+      "value": 22400,
+      "word": "Wiederbeschaffungswert",
+      "quote": "(Kalkulation)"
+    },
+    "wm": {
+      "value": 0,
+      "word": "Wertminderung",
+      "quote": "(Kalkulation)"
+    },
+    "wm_grund": {
+      "value": "unter der Bagatellgrenze",
+      "word": "Grund",
+      "quote": "(Kalkulation)"
+    },
+    "nu_gruppe": {
+      "value": "D",
+      "word": "Nutzungsausfall-Gruppe",
+      "quote": "(Kalkulation)"
+    },
+    "nu_tage": {
+      "value": 2,
+      "word": "Nutzungsausfall-Tage",
+      "quote": "(Kalkulation)"
+    },
+    "vorschaeden_text": {
+      "value": "Delle mit Kratzern am Stoßfänger hinten rechts, laut VN Parkplatzrempler 2025, nie gemeldet; nicht Gegenstand dieses Schadens.",
+      "word": "Vorschäden",
+      "quote": "Laut VN Parkplatzrempler 2025, nie gemeldet, nicht Teil dieses Schadens."
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "product": "KFZ",
+  "fields": [
+    {
+      "id": "fahrzeug",
+      "word": "Fahrzeug",
+      "value": "Mazda 2",
+      "quote": "Mazda 2"
+    },
+    {
+      "id": "kasko",
+      "word": "Kasko",
+      "value": "keine",
+      "quote": "nur Haftpflicht"
+    },
+    {
+      "id": "sf_klasse",
+      "word": "SF-Klasse Haftpflicht",
+      "value": 20,
+      "quote": "SF 20"
+    },
+    {
+      "id": "fahrleistung",
+      "word": "Fahrleistung km/Jahr",
+      "value": 5000,
+      "quote": "kaum 5.000 km"
+    },
+    {
+      "id": "juengster_fahrer",
+      "word": "Jüngster Fahrer (Alter)",
+      "value": 67,
+      "quote": "nur ich, Jahrgang 1959"
+    },
+    {
+      "id": "garage",
+      "word": "Nachts in Garage",
+      "value": "ja",
+      "quote": "Carport mit Tor"
+    }
+  ]
+}

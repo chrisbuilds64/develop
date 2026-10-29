@@ -1,0 +1,19 @@
+{
+  "$comment": "Fiktiver Posteingang einer Versicherungsagentur. Du bearbeitest den Eingang.",
+  "people": [
+    {
+      "id": "du",
+      "name": "Du",
+      "kind": "human",
+      "roles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "ki",
+      "name": "KI",
+      "kind": "agent",
+      "roles": []
+    }
+  ]
+}

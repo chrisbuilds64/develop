@@ -1,15 +1,16 @@
 // The director, played like a presenter: open the list, pick a flow, press → until the end. A screenshot per step; errors
 // the panel shows are collected; exit 1 when the flow breaks. usage: node walks/director-shot.mjs <base> <outdir> <title regex> [workspace] [flow id]
 import { chromium } from "playwright";
-import { mkdirSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
 const [base, out, title, ws = "posteingang-muster", flowId] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
 const cache = join(homedir(), "Library/Caches/ms-playwright");
-const shell = readdirSync(cache).find((d) => d.startsWith("chromium_headless_shell"));
-const browser = await chromium.launch({ executablePath: join(cache, shell, "chrome-headless-shell-mac-arm64", "chrome-headless-shell") });
+const shell = existsSync(cache) && readdirSync(cache).find((d) => d.startsWith("chromium_headless_shell"));
+const pinned = shell && join(cache, shell, "chrome-headless-shell-mac-arm64", "chrome-headless-shell");
+const browser = await chromium.launch(pinned && existsSync(pinned) ? { executablePath: pinned } : {});   // else Playwright's own pick (another machine)
 const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "de-DE" })).newPage();
 const issues = [];
 page.on("pageerror", (e) => { if (!/ViewTransition/.test(e.message)) issues.push(`pageerror: ${e.message}`); });   // headless has no view transitions

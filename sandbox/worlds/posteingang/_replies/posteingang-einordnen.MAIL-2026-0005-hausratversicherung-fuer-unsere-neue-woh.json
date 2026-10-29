@@ -1,0 +1,11 @@
+{
+  "delay_s": 5,
+  "files": {
+    "einordnung.json": "files/einordnung-hausrat.json"
+  },
+  "entry": {
+    "title": "Eingeordnet",
+    "text": "Frau Okafor zieht zum 1.12. um und braucht eine Hausratversicherung, zwei teure Fahrräder sollen mitversichert sein. Wohnfläche fehlt.\n\nVorschlag: R-06"
+  },
+  "model": "replay"
+}

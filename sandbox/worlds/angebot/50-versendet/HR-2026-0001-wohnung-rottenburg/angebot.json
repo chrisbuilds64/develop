@@ -1,0 +1,36 @@
+{
+  "product": "HR",
+  "product_word": "Hausratversicherung",
+  "tariff": "Demo-Tarif 2026 (fiktiv)",
+  "lines": [
+    {
+      "id": "hr",
+      "word": "Hausrat (Versicherungssumme 650 €/m², Unterversicherungsverzicht)",
+      "base": {
+        "word": "62 m² × 1,30 €",
+        "amount": 80.6
+      },
+      "factors": [
+        {
+          "word": "Tarifzone (aus der PLZ)",
+          "answer": "1",
+          "factor": 0.85
+        },
+        {
+          "word": "Vorschäden letzte 5 Jahre",
+          "answer": "0",
+          "factor": 1.0
+        }
+      ],
+      "amount": 68.51
+    }
+  ],
+  "net": 68.51,
+  "tax": {
+    "word": "Versicherungsteuer",
+    "rate": 0.19,
+    "amount": 13.02
+  },
+  "gross": 81.53,
+  "monthly": 6.79
+}

@@ -1,0 +1,14 @@
+{
+  "delay_s": 4,
+  "files": {
+    "fotohinweise.json": "fotohinweise-1194-1.json",
+    "fotohinweise.md": "fotohinweise-1194-1.md"
+  },
+  "entry": {
+    "title": "Hinweise zur Besichtigung · Runde 1",
+    "text": "Vier Aufnahmen und die Notiz gesehen. Das Schadenbild an der linken Seite passt zum geschilderten Hergang. Nach Fotostandard R-02 fehlen drei Pflichtansichten; aus ähnlichen Akten eine Aufnahme mehr.\n\nVorschlag · die Gutachterin entscheidet."
+  },
+  "model": "replay",
+  "cost_usd": 0.0,
+  "turns": 1
+}

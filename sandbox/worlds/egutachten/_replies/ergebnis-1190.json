@@ -1,0 +1,114 @@
+{
+  "fields": {
+    "order": {
+      "value": "GA-2026-01190",
+      "word": "Auftragsnummer",
+      "quote": "Auftrag GA-2026-01190"
+    },
+    "sparte": {
+      "value": "Kasko",
+      "word": "Sparte",
+      "quote": "Kasko"
+    },
+    "sparte_typ": {
+      "value": "kasko",
+      "word": "Versicherungsart",
+      "quote": "Kasko"
+    },
+    "fahrzeug": {
+      "value": "Kompaktwagen, MS-JK 567, EZ 2023, 12.800 km",
+      "word": "Fahrzeug",
+      "quote": "Kompaktwagen, Kennzeichen MS-JK 567, Erstzulassung 2023, zwölftausendachthundert Kilometer"
+    },
+    "fin": {
+      "value": "WXX00000000000005",
+      "word": "FIN",
+      "quote": "FIN WXX00000000000005"
+    },
+    "besichtigung": {
+      "value": "27.10.2026",
+      "word": "Besichtigung",
+      "quote": "Besichtigung heute"
+    },
+    "ort": {
+      "value": "beim VN, Tiefgarage",
+      "word": "Ort",
+      "quote": "beim Versicherungsnehmer in der Tiefgarage"
+    },
+    "gutachter": {
+      "value": "Gutachterin Kaya",
+      "word": "Gutachter",
+      "quote": "(Diktat von Gutachterin Kaya)"
+    },
+    "hergang": {
+      "value": "Laut Versicherungsnehmer beim Ausparken an einem Betonpfeiler entlanggeschrammt.",
+      "word": "Hergang",
+      "quote": "beim Ausparken am Betonpfeiler entlanggeschrammt"
+    },
+    "befund": {
+      "value": "Fahrertür mit langem Kratzer und Delle auf Stoßfängerhöhe, Schweller angekratzt, Spiegelgehäuse unbeschädigt.",
+      "word": "Befund",
+      "quote": "Fahrertür mit langem Kratzer und Delle auf Stoßfängerhöhe, Schweller angekratzt, Spiegelgehäuse unbeschädigt"
+    },
+    "vorschaeden": {
+      "value": "nein",
+      "word": "Vorschäden",
+      "quote": "Keine Vorschäden, kein HIS-Hinweis im Auftrag"
+    },
+    "reparaturweg": {
+      "value": "Fahrertür ausbeulen und lackieren, Schweller beilackieren.",
+      "word": "Reparaturweg",
+      "quote": "Tür ausbeulen und lackieren, Schweller beilackieren"
+    },
+    "fotos": {
+      "value": 3,
+      "word": "Fotos",
+      "quote": "Drei Fotos"
+    },
+    "kalk_system": {
+      "value": "DAT SilverDAT",
+      "word": "Kalkulationssystem",
+      "quote": "Kalkulation DAT"
+    },
+    "rk_netto": {
+      "value": 1640.0,
+      "word": "Reparaturkosten netto",
+      "quote": "netto tausendsechshundertvierzig"
+    },
+    "rk_brutto": {
+      "value": 1951.6,
+      "word": "Reparaturkosten brutto",
+      "quote": "brutto tausendneunhunderteinundfünfzig sechzig"
+    },
+    "dauer": {
+      "value": "ca. 2 Arbeitstage",
+      "word": "Reparaturdauer",
+      "quote": "zwei Arbeitstage"
+    },
+    "wbw": {
+      "value": 22400,
+      "word": "Wiederbeschaffungswert",
+      "quote": "Wiederbeschaffungswert zweiundzwanzigtausendvierhundert"
+    },
+    "wm": {
+      "value": 0,
+      "word": "Wertminderung",
+      "quote": "Wertminderung null"
+    },
+    "wm_grund": {
+      "value": "unter der Bagatellgrenze",
+      "word": "Grund",
+      "quote": "liegt unter der Bagatellgrenze"
+    },
+    "nu_gruppe": {
+      "value": "D",
+      "word": "Nutzungsausfall-Gruppe",
+      "quote": "(Fahrzeugklasse Kompakt, Tabelle)"
+    },
+    "nu_tage": {
+      "value": 2,
+      "word": "Nutzungsausfall-Tage",
+      "quote": "zwei Arbeitstage"
+    }
+  }
+}

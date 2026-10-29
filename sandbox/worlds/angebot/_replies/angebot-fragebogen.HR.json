@@ -1,0 +1,15 @@
+{
+  "delay_s": 6,
+  "files": {
+    "fragebogen.json": "files/fragebogen-hausrat.json",
+    "fragebogen.md": "files/fragebogen-hausrat.md",
+    "rueckfrage.md": "files/rueckfrage-hausrat.md"
+  },
+  "entry": {
+    "title": "Fragebogen ausgefüllt, drei Angaben fehlen",
+    "text": "Beginn, Anschrift und Fahrräder stehen in der Anfrage. Es fehlen Wohnfläche, Vorschäden und die Frage nach Elementarschäden; ohne sie rechnet der Tarif nicht. Die Rückfrage an Frau Okafor liegt als Entwurf bei.\n\nEntwurf · du sendest."
+  },
+  "model": "replay",
+  "cost_usd": 0.0,
+  "turns": 1
+}

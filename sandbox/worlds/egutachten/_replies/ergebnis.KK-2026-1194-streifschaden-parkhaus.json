@@ -1,0 +1,14 @@
+{
+  "delay_s": 5,
+  "files": {
+    "ergebnis.json": "ergebnis-1194.json",
+    "ergebnis.md": "ergebnis-1194.md"
+  },
+  "entry": {
+    "title": "Ergebnis erfasst",
+    "text": "Aus der Notiz vom Fahrzeug und dem vor Ort Geklärten: Befund linke Seite, Lackschicht Erstlack, Schwellerfalz ohne Befund. Vorschaden hinten rechts mit der Angabe des VN aufgenommen, nicht Gegenstand dieses Schadens.\n\nErfasst, nicht formuliert · der Kern setzt das Gutachten aus den Bausteinen."
+  },
+  "model": "replay",
+  "cost_usd": 0.0,
+  "turns": 1
+}

@@ -1,0 +1,14 @@
+{
+  "delay_s": 4,
+  "files": {
+    "fragebogen.json": "files/fragebogen-hausrat-2.json",
+    "fragebogen.md": "files/fragebogen-hausrat-2.md"
+  },
+  "entry": {
+    "title": "Antwort eingetragen",
+    "text": "Aus der Antwort: 78 m², keine Vorschäden, Elementarschäden ja. Der Fragebogen ist vollständig.\n\nDer Tarifrechner kann rechnen."
+  },
+  "model": "replay",
+  "cost_usd": 0.0,
+  "turns": 1
+}

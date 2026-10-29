@@ -1,0 +1,265 @@
+{
+  "$comment": "Words for the invented claims file. German is the demo language; English for the surface's fallback.",
+  "de": {
+    "product": "Schadenakte",
+    "labels": {
+      "HR": "Hausrat",
+      "WG": "Wohngebäude",
+      "KFZ": "Kfz",
+      "HP": "Haftpflicht"
+    },
+    "stations": {
+      "report": "Meldung",
+      "inspection": "Besichtigung",
+      "check": "Deine Prüfung",
+      "settlement": "Regulierung",
+      "closed": "Abschluss"
+    },
+    "stages": {
+      "10-meldung": "gemeldet, Gutachten beauftragen",
+      "20-besichtigung": "beim Gutachter",
+      "25-abgleich": "KI gleicht ab",
+      "30-pruefung": "Gutachten liegt vor",
+      "40-regulierung": "zur Regulierung",
+      "60-abgeschlossen": "abgeschlossen"
+    },
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "KI prüft gerade",
+      "others": "Beim Gutachter",
+      "date": "Termin",
+      "planned": "Terminiert",
+      "out": "Abgeschlossen",
+      "ideas": "Neu gemeldet",
+      "archive": "Archiv"
+    },
+    "actions": {
+      "schedule_inspection": "Besichtigung ansetzen",
+      "deliver_report": "Gutachten übergeben",
+      "approve_settlement": "Freigeben und zur Regulierung",
+      "ask_assessor": "Rückfrage an Gutachter",
+      "paid": "Als reguliert melden",
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten",
+      "order_assessment": "Gutachten beauftragen"
+    },
+    "reasons": {
+      "running": "die KI prüft gerade",
+      "failed": "der letzte Lauf ist gescheitert",
+      "missing": "es fehlt noch etwas"
+    },
+    "texts": {
+      "done": "Erledigt.",
+      "deliver": "Abgelegt.",
+      "detected": "Von Hand verschoben",
+      "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
+    },
+    "files": {
+      "meldung.md": "Schadenmeldung",
+      "fotos-1.jpg": "Foto 1",
+      "gutachten.pdf": "Gutachten",
+      "feuchtemessung.pdf": "Feuchtemessung",
+      "kostenvoranschlag.pdf": "Kostenvoranschlag",
+      "rechnung.pdf": "Rechnung",
+      "abgleich.md": "Abgleich",
+      "review.md": "Verlauf",
+      "meta.json": "Steckbrief",
+      "schadenmeldung.pdf": "Schadenanzeige (PDF)",
+      "fotos-2.jpg": "Foto 2",
+      "fotos-3.jpg": "Foto 3",
+      "fotos-4.jpg": "Foto 4",
+      "fotos-5.jpg": "Foto 5",
+      "anzeige.pdf": "Polizeiliche Bescheinigung",
+      "stehlgutliste.pdf": "Stehlgutliste",
+      "feuerwehrbericht.pdf": "Einsatzbescheinigung Feuerwehr",
+      "unfallbericht.pdf": "Schadenanzeige Kfz",
+      "wildunfallbescheinigung.pdf": "Wildunfallbescheinigung",
+      "streuprotokoll.pdf": "Streuprotokoll",
+      "gutachten.md": "eGutachten",
+      "anschreiben.md": "Anschreiben Gutachter"
+    },
+    "roles": {
+      "assessor": "Gutachter",
+      "approver": "Sachbearbeitung",
+      "settlement": "Regulierung",
+      "operator": "Betrieb"
+    },
+    "words": {
+      "external_id": "Schadennummer"
+    },
+    "meta": {
+      "title": "Titel",
+      "subtitle": "Untertitel",
+      "label": "Art",
+      "number": "Nummer",
+      "external_id": "Referenz",
+      "created": "Angelegt",
+      "origin": "Herkunft",
+      "configVersion": "Konfiguration",
+      "fictional": "Erfunden",
+      "policy": "Police",
+      "gutachten_auftrag": "Gutachtenauftrag"
+    },
+    "headlines": {
+      "approve_settlement": "{title}: {first} fehlt, dann freigeben",
+      "order_assessment": "Gutachten beauftragen: {title}",
+      "deliver_report": "Gutachten übergeben: {title}",
+      "ask_assessor": "Rückfrage an den Gutachter: {title}",
+      "paid": "Als reguliert melden: {title}",
+      "answer": "Antworten: {title}",
+      "deliver": "{first} ablegen: {title}",
+      "see_failure": "Nachsehen, was schiefging: {title}"
+    },
+    "locks": {
+      "approve_settlement": "Freigeben und zur Regulierung. Ein Siegel; öffnet sich, sobald {missing} in der Akte liegt.",
+      "deliver_report": "Gutachten übergeben; öffnet sich, sobald {missing} in der Akte liegt."
+    },
+    "requires": {
+      "shape:image": "mindestens ein Foto",
+      "shape:pdf": "ein PDF",
+      "answered": "eine Antwort",
+      "decided:": "deine Entscheide",
+      "primary": "das Hauptdokument"
+    }
+  },
+  "en": {
+    "product": "Claims File",
+    "labels": {
+      "HR": "Contents",
+      "WG": "Building",
+      "KFZ": "Motor",
+      "HP": "Liability"
+    },
+    "stations": {
+      "report": "Report",
+      "inspection": "Inspection",
+      "check": "Your check",
+      "settlement": "Settlement",
+      "closed": "Closed"
+    },
+    "stages": {
+      "10-meldung": "reported, assessment to order",
+      "20-besichtigung": "with the assessor",
+      "25-abgleich": "AI reconciling",
+      "30-pruefung": "assessment ready",
+      "40-regulierung": "in settlement",
+      "60-abgeschlossen": "closed"
+    },
+    "groups": {
+      "you": "Your move",
+      "claude": "AI is checking",
+      "others": "With the assessor",
+      "date": "Date",
+      "planned": "Scheduled",
+      "out": "Closed",
+      "ideas": "New reports",
+      "archive": "Archive"
+    },
+    "actions": {
+      "schedule_inspection": "Schedule the inspection",
+      "deliver_report": "Hand over the assessment",
+      "approve_settlement": "Approve for settlement",
+      "ask_assessor": "Ask the assessor",
+      "paid": "Mark as settled",
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "Add",
+      "see_failure": "See what went wrong",
+      "wait": "Wait",
+      "order_assessment": "Order the assessment"
+    },
+    "reasons": {
+      "running": "the AI is checking",
+      "failed": "the last run failed",
+      "missing": "something is still missing"
+    },
+    "texts": {
+      "done": "Done.",
+      "deliver": "Added.",
+      "detected": "Moved by hand",
+      "detected_text": "The file was found in {stage}; the thread last knew {known}.",
+      "delivered_title": "Added: {files}",
+      "replay_moved": "Moved on.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
+    },
+    "files": {
+      "meldung.md": "Claim report",
+      "fotos-1.jpg": "Photo 1",
+      "gutachten.pdf": "Assessment",
+      "feuchtemessung.pdf": "Moisture reading",
+      "kostenvoranschlag.pdf": "Estimate",
+      "rechnung.pdf": "Invoice",
+      "abgleich.md": "Reconciliation",
+      "review.md": "Thread",
+      "meta.json": "Record",
+      "schadenmeldung.pdf": "Claim form (PDF)",
+      "fotos-2.jpg": "Photo 2",
+      "fotos-3.jpg": "Photo 3",
+      "fotos-4.jpg": "Photo 4",
+      "fotos-5.jpg": "Photo 5",
+      "anzeige.pdf": "Police certificate",
+      "stehlgutliste.pdf": "List of stolen goods",
+      "feuerwehrbericht.pdf": "Fire brigade certificate",
+      "unfallbericht.pdf": "Motor claim form",
+      "wildunfallbescheinigung.pdf": "Wildlife collision certificate",
+      "streuprotokoll.pdf": "Gritting log",
+      "gutachten.md": "e-report",
+      "anschreiben.md": "Assessor's letter"
+    },
+    "roles": {
+      "assessor": "assessor",
+      "approver": "handler",
+      "settlement": "settlement",
+      "operator": "operator"
+    },
+    "words": {
+      "external_id": "Claim number"
+    },
+    "meta": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "label": "Kind",
+      "number": "Number",
+      "external_id": "Reference",
+      "created": "Created",
+      "origin": "Origin",
+      "configVersion": "Configuration",
+      "fictional": "Fictional",
+      "policy": "Policy",
+      "gutachten_auftrag": "Assessment order"
+    },
+    "headlines": {
+      "approve_settlement": "{title}: {first} is missing, then approve",
+      "order_assessment": "Order the assessment: {title}",
+      "deliver_report": "Deliver the report: {title}",
+      "ask_assessor": "Question to the assessor: {title}",
+      "paid": "Mark as settled: {title}",
+      "answer": "Answer: {title}",
+      "deliver": "File {first}: {title}",
+      "see_failure": "See what went wrong: {title}"
+    },
+    "locks": {
+      "approve_settlement": "Approve and settle. A seal; opens once {missing} is in the file.",
+      "deliver_report": "Deliver the report; opens once {missing} is in the file."
+    },
+    "requires": {
+      "shape:image": "at least one photo",
+      "shape:pdf": "a PDF",
+      "answered": "an answer",
+      "decided:": "your decisions",
+      "primary": "the primary document"
+    }
+  }
+}

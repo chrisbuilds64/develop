@@ -1,0 +1,14 @@
+{
+  "delay_s": 5,
+  "files": {
+    "ergebnis.json": "ergebnis-1190.json",
+    "ergebnis.md": "ergebnis-1190.md"
+  },
+  "entry": {
+    "title": "Ergebnis erfasst",
+    "text": "23 Werte aus dem Diktat und der Kalkulation, jeder mit den Worten der Gutachterin. Verhältnis Reparaturkosten zu Wiederbeschaffungswert 8,7 %: kein Totalschaden nach R-07. Wertminderung 0 €, Bagatellgrenze.\n\nErfasst, nicht formuliert · der Kern setzt das Gutachten aus den Bausteinen."
+  },
+  "model": "replay",
+  "cost_usd": 0.0,
+  "turns": 1
+}

@@ -1,0 +1,50 @@
+{
+  "product": "HR",
+  "fields": [
+    {
+      "id": "beginn",
+      "word": "Versicherungsbeginn",
+      "value": "01.12.2026",
+      "quote": "zum 1. Dezember"
+    },
+    {
+      "id": "anschrift",
+      "word": "Anschrift",
+      "value": "Gartenstraße 40, 72074 Tübingen",
+      "quote": "Gartenstraße 40, 72074 Tübingen"
+    },
+    {
+      "id": "tarifzone",
+      "word": "Tarifzone (aus der PLZ)",
+      "value": "2",
+      "quote": "72074 Tübingen — Zone 2 laut Zonenliste"
+    },
+    {
+      "id": "fahrrad",
+      "word": "Fahrraddiebstahl",
+      "value": "ja",
+      "quote": "zwei ziemlich teure Fahrräder, die sollen auf jeden Fall mitversichert sein"
+    },
+    {
+      "id": "wohnflaeche",
+      "word": "Wohnfläche (m²)",
+      "value": 78,
+      "quote": "78 m²",
+      "missing": false
+    },
+    {
+      "id": "vorschaeden",
+      "word": "Vorschäden letzte 5 Jahre",
+      "value": "0",
+      "quote": "keine Vorschäden",
+      "missing": false
+    },
+    {
+      "id": "elementar",
+      "word": "Elementarschäden",
+      "value": "ja",
+      "quote": "Elementar ja",
+      "missing": false
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "configVersion": "1",
+  "label": "MAIL",
+  "number": "2026-0001",
+  "title": "Unfall gestern Abend auf der B27 – Seitenschaden",
+  "subtitle": "Erika Brandt",
+  "created": "2026-10-25",
+  "message_id": "<demo-kfz@demo.invalid>",
+  "from": "e.brandt@example.invalid",
+  "from_name": "Erika Brandt",
+  "received": "2026-10-25T21:40:00+01:00",
+  "source": "muster",
+  "headers": {}
+}

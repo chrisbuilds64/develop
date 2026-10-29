@@ -1,0 +1,14 @@
+{
+  "delay_s": 4,
+  "files": {
+    "anschreiben.md": "anschreiben-1182.md"
+  },
+  "entry": {
+    "title": "Anschreiben entworfen",
+    "text": "Anschreiben an die Nordlicht Versicherung aus den freigegebenen Bausteinen B-01 (Fassung 3), B-07 (Fassung 2) und B-08 (Fassung 1) entworfen, die Zahlen aus dem Gutachten übernommen: 2.900 € netto, Nutzungsausfall Gruppe C. Keine fachliche Aussage außerhalb der Bausteine. Der Innendienst versendet.\n\nEntwurf · ein Mensch versendet."
+  },
+  "to": null,
+  "cost_usd": 0.0,
+  "model": "replay",
+  "turns": 1
+}

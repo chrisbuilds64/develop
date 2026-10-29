@@ -1,0 +1,54 @@
+{
+  "$comment": "The helpers fill and draft; they never compute the premium (the rate table does) and never send (a person does).",
+  "default": {
+    "orderable_by": [
+      "operator",
+      "approver"
+    ],
+    "permission_mode": "acceptEdits",
+    "write": [
+      "{container}"
+    ],
+    "tools": [
+      "Read",
+      "Write",
+      "Glob"
+    ],
+    "web": false,
+    "timeout": 300,
+    "agent": "KI",
+    "model": "claude-sonnet-5-5"
+  },
+  "skills": {
+    "angebot-fragebogen": {
+      "does": "Liest die Anfrage und füllt den Fragebogen der Sparte aus: jede Antwort mit den Worten des Kunden, aus denen sie stammt. Was fehlt, wird markiert und als Rückfrage an den Kunden entworfen.",
+      "never": "Rechnet einen Beitrag. Errät eine Antwort, die nicht in der Anfrage steht. Schreibt dem Kunden selbst.",
+      "rules": [
+        "Nur, was der Kunde geschrieben hat",
+        "Fehlendes als Frage, nie als Annahme"
+      ]
+    },
+    "angebot-nachtragen": {
+      "does": "Trägt die Antwort des Kunden in den Fragebogen ein, wieder mit Zitat.",
+      "never": "Rechnet. Ändert eine Antwort, zu der der Kunde nichts gesagt hat.",
+      "rules": [
+        "Nur, was der Kunde geschrieben hat"
+      ]
+    },
+    "angebot-anschreiben": {
+      "does": "Entwirft das Angebotsschreiben an den Kunden aus den freigegebenen Textbausteinen, den Zahlen des Tarifrechners und den Antworten im Fragebogen.",
+      "never": "Versendet. Ändert einen Betrag. Sagt etwas über Leistungen, das nicht in einem freigegebenen Baustein steht.",
+      "rules": [
+        "B-01 Anrede und Bezug",
+        "B-04 Beitrag und Zahlweise",
+        "B-09 Gültigkeit und Abschluss"
+      ]
+    },
+    "ask": {
+      "does": "Beantwortet eine freie Frage aus dem Inhalt der Akte.",
+      "never": "Entscheidet. Erfindet, was nicht in der Akte steht.",
+      "rules": []
+    }
+  },
+  "agents": []
+}

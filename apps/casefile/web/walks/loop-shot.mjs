@@ -1,4 +1,4 @@
-// The round trip, clicked like Peter would: the claim orders the assessment, the order appears in the e-report world,
+// The round trip, clicked like a claims handler would: the claim orders the assessment, the order appears in the e-report world,
 // the e-report is approved and sent, the claim receives it and the AI reconciles. usage: node loop-shot.mjs <base> <outdir>
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";

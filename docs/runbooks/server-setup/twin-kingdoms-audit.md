@@ -251,7 +251,7 @@ Nachtwache          [####------------]      [----------------]
 (Monitoring)        Cheatsheet              Fehlt
 ```
 
-**Kerngedanke:** Zwei Burgen, verschiedene Stärken. Rheinstein ist pragmatisch (KISS), Nordwall ist gründlich (Defense in Depth mit VPN). Beide lernen voneinander. Das ist der Wert einer Allianz.
+**Kerngedanke:** Zwei Burgen, verschiedene Stärken. Rheinstein ist pragmatisch (KISS), Nordwall ist gründlich (Defense in Depth mit VPN). Beide lernen voneinander. Das ist der Wert eines Bündnisses.
 
 ---
 

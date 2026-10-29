@@ -1,0 +1,65 @@
+{
+  "product": "KFZ",
+  "fields": [
+    {
+      "id": "fahrzeug",
+      "word": "Fahrzeug",
+      "value": "Skoda Octavia Combi 2.0 TDI",
+      "quote": "einen Skoda Octavia Combi 2.0 TDI"
+    },
+    {
+      "id": "erstzulassung",
+      "word": "Erstzulassung",
+      "value": "11/2026",
+      "quote": "Erstzulassung November 2026"
+    },
+    {
+      "id": "beginn",
+      "word": "Versicherungsbeginn",
+      "value": "15.11.2026",
+      "quote": "am 15. November bekomme ich meinen neuen Wagen"
+    },
+    {
+      "id": "kasko",
+      "word": "Kasko",
+      "value": "vollkasko",
+      "quote": "gern mit Vollkasko"
+    },
+    {
+      "id": "sf_klasse",
+      "word": "SF-Klasse Haftpflicht",
+      "value": 12,
+      "quote": "in SF 12, in der Haftpflicht und in der Vollkasko"
+    },
+    {
+      "id": "sf_klasse_vk",
+      "word": "SF-Klasse Vollkasko",
+      "value": 12,
+      "quote": "in SF 12, in der Haftpflicht und in der Vollkasko"
+    },
+    {
+      "id": "fahrleistung",
+      "word": "Fahrleistung km/Jahr",
+      "value": 15000,
+      "quote": "etwa 15.000 km im Jahr"
+    },
+    {
+      "id": "juengster_fahrer",
+      "word": "Jüngster Fahrer (Alter)",
+      "value": 38,
+      "quote": "meine Frau, sie ist Jahrgang 1988"
+    },
+    {
+      "id": "garage",
+      "word": "Nachts in Garage",
+      "value": "ja",
+      "quote": "steht nachts in unserer Garage"
+    },
+    {
+      "id": "anschrift",
+      "word": "Anschrift",
+      "value": "Mühlstraße 8, 72072 Tübingen",
+      "quote": "Mühlstraße 8, 72072 Tübingen"
+    }
+  ]
+}

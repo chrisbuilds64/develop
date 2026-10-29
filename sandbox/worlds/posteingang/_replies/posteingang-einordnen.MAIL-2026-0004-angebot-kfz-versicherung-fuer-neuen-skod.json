@@ -1,0 +1,11 @@
+{
+  "delay_s": 5,
+  "files": {
+    "einordnung.json": "files/einordnung-octavia.json"
+  },
+  "entry": {
+    "title": "Eingeordnet",
+    "text": "Herr Hartmann bekommt am 15.11. einen neuen Skoda Octavia und möchte ihn mit Vollkasko bei uns versichern; SF 12 vom Vorversicherer, 15.000 km, Garage.\n\nVorschlag: R-05"
+  },
+  "model": "replay"
+}

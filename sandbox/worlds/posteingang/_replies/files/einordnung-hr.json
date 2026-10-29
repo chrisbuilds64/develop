@@ -1,0 +1,24 @@
+{
+  "kind": "schadensmeldung-hausrat",
+  "rule": "R-02",
+  "urgency": "high",
+  "confidence": "high",
+  "summary": "Leitungswasserschaden nach Rohrbruch hinter der Dusche, Decke im Flur und Parkett in Bad und Flur betroffen. Der Kunde fragt, ob er aufräumen darf.",
+  "fields": {
+    "title": "Rohrbruch Dusche, Wasserschaden Flur und Bad",
+    "summary_short": "Decke Flur nass, Parkett gewölbt, Installateur kommt heute",
+    "policy": "HR 4471-2022-1180",
+    "date_of_loss": "2026-10-26",
+    "place": "Gartenstraße 12, 72070 Tübingen"
+  },
+  "labels": {
+    "policy": "Police",
+    "date_of_loss": "Schadentag",
+    "place": "Ort"
+  },
+  "reasons": [
+    "„hinter der Dusche ein Rohr gebrochen“ — Leitungswasser",
+    "„Hausratversicherung HR 4471-2022-1180“",
+    "„Dürfen wir schon aufräumen?“ — wartet auf Antwort"
+  ]
+}

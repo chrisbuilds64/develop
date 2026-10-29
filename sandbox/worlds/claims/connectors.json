@@ -1,0 +1,54 @@
+{
+  "$comment": "The connectors of the claims domain (ADR layer 5). Standards are real; the organisations fictional.",
+  "connectors": [
+    {
+      "id": "bestand",
+      "name": "Bestandssystem",
+      "standard": "eigenes Kernsystem",
+      "carries": "Vertrag, versichertes Risiko, Selbstbehalt, Vollmachten",
+      "direction": "eingehend"
+    },
+    {
+      "id": "schaden",
+      "name": "Schadensystem",
+      "standard": "eigenes Kernsystem",
+      "carries": "Schadennummer, Reserve, Zahlungsstatus",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "gutachter",
+      "name": "Sachverständige",
+      "standard": "GDV Schadennetz · Kfz-Schadenservice",
+      "carries": "Gutachtenauftrag, eGutachten, Rechnungsprüfung, Honorar",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "vermittler",
+      "name": "Makler und Vermittler",
+      "standard": "BiPRO 503 (Schadenmeldung) · 430.5 (Schadenstatus) · 430.1 (Dokumente)",
+      "carries": "Schadenmeldung, Status, Dokumente",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "werkstatt",
+      "name": "Werkstattnetz",
+      "standard": "GDV Schadennetz",
+      "carries": "Kostenvoranschlag, Reparaturfreigabe, Rechnung",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "his",
+      "name": "HIS",
+      "standard": "Hinweis- und Informationssystem",
+      "carries": "Vorschäden, Auffälligkeiten",
+      "direction": "beide Richtungen"
+    },
+    {
+      "id": "zahlung",
+      "name": "Zahlung",
+      "standard": "SEPA über das Schadensystem",
+      "carries": "Auszahlung, nur nach Freigabe",
+      "direction": "ausgehend"
+    }
+  ]
+}

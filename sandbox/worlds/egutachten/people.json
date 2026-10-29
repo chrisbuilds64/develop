@@ -1,0 +1,11 @@
+{
+  "$comment": "Fictional people of the assessment organisation. The viewer is the reviewer (approver, also operator so the demo can send); two assessors; the back office; the insurer as the client who asks; the AI as a colleague in the thread.",
+  "people": [
+    {"id": "du", "name": "Du", "kind": "human", "roles": ["approver", "operator"]},
+    {"id": "lenz", "name": "Gutachter Lenz", "kind": "human", "roles": ["assessor"]},
+    {"id": "kaya", "name": "Gutachterin Kaya", "kind": "human", "roles": ["assessor"]},
+    {"id": "innendienst", "name": "Innendienst", "kind": "human", "roles": ["operator"]},
+    {"id": "versicherer", "name": "Nordlicht Versicherung", "kind": "human", "roles": ["client"]},
+    {"id": "ki", "name": "KI", "kind": "agent", "roles": []}
+  ]
+}

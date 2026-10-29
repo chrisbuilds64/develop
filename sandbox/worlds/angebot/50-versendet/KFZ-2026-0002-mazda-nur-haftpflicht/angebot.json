@@ -1,0 +1,46 @@
+{
+  "product": "KFZ",
+  "product_word": "Kfz-Versicherung",
+  "tariff": "Demo-Tarif 2026 (fiktiv)",
+  "lines": [
+    {
+      "id": "kh",
+      "word": "Kfz-Haftpflicht",
+      "base": {
+        "word": "",
+        "amount": 420.0
+      },
+      "factors": [
+        {
+          "word": "SF-Klasse Haftpflicht",
+          "answer": 20,
+          "factor": 0.35
+        },
+        {
+          "word": "Fahrleistung km/Jahr",
+          "answer": 5000,
+          "factor": 0.88
+        },
+        {
+          "word": "Jüngster Fahrer (Alter)",
+          "answer": 67,
+          "factor": 1.0
+        },
+        {
+          "word": "Nachts in Garage",
+          "answer": "ja",
+          "factor": 0.92
+        }
+      ],
+      "amount": 119.01
+    }
+  ],
+  "net": 119.01,
+  "tax": {
+    "word": "Versicherungsteuer",
+    "rate": 0.19,
+    "amount": 22.61
+  },
+  "gross": 141.62,
+  "monthly": 11.8
+}

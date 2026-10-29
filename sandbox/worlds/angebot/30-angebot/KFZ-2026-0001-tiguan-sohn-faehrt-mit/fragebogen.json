@@ -1,0 +1,41 @@
+{
+  "product": "KFZ",
+  "fields": [
+    {
+      "id": "fahrzeug",
+      "word": "Fahrzeug",
+      "value": "VW Tiguan 1.5 TSI",
+      "quote": "unseren Tiguan"
+    },
+    {
+      "id": "kasko",
+      "word": "Kasko",
+      "value": "teilkasko",
+      "quote": "Teilkasko reicht uns"
+    },
+    {
+      "id": "sf_klasse",
+      "word": "SF-Klasse Haftpflicht",
+      "value": 5,
+      "quote": "SF 5"
+    },
+    {
+      "id": "fahrleistung",
+      "word": "Fahrleistung km/Jahr",
+      "value": 8000,
+      "quote": "rund 8.000 km"
+    },
+    {
+      "id": "juengster_fahrer",
+      "word": "Jüngster Fahrer (Alter)",
+      "value": 19,
+      "quote": "unser Sohn (19) hat den Führerschein und soll mitfahren"
+    },
+    {
+      "id": "garage",
+      "word": "Nachts in Garage",
+      "value": "nein",
+      "quote": "steht an der Straße"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "kind": "angebotsanfrage-kfz",
+  "rule": "R-05",
+  "urgency": "normal",
+  "confidence": "high",
+  "summary": "Herr Hartmann bekommt am 15.11. einen neuen Skoda Octavia und möchte ihn mit Vollkasko bei uns versichern; SF 12 vom Vorversicherer, 15.000 km, Garage.",
+  "fields": {
+    "title": "Skoda Octavia, Neuvertrag Vollkasko",
+    "summary_short": "Neuwagen ab 15.11., SF 12 vom Vorversicherer",
+    "customer": "Lukas Hartmann"
+  },
+  "labels": {
+    "customer": "Kunde"
+  },
+  "reasons": [
+    "„Ich möchte ihn bei Ihnen versichern, gern mit Vollkasko“ — Angebotsanfrage Kfz",
+    "„Können Sie mir ein Angebot schicken?“"
+  ]
+}

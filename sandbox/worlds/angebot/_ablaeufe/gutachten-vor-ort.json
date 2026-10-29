@@ -1,0 +1,139 @@
+{
+  "id": "gutachten-vor-ort",
+  "title": "Vor Ort mit dem Tablet",
+  "summary": "Fotos, Notiz, die KI sagt, was fehlt und was zu klären ist, in zwei Runden.",
+  "person": "kaya",
+  "steps": [
+    {
+      "do": "go",
+      "ws": "gutachtenakte-muster",
+      "path": "/case/KK-2026-1194-streifschaden-parkhaus",
+      "say": "Gutachterin Kaya steht beim Kunden in der Tiefgarage. Auf dem Tablet: ihr Auftrag."
+    },
+    {
+      "do": "tap",
+      "target": "[data-onsite]",
+      "say": "Vor Ort: Fotos, Notiz und die Hinweise der KI."
+    },
+    {
+      "do": "show",
+      "target": ".os-photos",
+      "say": "Drei Ansichten hat sie schon. Blau ist, was der Fotostandard noch verlangt."
+    },
+    {
+      "do": "tap",
+      "target": ".os-photos [data-sample=\"schaden\"]",
+      "say": "Das Detail des Schadens. Am iPad öffnet hier die Kamera, in der Vorführung nehmen wir das Musterfoto."
+    },
+    {
+      "do": "type",
+      "target": ".os-note textarea",
+      "text": "Linke Seite: beide Türen und Schweller verkratzt, Delle in der Fahrertür auf Stoßfängerhöhe. VN: beim Ausparken am Pfeiler entlang. Fahrzeug fahrbereit.",
+      "say": "Dazu, was sie sieht und was der Kunde sagt. Diktieren über die Tastatur geht auch."
+    },
+    {
+      "do": "tap",
+      "target": "[data-ask]",
+      "say": "Jetzt fragt sie die KI."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "fotohinweise.json",
+      "say": "Die KI sieht vier Fotos und die Notiz."
+    },
+    {
+      "do": "show",
+      "target": ".os-hints",
+      "say": "Was noch fehlt, jeweils mit Grund: drei Pflichtansichten und, aus ähnlichen Akten, der Schweller von unten. Dazu eine Frage zur Lackschicht."
+    },
+    {
+      "do": "tap",
+      "target": ".os-hints [data-sample=\"hinten\"]",
+      "say": "Das Heck."
+    },
+    {
+      "do": "tap",
+      "target": ".os-hints [data-sample=\"fin\"]",
+      "say": "Die Fahrgestellnummer."
+    },
+    {
+      "do": "tap",
+      "target": ".os-hints [data-sample=\"tacho\"]",
+      "say": "Der Tacho."
+    },
+    {
+      "do": "tap",
+      "target": ".os-hints [data-sample=\"schweller\"]",
+      "say": "Der Schweller von unten, mit Lampe."
+    },
+    {
+      "do": "type",
+      "target": "[data-hint=\"lack\"] input",
+      "text": "Tür 110–125 µm, Erstlack",
+      "say": "Die Lackschicht hat sie gemessen."
+    },
+    {
+      "do": "tap",
+      "target": "[data-settle=\"lack\"]",
+      "say": "Geklärt."
+    },
+    {
+      "do": "tap",
+      "target": "[data-ask]",
+      "say": "Noch einmal fragen."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "say": "Zweite Runde."
+    },
+    {
+      "do": "show",
+      "target": ".os-hints",
+      "say": "Die Pflichtansichten sind vollständig. Auf dem Heckfoto ist der KI etwas aufgefallen, das nicht zum Hergang passt: eine alte Delle hinten rechts."
+    },
+    {
+      "do": "type",
+      "target": "[data-hint=\"vorschaden\"] input",
+      "text": "Laut VN Parkplatzrempler 2025, nie gemeldet, nicht Teil dieses Schadens.",
+      "say": "Die Gutachterin fragt den Kunden."
+    },
+    {
+      "do": "tap",
+      "target": "[data-settle=\"vorschaden\"]",
+      "say": "Geklärt, mit seinen Worten."
+    },
+    {
+      "do": "tap",
+      "target": "[data-action=\"close_inspection\"]",
+      "say": "Besichtigung abschließen. Notiz und Geklärtes werden zum Diktat, die KI erfasst daraus das Ergebnis."
+    },
+    {
+      "do": "wait",
+      "until": "idle",
+      "file": "ergebnis.md",
+      "say": "Im Büro liegt das Ergebnis, der Vorschaden eingeschlossen."
+    },
+    {
+      "do": "read",
+      "file": "ergebnis.md",
+      "say": "Jeder Wert mit seiner Quelle. Daraus setzt der Kern das Gutachten aus Bausteinen, mit dem Vorschaden-Baustein B-17."
+    },
+    {
+      "do": "close",
+      "say": "Zurück zur Akte."
+    },
+    {
+      "do": "say",
+      "say": "Die KI hat vorgeschlagen, erinnert und nachgefragt. Fotografiert, gemessen und entschieden hat die Gutachterin."
+    }
+  ],
+  "suite": {
+    "id": "gutachten",
+    "title": "Sachverständige"
+  },
+  "workspaces": {
+    "gutachtenakte-muster": "egutachten"
+  }
+}

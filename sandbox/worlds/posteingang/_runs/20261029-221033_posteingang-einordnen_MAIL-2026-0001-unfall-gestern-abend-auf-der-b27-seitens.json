@@ -1,0 +1,14 @@
+{
+  "id": "20261029-221033_posteingang-einordnen_MAIL-2026-0001-unfall-gestern-abend-auf-der-b27-seitens",
+  "skill": "posteingang-einordnen",
+  "container": "10-eingang/MAIL-2026-0001-unfall-gestern-abend-auf-der-b27-seitens",
+  "requested_by": "du",
+  "runner": "claude-code",
+  "status": "done",
+  "created": "2026-10-29T22:10:33+01:00",
+  "note": "message=<demo-kfz@demo.invalid>",
+  "request_id": "mail-215c928bd917dd1e",
+  "finished": "2026-10-29T22:10:33+01:00",
+  "model": "replay",
+  "result": "Eingeordnet"
+}

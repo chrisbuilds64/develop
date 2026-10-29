@@ -1,0 +1,19 @@
+{
+  "kind": "angebotsanfrage-hausrat",
+  "rule": "R-06",
+  "urgency": "normal",
+  "confidence": "high",
+  "summary": "Frau Okafor zieht zum 1.12. um und braucht eine Hausratversicherung, zwei teure Fahrräder sollen mitversichert sein. Wohnfläche fehlt.",
+  "fields": {
+    "title": "Hausrat neue Wohnung, Fahrräder mitversichern",
+    "summary_short": "Umzug zum 1.12., Gartenstraße 40",
+    "customer": "Sara Okafor"
+  },
+  "labels": {
+    "customer": "Kundin"
+  },
+  "reasons": [
+    "„brauchen eine Hausratversicherung“ — Angebotsanfrage Hausrat",
+    "„Was kostet das ungefähr?“"
+  ]
+}

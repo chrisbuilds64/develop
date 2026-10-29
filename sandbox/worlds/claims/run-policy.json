@@ -1,0 +1,29 @@
+{
+  "$comment": "In the public demo, AI results are prepared and replayed (ADR-016); the policy still says who may ask.",
+  "default": {
+    "orderable_by": [
+      "approver",
+      "operator"
+    ],
+    "permission_mode": "acceptEdits",
+    "write": [
+      "{container}"
+    ],
+    "tools": [],
+    "web": false,
+    "timeout": 600,
+    "agent": "KI",
+    "model": "claude-sonnet-5-5"
+  },
+  "skills": {
+    "reconcile": {
+      "$comment": "Reconciles estimate, assessment and invoice; writes abgleich.md.",
+      "orderable_by": [
+        "approver",
+        "operator",
+        "assessor"
+      ]
+    }
+  },
+  "agents": []
+}

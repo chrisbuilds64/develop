@@ -1,0 +1,28 @@
+{
+  "kind": "schadensmeldung",
+  "rule": "R-01",
+  "urgency": "high",
+  "confidence": "high",
+  "summary": "Seitenschaden an einem VW Golf nach Vorfahrtsverstoß des Unfallgegners, Polizei war vor Ort. Die Kundin braucht das Auto für die Arbeit und fragt nach dem weiteren Vorgehen.",
+  "fields": {
+    "title": "Kreuzungsunfall B27, Seitenschaden Fahrerseite",
+    "summary_short": "Fahrertür schließt nicht mehr, Unfallgegner ohne Vorfahrt",
+    "policy": "KFZ 7710-2024-0388",
+    "plate": "TÜ-EB 482",
+    "date_of_loss": "2026-10-24",
+    "place": "Kreuzung B27/Talstraße, Tübingen",
+    "police": "ja, Aktenzeichen folgt"
+  },
+  "labels": {
+    "policy": "Police",
+    "plate": "Kennzeichen",
+    "date_of_loss": "Schadentag",
+    "place": "Ort",
+    "police": "Polizei"
+  },
+  "reasons": [
+    "„jemand in die Fahrerseite gefahren“ — Schadenshergang",
+    "„Versicherungsschein KFZ 7710-2024-0388“ — Kfz-Police",
+    "„brauche das Auto für die Arbeit“ — dringend"
+  ]
+}

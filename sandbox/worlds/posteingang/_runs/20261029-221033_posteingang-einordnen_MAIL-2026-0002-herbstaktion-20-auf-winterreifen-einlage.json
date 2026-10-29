@@ -1,0 +1,14 @@
+{
+  "id": "20261029-221033_posteingang-einordnen_MAIL-2026-0002-herbstaktion-20-auf-winterreifen-einlage",
+  "skill": "posteingang-einordnen",
+  "container": "10-eingang/MAIL-2026-0002-herbstaktion-20-auf-winterreifen-einlage",
+  "requested_by": "du",
+  "runner": "claude-code",
+  "status": "done",
+  "created": "2026-10-29T22:10:33+01:00",
+  "note": "message=<demo-news@demo.invalid>",
+  "request_id": "mail-6f937c83483b7af4",
+  "finished": "2026-10-29T22:10:33+01:00",
+  "model": "replay",
+  "result": "Eingeordnet"
+}
