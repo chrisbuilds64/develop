@@ -86,6 +86,49 @@ def test_pack_hides_the_craft(tree):
     assert pack["triggers"][0]["match"] == ["usually", "normally"]
 
 
+ADDON = '''
+[pack]
+name = "Add-on software"
+version = "0.2"
+extends = "test"
+
+[anchor]
+ask = "An add-on cannot move the starting point."
+
+[[trigger]]
+cue = "names a style guide"
+ask = "Who notices a deviation, and when?"
+match = ["style guide"]
+
+[[block_extension]]
+id = "way"
+
+  [[block_extension.question]]
+  text = "Which of these rules does a machine check before a merge?"
+  why = "A rule nobody checks is a wish."
+  yields = "hidden"
+'''
+
+
+def test_an_add_on_only_adds_to_the_core(tree):
+    (tree / "_packs" / "test-sw.toml").write_text(ADDON, encoding="utf-8")
+    pack = talk.load_pack(tree, "test-sw")
+    assert [q["id"] for b in pack["blocks"] for q in b["questions"]] == ["result.1", "result.2", "way.1", "way.test-sw.1"]
+    assert pack["blocks"][1]["questions"][-1]["why"] == "A rule nobody checks is a wish."
+    assert [t["match"] for t in pack["triggers"]] == [["usually", "normally"], ["style guide"]]
+    assert pack["anchor"] == {} and pack["name"] == "Test pack · Add-on software"
+    assert "hidden" not in json.dumps(pack)
+
+
+def test_an_add_on_cannot_bring_a_block_of_its_own(tree):
+    (tree / "_packs" / "bad.toml").write_text(ADDON.replace('extends = "test"', 'extends = "test"').replace('id = "way"', 'id = "seventh"'), encoding="utf-8")
+    with pytest.raises(talk.InterviewError, match="does not have: seventh"):
+        talk.load_pack(tree, "bad")
+    (tree / "_packs" / "loop.toml").write_text('[pack]\nextends = "loop"\n', encoding="utf-8")
+    with pytest.raises(talk.InterviewError, match="extends itself"):
+        talk.load_pack(tree, "loop")
+
+
 def test_no_marker_no_answer(tree):
     store, config = ctx(tree)
     with pytest.raises(talk.InterviewError):

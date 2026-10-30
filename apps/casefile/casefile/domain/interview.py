@@ -53,28 +53,54 @@ def _now() -> str:
 
 # ----------------------------------------------------------------------------- the pack
 
-def load_pack(root: Path, pack_id: str) -> dict:
-    """The pack as the surface may see it: blocks, questions with their `why`, triggers with their words. What a
-    question is for (`yields`, `seeks`) is the author's craft and stays out."""
+def _read_pack(folder: Path, pack_id: str) -> dict:
     if not pack_id or "/" in pack_id or pack_id.startswith("."):
         raise InterviewError("the case names no pack")
-    folder = Path(root) / "_packs"
-    raw = None
     for ext in ("toml", "json"):
         p = folder / f"{pack_id}.{ext}"
         if p.is_file():
-            raw = tomllib.loads(p.read_text(encoding="utf-8")) if ext == "toml" else json.loads(p.read_text(encoding="utf-8"))
-            break
-    if raw is None:
-        raise InterviewError(f"pack '{pack_id}' is not in _packs/")
+            return tomllib.loads(p.read_text(encoding="utf-8")) if ext == "toml" else json.loads(p.read_text(encoding="utf-8"))
+    raise InterviewError(f"pack '{pack_id}' is not in _packs/")
+
+
+def load_pack(root: Path, pack_id: str) -> dict:
+    """The pack as the surface may see it: blocks, questions with their `why`, triggers with their words. What a
+    question is for (`yields`, `seeks`) is the author's craft and stays out.
+
+    A pack may extend another (`[pack] extends = "core-de"`, a domain's add-on to the core): it only adds — questions at the
+    end of an existing block (`[[block_extension]]`, same `id`), triggers after the core's. It cannot remove, reorder or
+    replace anything, and a block the core does not have is refused, not appended. Its questions get ids of their own
+    (`weg.software-de.1`), so the core's ids and the answers given to them hold when either side grows."""
+    folder = Path(root) / "_packs"
+    raw = _read_pack(folder, pack_id)
     meta = raw.get("pack", {})
+    base_id = str(meta.get("extends") or "")
+    if base_id:
+        if base_id == pack_id:
+            raise InterviewError(f"pack '{pack_id}' extends itself")
+        base = _read_pack(folder, base_id)
+        if base.get("pack", {}).get("extends"):
+            raise InterviewError(f"pack '{base_id}' extends another pack itself; an add-on extends the core only")
+        core = {b["id"]: b for b in base.get("block", [])}
+        for ext in raw.get("block_extension", []):
+            if ext.get("id") not in core:
+                raise InterviewError(f"pack '{pack_id}' extends a block the core '{base_id}' does not have: {ext.get('id')}")
+        added = {e["id"]: e.get("question", []) for e in raw.get("block_extension", [])}
+        blocks_raw = [{**b, "question": [*b.get("question", []),
+                                         *({**q, "id": q.get("id") or f"{b['id']}.{pack_id}.{i + 1}"} for i, q in enumerate(added.get(b["id"], [])))]}
+                      for b in base.get("block", [])]
+        trig_raw = [*base.get("trigger", []), *raw.get("trigger", [])]
+        anchor = base.get("anchor", {})                    # the core's anchor holds; an add-on does not move the conversation's starting point
+        name = f"{base.get('pack', {}).get('name', base_id)} · {meta.get('name', pack_id)}"
+    else:
+        blocks_raw, trig_raw, anchor, name = raw.get("block", []), raw.get("trigger", []), raw.get("anchor", {}), meta.get("name", pack_id)
     blocks = []
-    for b in raw.get("block", []):
+    for b in blocks_raw:
         qs = [{"id": q.get("id") or f"{b['id']}.{i + 1}", "text": q["text"], "why": q.get("why", "")} for i, q in enumerate(b.get("question", []))]
         blocks.append({"id": b["id"], "title": b.get("title", b["id"]), "canon": b.get("canon", ""), "lead": b.get("lead", ""), "questions": qs})
-    triggers = [{"cue": t.get("cue", ""), "ask": t.get("ask", ""), "match": list(t.get("match", []))} for t in raw.get("trigger", []) if t.get("match")]
-    return {"id": pack_id, "name": meta.get("name", pack_id), "version": str(meta.get("version", "")), "language": meta.get("language", ""),
-            "anchor": raw.get("anchor", {}), "blocks": blocks, "triggers": triggers}
+    triggers = [{"cue": t.get("cue", ""), "ask": t.get("ask", ""), "match": list(t.get("match", []))} for t in trig_raw if t.get("match")]
+    return {"id": pack_id, "name": name, "version": str(meta.get("version", "")), "language": meta.get("language", ""),
+            "anchor": anchor, "blocks": blocks, "triggers": triggers}
 
 
 def question_ids(pack: dict) -> list[str]:

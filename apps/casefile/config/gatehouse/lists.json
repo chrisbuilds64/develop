@@ -1,0 +1,14 @@
+{
+  "$comment": "Gatehouse's value lists. pack: the question pack an elicitation runs on (meta.pack) — the core, or the core with a domain's add-on, which only adds (domain/interview.py). The packs themselves are licensed and live in the tree (_packs/), never here; an entry offers a pack, it does not bring one. Without a choice the case takes theme.create.meta.pack.",
+  "lists": {
+    "pack": {
+      "word": {"de": "Fragenpaket", "en": "Question pack"},
+      "field": "pack",
+      "on_create": true,
+      "entries": [
+        {"key": "core-de", "word": {"de": "Kern", "en": "Core"}, "description": {"de": "Die sechs Blöcke, für jedes Haus gleich", "en": "The six blocks, the same for every house"}, "status": "active"},
+        {"key": "software-de", "word": {"de": "Kern + Software", "en": "Core + software"}, "description": {"de": "Ergänzt den Kern um Release, Prüfstrecke, Konventionen, Schnittstellenverträge und Design-System", "en": "Adds release, checks, conventions, interface contracts and the design system to the core"}, "status": "active"}
+      ]
+    }
+  }
+}
