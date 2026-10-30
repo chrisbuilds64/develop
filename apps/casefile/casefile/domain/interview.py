@@ -100,6 +100,7 @@ def load_pack(root: Path, pack_id: str) -> dict:
         blocks.append({"id": b["id"], "title": b.get("title", b["id"]), "canon": b.get("canon", ""), "lead": b.get("lead", ""), "questions": qs})
     triggers = [{"cue": t.get("cue", ""), "ask": t.get("ask", ""), "match": list(t.get("match", []))} for t in trig_raw if t.get("match")]
     return {"id": pack_id, "name": name, "version": str(meta.get("version", "")), "language": meta.get("language", ""),
+            "status": str(meta.get("status", "")),          # an add-on that is not released says so ("entwurf"); the surface may show it
             "anchor": anchor, "blocks": blocks, "triggers": triggers}
 
 

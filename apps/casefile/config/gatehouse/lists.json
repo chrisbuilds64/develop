@@ -7,7 +7,7 @@
       "on_create": true,
       "entries": [
         {"key": "core-de", "word": {"de": "Kern", "en": "Core"}, "description": {"de": "Die sechs Blöcke, für jedes Haus gleich", "en": "The six blocks, the same for every house"}, "status": "active"},
-        {"key": "software-de", "word": {"de": "Kern + Software", "en": "Core + software"}, "description": {"de": "Ergänzt den Kern um Release, Prüfstrecke, Konventionen, Schnittstellenverträge und Design-System", "en": "Adds release, checks, conventions, interface contracts and the design system to the core"}, "status": "active"}
+        {"key": "software-de", "word": {"de": "Kern + Software (Entwurf)", "en": "Core + software (draft)"}, "description": {"de": "Ergänzt den Kern um Release, Prüfstrecke, Konventionen, Schnittstellenverträge und Design-System. Entwurf: nur für fiktive Demos, bis er freigegeben ist", "en": "Adds release, checks, conventions, interface contracts and the design system to the core. Draft: fictional demos only until released"}, "status": "active"}
       ]
     }
   }

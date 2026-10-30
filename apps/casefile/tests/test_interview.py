@@ -91,6 +91,7 @@ ADDON = '''
 name = "Add-on software"
 version = "0.2"
 extends = "test"
+status = "entwurf"
 
 [anchor]
 ask = "An add-on cannot move the starting point."
@@ -116,7 +117,7 @@ def test_an_add_on_only_adds_to_the_core(tree):
     assert [q["id"] for b in pack["blocks"] for q in b["questions"]] == ["result.1", "result.2", "way.1", "way.test-sw.1"]
     assert pack["blocks"][1]["questions"][-1]["why"] == "A rule nobody checks is a wish."
     assert [t["match"] for t in pack["triggers"]] == [["usually", "normally"], ["style guide"]]
-    assert pack["anchor"] == {} and pack["name"] == "Test pack · Add-on software"
+    assert pack["anchor"] == {} and pack["name"] == "Test pack · Add-on software" and pack["status"] == "entwurf"
     assert "hidden" not in json.dumps(pack)
 
 
