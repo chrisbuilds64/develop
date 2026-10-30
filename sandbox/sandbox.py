@@ -153,7 +153,8 @@ def init() -> None:
     (STATE / "plugins").mkdir()
     toml = STATE / "cockpit.toml"
     toml.write_text(COCKPIT_TOML.format(port=PORT, pipeline=trees["pressroom-muster"]), encoding="utf-8")
-    sh([VENV / "bin" / "cockpit", "user", "add", USER, "--role", "operator", "--password", PASSWORD, toml], cwd=STATE, stdout=subprocess.DEVNULL)
+    # the configuration is found as cockpit.toml in the working directory: some Python versions let the options swallow a trailing positional
+    sh([VENV / "bin" / "cockpit", "user", "add", USER, "--role", "operator", "--password", PASSWORD], cwd=STATE, stdout=subprocess.DEVNULL)
 
 
 def reset() -> None:
