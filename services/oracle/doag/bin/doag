@@ -326,6 +326,13 @@ SELECT application_id, page_id, region_name FROM apex_application_page_regions W
 PROMPT -- Q4: was ist heute in PROD eingespielt?
 PROMPT SELECT COUNT(*), MAX(dateexecuted) FROM databasechangelog;
 SELECT COUNT(*) changesets, MAX(dateexecuted) zuletzt FROM databasechangelog;
+PROMPT -- Q5: Hausregel ORA-API-1 (Kanon: architecture-guidelines) — greift jemand an der Package-API vorbei auf eine Tabelle zu?
+PROMPT -- Q5a: Rechte auf Tabellen, die dieses Schema an andere vergeben hat (erlaubt sind Rechte auf Packages)
+PROMPT SELECT grantee, table_name, privilege FROM user_tab_privs_made WHERE table_name IN (SELECT table_name FROM user_tables);
+SELECT grantee, table_name, privilege FROM user_tab_privs_made WHERE table_name IN (SELECT table_name FROM user_tables) ORDER BY 2, 1, 3;
+PROMPT -- Q5b: APEX-Regionen, die eine Tabelle dieses Schemas direkt lesen
+PROMPT SELECT application_id, page_id, region_name, table_name FROM apex_application_page_regions WHERE UPPER(table_name) IN (SELECT table_name FROM user_tables);
+SELECT application_id, page_id, region_name, table_name FROM apex_application_page_regions WHERE UPPER(table_name) IN (SELECT table_name FROM user_tables) ORDER BY 1, 2;
 EOF
 }
 
