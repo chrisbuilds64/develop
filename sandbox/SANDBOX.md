@@ -78,12 +78,27 @@ application that has it today. It may move, but it must not disappear:
   person picker in samples · back to the cockpit · help · videos · flows (Shift+Alt+D) · reset data · agent panel
 - **The flows:** `sandbox.py check` plays all five. Green before you hand back, every time.
 
+## What we need from you: a design system, not only a new look
+
+Your result becomes the rule every future application follows, including the ones an AI builds. An application here is only a
+configuration on the core: it gets its whole look from the core, and may set nothing but the colour per case label (`covers`)
+and its words. So what you deliver has to work as a **system**:
+
+- **Tokens** (`tokens.css`, for the applications and the cockpit alike) are the only source of colour, type, spacing, radius,
+  shadow and motion. No raw values anywhere else; we will add a check that fails on them.
+- **Components** with a name, their variants and states (default, hover, focus, disabled, loading, empty, error). A screen is
+  built from components, not styled one by one.
+- **`DESIGN.md`** as the design system's documentation: principles and the reasons behind them, the tokens and what each is for,
+  every component with when to use it and when not, layout and patterns (lists, the case, gates, empty states), do and don't.
+  Write it so that someone who has never seen your screens, a developer or an AI, builds a new screen that looks like yours.
+
 ## Hand-back
 
-Work on a branch `design/<topic>`. When a step is ready:
+Hand back in steps, not all at once: **tokens first, then components, then screens.** We take each step into the running
+version before the next one starts. Work on a branch `design/<step>`. When a step is ready:
 
 1. `python3 sandbox/sandbox.py check` is green.
-2. `DESIGN.md` in the branch root says what changed and why: tokens, components, rules we should keep to.
+2. `DESIGN.md` in the branch root is up to date for this step.
 3. Before/after screenshots of the screens you touched.
 4. Push the branch and tell us. We review it, run the check again and bring it to production through our stages.
 
