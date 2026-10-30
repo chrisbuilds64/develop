@@ -109,6 +109,11 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     if r.returncode != 0:
         raise OpsError(f"{env.name}: a raw design value outside the tokens — use a token:\n{(r.stdout or r.stderr).strip()}")
     log.info("%s: design within the tokens", env.name)
+    # the core does not import the edge (canon: architecture guidelines AG-4)
+    r = run([str(venv / "bin" / "python"), str(dev / "tools" / "arch_guard.py")], user=s.runner_user, check=False)
+    if r.returncode != 0:
+        raise OpsError(f"{env.name}: the core reaches out to the edge:\n{(r.stdout or r.stderr).strip()}")
+    log.info("%s: architecture boundaries hold", env.name)
     worlds = d / "worlds"
     seeded = Path("/opt/casefile/demo/worlds")
     if not (worlds / "claims").is_dir():                   # the sample worlds, once: the richer seed when it is on the machine, else the built-in ones

@@ -224,8 +224,10 @@ def check(only: list[str]) -> int:
         build_pressroom()
     # the design guard first: colour, type and radius from the tokens (the same gate the deploy holds)
     guard = subprocess.run([str(PY), str(REPO / "tools" / "design_guard.py")])
+    if guard.returncode == 0:
+        guard = subprocess.run([str(PY), str(REPO / "tools" / "arch_guard.py")])
     if guard.returncode != 0:
-        print("\nThe design guard failed, so the flows were not played. `python3 tools/design_guard.py --list` shows what is left.")
+        print("\nA guard failed, so the flows were not played. `python3 tools/design_guard.py --list` shows what is left.")
         return 1
     sh(["npm", "run", "build", "--silent"], cwd=WEB, stdout=subprocess.DEVNULL)
     port = free_port()
