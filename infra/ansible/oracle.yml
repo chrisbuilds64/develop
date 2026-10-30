@@ -40,7 +40,8 @@
 #   ansible-playbook -i inventory.local.yml oracle.yml --tags liquibase
 #
 # Oracle Free Edition Limits:
-#   2 CPUs, 2 GB RAM, 12 GB data, max 3 user PDBs.
+#   2 CPUs, 2 GB RAM, 12 GB user data. Licensed for up to 16 PDBs (Multitenant is included in Free);
+#   the limit of 3 user PDBs applies only without a Multitenant licence. In practice the 12 GB bound first.
 #   FREEPDB1 (default) is dropped to free the slot for ENTW, TEST, PROD.
 #
 # =============================================================================
