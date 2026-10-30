@@ -4,7 +4,7 @@
     python3 sandbox/sandbox.py setup      once (needs the network): Python environment, the web surface, a headless browser
     python3 sandbox/sandbox.py up         start: http://127.0.0.1:8200, sign in as designer / sandbox-local; the surface rebuilds on save
     python3 sandbox/sandbox.py reset      every workspace back to its sample world
-    python3 sandbox/sandbox.py check      play every sample flow headless; screenshots per step in sandbox/.state/check/
+    python3 sandbox/sandbox.py check      the design guard, then every sample flow headless; screenshots per step in sandbox/.state/check/
 
 The worlds in `sandbox/worlds/` are exported from the private demo builder (`demo.py sandbox`), with a name scan as the gate.
 The PressRoom here is casefile's built-in fictional one. Nothing in this folder talks to a server; `.state/` is yours to break.
@@ -222,6 +222,11 @@ def check(only: list[str]) -> int:
     out.mkdir(parents=True)
     if not (STATE / "worlds" / "pressroom").exists():
         build_pressroom()
+    # the design guard first: colour, type and radius from the tokens (the same gate the deploy holds)
+    guard = subprocess.run([str(PY), str(REPO / "tools" / "design_guard.py")])
+    if guard.returncode != 0:
+        print("\nThe design guard failed, so the flows were not played. `python3 tools/design_guard.py --list` shows what is left.")
+        return 1
     sh(["npm", "run", "build", "--silent"], cwd=WEB, stdout=subprocess.DEVNULL)
     port = free_port()
     server = subprocess.Popen([str(PY), __file__, "_stage", str(port)], stdout=open(out / "stage.log", "w"), stderr=subprocess.STDOUT)

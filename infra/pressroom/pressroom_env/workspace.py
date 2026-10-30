@@ -104,6 +104,11 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     if r.returncode != 0:
         raise OpsError(f"{env.name}: the help does not match the screen — fix it in the same commit:\n{(r.stdout or r.stderr).strip()}")
     log.info("%s: help in step with the screen", env.name)
+    # colour, type and radius come from the tokens: a raw value beyond the baseline stops here (tools/design_guard.py)
+    r = run([str(venv / "bin" / "python"), str(dev / "tools" / "design_guard.py")], user=s.runner_user, check=False)
+    if r.returncode != 0:
+        raise OpsError(f"{env.name}: a raw design value outside the tokens — use a token:\n{(r.stdout or r.stderr).strip()}")
+    log.info("%s: design within the tokens", env.name)
     worlds = d / "worlds"
     seeded = Path("/opt/casefile/demo/worlds")
     if not (worlds / "claims").is_dir():                   # the sample worlds, once: the richer seed when it is on the machine, else the built-in ones

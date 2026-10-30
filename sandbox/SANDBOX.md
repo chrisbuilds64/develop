@@ -85,7 +85,11 @@ configuration on the core: it gets its whole look from the core, and may set not
 and its words. So what you deliver has to work as a **system**:
 
 - **Tokens** (`tokens.css`, for the applications and the cockpit alike) are the only source of colour, type, spacing, radius,
-  shadow and motion. No raw values anywhere else; we will add a check that fails on them.
+  shadow and motion. No raw values anywhere else. **The design guard** (`python3 tools/design_guard.py`) holds this for colour,
+  font size, font family and radius. It is a ratchet: today 739 raw values stand from before the tokens (28 different font
+  sizes, so a type scale is the most urgent token). A new raw value fails, a new file must be clean, and the count only goes
+  down. `--list` is your worklist. When you have moved values into tokens, `--update` lowers the baseline; commit it with your
+  step. `sandbox.py check` runs the guard first, and our deploy stops on it too.
 - **Components** with a name, their variants and states (default, hover, focus, disabled, loading, empty, error). A screen is
   built from components, not styled one by one.
 - **`DESIGN.md`** as the design system's documentation: principles and the reasons behind them, the tokens and what each is for,
