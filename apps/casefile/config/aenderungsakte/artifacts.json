@@ -37,6 +37,12 @@
           "shape": "text"
         },
         {
+          "file": "abweichung.md",
+          "stage": "30-analysiert",
+          "by": "analyse",
+          "shape": "text"
+        },
+        {
           "file": "paket.md",
           "stage": "40-bereit",
           "by": "vorbereitung",

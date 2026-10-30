@@ -5,7 +5,7 @@ Two kinds, both described by a spec, never by code:
     create   a new case opens in the target   — a claim orders an assessment, a mail becomes a claim or a signal
     deliver  files reach a case that waits    — the e-report returns to its claim, a question lands on its file
 
-    {"target": "egutachten",                  key in the workspace's targets.json (the stage decides where it points)
+    {"target": "egutachten",                  key in the workspace's targets.json (the stage decides where it points); "self" = this workspace
      "mode": "create",                        create | deliver
      "label": "KH", "stage": "10-auftrag",    create: the new case's label and stage (default: the target's, its first stage)
      "number": "source",                      create: keep the source's number; default: the next free one of the label

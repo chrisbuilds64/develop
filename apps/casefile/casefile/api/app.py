@@ -564,7 +564,9 @@ def create_app(settings: Settings) -> FastAPI:
         from ..domain import handoff
         key = str(spec.get("target") or spec.get("world") or "")
         try:
-            if settings.worlds:
+            if key == "self":                       # a follow-up in the same workspace (an order that comes out of a decision): no target to connect
+                tgt = handoff.Target(key="self", store=c.store, config=c.config, label=c.config.name)
+            elif settings.worlds:
                 if key not in settings.worlds or not c.world:
                     return
                 mapping = _read_worlds(request)

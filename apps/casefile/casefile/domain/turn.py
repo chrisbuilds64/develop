@@ -54,6 +54,11 @@ def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
     return out
 
 
+def offered(config: DomainConfig, case: Case, action: Action) -> bool:
+    """`when`: the action exists for this case only when its condition holds — same tokens as `requires`."""
+    return not action.when or not missing_for(config, case, action.model_copy(update={"requires": action.when}))
+
+
 def primary_author(config: DomainConfig, case: Case) -> str | None:
     """Who made the newest version of the primary deliverable, as far as the thread says."""
     p = config.primary(case.label)
@@ -121,6 +126,8 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
                                 reason=config.word("stages", case.stage, lang, case.stage), blocked_by=[], since=case.since))
     if stage and stage.turn and stage.turn != "claude":
         for action in stage.actions:
+            if not offered(config, case, action):
+                continue
             missing = missing_for(config, case, action)
             actor = action.actor or stage.turn
             if action.actor and action.actor != stage.turn and missing:

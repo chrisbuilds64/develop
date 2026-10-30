@@ -1,5 +1,5 @@
 {
-  "$comment": "Default people of a change workspace. Chris develops and releases TEST; Jana (fictional) is the DBA and releases PROD. Nobody here is operator: an operator may act on every move, and then two eyes would do.",
+  "$comment": "Default people of a change workspace. Chris develops and releases TEST; Jana (fictional) is the DBA and releases PROD. Nobody here is operator: an operator may act on every move, and then two eyes would do. Chris also holds the architecture role: he decides a deviation from a house rule (exception or order).",
   "people": [
     {
       "id": "chris",
@@ -7,7 +7,8 @@
       "kind": "human",
       "roles": [
         "developer",
-        "approver_test"
+        "approver_test",
+        "architect"
       ]
     },
     {

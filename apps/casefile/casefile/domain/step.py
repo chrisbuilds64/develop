@@ -18,7 +18,7 @@ from ..store import FsStore, StoreError
 from . import cases as reading
 from . import entries as thread
 from . import runs as ordering
-from .turn import four_eyes_block, missing_for, primary_author
+from .turn import four_eyes_block, missing_for, offered, primary_author
 
 STEP_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 BUILTIN = ("answer", "note", "done", "deliver", "ask")
@@ -106,6 +106,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
         action = config.action(case.stage, req.action)
         if stage is None or action is None:
             return _refuse(store, j, f"'{req.action}' is not an action while the case stands in {case.stage}")
+        if not offered(config, case, action):
+            return _refuse(store, j, f"'{req.action}' is not offered for this case: nothing calls for it")
         actor = action.actor or stage.turn
         if not config.may_act(person.id, actor) and not config.may_act(person.id, "role:operator"):
             return _refuse(store, j, f"{person.name} may not {req.action} here; it is {actor}'s move")

@@ -19,6 +19,7 @@ class Action(BaseModel):
     to: str | None = None                        # target stage folder; None = the case stays
     run: str | None = None                       # a skill to order instead of (or besides) moving
     requires: list[str] = Field(default_factory=list)   # deliverable file names that must be present
+    when: list[str] = Field(default_factory=list)       # the action is offered only when these are present (a finding that calls for a decision); absent, it is not a blocked move but none at all
     four_eyes: bool = False                      # the person acting must not be the author of the primary deliverable
     four_eyes_of: str | None = None              # the person acting must not be the one who did this earlier action on the case (TEST released → PROD by somebody else)
     entry_status: str = "info"                   # the status the thread entry carries ("approved", "info", …)

@@ -15,6 +15,7 @@
 #   doag impact PROD      read-only questions to PROD, each with its query
 #   doag prepare          merge, release 1.1, artifact, the way back
 #   doag deploy TEST      release 1.1 into TEST (then: doag compare TEST)
+#   doag guard 1.1        house rule ORA-API-1 on a release: no right on a table (read only)
 #   doag deploy PROD      refused without a guaranteed restore point younger than two hours
 #   doag restore-point PROD
 #
@@ -372,8 +373,33 @@ ORDER BY time DESC FETCH FIRST 1 ROW ONLY;
 EOF
 }
 
+table_grants() {   # table_grants <version>  — GRANT statements in the release that give a right on one of the schema's tables
+  local v=$1 tables
+  tables=$(app PROD <<'EOF' | grep -E '^[A-Z0-9_$#]+$' | paste -sd'|' -
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT table_name FROM user_tables ORDER BY 1;
+EOF
+)
+  [[ -n $tables ]] || return 0
+  grep -r -i -n -E "grant[^;]* on +(\"?sdlc_app\"?\.)?\"?($tables)\"?([^A-Za-z0-9_]|$)" "$REPO/dist/releases/$v" 2>/dev/null || true
+}
+
+cmd_guard() {   # the house rule on a release, read only: exit 4 when it grants a right on a table
+  local v=${1:-1.1} g; g=$(table_grants "$v")
+  if [[ -n $g ]]; then say "ORA-API-1: release $v grants a right on a table"; echo "$g"; exit 4; fi
+  say "ORA-API-1: release $v grants no right on a table"
+}
+
 cmd_deploy() {
   local pdb=${1:?which PDB} v=${2:-1.1}
+  # house rule ORA-API-1 (canon: architecture guidelines): tables only through the package API. A change that grants a right on a
+  # table stops here, on every stage; what the existing system already does is reported by `impact` (Q5) and decided by a person.
+  local g; g=$(table_grants "$v")
+  if [[ -n $g ]]; then
+    say "REFUSED: house rule ORA-API-1 — release $v grants a right on a table. Grant on a package, or record an exception. Nothing deployed."
+    echo "$g"
+    exit 4
+  fi
   if [[ $pdb == PROD ]]; then
     local rp; rp=$(restore_point PROD)
     if [[ -z $rp ]]; then
@@ -410,5 +436,6 @@ case ${1:-} in
   prepare) cmd_prepare ;;
   deploy) cmd_deploy "${2:-}" "${3:-1.1}" ;;
   restore-point) cmd_restore_point "${2:-PROD}" "${3:-1_1}" ;;
+  guard) cmd_guard "${2:-1.1}" ;;
   *) sed -n '2,20p' "$0"; exit 2 ;;
 esac

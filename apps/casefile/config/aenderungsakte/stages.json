@@ -1,5 +1,5 @@
 {
-  "$comment": "A database change through the gates (DOAG 2026, talk 2 'Pipeline statt Hoffnung'). The core captures the change from ENTW and deploys (SQLcl on the database host); the helper analyses migration and impact and prepares the package, and executes nothing. A person releases TEST, a second person releases PROD; the house rule 'no DDL on PROD without a restore point' is checked by the core before every PROD deploy.",
+  "$comment": "A database change through the gates (DOAG 2026, talk 2 'Pipeline statt Hoffnung'). The core captures the change from ENTW and deploys (SQLcl on the database host); the helper analyses migration and impact and prepares the package, and executes nothing. A person releases TEST, a second person releases PROD; the house rule 'no DDL on PROD without a restore point' is checked by the core before every PROD deploy. After PROD, a deviation the analysis found (abweichung.md: rule, finding, version) is decided by the architect: an exception with its reason and a seal, or an order that opens a new change in this workspace. Without a deviation the case simply stays in PROD (`when`).",
   "name": "Änderungsakte",
   "lang": "de",
   "configVersion": "1",
@@ -102,6 +102,57 @@
     {
       "folder": "60-prod",
       "key": "prod",
+      "group": "out",
+      "turn": "role:architect",
+      "actions": [
+        {
+          "id": "record_exception",
+          "label": "record_exception",
+          "when": [
+            "abweichung.md"
+          ],
+          "payload": [
+            "note"
+          ],
+          "seal": true,
+          "entry_status": "approved",
+          "to": "70-abgeschlossen"
+        },
+        {
+          "id": "order_rework",
+          "label": "order_rework",
+          "when": [
+            "abweichung.md"
+          ],
+          "payload": [
+            "note"
+          ],
+          "entry_status": "approved",
+          "to": "70-abgeschlossen",
+          "handover": {
+            "target": "self",
+            "mode": "create",
+            "label": "AE",
+            "stage": "10-entw",
+            "link": "umstellung",
+            "meta": {
+              "title": "Abweichung aus {source.number} beheben",
+              "subtitle": "Auftrag aus der Entscheidung zur Abweichung in {source.number}"
+            },
+            "files": {
+              "abweichung.md": "aenderung.md"
+            },
+            "entry": {
+              "title": "Auftrag aus einer Abweichung",
+              "text": "Entschieden in {source.number} ({source.title}): umstellen statt Ausnahme. Der Befund mit Regel und Version liegt als Änderung bei."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "folder": "70-abgeschlossen",
+      "key": "closed",
       "group": "out",
       "turn": null
     }

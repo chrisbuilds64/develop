@@ -11,7 +11,8 @@
       "analysed": "Analysiert",
       "ready": "Bereit",
       "test": "TEST",
-      "prod": "PROD"
+      "prod": "PROD",
+      "closed": "Entschieden"
     },
     "stages": {
       "10-entw": "in ENTW geändert, nicht im Repository",
@@ -19,7 +20,8 @@
       "30-analysiert": "Migration und Impact analysiert",
       "40-bereit": "Paket bereit, wartet auf Freigabe TEST",
       "50-test": "in TEST, wartet auf Freigabe PROD",
-      "60-prod": "in PROD"
+      "60-prod": "in PROD",
+      "70-abgeschlossen": "in PROD, Abweichung entschieden"
     },
     "groups": {
       "you": "Du bist dran",
@@ -43,7 +45,9 @@
       "done": "Erledigt",
       "deliver": "Ablegen",
       "see_failure": "Nachsehen, was schiefging",
-      "wait": "Warten"
+      "wait": "Warten",
+      "record_exception": "Als Ausnahme festhalten",
+      "order_rework": "Umstellung beauftragen"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -68,13 +72,15 @@
       "paket.md": "Paket",
       "test.md": "TEST",
       "restore-point.md": "Restore Point",
-      "prod.md": "PROD"
+      "prod.md": "PROD",
+      "abweichung.md": "Abweichung"
     },
     "roles": {
       "developer": "Entwicklung",
       "approver_test": "Freigabe TEST",
       "approver_prod": "Freigabe PROD",
-      "dba": "DBA"
+      "dba": "DBA",
+      "architect": "Architektur"
     },
     "words": {
       "external_id": "Release"
@@ -99,7 +105,8 @@
       "analysed": "Analysed",
       "ready": "Ready",
       "test": "TEST",
-      "prod": "PROD"
+      "prod": "PROD",
+      "closed": "Decided"
     },
     "stages": {
       "10-entw": "changed in ENTW, not in the repository",
@@ -107,7 +114,8 @@
       "30-analysiert": "migration and impact analysed",
       "40-bereit": "package ready, waiting for TEST",
       "50-test": "in TEST, waiting for PROD",
-      "60-prod": "in PROD"
+      "60-prod": "in PROD",
+      "70-abgeschlossen": "in PROD, deviation decided"
     },
     "groups": {
       "you": "Your move",
@@ -131,7 +139,9 @@
       "done": "Done",
       "deliver": "File",
       "see_failure": "See what went wrong",
-      "wait": "Wait"
+      "wait": "Wait",
+      "record_exception": "Record as an exception",
+      "order_rework": "Order the rework"
     },
     "reasons": {
       "running": "running",
@@ -156,13 +166,15 @@
       "paket.md": "Package",
       "test.md": "TEST",
       "restore-point.md": "Restore Point",
-      "prod.md": "PROD"
+      "prod.md": "PROD",
+      "abweichung.md": "Deviation"
     },
     "roles": {
       "developer": "Development",
       "approver_test": "TEST release",
       "approver_prod": "PROD release",
-      "dba": "DBA"
+      "dba": "DBA",
+      "architect": "Architecture"
     },
     "words": {
       "external_id": "Release"
