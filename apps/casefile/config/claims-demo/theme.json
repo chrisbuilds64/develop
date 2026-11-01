@@ -9,10 +9,10 @@
   "covers": {
     "by": "label",
     "colors": {
-      "HR": "#2f6fed",
-      "WG": "#2fa36b",
-      "KFZ": "#e0a52a",
-      "HP": "#8a5cf6"
+      "HR": "#30B0C7",
+      "WG": "#34C759",
+      "KFZ": "#A2845E",
+      "HP": "#5856D6"
     },
     "fallback": "#5a6270"
   },

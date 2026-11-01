@@ -7,10 +7,10 @@
   "covers": {
     "by": "label",
     "colors": {
-      "FN": "#2f6fed",
-      "POD": "#e0a52a",
-      "SP": "#2fa36b",
-      "WN": "#8a5cf6"
+      "FN": "#30B0C7",
+      "POD": "#A2845E",
+      "SP": "#34C759",
+      "WN": "#5856D6"
     },
     "fallback": "#5a6270"
   },

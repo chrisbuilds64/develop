@@ -130,7 +130,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
 
   return (
     <main className="main">
-      <header className={`case-head${bare ? " bare" : ""}`} data-help="cf.case-head">
+      <header className={`case-head${bare ? " bare" : ""}${v.group === "claude" ? " ai-working" : ""}`} data-help="cf.case-head">
         {!bare && <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} size="m" />}
         <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
         <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>

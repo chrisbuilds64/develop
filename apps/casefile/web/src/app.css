@@ -1236,3 +1236,78 @@ body { letter-spacing: var(--tracking-text); }
 .bar-icon { width: 26px; height: 26px; }
 .bar-icon svg { width: 14px; height: 12px; }
 .bar-stage, .bar-stage.test { padding: 3px 7px; font-size: var(--text-micro); letter-spacing: .05em; }
+
+/* ------------------------------------------------------------------ UX pass (design, 2026-11-01) */
+
+/* 1. Actions are buttons, never underlined text: one secondary family, quiet, the same height and radius everywhere. */
+.thread > .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.thread > .chips .chip { min-height: 32px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: var(--r-s); background: var(--surface);
+  color: var(--ink); font-size: var(--text-callout); font-weight: 500; text-decoration: none; }
+.thread > .chips .chip:hover:not(:disabled) { background: var(--ground-2); border-color: var(--hairline-2); }
+.thread > .chips .chip.on { background: var(--ink); color: var(--surface); border-color: var(--ink); font-weight: 600; }
+.thread > .chips .chip:disabled { opacity: .45; }
+
+/* 2. The main action: one shape (a rounded rectangle, Apple's prominent button); an action that seals carries the seal. */
+.foot .btn { min-height: 46px; padding: 0 22px; border-radius: var(--r-m); font-size: var(--text-body); }
+.btn.seal { display: inline-flex; align-items: center; gap: 8px; }
+.btn.seal::before { content: ""; flex: none; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--seal-icon) center / contain no-repeat; mask: var(--seal-icon) center / contain no-repeat; }
+:root { --seal-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='9' r='6'/%3E%3Cpath d='m9.5 9 1.8 1.8L14.8 7.3M9 14.4 8 21l4-2.2 4 2.2-1-6.6'/%3E%3C/svg%3E"); }
+
+/* 3. When the AI holds the case it looks alive: the next step shimmers in the AI's colour, the status carries its sparkle. */
+.case-head.ai-working .stub .dot { display: none; }
+.case-head.ai-working .stub .dot + span { color: var(--c-ai); font-weight: 600; }
+.case-head.ai-working .stub::before { content: "✦"; color: var(--c-ai); animation: cf-ai-pulse 1.6s ease-in-out infinite; }
+.case-head.ai-working .headline { background: linear-gradient(90deg, var(--ink) 20%, var(--c-ai) 50%, var(--ink) 80%); background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: cf-ai-shimmer 2.6s linear infinite; }
+.card .bar i { background: var(--ai-glow); }
+@keyframes cf-ai-pulse { 50% { opacity: .35; transform: scale(.85); } }
+@keyframes cf-ai-shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+@media (prefers-reduced-motion: reduce) { .case-head.ai-working .stub::before, .case-head.ai-working .headline { animation: none; } }
+
+/* 4. A seal in the conversation is a calm event with the seal symbol, not a rotated rubber stamp. */
+.stamp { align-self: stretch; align-items: flex-start; gap: 4px; padding: 2px 0; }
+.stamp b { display: inline-flex; align-items: center; gap: 8px; transform: none; border: none; border-radius: var(--r-m); padding: 8px 12px;
+  font-family: var(--font); font-size: var(--text-callout); font-weight: 600; letter-spacing: 0; text-transform: none;
+  background: color-mix(in srgb, var(--c-seal) 10%, var(--surface)); color: color-mix(in srgb, var(--c-seal) 85%, var(--ink)); }
+.stamp b::before { content: ""; flex: none; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--seal-icon) center / contain no-repeat; mask: var(--seal-icon) center / contain no-repeat; }
+.stamp span { font-size: var(--text-footnote); padding-left: 2px; }
+
+/* 5. The reader's toolbar: documents as a segmented control, quiet icon buttons, a plain metadata line. */
+.reader-tabs { background: var(--fill-quiet); border-radius: var(--r-m); padding: 3px; gap: 2px; }
+.reader-tabs .chip { min-height: 30px; padding: 0 12px; border: none; border-radius: var(--r-s); background: transparent; color: var(--ink-2); font-size: var(--text-callout); font-weight: 500; }
+.reader-tabs .chip.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-card); font-weight: 600; }
+.reader-head > button, .reader-acts > button, .reader-acts > a { min-width: 32px; min-height: 32px; border: none; background: transparent; border-radius: var(--r-s); color: var(--ink-2); box-shadow: none; }
+.reader-head > button:hover, .reader-acts > button:hover, .reader-acts > a:hover { background: var(--fill-quiet-hover); color: var(--ink); }
+.reader-meta, .reader-meta .mono { font-family: var(--font); color: var(--muted); }
+.reader-meta a { color: var(--ink-2); text-decoration: none; font-family: var(--font); }
+.reader-meta a:hover { color: var(--ink); text-decoration: underline; }
+
+/* 6. Tables in documents: sentence-case headers, one hairline. */
+.reader-body .prose th { font-size: var(--text-subheadline); letter-spacing: 0; text-transform: none; color: var(--muted); border-bottom: 1px solid var(--hairline); }
+
+/* 7. Documents on the desk carry a document symbol, so a tile reads as a document before it is read. */
+.desk .file .name::before { content: ""; display: inline-block; width: 15px; height: 15px; margin-right: 7px; vertical-align: -2px; background: var(--muted);
+  -webkit-mask: var(--doc-icon) center / contain no-repeat; mask: var(--doc-icon) center / contain no-repeat; }
+:root { --doc-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3h7l5 5v13H7z'/%3E%3Cpath d='M14 3v5h5'/%3E%3C/svg%3E"); }
+@media (pointer: coarse) { .thread > .chips .chip, .reader-tabs .chip, .reader-head > button, .reader-acts > button, .reader-acts > a { min-height: var(--touch); } }
+
+/* Status reads like the list rows: the blue dot says "your move", the words stay quiet (design, 2026-11-01). */
+.case-head .stub .dot.mine + span { color: var(--muted); font-weight: 400; }
+/* The list's heading wears the application's identity colour, as Reminders titles each list in its colour. */
+.list h2 { color: color-mix(in srgb, var(--app) 88%, var(--ink)); }
+
+/* Consistency pass (design, 2026-11-01): the same rules in every application.
+ * Selection is a neutral fill (as in Finder); identity colour stays in the app icon, the chosen view and the list heading. */
+.nav-row.on { background: var(--fill-quiet-hover); }
+.nav-row.on > span:first-child { color: var(--ink); }
+.card.on, .card.on:hover { background: var(--fill-quiet-hover); }
+/* every list: the blue dot and the status on one line, with or without covers */
+.card .yours { width: 8px; height: 8px; overflow: hidden; white-space: nowrap; flex: none; gap: 0; }
+.card .yours + .state::before { content: none; }
+/* label tiles: a firmer wash and text dark enough to read */
+.cover { background: color-mix(in srgb, var(--tint) 18%, var(--surface)); color: color-mix(in srgb, var(--tint) 60%, var(--ink)); }
+/* documents on the desk: uniform tiles, the name first, one line of metadata */
+.desk-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-items: stretch; }
+.file, .file.wide { grid-column: auto; }
+.file .head { flex-direction: column; align-items: flex-start; gap: 4px; }
+.file .meta { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-footnote); }
