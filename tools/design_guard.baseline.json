@@ -3,30 +3,21 @@
   "files": {
     "apps/casefile/web/src/app.css": {
       "radius": 38,
-      "font-size": 312,
       "colour": 42
-    },
-    "apps/casefile/web/src/components/Frames.tsx": {
-      "font-size": 1
     },
     "apps/casefile/web/src/screens/Lists.tsx": {
       "colour": 1
     },
     "apps/cockpit/cockpit/static/agent-panel.css": {
       "colour": 40,
-      "radius": 18,
-      "font-size": 19
+      "radius": 18
     },
     "apps/cockpit/cockpit/static/cockpit.css": {
       "colour": 27,
-      "font-size": 186,
       "radius": 36
     },
     "apps/cockpit/cockpit/templates/base.html": {
-      "colour": 5
-    },
-    "apps/cockpit/cockpit/templates/document.html": {
-      "font-size": 1
+      "colour": 1
     },
     "apps/cockpit/cockpit/templates/figures.html": {
       "font-size": 6

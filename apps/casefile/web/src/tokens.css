@@ -1,38 +1,68 @@
 /* tokens.css — every colour, size and radius of the surface lives here and nowhere else (Bauplan §2).
- * The one accent is --your-move and means only: this waits for you. Light is the default; dark derives.
+ * Apple-style neutrals (cool greys, near-black ink, 2026-11-01 design). The one accent is --your-move and means only: this waits for you. Light is the default; dark derives.
  * The second colour is --seal and means only: decided, it holds now (a gate passed, a canon released; Chris, 2026-10-26). */
 
 :root {
-  --ground: #F6F3EE;
-  --ground-2: #FBF9F6;
+  --ground: #F5F5F7;
+  --ground-2: #FBFBFD;
   --surface: #FFFFFF;
-  --ink: #1B1916;
-  --ink-2: #4A453E;
-  --muted: #6E675D;
-  --hairline: #E3DDD2;
-  --hairline-2: #CFC7BA;
-  --dashed: #B9B0A2;
-  --chip: #F1ECE3;
-  --your-move: #1D4ED8;
+  --ink: #1D1D1F;
+  --ink-2: #424245;
+  --muted: #6E6E73;
+  --hairline: #E5E5EA;
+  --hairline-2: #D2D2D7;
+  --dashed: #C7C7CC;
+  --chip: #EDEDF0;
+  --your-move: #0071E3;
   --your-move-on: #FFFFFF;
-  --your-move-soft: #DCE6FF;
-  --your-move-ink: #1E3A8A;
-  --your-move-halo: rgba(29, 78, 216, 0.18);
+  --your-move-soft: #E8F2FD;
+  --your-move-ink: #0058B9;
+  --your-move-halo: rgba(0, 113, 227, 0.2);
   --seal: #A3302A;
   --seal-on: #FFF8F2;
   --seal-soft: #F7E4DD;
   --seal-ink: #7A1F1A;
-  --bubble-you: #1B1916;
-  --bubble-you-ink: #F6F3EE;
-  --bubble-you-muted: #CFC7BA;
+  --bubble-you: #1D1D1F;
+  --bubble-you-ink: #F5F5F7;
+  --bubble-you-muted: #A1A1A6;
+  --fill-quiet: rgba(0, 0, 0, 0.045);        /* selected rows, add tiles: a fill, not a line */
+  --fill-quiet-hover: rgba(0, 0, 0, 0.075);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 14px 34px rgba(0, 0, 0, 0.09);
+  --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(0, 0, 0, 0.07);
+  --dot-1: #007AFF;  /* workspace identity dots, by application; not an accent */
+  --dot-2: #FF9500;
+  --dot-3: #34C759;
+  --dot-4: #AF52DE;
+  --dot-5: #FF3B30;
+  --dot-6: #30B0C7;
+  --on-dot: #FFFFFF; /* text and glyphs on an identity colour */
 
-  --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --r-s: 8px;
   --r-m: 12px;
   --r-l: 16px;
+  --r-card: 18px;   /* cards and tiles */
   --r-pill: 999px;
+
+  /* Type: Apple-style roles. Pick the role, never a pixel size. Large text tightens (see --tracking-*). */
+  --text-hero: 52px;          /* one per page at most: covers, intros */
+  --text-display: 40px;       /* big numbers, canon titles on small screens */
+  --text-large-title: 34px;   /* page title */
+  --text-title-1: 28px;       /* screen heading, case title */
+  --text-title-2: 22px;       /* section heading */
+  --text-headline: 17px;      /* card and block titles, usually semibold */
+  --text-reading: 17px;       /* long text: documents, lead lines, notes on the tablet */
+  --text-body: 15px;          /* default UI text */
+  --text-callout: 14px;       /* secondary UI text, buttons in dense places */
+  --text-subheadline: 13px;   /* meta lines, chips, table cells */
+  --text-footnote: 12px;      /* labels, timestamps, hints */
+  --text-caption: 11px;       /* smallest readable text */
+  --text-micro: 10px;         /* only inside covers and badges */
+  --tracking-tight: -0.022em; /* titles 22px and up */
+  --tracking-snug: -0.01em;   /* headlines */
 
   --menu-w: 232px;
   --list-w: 340px;
@@ -44,51 +74,73 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground: #141516;
-    --ground-2: #191B1D;
-    --surface: #1D1F21;
-    --ink: #EDEAE4;
-    --ink-2: #C9C4BB;
-    --muted: #9A958C;
-    --hairline: #2C2E31;
-    --hairline-2: #3A3D41;
-    --dashed: #4A4E53;
-    --chip: #26282B;
-    --your-move: #7DA2FF;
-    --your-move-on: #141516;
-    --your-move-soft: #18233F;
-    --your-move-ink: #B9CCFF;
-    --your-move-halo: rgba(125, 162, 255, 0.22);
+    --ground: #000000;
+    --ground-2: #111112;
+    --surface: #1C1C1E;
+    --ink: #F5F5F7;
+    --ink-2: #D2D2D7;
+    --muted: #98989D;
+    --hairline: #2C2C2E;
+    --hairline-2: #3A3A3C;
+    --dashed: #48484A;
+    --chip: #2C2C2E;
+    --your-move: #0A84FF;
+    --your-move-on: #FFFFFF;
+    --your-move-soft: #0B2747;
+    --your-move-ink: #64B5FF;
+    --your-move-halo: rgba(10, 132, 255, 0.28);
     --seal: #E2725F;
     --seal-on: #1A0D0B;
     --seal-soft: #3A1D18;
     --seal-ink: #F4A898;
-    --bubble-you: #EDEAE4;
-    --bubble-you-ink: #141516;
-    --bubble-you-muted: #6E675D;
+    --bubble-you: #F5F5F7;
+    --bubble-you-ink: #1D1D1F;
+    --bubble-you-muted: #6E6E73;
+    --fill-quiet: rgba(255, 255, 255, 0.07);
+    --fill-quiet-hover: rgba(255, 255, 255, 0.11);
+    --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.5);
+    --shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.4);
+    --dot-1: #0A84FF;
+    --dot-2: #FF9F0A;
+    --dot-3: #30D158;
+    --dot-4: #BF5AF2;
+    --dot-5: #FF453A;
+    --dot-6: #40C8E0;
   }
 }
 :root[data-theme="dark"] {
-  --ground: #141516;
-  --ground-2: #191B1D;
-  --surface: #1D1F21;
-  --ink: #EDEAE4;
-  --ink-2: #C9C4BB;
-  --muted: #9A958C;
-  --hairline: #2C2E31;
-  --hairline-2: #3A3D41;
-  --dashed: #4A4E53;
-  --chip: #26282B;
-  --your-move: #7DA2FF;
-  --your-move-on: #141516;
-  --your-move-soft: #18233F;
-  --your-move-ink: #B9CCFF;
-  --your-move-halo: rgba(125, 162, 255, 0.22);
+  --ground: #000000;
+  --ground-2: #111112;
+  --surface: #1C1C1E;
+  --ink: #F5F5F7;
+  --ink-2: #D2D2D7;
+  --muted: #98989D;
+  --hairline: #2C2C2E;
+  --hairline-2: #3A3A3C;
+  --dashed: #48484A;
+  --chip: #2C2C2E;
+  --your-move: #0A84FF;
+  --your-move-on: #FFFFFF;
+  --your-move-soft: #0B2747;
+  --your-move-ink: #64B5FF;
+  --your-move-halo: rgba(10, 132, 255, 0.28);
   --seal: #E2725F;
   --seal-on: #1A0D0B;
   --seal-soft: #3A1D18;
   --seal-ink: #F4A898;
-  --bubble-you: #EDEAE4;
-  --bubble-you-ink: #141516;
-  --bubble-you-muted: #6E675D;
+  --bubble-you: #F5F5F7;
+  --bubble-you-ink: #1D1D1F;
+  --bubble-you-muted: #6E6E73;
+  --fill-quiet: rgba(255, 255, 255, 0.07);
+  --fill-quiet-hover: rgba(255, 255, 255, 0.11);
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.5);
+  --shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.4);
+  --dot-1: #0A84FF;
+  --dot-2: #FF9F0A;
+  --dot-3: #30D158;
+  --dot-4: #BF5AF2;
+  --dot-5: #FF453A;
+  --dot-6: #40C8E0;
 }

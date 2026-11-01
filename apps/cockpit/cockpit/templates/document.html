@@ -27,7 +27,7 @@
         <h3>{{ t('doc.proposal') }} <span class="dim">· {{ doc.proposal.provenance }}</span></h3>
         <div class="doc proposal">{{ doc.proposal.html|safe }}</div>
       </section>
-      <h3 style="font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-2); margin:22px 0 8px">{{ t('doc.current') }}</h3>
+      <h3 style="font-size:var(--text-subheadline); text-transform:uppercase; letter-spacing:.06em; color:var(--ink-2); margin:22px 0 8px">{{ t('doc.current') }}</h3>
       {% endif %}
       <div class="doc doc-page">{{ doc.html|safe }}</div>
       {% if doc.files %}

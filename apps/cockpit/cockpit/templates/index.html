@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "glyphs.html" import glyph %}
+{% block crumb %}{{ t('app.dashboard') }}{% endblock %}
 {% block main %}
 {% set hour = now[11:13]|int %}
 {% set greeting = t('home.morning' if hour < 11 else 'home.afternoon' if hour < 18 else 'home.evening', name=(', ' ~ user.display.split(' ')[0]) if user else '') %}
@@ -21,6 +23,7 @@
 {% if ws_error %}<p class="notice err">{{ t('ws.registry_broken') }}: {{ ws_error }}</p>{% endif %}
 
 {% if applications %}
+{% set appix = applications.keys()|list %}
 {% set live = workspaces|selectattr('mode', 'equalto', 'live')|list %}
 {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
 <h2 class="section" style="margin:0 0 4px">{{ t('ws.in_use') }}</h2>
@@ -29,11 +32,13 @@
 {% set group = live %}
   {% for w in group %}
   <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
-    <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
+    {% set applabel = applications[w.application].label if w.application in applications else w.application %}
+    <span class="ws-icon" aria-hidden="true" style="--dot: {{ 'var(--dot-%d)' % (appix.index(w.application) % 6 + 1) if w.application in appix else 'var(--muted)' }}">{# DESIGN: interim mapping by application id; hand-back asks for an `icon` in each application's theme. #}{{ glyph('tray' if 'posteingang' in w.application else 'doc' if 'angebot' in w.application else 'shield' if ('schaden' in w.application or 'claim' in w.application) else 'lens' if 'gutachten' in w.application else 'news' if 'pressroom' in w.application else 'cube', 24) }}</span>
+    {% if applabel != w.label %}<span class="kicker">{{ applabel }}</span>{% endif %}
     <span class="title">{{ w.label }}</span>
     <span class="meta">
       <span>{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}</span>
-      {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
+      {% if w.mode == 'replay' %}<span class="tag">{{ t('ws.sample') }}</span>{% endif %}
       {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
     </span>
     <span class="ws-waiting" hidden data-tpl="{{ t('ws.waiting') }}"></span>
@@ -49,11 +54,13 @@
 {% set group = samples %}
   {% for w in group %}
   <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
-    <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
+    {% set applabel = applications[w.application].label if w.application in applications else w.application %}
+    <span class="ws-icon" aria-hidden="true" style="--dot: {{ 'var(--dot-%d)' % (appix.index(w.application) % 6 + 1) if w.application in appix else 'var(--muted)' }}">{# DESIGN: interim mapping by application id; hand-back asks for an `icon` in each application's theme. #}{{ glyph('tray' if 'posteingang' in w.application else 'doc' if 'angebot' in w.application else 'shield' if ('schaden' in w.application or 'claim' in w.application) else 'lens' if 'gutachten' in w.application else 'news' if 'pressroom' in w.application else 'cube', 24) }}</span>
+    {% if applabel != w.label %}<span class="kicker">{{ applabel }}</span>{% endif %}
     <span class="title">{{ w.label }}</span>
     <span class="meta">
       <span>{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}</span>
-      {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
+      {% if w.mode == 'replay' %}<span class="tag">{{ t('ws.sample') }}</span>{% endif %}
       {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
     </span>
     <span class="ws-waiting" hidden data-tpl="{{ t('ws.waiting') }}"></span>
