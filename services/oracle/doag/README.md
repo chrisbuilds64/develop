@@ -48,6 +48,7 @@ doag prepare          # trim the generated changeset, merge, release 1.1, artifa
 doag deploy TEST      # 5 changesets run, 22 skipped; then doag compare TEST → no difference
 doag deploy PROD      # refused: no guaranteed restore point younger than two hours
 doag restore-point PROD && doag deploy PROD
+doag reset-prod       # after a rehearsal: PROD back to before 1.1, restore point dropped
 ```
 
 The restore point needs a Fast Recovery Area on the CDB (`db_recovery_file_dest`), which the demo database does not

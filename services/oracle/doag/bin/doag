@@ -18,6 +18,7 @@
 #   doag guard 1.1        house rule ORA-API-1 on a release: no right on a table (read only)
 #   doag deploy PROD      refused without a guaranteed restore point younger than two hours
 #   doag restore-point PROD
+#   doag reset-prod       after a rehearsal: flashback PROD to VOR_1_1 and drop it
 #
 # Runs on the database host. Needs: docker container oracle-free, SQLcl in $DOAG/sqlcl, git, $DOAG/.env with APP_PW.
 set -euo pipefail
@@ -422,6 +423,26 @@ EOF
   say "$(restore_point "$pdb")"
 }
 
+cmd_reset_prod() {   # after a rehearsal: PROD back to the restore point, then drop it — a guaranteed one fills the FRA
+  local name="VOR_${1:-1_1}" n
+  n=$(sys PROD <<EOF | grep -E '^[[:space:]]*[0-9]+[[:space:]]*$' | tr -d '[:space:]'
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT COUNT(*) FROM v\$restore_point WHERE name = '$name' AND con_id = SYS_CONTEXT('USERENV', 'CON_ID');
+EOF
+)
+  if [[ $n != 1 ]]; then say "PROD has no restore point $name. Nothing changed."; exit 3; fi
+  say "PROD: flashback to $name"
+  sys 'CDB$ROOT' <<EOF > /dev/null
+ALTER PLUGGABLE DATABASE PROD CLOSE IMMEDIATE;
+FLASHBACK PLUGGABLE DATABASE PROD TO RESTORE POINT $name;
+ALTER PLUGGABLE DATABASE PROD OPEN RESETLOGS;
+EOF
+  sys PROD <<EOF > /dev/null
+DROP RESTORE POINT $name;
+EOF
+  local v=${name#VOR_}; say "PROD is back before ${v//_/.}, restore point $name dropped"
+}
+
 case ${1:-} in
   reset) cmd_reset ;;
   scripts) cmd_scripts "${2:-}" ;;
@@ -436,6 +457,7 @@ case ${1:-} in
   prepare) cmd_prepare ;;
   deploy) cmd_deploy "${2:-}" "${3:-1.1}" ;;
   restore-point) cmd_restore_point "${2:-PROD}" "${3:-1_1}" ;;
+  reset-prod) cmd_reset_prod "${2:-1_1}" ;;
   guard) cmd_guard "${2:-1.1}" ;;
-  *) sed -n '2,20p' "$0"; exit 2 ;;
+  *) sed -n '2,21p' "$0"; exit 2 ;;
 esac
