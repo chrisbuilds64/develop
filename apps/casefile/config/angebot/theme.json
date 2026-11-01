@@ -5,6 +5,7 @@
   "$comment": "Same tokens as the claims file; the one accent means only: this waits for you.",
   "external_label": "Angebotsnummer",
   "external_url": "",
+  "identity": "dot-2",
   "covers": {
     "by": "label",
     "colors": {

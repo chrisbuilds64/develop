@@ -24,6 +24,9 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   const qc = useQueryClient();
   const lang = config.lang;
   const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false, refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
+  // design, 2026-11-01: a workspace whose cases all share one label shows no cover; the label and number are in the head already
+  const groupsQ = useQuery({ queryKey: ["groups"], queryFn: api.groups });
+  const bare = groupsQ.data ? new Set(groupsQ.data.flatMap((g) => g.cases.map((c) => c.label))).size <= 1 : false;
   const samples = ((config.theme as { samples?: string[] }).samples ?? []);
   const extWord = ((config.words as { words?: Record<string, string> }).words?.external_id) ?? "";
   const [refused, setRefused] = useState<string | null>(null);
@@ -108,6 +111,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
     return <>{w.version(Math.max(1, newest.version))}{o.who ? ` · ${o.who}` : <> · <em>{w.originUnknown}</em></>}{o.when ? ` · ${o.when}` : ""}</>;
   };
   const headline = (v.my_turns[0] ?? v.turns[0])?.headline ?? "";
+  // the next step without the title repeated after it: "Confirm and carry out: <title>" reads "Confirm and carry out" under the title (design, 2026-11-01)
+  const nextStep = headline && v.title && headline.endsWith(v.title) ? headline.slice(0, -v.title.length).replace(/[\s:–-]+$/, "") : headline;
   const onsiteHere = ((config.theme as { onsite?: { stages?: string[] } }).onsite?.stages ?? []).includes(v.stage);
   const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
   const docs = docsOf(v);
@@ -125,12 +130,12 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
 
   return (
     <main className="main">
-      <header className="case-head" data-help="cf.case-head">
-        <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} size="m" />
+      <header className={`case-head${bare ? " bare" : ""}`} data-help="cf.case-head">
+        {!bare && <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} size="m" />}
         <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
         <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>
         <p className="title">{v.title}</p>
-        {headline && <p className="headline">{headline}</p>}
+        {nextStep && <p className="headline">{nextStep}</p>}
         <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span>
           <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} lists={config.lists ?? []} /></p>
       </header>

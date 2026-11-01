@@ -7,7 +7,7 @@ import { Cover } from "../components/Cover";
 import { DayDone } from "../components/DayDone";
 import { ago, dateWords, type words } from "../words";
 
-export function Card({ c, go, w, lang, quiet, on, from }: { c: CaseCard; go: (p: string) => void; w: ReturnType<typeof words>; lang: string; quiet?: boolean; on?: boolean; from?: string }) {
+export function Card({ c, go, w, lang, quiet, on, from, bare }: { c: CaseCard; go: (p: string) => void; w: ReturnType<typeof words>; lang: string; quiet?: boolean; on?: boolean; from?: string; bare?: boolean }) {
   const to = `/case/${encodeURIComponent(c.id)}${from ? `?g=${encodeURIComponent(from)}` : ""}`;
   const t = c.turn;
   const running = t?.actor === "claude";
@@ -16,11 +16,12 @@ export function Card({ c, go, w, lang, quiet, on, from }: { c: CaseCard; go: (p:
   const num = c.external_id || (c.number ? `${c.label}-${c.number}` : c.id.replace(/-[a-z][a-z0-9]*(-.*)?$/, ""));
   const yours = c.mine && !quiet;                       // colour only where the group is "you"; elsewhere the row stays quiet
   return (
-    <a className={`card${yours ? " mine" : ""}${quiet ? " quiet" : ""}${on ? " on" : ""}`} aria-current={on ? "true" : undefined} href={`${BASE}${to}`} onClick={(e) => { e.preventDefault(); go(to); }}>
-      <Cover label={c.label} number={c.number || c.id.split("-")[1] || ""} tint={c.tint} />
+    <a className={`card${yours ? " mine" : ""}${quiet ? " quiet" : ""}${on ? " on" : ""}${bare ? " bare" : ""}`} style={{ "--tint": c.tint || "var(--muted)" } as React.CSSProperties} aria-current={on ? "true" : undefined} href={`${BASE}${to}`} onClick={(e) => { e.preventDefault(); go(to); }}>
+      {/* the cover only where it tells something: a workspace whose cases all share one label shows none (design, 2026-11-01) */}
+      {!bare && <Cover label={c.label} number={c.number || c.id.split("-")[1] || ""} tint={c.tint} />}
       <span className="card-body">
         {!quiet && <span className="ref">{c.label_word}</span>}
-        <span className="num">{num}</span>
+        <span className="row1"><span className="num">{num}</span>{c.date ? <span className="when">{dateWords(String(c.date), lang)}</span> : null}</span>
         <span className="title" title={c.title}>{c.title}</span>
         {yours && <span className="yours"><i className="dot mine" aria-hidden="true" />{w.yourMove}</span>}
         <span className="state">{state}</span>
@@ -36,6 +37,7 @@ export function List({ config, route, go, w, me }: { config: ConfigView; route: 
   if (!groups.data) return <section className="list" aria-label={w.yourMove}><p className="empty">…</p></section>;
   const byKey = new Map(groups.data.map((g) => [g.key, g]));
   // the case open beside the list: the one chosen in the URL, or on the start page the first that waits for you
+  const bare = new Set(groups.data.flatMap((g) => g.cases.map((c) => c.label))).size <= 1;   // one label for everything: covers say nothing
   const openId = route.name === "case" ? route.id : (route.name === "group" ? byKey.get(route.key)?.cases[0]?.id : byKey.get("you")?.cases[0]?.id);
   const isClaims = !config.words?.labels || Object.keys(config.words.labels as object).some((k) => ["HR", "WG", "KFZ"].includes(k));
   const shown = route.name === "group" ? route.key : route.name === "case" ? route.group : undefined;    // a case opened from a group keeps its group beside it
@@ -44,7 +46,7 @@ export function List({ config, route, go, w, me }: { config: ConfigView; route: 
     return (
       <section className="list" aria-label={g?.word ?? shown}>
         <h2>{g?.word ?? shown}</h2>
-        {g?.cases.length ? g.cases.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet={shown !== "you"} on={c.id === openId} from={shown} />) : <p className="empty">—</p>}
+        {g?.cases.length ? g.cases.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet={shown !== "you"} on={c.id === openId} from={shown} bare={bare} />) : <p className="empty">—</p>}
       </section>
     );
   }
@@ -56,9 +58,9 @@ export function List({ config, route, go, w, me }: { config: ConfigView; route: 
     <section className="list" aria-label={w.yourMove} data-help="cf.list">
       <h2>{headline}</h2>
       {mine.length === 0 && <DayDone w={w} me={me ?? ""} />}
-      {mine.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} on={c.id === openId} />)}
+      {mine.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} on={c.id === openId} bare={bare} />)}
       {others.length > 0 && <p className="kicker" style={{ marginTop: 10 }}>{w.others}</p>}
-      {others.slice(0, 6).map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet on={c.id === openId} />)}
+      {others.slice(0, 6).map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet on={c.id === openId} bare={bare} />)}
       {coming.length > 0 && (
         <div className="coming">
           <span className="kicker">{w.coming}</span>

@@ -30,13 +30,21 @@
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
   --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 14px 34px rgba(0, 0, 0, 0.09);
   --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(0, 0, 0, 0.07);
-  --dot-1: #007AFF;  /* workspace identity dots, by application; not an accent */
+  --dot-1: #5856D6;  /* identity colours, one per application (indigo, never blue: blue is "your move") */
   --dot-2: #FF9500;
   --dot-3: #34C759;
   --dot-4: #AF52DE;
   --dot-5: #FF3B30;
   --dot-6: #30B0C7;
   --on-dot: #FFFFFF; /* text and glyphs on an identity colour */
+  --ai-glow: linear-gradient(120deg, #AF52DE, #FF2D55 50%, #FF9500); /* the AI's own work: its edge, never a fill */
+  --ai-ink: #8E44AD; /* the AI's words on light */
+  /* The colour vocabulary: few colours, each with one meaning. The AI is the one large colour moment on a screen;
+   * everything else is neutral, and meaning (your move, urgency, decided) is coloured in small doses. */
+  --c-you: var(--your-move);  /* your move: dots, counters, the status that waits for you, the current station */
+  --c-ai: var(--ai-ink);      /* the AI: its card edge (--ai-glow), its proposal, every place you ask it */
+  --c-urgent: var(--dot-2);   /* urgency, and nothing else */
+  --c-seal: var(--seal);      /* decided: the main action that seals, seal stamps */
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -63,6 +71,8 @@
   --text-micro: 10px;         /* only inside covers and badges */
   --tracking-tight: -0.022em; /* titles 22px and up */
   --tracking-snug: -0.01em;   /* headlines */
+  --tracking-text: -0.012em;  /* body and UI text, 13 to 15px: SF on the web runs loose without it */
+  --tracking-reading: -0.02em;/* long text at 17px, as apple.com sets it */
 
   --menu-w: 232px;
   --list-w: 340px;
@@ -101,12 +111,13 @@
     --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
     --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.5);
     --shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.4);
-    --dot-1: #0A84FF;
+    --dot-1: #5E5CE6;
     --dot-2: #FF9F0A;
     --dot-3: #30D158;
     --dot-4: #BF5AF2;
     --dot-5: #FF453A;
     --dot-6: #40C8E0;
+    --ai-ink: #D9A6F2;
   }
 }
 :root[data-theme="dark"] {
@@ -137,10 +148,11 @@
   --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
   --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0, 0, 0, 0.5);
   --shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.4);
-  --dot-1: #0A84FF;
+  --dot-1: #5E5CE6;
   --dot-2: #FF9F0A;
   --dot-3: #30D158;
   --dot-4: #BF5AF2;
   --dot-5: #FF453A;
   --dot-6: #40C8E0;
+  --ai-ink: #D9A6F2;
 }

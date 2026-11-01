@@ -5,5 +5,6 @@
   "$comment": "mailbox: where a message lands and which helper reads it; mail_drop: a person may drop an .eml in by hand.",
   "mailbox": {"stage": "10-eingang", "label": "MAIL", "helper": "posteingang-einordnen"},
   "mail_drop": true,
-  "covers": {"by": "label", "colors": {"MAIL": "#3d5a80"}, "fallback": "#5a6270"}
+  "identity": "dot-1",
+  "covers": {"by": "label", "colors": {"MAIL": "#5856D6"}, "fallback": "#5a6270"}
 }

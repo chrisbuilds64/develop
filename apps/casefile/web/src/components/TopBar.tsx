@@ -51,11 +51,14 @@ export function TopBar({ config, me, w, onSwap, onFresh }: { config: ConfigView;
     </>
   );
 
+  // the application's identity colour (theme.identity names a token, e.g. "dot-1"), set once for the whole surface (design, 2026-11-01)
+  const identity = (config.theme as { identity?: string }).identity ?? "";
+  useEffect(() => { document.documentElement.style.setProperty("--app", /^[a-z0-9-]+$/.test(identity) ? `var(--${identity})` : "var(--muted)"); }, [identity]);
   return (
     <header className="topbar" data-help="cf.topbar">
       {me.shell ? <a className="bar-back" data-help="cf.back" href={me.shell} title={w.backToShell}><span aria-hidden="true">←</span><span className="wide-only">{w.backToShell}</span></a> : null}
       <span className="bar-name" title={config.product}>
-        <svg width="20" height="17" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
+        <span className="bar-icon" aria-hidden="true"><svg width="20" height="17" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg></span>
         <span className="t">{config.product}</span>
         {stage && <span className={`bar-stage ${stage}`}>{stage.toUpperCase()}</span>}
       </span>

@@ -1040,3 +1040,199 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .new-case-pick select { min-height: 40px; }
 .meta-listed { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 600px) { .list-form label.wide { grid-column: auto; } .list-table td.desc, .list-table th.desc { display: none; } .list-head .btn { margin-left: 0; } }
+
+/* ------------------------------------------------------------------ Apple pass (design, 2026-11-01)
+ * The case reads by its subject, not its number: the subject is the title, the number and label are a quiet eyebrow.
+ * Mono is for codes inside text, never for headings. Lists are rows on a fill, not boxes; the open case is the one white card.
+ * Blue keeps one meaning (your move). Chrome is neutral. */
+
+/* the bar */
+.topbar { background: color-mix(in srgb, var(--surface) 85%, transparent); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); }
+.bar-stage, .bar-stage.test { background: var(--fill-quiet); color: var(--ink-2); font-weight: 600; letter-spacing: .04em; }
+.bar-btn { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-s); font-weight: 500; }
+.bar-btn:hover { border-color: var(--hairline-2); background: var(--ground-2); }
+
+/* the menu */
+.nav-row.quiet { color: var(--ink); }
+.nav-row.on { background: var(--fill-quiet-hover); }
+.nav-row:hover { background: var(--fill-quiet); }
+
+/* list rows */
+.card { border: none; background: transparent; border-radius: var(--r-l); padding: 12px 14px; gap: 12px; }
+.card.mine, .card.mine:hover { border: none; }
+.card:hover { background: var(--fill-quiet); }
+.card.on, .card.on:hover { background: var(--surface); box-shadow: var(--shadow-card); }
+.card-body { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 3px; }
+.card-body > * { flex-basis: 100%; }
+.card-body > .yours, .card-body > .state { flex-basis: auto; }
+.card .num, .card .ref { font-family: var(--font); font-size: var(--text-footnote); font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.card .title { font-size: var(--text-body); font-weight: 600; line-height: 1.35; }
+.card .yours { font-size: var(--text-footnote); }
+.card .state { font-size: var(--text-footnote); color: var(--muted); }
+.card .yours + .state::before { content: "·"; margin-right: 8px; color: var(--muted); }
+.card .cover, .card.quiet .cover { width: 36px; height: 36px; padding: 0; border-radius: var(--r-m); justify-content: center; align-items: center; }
+.card .cover b, .card.quiet .cover b { display: none; }
+.card .cover small { font-family: var(--font); font-size: var(--text-micro); font-weight: 700; letter-spacing: .02em; }
+
+/* the case head: label and number as an eyebrow, the subject as the title */
+.case-head { row-gap: 2px; }
+.case-head .ref { font-family: var(--font); font-size: var(--text-footnote); font-weight: 500; color: var(--muted); }
+.case-head h1.num { font-size: var(--text-headline); font-weight: 600; color: var(--ink-2); letter-spacing: 0; line-height: 1.3; }
+.case-head h1.num a { border-bottom-width: 1px; }
+.case-head .title { margin-top: 2px; font-size: var(--text-title-1); font-weight: 700; line-height: 1.15; letter-spacing: var(--tracking-tight); color: var(--ink); }
+.case-head .headline { margin-top: 10px; font-size: var(--text-body); font-weight: 500; color: var(--ink-2); }
+.case-head .cover.m { width: 56px; height: 56px; padding: 0; border-radius: var(--r-l); justify-content: center; align-items: center; gap: 2px; }
+.case-head .cover small { font-family: var(--font); }
+
+/* Three panes, three tones (design, 2026-11-01): grey menu, white list, grey case. Each pane differs from its neighbour. */
+.menu { background: var(--ground); box-shadow: inset -1px 0 0 var(--hairline); }
+.views { background: var(--fill-quiet); }
+.list { background: var(--surface); border-right: 1px solid var(--hairline); }
+.card.on, .card.on:hover { background: var(--fill-quiet-hover); box-shadow: none; }
+.main { background: var(--ground); }
+
+/* Ink rule (design, 2026-11-01): content reads in --ink; --muted is for metadata only (numbers, dates, labels, versions).
+ * Same rule as the cockpit. */
+.kicker { color: var(--ink); }
+.case-head h1.num { color: var(--muted); }
+.case-head .headline, .case-head .stub { color: var(--ink); }
+.triage-sum, .triage-reasons, .triage-proposal { color: var(--ink); }
+.file .excerpt { color: var(--ink); }
+.card .state { color: var(--muted); }
+
+/* Type ratios (design, 2026-11-01): one dominant title per view (the case subject); the list heading steps back.
+ * Weights are regular, semibold, and bold for big titles only; no medium. Metadata is small and regular. */
+.list h2 { font-size: var(--text-title-2); font-weight: 700; letter-spacing: var(--tracking-tight); }
+.card .num, .card .ref, .case-head .ref { font-weight: 400; }
+.case-head h1.num { font-size: var(--text-subheadline); font-weight: 400; line-height: 1.4; }
+.case-head .title { margin-top: 4px; }
+.case-head .headline { margin-top: 12px; font-size: var(--text-body); font-weight: 400; }
+.case-head .stub { font-size: var(--text-subheadline); }
+.triage-sum { line-height: 1.45; }
+.triage-fields dd { font-weight: 400; }
+.triage-reasons { font-size: var(--text-callout); line-height: 1.5; }
+.triage-proposal b, .triage-proposal strong { font-weight: 600; }
+
+/* Fields as a grouped list (design, 2026-11-01): the Settings/Contacts pattern. One soft panel, one row per field,
+ * label left in grey, value right in ink, hairlines between rows. Reads as facts, not as a form. */
+.triage-fields { display: block; margin: 8px 0 4px; padding: 0 16px; background: var(--ground); border-radius: var(--r-m); max-width: 620px; }
+.triage-fields div { display: grid; grid-template-columns: minmax(110px, 34%) 1fr; align-items: baseline; gap: 16px; padding: 11px 0; }
+.triage-fields div + div { border-top: 1px solid var(--hairline); }
+.triage-fields dt { font-size: var(--text-callout); color: var(--muted); }
+.triage-fields dd { font-size: var(--text-callout); color: var(--ink); text-align: right; overflow-wrap: anywhere; }
+
+/* Apple's optical tracking (design, 2026-11-01): native SF tightens text at 13 to 17px; browsers do not, so we do. */
+body { letter-spacing: var(--tracking-text); }
+.bubble .text, .reader-body .prose, .triage-sum { letter-spacing: var(--tracking-reading); line-height: 1.47; }
+
+/* Covers as tinted tiles (design, 2026-11-01): the label colour as a soft wash with the label in that colour,
+ * no gloss, no shadow. Still says "which kind" at a glance; no longer the heaviest thing on the row. */
+.cover { background: color-mix(in srgb, var(--tint) 14%, var(--surface)); background-image: none; box-shadow: none;
+  color: color-mix(in srgb, var(--tint) 80%, var(--ink)); }
+.cover small { display: block; font-family: var(--font); font-size: var(--text-caption); font-weight: 600; letter-spacing: 0; opacity: 1;
+  text-transform: lowercase; }
+.cover small::first-letter { text-transform: uppercase; }
+.card .cover, .card.quiet .cover { width: 40px; height: 40px; }
+.case-head .cover b { font-weight: 700; }
+
+/* Rows without a cover (design, 2026-11-01): the Mail layout. The blue dot sits in the left margin beside the subject,
+ * as Mail's unread dot; "Your move" stays for screen readers. */
+.card.bare { padding-left: 30px; }
+.card.bare .yours { position: absolute; left: 11px; top: 38px; width: 9px; height: 9px; overflow: hidden; white-space: nowrap; }
+.card.bare .yours .dot { width: 9px; height: 9px; }
+.card.quiet.bare { padding-left: 30px; }
+
+/* List rows, second pass (design, 2026-11-01): the date on the right of the top line, as Mail shows the time;
+ * the open case washed in its label colour; the blue dot in the margin of bare rows. */
+.card .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; min-width: 0; }
+.card .row1 .num { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .when { flex: none; font-size: var(--text-footnote); color: var(--muted); }
+.card.mine .when { color: var(--your-move-ink); font-weight: 600; }
+.card.on, .card.on:hover { background: color-mix(in srgb, var(--tint) 13%, var(--surface)); }
+.card.bare { position: relative; }
+.card.bare .yours { top: 39px; }
+.card.bare .yours + .state::before { content: none; }
+
+/* Colour with meaning (design, 2026-11-01): Apple apps feel alive because colour always says something.
+ * The AI's work wears the AI's edge; sections carry a tinted symbol (desk = documents, conversation = messages);
+ * urgency is orange. Blue still means only "your move". */
+.triage { border: 1.5px solid transparent; box-shadow: var(--shadow-card);
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--ai-glow) border-box; }
+.triage-head::after { content: "✦"; margin-left: auto; font-size: var(--text-title-2); line-height: 1;
+  background: var(--ai-glow); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.triage-urgency, .triage-urgency.high { border: none; background: color-mix(in srgb, var(--dot-2) 16%, var(--surface));
+  color: color-mix(in srgb, var(--dot-2) 70%, var(--ink)); }
+.triage-proposal { border-top: none; margin-top: 8px; padding: 12px 14px; border-radius: var(--r-m);
+  background: color-mix(in srgb, var(--ai-ink) 8%, var(--surface)); }
+.triage-proposal b { color: var(--ai-ink); }
+
+.desk > .kicker:first-child, .thread > .kicker { display: flex; align-items: center; gap: 8px; font-size: var(--text-headline); font-weight: 700; }
+.desk > .kicker:first-child::before, .thread > .kicker::before { content: ""; flex: none; width: 26px; height: 26px; border-radius: var(--r-s);
+  background-color: var(--k); background-image: var(--k-icon); background-size: 16px; background-position: center; background-repeat: no-repeat; }
+.desk > .kicker:first-child { --k: var(--dot-2);
+  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3h7l5 5v13H7z'/%3E%3Cpath d='M14 3v5h5M10 13h6M10 17h6'/%3E%3C/svg%3E"); }
+.thread > .kicker { --k: var(--dot-3);
+  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5h16v11H9l-5 4z'/%3E%3C/svg%3E"); }
+
+/* Case head, alive (design, 2026-11-01): no cover where it says nothing, the next step said once, and the status in blue
+ * when it is your move. */
+.case-head.bare { grid-template-columns: 1fr; }
+.case-head .headline { font-weight: 600; }
+.case-head .stub .dot.mine + span { color: var(--your-move-ink); font-weight: 600; }
+
+/* The colour vocabulary applied (design, 2026-11-01): each meaning has one colour and shows it wherever it appears. */
+.triage-urgency, .triage-urgency.high { background: color-mix(in srgb, var(--c-urgent) 16%, var(--surface)); color: color-mix(in srgb, var(--c-urgent) 70%, var(--ink)); }
+.triage-proposal { background: color-mix(in srgb, var(--c-ai) 8%, var(--surface)); }
+.triage-proposal b { color: var(--c-ai); }
+/* the AI wherever you ask it: a sparkle in the ask field and in the menu row, a violet ring when you type */
+.thread .ask::before { content: "✦"; padding-left: 8px; font-size: var(--text-headline); line-height: 1;
+  background: var(--ai-glow); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.thread .ask:focus-within { border-color: color-mix(in srgb, var(--c-ai) 45%, var(--hairline)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-ai) 14%, transparent); }
+.menu .ask-row > span:first-child::before { content: "✦ "; background: var(--ai-glow); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.thread .ask .send { display: grid; place-items: center; width: 32px; min-height: 32px; height: 32px; padding: 0; margin: 6px 0; border-radius: var(--r-pill); }
+
+/* Fewer colours, bigger doses (design, 2026-11-01, after ElevenLabs): the AI's card is the one colour moment of the case,
+ * a soft glow across its top; section symbols are neutral line icons in outlined tiles; sending is neutral. */
+.triage { background:
+    radial-gradient(70% 150px at 0% 0%, color-mix(in srgb, var(--dot-4) 16%, transparent), transparent) padding-box,
+    radial-gradient(60% 150px at 100% 0%, color-mix(in srgb, var(--dot-2) 14%, transparent), transparent) padding-box,
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--ai-glow) border-box; }
+.triage-head::after { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--c-ai); }
+.desk > .kicker:first-child, .thread > .kicker { position: relative; }
+.desk > .kicker:first-child::before, .thread > .kicker::before { background: var(--surface); background-image: none;
+  box-shadow: inset 0 0 0 1px var(--hairline-2); }
+.desk > .kicker:first-child::after, .thread > .kicker::after { content: ""; position: absolute; left: 5px; top: 50%; width: 16px; height: 16px; margin-top: -8px;
+  background: var(--ink); -webkit-mask: var(--k-icon) center / contain no-repeat; mask: var(--k-icon) center / contain no-repeat; }
+.thread .ask::before { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--c-ai); }
+.menu .ask-row > span:first-child::before { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--c-ai); }
+.thread .ask .send:not(:disabled) { background: var(--ink); color: var(--surface); }
+/* the desk heading stays sticky; its symbol centres in the tile below the sticky padding (16px top) */
+.desk > .kicker:first-child { position: sticky; }
+.desk > .kicker:first-child::after { top: 29px; }
+
+/* Application identity (design, 2026-11-01): each application has one identity colour (--app, from theme.identity),
+ * the same one the cockpit shows on its card. It marks where you are: the app icon in the bar, the chosen view,
+ * the chosen place in the menu. Never content, never "your move". */
+.bar-icon { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--r-s);
+  color: var(--on-dot); background: linear-gradient(160deg, color-mix(in srgb, var(--app) 72%, var(--on-dot)), var(--app)); }
+.bar-icon svg { width: 16px; height: 14px; color: inherit; }
+.bar-name svg { color: inherit; }
+.views .view.on { color: var(--app); }
+.views .view.on span { color: var(--ink); }
+.nav-row.on { background: color-mix(in srgb, var(--app) 12%, transparent); }
+.nav-row.on > span:first-child { color: color-mix(in srgb, var(--app) 70%, var(--ink)); font-weight: 600; }
+
+/* The bar's left side as a breadcrumb (design, 2026-11-01): "Cockpit › [icon] Inbox  Sandbox", one path, not three pieces.
+ * On a phone the back arrow stays, as there is no room for the word. */
+.bar-back { gap: 0; padding: 6px 8px; margin-left: -8px; color: var(--muted); font-size: var(--text-body); }
+.bar-back:hover { background: var(--fill-quiet); }
+@media (min-width: 901px) {
+  .bar-back > span:first-child { display: none; }
+  .bar-back::after { content: "›"; margin-left: 12px; color: var(--hairline-2); font-size: var(--text-headline); line-height: 1; }
+}
+.topbar { gap: 8px; }
+.bar-name { gap: 10px; font-size: var(--text-headline); font-weight: 600; letter-spacing: var(--tracking-snug); }
+.bar-icon { width: 26px; height: 26px; }
+.bar-icon svg { width: 14px; height: 12px; }
+.bar-stage, .bar-stage.test { padding: 3px 7px; font-size: var(--text-micro); letter-spacing: .05em; }

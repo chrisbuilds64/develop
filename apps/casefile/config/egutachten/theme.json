@@ -5,6 +5,7 @@
   "$comment": "Same tokens as the other worlds; the one accent means only: this waits for you. external_url: a template with {external_id} turns the order number into a link into the organisation's order system; empty in the demo.",
   "external_label": "Auftragsnummer",
   "external_url": "",
+  "identity": "dot-4",
   "covers": {
     "by": "label",
     "colors": {

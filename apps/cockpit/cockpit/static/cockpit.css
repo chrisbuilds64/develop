@@ -998,3 +998,15 @@ h2.section { font-size: var(--text-title-2); font-weight: 700; }
 .ws-card:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
 .ws-card.new { background: var(--surface); box-shadow: var(--shadow-card); color: var(--ink); font-weight: 500; }
 .ws-card.new:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
+
+/* One sidebar everywhere (design, 2026-11-01): navigation is grey, as in the workspaces; the page is white,
+ * and cards keep a hairline so they hold their edge on white. */
+body.has-rail { background: var(--surface); }
+.side { background: var(--ground); box-shadow: inset -1px 0 0 var(--hairline); }
+@media (min-width: 901px) { .topbar { background: color-mix(in srgb, var(--surface) 85%, transparent); } }
+.topbar .pill { border: 1px solid var(--hairline); box-shadow: none; }
+.ws-card, .ws-card.new { box-shadow: inset 0 0 0 1px var(--hairline), var(--shadow-card); }
+.ws-card:hover, .ws-card.new:hover { box-shadow: inset 0 0 0 1px var(--hairline-2), var(--shadow-card-hover); }
+
+/* Apple's optical tracking (design, 2026-11-01), as in the workspaces. */
+body { letter-spacing: var(--tracking-text); }
