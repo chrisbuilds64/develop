@@ -29,9 +29,6 @@
       "colour": 1,
       "font-size": 3
     },
-    "apps/cockpit/cockpit/templates/login.html": {
-      "colour": 1
-    },
     "apps/cockpit/cockpit/templates/module.html": {
       "colour": 1
     }

@@ -6,6 +6,8 @@ import type { words } from "../words";
 
 export function Board({ config, go, w }: { config: ConfigView; go: (p: string) => void; w: ReturnType<typeof words> }) {
   const stages = useQuery({ queryKey: ["stages"], queryFn: api.stages, refetchInterval: 25_000 });
+  // one label for every case: the tag says nothing, so it is left out (design, 2026-11-01)
+  const bare = new Set((stages.data ?? []).flatMap((s: { cases: { label: string }[] }) => s.cases.map((c) => c.label))).size <= 1;
   const lang = config.lang;
   const total = (stages.data ?? []).reduce((n, s) => n + s.cases.length, 0);
   return (
@@ -24,7 +26,7 @@ export function Board({ config, go, w }: { config: ConfigView; go: (p: string) =
             <h3><span>{head}</span><span className="n">{s.cases.length}</span></h3>
             {s.station && s.cases.length > 0 && <span className="folder">{shared ? s.station : s.word}</span>}
             <div className="col-cards">
-              {s.cases.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet={!c.mine} />)}
+              {s.cases.map((c) => <Card key={c.id} c={c} go={go} w={w} lang={lang} quiet={!c.mine} bare={bare} />)}
             </div>
           </section>
           );

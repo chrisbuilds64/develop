@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% macro av(a, size='') %}{% if a.avatar_path %}<img class="agent-av {{ size }}" src="/api/agents/{{ a.id }}/avatar" alt="">{% else %}<span class="agent-av {{ size }}">{{ a.initials }}</span>{% endif %}{% endmacro %}
+{% block crumb %}{{ t('team.title')|replace('+ ', '') }}{% endblock %}
 {% block main %}
 <div class="page-head">
   <h1>{{ t('team.title') }}</h1>

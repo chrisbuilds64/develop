@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block crumb %}{{ t('ws.new')|replace('+ ', '') }}{% endblock %}
 {% block main %}
 <div class="page-head">
   <h1>{{ t('ws.new') }}</h1>
@@ -25,7 +26,7 @@
     </select>
   </label>
   {% if may_share %}
-  <label class="row" style="flex-direction:row;align-items:center"><input type="checkbox" name="shared" value="1" style="width:auto"> {{ t('ws.make_shared') }}</label>
+  <label class="check-row"><input type="checkbox" name="shared" value="1"> <span>{{ t('ws.make_shared') }}</span></label>
   {% endif %}
   <button type="submit">{{ t('ws.create') }}</button>
   <p class="hint">{{ t('ws.create_hint') }}</p>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block crumb %}{{ t('setup.title')|replace('+ ', '') }}{% endblock %}
 {% block main %}
 <div class="module-page setup">
   <a class="back" href="/">← {{ t('app.back') }}</a>

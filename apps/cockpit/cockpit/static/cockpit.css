@@ -1010,3 +1010,50 @@ body.has-rail { background: var(--surface); }
 
 /* Apple's optical tracking (design, 2026-11-01), as in the workspaces. */
 body { letter-spacing: var(--tracking-text); }
+
+/* ================================================================== Cockpit pages (design, 2026-11-01)
+ * One page template for every inner page: the name in the bar, a centred column, Settings-style grouped forms. */
+main:has(.page-head h1, .module-page) { max-width: 880px; }
+.page-head h1, .module-page h2 { font-size: var(--text-title-1); font-weight: 700; letter-spacing: var(--tracking-tight); }
+.module-page .back { display: none; }
+.module-page > .hint, .module-page .hint { color: var(--muted); font-size: var(--text-callout); }
+
+/* Form card: a white grouped panel; fields full width; one quiet primary button at the end. */
+.form-card { max-width: none; border: none; border-radius: var(--r-card); box-shadow: inset 0 0 0 1px var(--hairline), var(--shadow-card); padding: 22px 24px; gap: 14px; }
+.form-card h2 { font-size: var(--text-headline); font-weight: 700; letter-spacing: var(--tracking-snug); margin: 0; }
+.form-card label { font-size: var(--text-footnote); color: var(--muted); }
+.form-card input, .form-card select, .login-form input {
+  font: inherit; font-size: var(--text-callout); min-height: 38px; color: var(--ink); background-color: var(--surface);
+  border: 1px solid var(--hairline-2); border-radius: var(--r-s); padding: 0 12px; }
+.form-card select { -webkit-appearance: none; appearance: none; padding-right: 30px; background-image: var(--chevron); background-repeat: no-repeat; background-position: right 10px center; background-size: 14px; }
+.form-card input:focus, .form-card select:focus, .login-form input:focus { outline: none; border-color: var(--your-move); box-shadow: 0 0 0 3px var(--your-move-halo); }
+.form-card input[type=checkbox] { min-height: 0; width: 18px; height: 18px; padding: 0; accent-color: var(--ink); }
+.form-card button, .btn-primary, .login-form button { min-height: 38px; padding: 0 18px; border-radius: var(--r-m); font-weight: 600; font-size: var(--text-callout); align-self: flex-start; }
+.form-card .row { gap: 10px; }
+.form-card .row > input, .form-card .row > select { flex: 1; min-width: 200px; }
+.kv .k, .k.mono, .agent-rights.mono { font-family: var(--font); color: var(--muted); }
+.notice { border-radius: var(--r-m); }
+.notice.err { background: color-mix(in srgb, var(--bad) 10%, var(--surface)); color: var(--bad); }
+
+/* Tables and setup: sentence-case headers, no outer box, tabs as a segmented control, paths in grey. */
+.tablewrap { border: none; border-radius: var(--r-card); box-shadow: inset 0 0 0 1px var(--hairline), var(--shadow-card); }
+th { font-size: var(--text-footnote); text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); }
+th, td { padding: 11px 14px; }
+tr:last-child > td { border-bottom: none; }
+.block h3 { font-size: var(--text-headline); font-weight: 700; text-transform: none; letter-spacing: var(--tracking-snug); color: var(--ink); }
+.tabs { display: inline-flex; gap: 2px; padding: 3px; background: var(--fill-quiet); border-radius: var(--r-m); margin: 8px 0 4px; }
+.tabs a { padding: 5px 12px; border-radius: var(--r-s); color: var(--ink-2); text-decoration: none; font-size: var(--text-callout); font-weight: 500; }
+.tabs a:hover { background: var(--surface); color: var(--ink); }
+td.mono, td .mono, .dim.mono, .mono.dim { font-size: var(--text-footnote); color: var(--muted); }
+.badge, .badge.tone-ok, .badge.tone-warn, .badge.tone-bad { border: none; border-radius: var(--r-pill); padding: 2px 8px; font-size: var(--text-caption); font-weight: 600;
+  background: var(--fill-quiet); color: var(--ink-2); text-transform: none; letter-spacing: 0; }
+.badge.tone-bad { background: color-mix(in srgb, var(--bad) 12%, var(--surface)); color: var(--bad); }
+
+/* Sign-in: the same calm as the app, the cockpit's own mark, no gradient. */
+.login-body { background: var(--ground); }
+.login-card { border: none; border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 36px 34px 26px; }
+.login-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-m); background: var(--ink); color: var(--surface); }
+.login-card h1 { font-size: var(--text-title-2); font-weight: 700; letter-spacing: var(--tracking-tight); }
+.login-form label { color: var(--muted); }
+.login-form button { align-self: stretch; min-height: 42px; }
+.form-card label.check-row { flex-direction: row; align-items: center; gap: 10px; font-size: var(--text-callout); color: var(--ink); }

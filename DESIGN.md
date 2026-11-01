@@ -178,6 +178,47 @@ hairlines between rows, callout size. *Use* for any key/value data. *Don't* floa
 White, `--r-l`, `--shadow-card`; a document symbol and the name, then one line of metadata (ellipsis, never
 wrapping). Tiles are uniform in a grid of at least 200 px.
 
+### View heading (`.view-head`)
+Title 1, bold, with a quiet callout lead beside it. Every view (Board, List, Rulebook, Value lists, Patterns, Canon)
+opens with one.
+
+### Block (`.rules-block`, `.signal`)
+A white card (`--r-card`, `--shadow-card`, no border) on the grey ground, with a headline-size bold title. Never a
+grey box inside a grey page.
+
+### Table (`.rules-table`, `table.stack`, cockpit `table`)
+Sentence-case header in footnote grey (never uppercase), hairline between rows, no outer border (the block or a
+card ring holds it), a quiet fill on hover. Your-move rows carry the blue dot before the number. Codes and paths are
+grey text in the system font, not mono.
+
+### Form field
+One look for inputs and selects: white, 1 px `--hairline-2`, `--r-s`, 34 to 38 px high; selects use the token
+`--chevron` instead of the browser arrow; focus is a blue border with `--your-move-halo`. Labels are footnote grey
+above the field. Forms sit in a white grouped card; one primary button at the end.
+
+### Chips and tags
+**Chips** are actions or filters: white, hairline, `--r-s`; chosen = ink. **Tags** are states: a soft fill, pill
+shape, no border. Automatic transitions in the rulebook show `↻`.
+
+### Grouped list
+The Settings pattern, used for facts, the rulebook's stages, and the people in the person picker: one `--ground`
+panel, rows separated by hairlines.
+
+### Disabled main button
+Neutral grey fill and muted text, never a washed-out colour. The reason sits next to it in ink ("First: an
+appointment").
+
+### Kanban
+Grey columns (`--ground`, `--r-l`, no border), white cards on `--shadow-card`. The column title is the only heading.
+
+### Photo slots (on-site)
+Calm grey dashed placeholders with a camera symbol. A required view is marked by a small blue dot after its name,
+not by a blue wash. Taken photos fill the slot.
+
+### Cockpit page template
+Every inner page: the page name in the header bar, a centred column of at most 880 px, title 1 bold, content in
+white grouped cards, tabs as a segmented control.
+
 ### Section heading with symbol (`.kicker`)
 Headline size, bold, preceded by a neutral line icon in a 26 px outlined tile. Symbols are neutral; colour belongs
 to meaning.
@@ -259,5 +300,6 @@ Branch `design/tokens`. What it covers, beyond the tokens alone:
 ## 8. Not done yet
 
 - Spacing tokens (a 4/8 scale) and moving the remaining 216 raw values.
-- The assessor's on-site tablet view, the rules, signals, canon and value-list screens: tokens only so far.
+- Second pass on the rulebook, canon and value-list screens: they use the shared components now, but their
+  layout (dense chips, a wide matrix) still needs a design of its own.
 - Dark mode: derived and checked lightly, not designed screen by screen.

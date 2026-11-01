@@ -1342,3 +1342,112 @@ body { letter-spacing: var(--tracking-text); }
 .bubble.ai { border: none; background: var(--surface); box-shadow: var(--shadow-card); }
 .label-tag { background: var(--fill-quiet); color: var(--ink-2); }
 .label-dot { display: none; }
+
+/* ================================================================== Shared components (design, 2026-11-01)
+ * One table, one form field, one tag, one block, one view heading: every screen is built from these. */
+
+/* View heading: the title of a view (Board, List, Rulebook, Value lists, Patterns, Canon) and its quiet lead. */
+.view-head { align-items: baseline; gap: 14px; margin-bottom: 4px; }
+.view-head h1 { font-size: var(--text-title-1); font-weight: 700; letter-spacing: var(--tracking-tight); }
+.view-head .hint, .view-head > span, .view-head > small { font-size: var(--text-callout); color: var(--muted); }
+.view-head .filter input { border-radius: var(--r-m); background: var(--fill-quiet); border-color: transparent; padding: 8px 12px; }
+.view-head .filter input:focus { background: var(--surface); border-color: var(--hairline-2); outline: none; }
+
+/* Block: a white card on the grey ground, with a section title. Replaces the boxed grey panels. */
+.rules-block, .signal { background: var(--surface); border: none; border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 20px 22px; }
+.rules-block > .kicker, .rules-block > h2, .list-head h2 { font-size: var(--text-headline); font-weight: 700; color: var(--ink); letter-spacing: var(--tracking-snug); text-transform: none; }
+
+/* Table: sentence-case header in grey, hairline rows, no outer border, a quiet hover. */
+.rules-table, table.stack { font-size: var(--text-callout); }
+.rules-table th, table.stack thead th { font-size: var(--text-footnote); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.rules-table th, .rules-table td, table.stack th, table.stack td { padding: 10px 12px; border-bottom: 1px solid var(--hairline); }
+.rules-table tbody tr:last-child td { border-bottom: none; }
+.rules-table th.never, .rules-table .never { color: var(--ink-2); }
+table.stack thead th { background: var(--surface); }
+table.stack tr.group th { background: var(--ground); color: var(--ink); font-size: var(--text-footnote); font-weight: 600; }
+table.stack tbody tr:not(.group):hover { background: var(--fill-quiet); }
+table.stack td.cv { display: none; }
+table.stack th:first-child:empty { display: none; }
+table.stack td.num a, table.stack tbody tr.mine td.num a { color: var(--ink); font-weight: 600; }
+table.stack td.turn b.you { color: var(--ink); }
+table.stack tbody tr.mine td.num::before { content: ""; display: inline-block; width: 8px; height: 8px; margin: 0 8px 1px -2px; border-radius: 50%; background: var(--c-you); }
+.mono, .rules-table .mono, .list-table .mono { font-family: var(--font); font-size: inherit; color: var(--muted); letter-spacing: 0; }
+
+/* Form field: one look for every input and select; selects get the system chevrons instead of the browser's arrow. */
+.status-pick select, .list-form select, .new-case-pick select, .person-switch,
+.list-form input:not([type="checkbox"]):not([type="color"]), .os-note textarea {
+  font: inherit; font-size: var(--text-callout); min-height: 34px; color: var(--ink); background-color: var(--surface);
+  border: 1px solid var(--hairline-2); border-radius: var(--r-s); padding: 0 10px; transition: border-color .15s var(--ease), box-shadow .15s var(--ease); }
+.status-pick select, .list-form select, .new-case-pick select, .person-switch {
+  -webkit-appearance: none; appearance: none; padding-right: 28px; background-image: var(--chevron); background-repeat: no-repeat; background-position: right 8px center; background-size: 14px; }
+.status-pick select:focus, .list-form select:focus, .new-case-pick select:focus, .person-switch:focus,
+.list-form input:focus, .os-note textarea:focus { outline: none; border-color: var(--c-you); box-shadow: 0 0 0 3px var(--your-move-halo); }
+.list-form { border: none; background: var(--ground); border-radius: var(--r-m); padding: 14px; }
+.list-form label { font-size: var(--text-footnote); color: var(--muted); }
+
+/* Tag and chip: chips are actions or filters (white, hairline, rounded rectangle); tags are states (soft fill, pill). */
+.chip { border-radius: var(--r-s); min-height: 32px; font-weight: 500; }
+.chip.small { min-height: 26px; border-radius: var(--r-s); font-size: var(--text-footnote); }
+.chip.on { background: var(--ink); color: var(--surface); }
+.rs-body .chip, .rs-body .chip.auto { border: none; background: var(--fill-quiet); color: var(--ink-2); font-weight: 400; }
+.rs-body .chip.auto::before { content: "↻ "; color: var(--muted); }
+.signal-head .chip.small.on, .signal .chip.small.on { background: var(--fill-quiet-hover); color: var(--ink); text-transform: none; letter-spacing: 0; }
+
+/* Stage list in the rulebook: a grouped list, not a stack of boxes. */
+.rule-stages { gap: 0; background: var(--ground); border-radius: var(--r-m); padding: 0 14px; }
+.rule-stages li { background: transparent; border: none; border-radius: 0; padding: 12px 0; }
+.rule-stages li + li { border-top: 1px solid var(--hairline); }
+.rs-head .mono { font-size: var(--text-footnote); }
+.module { border: none; background: var(--ground); }
+
+/* Value lists: the status dot and select sit together; the swatch is a soft round. */
+.swatch { border-radius: 50%; border: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent); }
+
+/* Disabled main button: neutral, never a washed-out colour; the reason beside it says why. */
+.btn:disabled, .foot .btn:disabled { opacity: 1; background: var(--fill-quiet-hover); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+.btn:disabled::before { opacity: .6; }
+.foot .says { color: var(--ink); font-weight: 500; }
+
+/* Kanban: grey columns, white cards; the column title is the only heading. */
+.col { background: var(--ground); border: none; border-radius: var(--r-l); padding: 12px; }
+.col .card, .col .card.quiet { background: var(--surface); box-shadow: var(--shadow-card); border-radius: var(--r-m); }
+.col .card:hover { background: var(--surface); box-shadow: var(--shadow-card-hover); }
+.col h3 { font-size: var(--text-callout); font-weight: 600; }
+
+/* Person picker ("Who are you?"): a centred card with a grouped list of people. */
+.gate { background: var(--ground); }
+.gate form { background: var(--surface); padding: 28px; border-radius: var(--r-card); box-shadow: var(--shadow-card); gap: 6px; width: min(400px, 100%); }
+.gate h1 { font-size: var(--text-title-2); font-weight: 700; letter-spacing: var(--tracking-tight); }
+.gate .hint { margin: 0 0 12px; color: var(--muted); }
+.gate .person { border: none; background: var(--ground); border-radius: var(--r-m); min-height: 52px; }
+.gate .person:hover { background: var(--fill-quiet-hover); }
+.gate .person .mono, .gate .person small { font-family: var(--font); color: var(--muted); font-size: var(--text-footnote); }
+
+/* On-site photo slots: calm placeholders with a camera; a required view is marked by a dot, not a blue wash. */
+.os-view .shot, .os-view.needed .shot { border: 1.5px dashed var(--hairline-2); background: var(--ground); color: var(--muted); border-radius: var(--r-m); }
+.os-view.needed .shot { border-color: var(--hairline-2); }
+.os-view .shot:hover { background: var(--fill-quiet-hover); border-color: var(--muted); }
+.os-view:not(.has) .shot > *:not(img):not(.n) { display: none; }
+.os-view:not(.has) .shot::after { content: ""; width: 28px; height: 28px; background: var(--muted); -webkit-mask: var(--camera) center / contain no-repeat; mask: var(--camera) center / contain no-repeat; }
+.os-view.needed .word::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: var(--c-you); vertical-align: 2px; }
+
+/* Canon matrix: quiet chips; the state is in the border, as before, but softer. */
+.house-intro div { border: none; background: var(--surface); box-shadow: var(--shadow-card); border-radius: var(--r-l); }
+.house-matrix-wrap { border: none; box-shadow: var(--shadow-card); border-radius: var(--r-card); }
+.hm-depth { background: var(--surface); }
+.hm-chip { border-radius: var(--r-s); }
+.house-panel .kicker, .house-trail li b { text-transform: none; letter-spacing: 0; }
+
+/* Small screens */
+@media (max-width: 900px) {
+  .desk > .kicker:first-child::after, .thread > .kicker::after { top: 50%; }
+  .desk > .kicker:first-child { padding-top: 0; }
+  .case-head .stub { flex-wrap: wrap; }
+}
+@media (max-width: 1100px) { .line .st:not(.current):not(:first-child):not(:last-child) span { display: none; } }
+
+/* Second consistency pass (design, 2026-11-01) */
+.signal .chip.small.on, .signal-head .chip.small.on { border: none; background: var(--fill-quiet-hover); color: var(--ink-2); font-weight: 600; }
+.signal .cover, .signal-cases .cover { display: none; }
+.signal-cases .card.quiet { background: var(--ground); box-shadow: none; }
+.hm-band { text-transform: none; letter-spacing: 0; font-size: var(--text-footnote); font-weight: 600; color: var(--muted); }
