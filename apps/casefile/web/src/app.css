@@ -1311,3 +1311,34 @@ body { letter-spacing: var(--tracking-text); }
 .file, .file.wide { grid-column: auto; }
 .file .head { flex-direction: column; align-items: flex-start; gap: 4px; }
 .file .meta { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-footnote); }
+
+/* One layout in every application (design, 2026-11-01): no cover tiles in lists or the case head. Where an application
+ * has more than one kind of case, the kind is a small tag in its label colour beside the number. */
+.card .row1 { justify-content: flex-start; }
+.card .row1 .when { margin-left: auto; }
+.label-tag { flex: none; padding: 1px 7px; border-radius: var(--r-pill); font-size: var(--text-caption); font-weight: 600;
+  background: color-mix(in srgb, var(--tint) 16%, var(--surface)); color: color-mix(in srgb, var(--tint) 60%, var(--ink)); }
+.case-head .ref { display: inline-flex; align-items: center; gap: 6px; }
+.label-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tint); }
+
+/* Colour on every case, for a reason (design, 2026-11-01).
+ * The AI's messages in the conversation wear the AI's edge and sparkle, as its card does. */
+.bubble.ai { border: 1px solid transparent; box-shadow: var(--shadow-card);
+  background: linear-gradient(color-mix(in srgb, var(--c-ai) 4%, var(--surface)), var(--surface)) padding-box, var(--ai-glow) border-box; }
+.bubble.ai .who b { color: var(--c-ai); }
+.bubble.ai .who b::before { content: "✦ "; }
+/* The way through the process is drawn in the application's colour: where you are, in this application. */
+.line .fill { background: var(--app); }
+.line .st.done i::after { background: var(--app); border-color: var(--app); }
+.line .st.current span { color: var(--ink); }
+
+/* Colour model (design, 2026-11-01, decided): on any screen only three hues besides the neutrals.
+ * Blue = your move. Violet (and the AI's glow) = the AI. Red-brown = decided, a seal. The application's own colour lives
+ * only in its icon. Everything else, progress and labels included, is neutral. */
+.line .fill { background: var(--ink); }
+.line .st.done i::after { background: var(--ink); border-color: var(--ink); }
+.list h2 { color: var(--ink); }
+.views .view.on { color: var(--ink); }
+.bubble.ai { border: none; background: var(--surface); box-shadow: var(--shadow-card); }
+.label-tag { background: var(--fill-quiet); color: var(--ink-2); }
+.label-dot { display: none; }

@@ -44,27 +44,34 @@ it and only lets the count of old raw values go down (`--list` shows what is lef
 
 Dark mode redefines the same names (true black ground, `#1C1C1E` surfaces). Never write a dark colour by hand.
 
-### 2.2 The colour vocabulary
+### 2.2 The colour model
 
-Few colours, each with exactly one meaning, shown wherever that meaning appears.
+**Three hues on any screen, besides the neutrals.** Every colour answers "why?" with one word; if it has no word,
+it is neutral. More meaning does not earn more colour: six reasons on one screen still read as random.
 
 | Token | Means | Where it appears | Never |
 |---|---|---|---|
-| `--c-you` (blue) | **your move**: this waits for you | the dot on a list row and in the case head, the counter in the menu, the current station | selection, links, decoration |
-| `--c-ai` / `--ai-glow` (violet, violet to orange) | **the AI** | the AI's card (glow edge and soft wash), its proposal, the ✦ wherever you ask it | as a fill behind text |
-| `--c-urgent` (orange) | **urgent** | the urgency tag | anything else |
+| `--c-you` (blue) | **your move**: this waits for you | the dot on a list row and in the case head, the counter in the menu, the current station, the main button | progress, selection, links, decoration |
+| `--c-ai` / `--ai-glow` (violet, violet to orange) | **the AI** | the AI's card (the one colour moment: glow edge and soft wash), its proposal, the ✦ and name on its messages, the ✦ wherever you ask it | as a fill behind text, as a border on messages |
 | `--c-seal` (red-brown) | **decided**: it holds now | a main action that seals (with the seal icon), seal events in the conversation | warnings or errors |
-| `--app` (identity) | **which application** | the app icon in the bar, the chosen view, the list's heading, the cockpit card | content, selection |
+
+Small exceptions that sit inside the AI card and so read as part of it: the urgency tag (`--c-urgent`, orange, the
+warm end of the AI's glow).
+
+Neutral on purpose: the station line (ink), the list heading, selection (a grey fill), labels (a grey tag).
 
 ### 2.3 Identity colours
 
 Each application has one identity colour, `--dot-1` to `--dot-6` (indigo, orange, green, purple, red, teal; Apple's
 system colours). Indigo, not blue, is first, because blue is "your move". The application names its colour in its
-theme (`"identity": "dot-1"`) and the surface sets `--app` from it. The cockpit card and sidebar dot use the same
-colour, so moving from the cockpit into an application keeps its colour.
+theme (`"identity": "dot-1"`) and the surface sets `--app` from it. It is used for the application's **icon only**:
+the cockpit card, the cockpit sidebar dot and the icon in the application's bar. Never inside the application's
+content or controls.
 
 Case labels (`covers` in each theme) are a second, finer identity: the insurance line of a case (motor, household).
-A workspace whose cases all share one label shows no covers at all, because they would say nothing. Label colours
+Covers are no longer drawn as tiles: every application uses the same row and head layout. Where an application has
+more than one kind of case, the kind is a small neutral tag beside the case number; the eyebrow of the case head names
+it in words. Where all cases share one label, nothing is shown, because it would say nothing. Label colours
 come from a palette that never collides with the vocabulary: teal, brown, green, indigo, pink; never blue (you),
 violet (AI) or orange (urgent).
 
@@ -245,7 +252,9 @@ Branch `design/tokens`. What it covers, beyond the tokens alone:
 5. **One sentence per step.** The next step, the status and the button often say the same sentence.
 6. **The workspace server reads `index.html` once at start**, so after any rebuild the sandbox serves a page whose
    script no longer exists (a blank page) until restarted.
-7. **Build output (`dist/`) is tracked in git**, so every design branch carries rebuilt bundles. Intended?
+7. **Label colours live in the value lists**, which take precedence over `covers`. Several are blue, which reads
+   as "your move". Please move them to teal, brown, green, indigo or pink.
+8. **Build output (`dist/`) is tracked in git**, so every design branch carries rebuilt bundles. Intended?
 
 ## 8. Not done yet
 

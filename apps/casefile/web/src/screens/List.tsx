@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type CaseCard, type ConfigView } from "../api";
 import { BASE } from "../api";
 import type { Route } from "../App";
-import { Cover } from "../components/Cover";
 import { DayDone } from "../components/DayDone";
 import { ago, dateWords, type words } from "../words";
 
@@ -16,12 +15,11 @@ export function Card({ c, go, w, lang, quiet, on, from, bare }: { c: CaseCard; g
   const num = c.external_id || (c.number ? `${c.label}-${c.number}` : c.id.replace(/-[a-z][a-z0-9]*(-.*)?$/, ""));
   const yours = c.mine && !quiet;                       // colour only where the group is "you"; elsewhere the row stays quiet
   return (
-    <a className={`card${yours ? " mine" : ""}${quiet ? " quiet" : ""}${on ? " on" : ""}${bare ? " bare" : ""}`} style={{ "--tint": c.tint || "var(--muted)" } as React.CSSProperties} aria-current={on ? "true" : undefined} href={`${BASE}${to}`} onClick={(e) => { e.preventDefault(); go(to); }}>
-      {/* the cover only where it tells something: a workspace whose cases all share one label shows none (design, 2026-11-01) */}
-      {!bare && <Cover label={c.label} number={c.number || c.id.split("-")[1] || ""} tint={c.tint} />}
+    <a className={`card${yours ? " mine" : ""}${quiet ? " quiet" : ""}${on ? " on" : ""}${" bare"}`} style={{ "--tint": c.tint || "var(--muted)" } as React.CSSProperties} aria-current={on ? "true" : undefined} href={`${BASE}${to}`} onClick={(e) => { e.preventDefault(); go(to); }}>
+      {/* one row layout in every application: no cover tile; the label is a small tag where labels differ (design, 2026-11-01) */}
       <span className="card-body">
         {!quiet && <span className="ref">{c.label_word}</span>}
-        <span className="row1"><span className="num">{num}</span>{c.date ? <span className="when">{dateWords(String(c.date), lang)}</span> : null}</span>
+        <span className="row1"><span className="num">{num}</span>{!bare && c.label_word ? <span className="label-tag">{c.label_word}</span> : null}{c.date ? <span className="when">{dateWords(String(c.date), lang)}</span> : null}</span>
         <span className="title" title={c.title}>{c.title}</span>
         {yours && <span className="yours"><i className="dot mine" aria-hidden="true" />{w.yourMove}</span>}
         <span className="state">{state}</span>

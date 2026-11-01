@@ -5,7 +5,6 @@ import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type C
 import { Line } from "../components/Line";
 import { Frame } from "../components/Frames";
 import { Thread } from "../components/Thread";
-import { Cover } from "../components/Cover";
 import { Send } from "../components/Icons";
 import { Reader, type Doc } from "../components/Reader";
 import { ago, dateWords, type words } from "../words";
@@ -130,9 +129,8 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
 
   return (
     <main className="main">
-      <header className={`case-head${bare ? " bare" : ""}${v.group === "claude" ? " ai-working" : ""}`} data-help="cf.case-head">
-        {!bare && <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} size="m" />}
-        <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
+      <header className={`case-head bare${bare ? " one-kind" : ""}${v.group === "claude" ? " ai-working" : ""}`} data-help="cf.case-head">
+        <span className="ref" style={{ "--tint": v.tint || "var(--muted)" } as React.CSSProperties}>{!bare && <i className="label-dot" aria-hidden="true" />}{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
         <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>
         <p className="title">{v.title}</p>
         {nextStep && <p className="headline">{nextStep}</p>}

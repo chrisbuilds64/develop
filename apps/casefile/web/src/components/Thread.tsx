@@ -13,17 +13,18 @@ export function Thread({ entries, meName, agentName, lang, w, onAnswer, onDone, 
     <>
       {entries.map((e) => {
         const you = e.author === meName;
+        const byAi = !you && (e.author === agentName || e.author === "claude");   // the AI's own messages wear the AI's colour (design, 2026-11-01)
         const openForMe = e.status === "open" && e.for === meName && !resolved.has(e.id);
         if (e.status === "approved") {
           return (
             <div key={e.id} className="stamp">
-              <b>{e.title.toUpperCase()} · {e.author.toUpperCase()} · {ago(e.date, lang).toUpperCase()}</b>
+              <b>{e.title} · {e.author} · {ago(e.date, lang)}</b>
               {e.to && <span>{w.moved} → {stageWord(e.to)}</span>}
             </div>
           );
         }
         return (
-          <div key={e.id} className={`bubble${you ? " you" : ""}${openForMe ? " open" : ""}`}>
+          <div key={e.id} className={`bubble${you ? " you" : ""}${byAi ? " ai" : ""}${openForMe ? " open" : ""}`}>
             <span className="who"><b>{you ? w.you : e.author}</b> · {ago(e.date, lang)}{e.for && !you ? ` → ${e.for}` : ""}</span>
             <span className="text">{e.title && e.title !== e.text ? <b>{e.title}</b> : null}{e.title && e.title !== e.text ? "\n" : ""}{e.text}</span>
             {e.files && e.files.length > 0 && <span className="chips">{e.files.map((f) => <span key={f}>{f}</span>)}</span>}
