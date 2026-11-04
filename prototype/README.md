@@ -17,7 +17,7 @@ Then open http://localhost:8300.
 - **A case (open any row):** AI summary, facts, quotes from the mail, the AI suggestion and the actions.
 - **Board and Table views** in each workspace.
 - **Admin:** AI team, Rulebook, Flagged, Setup.
-- **Guides** (top right on Home): short tours through the main flows.
+- **Guides** (top right on Home): short tours through the main flows, and a Videos list with the nine tutorial chapters.
 - Light and dark mode, English and German (profile menu, bottom left).
 
 ## Shortcuts
@@ -27,3 +27,7 @@ Then open http://localhost:8300.
 ## Backend needs
 
 What the design needs from the backend is listed in the Claude Doc "Requests for Chris: design hand-back".
+
+## Tutorial videos
+
+The player expects the files in `prototype/videos/` (`en-01.mp4` … `de-09.mp4`, posters `*.jpg`, `chapters.json`). They are not in git because of their size (about 157 MB); they come separately as a zip. Without them the prototype works, only the videos don't play. See request #10 in "Requests for Chris".
