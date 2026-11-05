@@ -1519,6 +1519,16 @@ export interface components {
              * @default []
              */
             places: components["schemas"]["PlaceOut"][];
+            /**
+             * Waiting Rules
+             * @default 0
+             */
+            waiting_rules: number;
+            /**
+             * Waiting Signals
+             * @default 0
+             */
+            waiting_signals: number;
         };
         /** ModuleHistory */
         ModuleHistory: {
@@ -1744,6 +1754,11 @@ export interface components {
              * @default
              */
             url: string;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
         };
         /** RejectIn */
         RejectIn: {

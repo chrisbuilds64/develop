@@ -3226,6 +3226,16 @@
             "type": "array",
             "title": "Places",
             "default": []
+          },
+          "waiting_rules": {
+            "type": "integer",
+            "title": "Waiting Rules",
+            "default": 0
+          },
+          "waiting_signals": {
+            "type": "integer",
+            "title": "Waiting Signals",
+            "default": 0
           }
         },
         "type": "object",
@@ -3610,6 +3620,11 @@
             "type": "string",
             "title": "Url",
             "default": ""
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
           }
         },
         "type": "object",

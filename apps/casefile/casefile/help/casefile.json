@@ -749,6 +749,18 @@
         "de": "Was der KI über die Fälle hinweg auffällt: mögliche Doppelungen, Wiederholungen, ungewöhnliche Beträge. Ein Hinweis, nie eine Feststellung. Du schiebst ihn nach „Wird geprüft“ oder nach „Erledigt“ und kannst ihn jederzeit zurückholen; wer und wann bleibt stehen.",
         "en": "What the AI notices across cases: possible duplicates, repeats, unusual amounts. A hint, never a finding. You move it to “Looking into it” or to “Done” and can move it back any time; who and when stays on record."
       }
+    },
+    {
+      "key": "cf.new-workspace",
+      "since": "0.22.0",
+      "title": {
+        "de": "Neuer Arbeitsbereich",
+        "en": "New workspace"
+      },
+      "text": {
+        "de": "Legt im Cockpit einen weiteren Arbeitsbereich an, für eine neue Art von Fällen.",
+        "en": "Creates another workspace in the cockpit, for a new kind of case."
+      }
     }
   ]
 }

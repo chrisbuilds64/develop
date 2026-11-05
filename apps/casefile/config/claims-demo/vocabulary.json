@@ -2,6 +2,7 @@
   "$comment": "Words for the invented claims file. German is the demo language; English for the surface's fallback.",
   "de": {
     "product": "Schadenakte",
+    "workspace": "Schäden",
     "labels": {
       "HR": "Hausrat",
       "WG": "Wohngebäude",
@@ -143,6 +144,7 @@
   },
   "en": {
     "product": "Claims File",
+    "workspace": "Claims",
     "labels": {
       "HR": "Contents",
       "WG": "Building",

@@ -12,6 +12,7 @@ const W = {
     sgDup: "Mögliche Doppelung", sgRep: "Wiederholung", sgDev: "Ungewöhnlicher Betrag", sgLook: "Ansehen", sgNothing: "Nichts zu tun", sgMarkDone: "Als erledigt markieren", sgMoveBack: "Zurückholen",
     sgDoneLook: "Nach „Wird geprüft“ verschoben", sgDoneNothing: "Geprüft, nichts zu tun", sgDoneDone: "Als erledigt markiert", sgDoneBack: "Zurück nach „Zu prüfen“",
     sgBy: (who: string, at: string) => `${who} · ${at}`,
+    newCaseShort: "+ Neuer Fall", newWorkspace: "+ Neuer Arbeitsbereich", ndotRules: (n: number) => (n === 1 ? "1 neue Regel zu prüfen" : `${n} neue Regeln zu prüfen`), ndotSignals: (n: number) => `${n} zu prüfen`,
     // the rulebook of the design hand-back (2026-11-05)
     rbLead: "Alles, wonach dein Büro und die KI arbeiten, an einem Ort: die Regeln, die Schritte eines Falls, was jeder KI-Helfer darf, und die freigegebenen Formulierungen für Briefe.",
     rbWatch: "Video", rbTabRules: "Regeln", rbTabSteps: "Fallschritte", rbTabLimits: "KI-Grenzen", rbTabLetters: "Textbausteine", rbTabLinks: "Verbindungen",
@@ -192,6 +193,7 @@ const W = {
     sgDup: "Possible duplicate", sgRep: "Repeat", sgDev: "Unusual amount", sgLook: "Look into it", sgNothing: "Nothing to do", sgMarkDone: "Mark as done", sgMoveBack: "Move back",
     sgDoneLook: "Moved to “Looking into it”", sgDoneNothing: "Checked, nothing to do", sgDoneDone: "Marked as done", sgDoneBack: "Moved back to “To check”",
     sgBy: (who: string, at: string) => `${who} · ${at}`,
+    newCaseShort: "+ New case", newWorkspace: "+ New workspace", ndotRules: (n: number) => (n === 1 ? "1 new rule to review" : `${n} new rules to review`), ndotSignals: (n: number) => `${n} to check`,
     // the rulebook of the design hand-back (2026-11-05)
     rbLead: "Everything your office and the AI work by, in one place: the rules you follow, the steps a case goes through, what each AI helper may do, and the approved wording for letters.",
     rbWatch: "Watch", rbTabRules: "Rules", rbTabSteps: "Case steps", rbTabLimits: "AI limits", rbTabLetters: "Letter templates", rbTabLinks: "Connections",

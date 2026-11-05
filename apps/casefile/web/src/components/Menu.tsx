@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut, type CaseCard } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Book, ListsIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
+import { Book, RulebookIcon, ListsIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
 import { setSound, soundOn, chime, paper as paperSound } from "../moments";
 
 type Props = {
@@ -80,9 +80,10 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
                 onClick={() => (p.current ? goClose("/group/you") : p.url ? window.location.assign(p.url) : onFresh(p.id))}>
           <span className="sq" style={{ background: p.color || undefined }} />
           <span className="tx">{p.name}</span>
-          {p.current && mine > 0 ? <span className="n">{mine}</span> : null}
+          {(p.current ? mine : p.count) > 0 ? <span className="n">{p.current ? mine : p.count}</span> : null}
         </button>
       ))}
+      {me.shell && <a className="nav quiet" data-help="cf.new-workspace" href={`${me.shell.replace(/\/?$/, "/")}workspaces/new`}><span className="tx">{w.newWorkspace}</span></a>}
       {me.shell && <a className="nav quiet" data-help="cf.back" href={me.shell}><span className="tx">{w.allWorkspaces}</span></a>}
       {mailDrop ? (
         <label className="nav quiet rail-drop" data-help="cf.drop-in"><span className="tx">{w.dropMail}</span>
@@ -101,13 +102,13 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
           <button type="submit" className="btn small" disabled={!name.trim()}>{w.create}</button>
         </form>
       ) : (
-        <button type="button" className="nav quiet" data-help="cf.drop-in" onClick={() => setMaking(true)}><span className="tx">{w.newCase(labelWord)}</span></button>
+        <button type="button" className="nav quiet" data-help="cf.drop-in" onClick={() => setMaking(true)}><span className="tx">{w.newCaseShort}</span></button>
       )) : null}
       {madeError && <span className="talk-error">{madeError}</span>}
 
       <div className="rail-cap">{w.admin}</div>
-      <button type="button" className={`nav${route.name === "rules" ? " on" : ""}`} data-help="cf.rules" onClick={() => goClose("/rules")}><Book /><span className="tx">{w.rules}</span></button>
-      <button type="button" className={`nav${route.name === "signals" ? " on" : ""}`} data-help="cf.patterns" onClick={() => goClose("/signals")}><Pulse /><span className="tx">{w.flagged}</span></button>
+      <button type="button" className={`nav${route.name === "rules" ? " on" : ""}`} data-help="cf.rules" onClick={() => goClose("/rules")}><RulebookIcon /><span className="tx">{w.rules}</span>{me.waiting_rules > 0 && <span className="ndot" title={w.ndotRules(me.waiting_rules)} aria-label={w.ndotRules(me.waiting_rules)} />}</button>
+      <button type="button" className={`nav${route.name === "signals" ? " on" : ""}`} data-help="cf.patterns" onClick={() => goClose("/signals")}><Pulse /><span className="tx">{w.flagged}</span>{me.waiting_signals > 0 && <span className="ndot" title={w.ndotSignals(me.waiting_signals)} aria-label={w.ndotSignals(me.waiting_signals)} />}</button>
       {(config.theme as { canon?: boolean }).canon && (
         <button type="button" className={`nav${route.name === "house" ? " on" : ""}`} data-help="cf.house" onClick={() => goClose("/kanon")}><Book /><span className="tx">{w.house}</span></button>
       )}

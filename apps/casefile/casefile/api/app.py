@@ -173,6 +173,7 @@ class PlaceOut(BaseModel):
     icon: str = ""
     current: bool = False
     url: str = ""                                           # inside a shell: where this workspace lives; empty for this one and for demo worlds
+    count: int = 0                                          # cases waiting for this person there (the demo knows it for every world)
 
 
 class MeOut(BaseModel):
@@ -188,6 +189,8 @@ class MeOut(BaseModel):
     identity: str | None = None                             # the outside identity, even when it matches nobody in people.json
     shell: str | None = None                                # the shell's URL, when this app runs inside one
     places: list[PlaceOut] = []                             # this workspace and, in the demo, the other worlds
+    waiting_rules: int = 0                                  # rule changes this person may accept, waiting (the dot on Rulebook)
+    waiting_signals: int = 0                                # hints still to check (the dot on Flagged)
 
 
 class TurnOut(BaseModel):
@@ -752,12 +755,50 @@ def create_app(settings: Settings) -> FastAPI:
     def place(world: str | None, cfg: DomainConfig, lang: str, current: bool) -> PlaceOut:
         v = cfg.vocabulary.get(lang) or cfg.vocabulary.get("en") or {}
         mark = cfg.theme.get("app") if isinstance(cfg.theme.get("app"), dict) else {}
-        name = (settings.label if current and settings.label else None) or str(v.get("product") or cfg.name)
+        name = (settings.label if current and settings.label else None) or str(v.get("workspace") or v.get("product") or cfg.name)
         return PlaceOut(id=world or "here", name=name, color=str(mark.get("color") or ""), icon=str(mark.get("icon") or ""), current=current)
+
+    template_counts: dict[str, int] = {}
+
+    def turns_count(store: FsStore, config: DomainConfig, person: str | None, lang: str) -> int:
+        if not person:
+            return 0
+        try:
+            return len({case.id for case, _ in whose.turns_for(person, reading.load_all(store, config), config, lang)})
+        except Exception:                    # noqa: BLE001 — a count in the rail never breaks the rail
+            return 0
+
+    def world_count(request: Request | None, name: str, lang: str) -> int:
+        """In the demo: what waits for the visitor in a world, from their sandbox there, or from the world as it starts."""
+        w = settings.worlds[name]
+        sid = _read_worlds(request).get(name) if request is not None else None
+        other = _session_ctx(sid) if sid else None
+        if other is not None:
+            return turns_count(other.store, other.config, w.person, lang)
+        if name not in template_counts:
+            template_counts[name] = turns_count(FsStore(w.template), world_configs[name], w.person, lang)
+        return template_counts[name]
+
+    def waiting(c: Ctx, person_id: str | None) -> tuple[int, int]:
+        from ..domain import rulebook
+        me = c.config.person(person_id) if person_id else None
+        rules = 0
+        if me and me.kind == "human" and set(me.roles) & {"operator", "approver"}:
+            drafts = [rulebook.draft_of(c.store, mid) for mid in rulebook.current(c.store)] + list(rulebook.proposed(c.store).values())
+            rules = sum(1 for d in drafts if d and d.get("drafted_by") != me.name)
+        folder = c.store.root / "_signale"
+        signals = sum(1 for f in folder.glob("*.md") if not re.search(r"^status:\s*(in_pruefung|erledigt)\s*$", f.read_text(encoding="utf-8"), re.M)) if folder.is_dir() else 0
+        return rules, signals
 
     def me_out(c: Ctx, person_id: str | None, request: Request | None = None) -> MeOut:
         p = c.config.person(person_id) if person_id else None
         places = [place(name, world_configs[name], c.lang, name == c.world) for name in settings.worlds] if settings.worlds else [place(c.world, c.config, c.lang, True)]
+        for pl in places:
+            if settings.worlds and pl.id in settings.worlds:
+                pl.count = turns_count(c.store, c.config, person_id, c.lang) if pl.current else world_count(request, pl.id, c.lang)
+            elif pl.current:
+                pl.count = turns_count(c.store, c.config, person_id, c.lang)
+        wr, ws = waiting(c, person_id)
         if settings.peers is not None:
             # inside the cockpit: the person's other workspaces sit beside this one in the rail, in the cockpit's order
             peers = settings.peers(request)
@@ -769,7 +810,8 @@ def create_app(settings: Settings) -> FastAPI:
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
         return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
                      demo=settings.demo, world=c.world, worlds=list(settings.worlds),
-                     open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell, places=places)
+                     open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell, places=places,
+                     waiting_rules=wr, waiting_signals=ws)
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")

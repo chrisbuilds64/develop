@@ -2,6 +2,7 @@
   "$comment": "Every word the surface shows for the e-report world, in German and English. Stage words are sentences about the file's state; stations are the dots on the line; actions are the one button.",
   "de": {
     "product": "Gutachtenakte",
+    "workspace": "Gutachten",
     "labels": {
       "KH": "Kfz-Haftpflicht",
       "KK": "Kasko"
@@ -144,6 +145,7 @@
   },
   "en": {
     "product": "Assessment File",
+    "workspace": "Assessments",
     "labels": {
       "KH": "Motor liability",
       "KK": "Comprehensive"

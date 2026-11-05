@@ -17,6 +17,7 @@ export const ViewCases = () => <svg {...base}><path d="M4 5h16v14H4zM4 10h16M9 1
 export const ViewBoard = () => <svg {...base}><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z" /></svg>;
 export const ViewList = () => <svg {...base}><path d="M4 6h16M4 12h16M4 18h16" /></svg>;
 export const Globe = () => <svg {...base}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>;
+export const RulebookIcon = () => <svg {...base}><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" /><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" /><path d="M9 8h6M9 11.5h4" /></svg>;
 export const Book = () => <svg {...base}><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z" /></svg>;
 export const Spark = () => <svg {...base}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M6.3 17.7l2.8-2.8M14.9 9.1l2.8-2.8" /></svg>;
 export const Check = () => <svg {...base}><path d="M5 12.5l4.5 4.5L19 7" /></svg>;

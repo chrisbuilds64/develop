@@ -48,7 +48,7 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .cf-rail .nav.on { background: var(--tint-7); color: var(--ink); }
 .cf-rail .nav.quiet { color: var(--muted); }
 .cf-rail .nav .n { margin-left: auto; font-size: var(--fs-11); color: var(--muted); }
-.cf-rail .badge { margin-left: auto; min-width: 20px; height: 18px; border-radius: var(--r-9); background: var(--your-move); color: var(--your-move-on); font-size: var(--fs-11);
+.cf-rail .badge { margin-left: auto; min-width: 20px; height: 18px; border-radius: var(--r-9); background: var(--your-move); color: var(--ground); font-size: var(--fs-11);
   font-weight: 600; display: grid; place-items: center; padding: 0 5px; }
 .sq { width: 8px; height: 8px; border-radius: var(--r-2); flex: none; background: var(--chart-quiet); }
 .rail-cap { margin: 16px 10px 6px; font-size: var(--fs-11); color: var(--muted); font-weight: 500; }
@@ -549,3 +549,6 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 @media (max-width: 760px) { .sg-row { flex-direction: row; flex-wrap: wrap; } .sg-row .rb-side { width: 100%; padding-left: 46px; } }
 
 .rb-lead.quiet { color: var(--sub); }                  /* Flagged: the intro in grey, as the design draws it */
+
+.cf-rail .ndot { margin-left: auto; width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--your-move); opacity: .7; flex: none; }
+.cf-rail .rail-brand b, .cf-rail .rail-tag, .cf-rail .rail-search { letter-spacing: normal; }
