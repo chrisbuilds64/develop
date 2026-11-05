@@ -3,6 +3,15 @@ export type Lang = "de" | "en";
 
 const W = {
   de: {
+    // the case screen of the design hand-back (2026-11-05)
+    forYou: "Für dich", withOthers: "Bei anderen", doneTab: "Erledigt", ofN: (i: number, n: number) => `${i} von ${n}`,
+    aiSummary: "KI-Zusammenfassung", readAs: "Erkannt als", fromMail: "Aus der Mail", aiSuggestion: "KI-Vorschlag", confirmCarry: "Bestätigen und ausführen",
+    waitingOn: (x: string) => `Wartet auf: ${x}`, missingDrop: "Fehlt · Datei ablegen", useSample: "Beispiel nehmen", documents: "Dokumente", details: "Details",
+    askAiPh: "Notiz, oder frag die KI", keyNext: "nächste", keyPrev: "vorige", keyConfirm: "bestätigen", keyHome: "zurück zum Start",
+    heldBy: (who: string) => `Liegt bei ${who}. Du kannst erinnern oder die Akte zurückholen.`, closedNote: "Abgeschlossen. Du kannst die Akte jederzeit zurückholen.",
+    remind: "Erinnern", takeBack: "Zurücknehmen", moveBack: "Zurückholen", undone: "Rückgängig gemacht.", reminded: (who: string) => `Erinnerung an ${who} geschickt.`,
+    correct: "Korrektur eröffnen", correctPh: "Warum? Was stimmt nicht?", correctAmount: "Neuer Betrag (optional)", correctSend: "Korrektur eintragen", corrected: "korrigiert", undoneWord: "zurückgenommen",
+    youOnIt: "Für dich", aiOnIt: "Die KI ist dran", openDoc: "Öffnen", noDocs: "Noch keine Dokumente.", versionsN: (n: number) => (n === 1 ? "1 Fassung" : `${n} Fassungen`),
     // the design hand-back: the rail and Home (2026-11-05)
     home: "Start", search: "Suchen", searchNone: "Nichts gefunden.", workspaces: "Arbeitsbereiche", admin: "Verwaltung", allWorkspaces: "Alle Arbeitsbereiche",
     flagged: "Auffällig", guides: "Anleitungen", askAi: "KI fragen", demoTag: "DEMO", sideRight: "Menü rechts", sideLeft: "Menü links",
@@ -138,6 +147,15 @@ const W = {
     threadEmpty: "Noch kein Eintrag. Die erste Notiz legt den Verlauf an.", originUnknown: "Herkunft nicht erfasst", delivers: (who: string) => `liefert ${who}`, deskEmpty: "Noch nichts in der Akte.", locked: "gesperrt",
   },
   en: {
+    // the case screen of the design hand-back (2026-11-05)
+    forYou: "For you", withOthers: "With others", doneTab: "Done", ofN: (i: number, n: number) => `${i} of ${n}`,
+    aiSummary: "AI summary", readAs: "Read as", fromMail: "From the mail", aiSuggestion: "AI suggestion", confirmCarry: "Confirm and carry out",
+    waitingOn: (x: string) => `Waiting for: ${x}`, missingDrop: "Missing · drop a file", useSample: "Use a sample", documents: "Documents", details: "Details",
+    askAiPh: "Note, or ask the AI", keyNext: "next", keyPrev: "previous", keyConfirm: "confirm", keyHome: "back to Home",
+    heldBy: (who: string) => `With ${who}. You can send a reminder or take the case back.`, closedNote: "Closed. You can bring the case back at any time.",
+    remind: "Send a reminder", takeBack: "Take it back", moveBack: "Move back", undone: "Undone.", reminded: (who: string) => `Reminder sent to ${who}.`,
+    correct: "Open a correction", correctPh: "Why? What is wrong?", correctAmount: "New amount (optional)", correctSend: "Record the correction", corrected: "corrected", undoneWord: "taken back",
+    youOnIt: "For you", aiOnIt: "The AI is on it", openDoc: "Open", noDocs: "No documents yet.", versionsN: (n: number) => (n === 1 ? "1 version" : `${n} versions`),
     // the design hand-back: the rail and Home (2026-11-05)
     home: "Home", search: "Search", searchNone: "Nothing found.", workspaces: "Workspaces", admin: "Admin", allWorkspaces: "All workspaces",
     flagged: "Flagged", guides: "Guides", askAi: "Ask AI", demoTag: "DEMO", sideRight: "Menu on the right", sideLeft: "Menu on the left",

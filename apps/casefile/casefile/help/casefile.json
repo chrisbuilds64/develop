@@ -617,6 +617,54 @@
         "de": "Alles, was dich betrifft: Hell oder Dunkel, Sprache, Ton, die Seite des Menüs, in der Demo die Person und das Zurücksetzen, sonst das Abmelden.",
         "en": "Everything about you: light or dark, language, sound, the side of the menu, in the demo the person and starting over, otherwise signing out."
       }
+    },
+    {
+      "key": "cf.held",
+      "since": "0.22.0",
+      "title": {
+        "de": "Liegt bei anderen",
+        "en": "With someone else"
+      },
+      "text": {
+        "de": "„Erinnern“ schreibt der Person eine Notiz in den Verlauf; die Akte wird für sie neu, ohne dass sie eine Aufgabe mehr hat. „Zurücknehmen“ holt die Akte auf deine Stufe zurück, wenn sie von dort kam. Beides steht im Verlauf.",
+        "en": "“Send a reminder” writes the person a note in the conversation; the case becomes new to them without giving them another task. “Take it back” returns the case to your stage when it came from there. Both are recorded."
+      }
+    },
+    {
+      "key": "cf.move-back",
+      "since": "0.22.0",
+      "title": {
+        "de": "Zurückholen",
+        "en": "Move back"
+      },
+      "text": {
+        "de": "Eine abgeschlossene Akte geht dorthin zurück, wo sie die Arbeit verlassen hat, und ist wieder in der Liste dessen, der dort dran ist. Das ist ein Schritt wie jeder andere, mit Eintrag im Verlauf.",
+        "en": "A closed case returns to where it left the work and is back in the list of whoever acts there. It is a step like any other, recorded in the conversation."
+      }
+    },
+    {
+      "key": "cf.undo",
+      "since": "0.22.0",
+      "title": {
+        "de": "Rückgängig",
+        "en": "Undo"
+      },
+      "text": {
+        "de": "Dein letzter Schritt lässt sich zurücknehmen, solange danach nichts passiert ist: kein neuer Eintrag, kein Auftrag an die KI, nichts an eine andere Anwendung geschickt. Die Entscheidung und ihr Zurücknehmen bleiben beide im Verlauf.",
+        "en": "Your last step can be taken back while nothing has happened since: no new entry, no order to the AI, nothing sent to another application. The decision and its undoing both stay in the conversation."
+      }
+    },
+    {
+      "key": "cf.correct",
+      "since": "0.22.0",
+      "title": {
+        "de": "Korrektur eröffnen",
+        "en": "Open a correction"
+      },
+      "text": {
+        "de": "Eine besiegelte Entscheidung wird nicht ersetzt: die Korrektur steht daneben, mit Begründung und, wo nötig, dem korrigierten Betrag. Das Original bleibt nachvollziehbar.",
+        "en": "A sealed decision is not replaced: the correction stands beside it, with its reason and, where needed, the corrected amount. The original stays traceable."
+      }
     }
   ]
 }

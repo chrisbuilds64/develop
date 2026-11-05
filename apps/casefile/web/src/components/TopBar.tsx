@@ -33,7 +33,7 @@ export function TopBar({ config, w, crumb, canAsk, dark, onTheme, onMenu, views 
   }, []);
   useEffect(() => { document.body.classList.add("has-bar"); return () => document.body.classList.remove("has-bar"); }, []);
   const guides = () => { if (videos.length === 1) setPlaying(videos[0]); else setVideoList(!videoList); };
-  const ask = () => document.querySelector<HTMLInputElement>(".ask input, .ask textarea")?.focus();
+  const ask = () => document.querySelector<HTMLInputElement>(".i-ask input, .ask input, .ask textarea")?.focus();
 
   return (
     <header className="cf-bar" data-help="cf.topbar">
@@ -44,7 +44,7 @@ export function TopBar({ config, w, crumb, canAsk, dark, onTheme, onMenu, views 
         {videos.length > 0 && <button type="button" className="btn" onClick={guides} aria-expanded={videoList}><Play /><span>{w.guides}</span></button>}
         {hasPanel && <button type="button" className="btn" onClick={() => panel()?.help()} title={w.helpHint}><span className="i">?</span><span>{w.help}</span></button>}
         {hasFlows && <button type="button" className="btn" onClick={() => window.dispatchEvent(new CustomEvent("cf:director"))} title="Shift+Alt+D"><span>{w.flows}</span></button>}
-        {canAsk && <button type="button" className="btn ai" data-help="cf.ask" onClick={ask}>✦ {w.askAi} <span className="kbd">{mac ? "⌘J" : "Ctrl J"}</span></button>}
+        {canAsk && <button type="button" className="btn ai" data-help="cf.ask" onClick={ask}>✦ <span>{w.askAi}</span> <span className="kbd">{mac ? "⌘J" : "Ctrl J"}</span></button>}
         <button type="button" className="theme" data-help-skip="explained by cf.theme" aria-label={w.theme} title={dark ? w.light : w.dark} onClick={onTheme}><Contrast /></button>
         <span ref={agents} className="bar-agents" />
       </span>

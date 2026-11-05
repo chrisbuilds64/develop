@@ -6,7 +6,6 @@ import { api, BASE } from "./api";
 import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
 import { TopBar } from "./components/TopBar";
-import { List } from "./screens/List";
 import { CaseScreen } from "./screens/Case";
 import { Board } from "./screens/Board";
 import { Stacked } from "./screens/Stacked";
@@ -20,6 +19,7 @@ import { OnSiteScreen } from "./screens/OnSite";
 import { CanonScreen } from "./screens/Canon";
 import { HouseScreen } from "./screens/House";
 import { Home } from "./screens/Home";
+import { Queue, tabOf, casesOf } from "./screens/Queue";
 import { ViewCases, ViewBoard, ViewList } from "./components/Icons";
 import { words } from "./words";
 import { presenting, setPresenting } from "./moments";
@@ -148,7 +148,8 @@ export function App() {
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
   const onLang = async (l: string) => { await api.setLang(l); await qc.invalidateQueries(); };
   const w = words(lang, ((config.data?.theme as Record<string, unknown> | undefined)?.words as Record<string, Record<string, unknown>> | undefined)?.[lang]);
-  const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : undefined;
+  const tab = tabOf(route.name === "group" ? route.key : route.name === "case" ? route.group : undefined);
+  const first = route.name === "group" ? casesOf(groups.data, tab)[0]?.id : undefined;
   const isPhone = window.matchMedia("(max-width: 900px)").matches;
   const showList = !isPhone || route.name === "group";
   const showMain = !isPhone || route.name !== "group";
@@ -202,11 +203,11 @@ export function App() {
           ) : route.name === "signals" ? (
             <Signals config={config.data} go={go} w={w} />
           ) : (
-            <>
-              {showList && <List config={config.data} route={route} go={go} w={w} me={me.data.person ?? ""} />}
-              {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} />}
-              {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} /> : <main className="main" />)}
-            </>
+            <div className="ws">
+              {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} />}
+              {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} tab={tab} />}
+              {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} tab={tab} /> : <div className="ws-case"><main className="center" /></div>)}
+            </div>
           )}
         </div>
         )}
