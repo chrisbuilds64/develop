@@ -22,6 +22,23 @@ from .turn import four_eyes_block, missing_for, offered, primary_author
 
 STEP_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 BUILTIN = ("answer", "note", "done", "deliver", "ask")
+CLOSED = ("out", "archive")                 # the groups a case leaves the work in; `reopen` brings it back from there
+
+
+def reopen_target(config: DomainConfig, case) -> str | None:
+    """Where `reopen` takes a closed case: the open stage it last left for a closed one, from the thread; else the open
+    stage just before its own in the configured order. None while the case still stands in the work."""
+    here = config.stage(case.stage)
+    if here is None or here.group not in CLOSED:
+        return None
+    open_ = [s.folder for s in config.stages if s.group not in CLOSED]
+    closed = {s.folder for s in config.stages if s.group in CLOSED}
+    for e in reversed(case.entries):
+        if e.from_ in open_ and e.to in closed:
+            return e.from_
+    folders = [s.folder for s in config.stages]
+    before = [f for f in folders[:folders.index(case.stage)] if f in open_] if case.stage in folders else []
+    return before[-1] if before else (open_[0] if open_ else None)
 
 
 def _done_by(store: FsStore, case_id: str, action: str) -> set[str]:
@@ -97,6 +114,10 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
 
         j = Journal(step_id=req.step_id, case=case_id, action=req.action, by=person.id, created=_now(), payload=req.payload, **{"from": case.stage})
 
+        # ---- reopen: a closed case goes back into the work, logged like any move
+        if req.action == "reopen":
+            return _reopen(store, config, j, case, person, req)
+
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
             return _builtin(store, config, j, case, person.id, req)
@@ -135,6 +156,27 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
         j.to = action.to
         _write_journal(store, j)                                                   # 3. intent
         return _complete(store, config, j, action=action, case_meta=case.meta)
+
+
+def _reopen(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Any person of the application (not an agent) may take a closed case back; it returns to the stage it left,
+    or to `payload.to` when that is an open stage. The stage's turn then says whose move it is."""
+    if person.kind != "human":
+        return _refuse(store, j, f"{person.name} may not reopen a case; a person does that")
+    target = reopen_target(config, case)
+    if target is None:
+        return _refuse(store, j, f"the case stands in {case.stage}, which is not closed")
+    asked = str(req.payload.get("to") or "").strip()
+    if asked:
+        st = config.stage(asked)
+        if st is None or st.group in CLOSED:
+            return _refuse(store, j, f"'{asked}' is not an open stage")
+        target = asked
+    if target not in store.stages():
+        return _refuse(store, j, f"stage '{target}' does not exist")
+    j.to = target
+    _write_journal(store, j)
+    return _complete(store, config, j)
 
 
 def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: str, req: StepRequest) -> StepResult:

@@ -47,7 +47,8 @@
       "see_failure": "Nachsehen, was schiefging",
       "wait": "Warten",
       "record_exception": "Als Ausnahme festhalten",
-      "order_rework": "Umstellung beauftragen"
+      "order_rework": "Umstellung beauftragen",
+      "reopen": "Zurückholen"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -141,7 +142,8 @@
       "see_failure": "See what went wrong",
       "wait": "Wait",
       "record_exception": "Record as an exception",
-      "order_rework": "Order the rework"
+      "order_rework": "Order the rework",
+      "reopen": "Move back"
     },
     "reasons": {
       "running": "running",

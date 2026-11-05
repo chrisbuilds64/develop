@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
 from ..domain import lists as value_lists
+from ..domain import step as stepping
 from ..domain import turn as whose
 from ..models import Case, Entry, Run, Turn
 
@@ -93,6 +94,8 @@ class CaseView(CaseCard):
     last_run: Run | None = None
     primary: str | None = None
     agent: str = "Claude"
+    reopen_to: str = ""                                   # a closed case: the stage "Move back" (action `reopen`) returns it to; empty while it is in the work
+    reopen_word: str = ""                                 # that stage in words
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
 
 
@@ -185,7 +188,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                       versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in s.versions], present=s.present)
              for s in case.slots]
     agent = config.agent
-    return CaseView(**c.model_dump(), meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
+    back = stepping.reopen_target(config, case) or ""
+    return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "", meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 

@@ -42,7 +42,8 @@
       "done": "Erledigt",
       "deliver": "Ablegen",
       "see_failure": "Nachsehen, was schiefging",
-      "wait": "Warten"
+      "wait": "Warten",
+      "reopen": "Zurückholen"
     },
     "reasons": {
       "running": "die KI arbeitet an der Akte",
@@ -138,7 +139,8 @@
       "done": "Done",
       "deliver": "Put in",
       "see_failure": "See what went wrong",
-      "wait": "Wait"
+      "wait": "Wait",
+      "reopen": "Move back"
     },
     "reasons": {
       "running": "the AI is working on the file",

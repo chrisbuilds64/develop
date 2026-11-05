@@ -1784,6 +1784,16 @@
             "title": "Agent",
             "default": "Claude"
           },
+          "reopen_to": {
+            "type": "string",
+            "title": "Reopen To",
+            "default": ""
+          },
+          "reopen_word": {
+            "type": "string",
+            "title": "Reopen Word",
+            "default": ""
+          },
           "data": {
             "additionalProperties": true,
             "type": "object",

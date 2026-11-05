@@ -852,6 +852,16 @@ export interface components {
              * @default Claude
              */
             agent: string;
+            /**
+             * Reopen To
+             * @default
+             */
+            reopen_to: string;
+            /**
+             * Reopen Word
+             * @default
+             */
+            reopen_word: string;
             /** Data */
             data?: {
                 [key: string]: unknown;

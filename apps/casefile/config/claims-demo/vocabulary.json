@@ -45,7 +45,8 @@
       "deliver": "Ablegen",
       "see_failure": "Nachsehen, was schiefging",
       "wait": "Warten",
-      "order_assessment": "Gutachten beauftragen"
+      "order_assessment": "Gutachten beauftragen",
+      "reopen": "Zurückholen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -176,7 +177,8 @@
       "deliver": "Add",
       "see_failure": "See what went wrong",
       "wait": "Wait",
-      "order_assessment": "Order the assessment"
+      "order_assessment": "Order the assessment",
+      "reopen": "Move back"
     },
     "reasons": {
       "running": "the AI is checking",

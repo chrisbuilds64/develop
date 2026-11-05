@@ -50,7 +50,8 @@
       "wait": "Warten",
       "capture_result": "Ergebnis aus dem Diktat erfassen lassen",
       "compose_report": "Gutachten aus Bausteinen zusammenstellen",
-      "close_inspection": "Besichtigung abschließen"
+      "close_inspection": "Besichtigung abschließen",
+      "reopen": "Zurückholen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -182,7 +183,8 @@
       "wait": "Wait",
       "capture_result": "Have the result taken from the dictation",
       "compose_report": "Compose the report from modules",
-      "close_inspection": "Close the inspection"
+      "close_inspection": "Close the inspection",
+      "reopen": "Move back"
     },
     "reasons": {
       "running": "the AI is checking",

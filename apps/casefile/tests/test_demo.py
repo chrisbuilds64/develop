@@ -133,3 +133,27 @@ def test_every_entry_says_whether_a_person_or_the_ai_made_it(tmp_path):
     assert "KI" in actors.get("ai", set()), actors          # the agent of people.json
     assert actors.get("person") and not (actors["person"] & actors.get("ai", set()))
     assert "**Actor:**" not in "".join(p.read_text(encoding="utf-8") for p in root.rglob("review.md"))   # derived, never written
+
+
+def test_a_closed_case_moves_back_to_where_it_left_the_work(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    assert client.post("/api/session", json={"person": "du"}).status_code == 200
+    cid = "KFZ-2026-0790-parkrempler"
+    v = client.get(f"/api/cases/{cid}").json()
+    assert v["stage"] == "60-abgeschlossen" and v["reopen_to"] == "40-regulierung" and v["reopen_word"]
+    r = client.post(f"/api/cases/{cid}/steps", json={"action": "reopen", "step_id": "back-1", "payload": {"text": "Rechnung fehlte"}}).json()
+    assert r["ok"] and r["from"] == "60-abgeschlossen" and r["to"] == "40-regulierung", r
+    v = client.get(f"/api/cases/{cid}").json()
+    assert v["stage"] == "40-regulierung" and v["reopen_to"] == "" and v["entries"][-1]["text"] == "Rechnung fehlte"
+    again = client.post(f"/api/cases/{cid}/steps", json={"action": "reopen", "step_id": "back-1"}).json()
+    assert again["replayed"] and again["to"] == "40-regulierung"                          # the same step twice is one step
+    no = client.post(f"/api/cases/{cid}/steps", json={"action": "reopen", "step_id": "back-2"}).json()
+    assert not no["ok"] and "not closed" in no["reason"]                                    # it is in the work again
+    other = "HR-2026-0388-leitungswasser-kueche"
+    bad = client.post(f"/api/cases/{other}/steps", json={"action": "reopen", "step_id": "back-3", "payload": {"to": "60-abgeschlossen"}}).json()
+    assert not bad["ok"] and "not an open stage" in bad["reason"]
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    ai = stepping.step(store, config, other, StepRequest(action="reopen", step_id="back-4"), by="ki")
+    assert not ai.ok and "a person does that" in ai.reason                                  # the AI never reopens
