@@ -405,6 +405,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rulebook/{module_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Reject
+         * @description A proposed change not taken: it stays on record as rejected, with the reason. What was in force stays in force.
+         */
+        post: operations["post_module_reject_api_rulebook__module_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rulebook/{module_id}/retire": {
         parameters: {
             query?: never;
@@ -1533,6 +1553,16 @@ export interface components {
              * @default
              */
             note: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
         };
         /** NewCaseIn */
         NewCaseIn: {
@@ -1694,6 +1724,11 @@ export interface components {
              */
             url: string;
         };
+        /** RejectIn */
+        RejectIn: {
+            /** Reason */
+            reason: string;
+        };
         /** RespondentOut */
         RespondentOut: {
             /** Id */
@@ -1766,6 +1801,21 @@ export interface components {
              */
             requires: string[];
         };
+        /**
+         * RuleArea
+         * @description An area a rule can apply to: a case label with its word and colour (the value list `label`).
+         */
+        RuleArea: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
+        };
         /** RuleAuto */
         RuleAuto: {
             /** On File */
@@ -1830,6 +1880,51 @@ export interface components {
              * @default 1
              */
             versions: number;
+            /**
+             * In Force
+             * @default true
+             */
+            in_force: boolean;
+            /**
+             * Use
+             * @default
+             */
+            use: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /**
+             * Draft Text
+             * @default
+             */
+            draft_text: string;
+            /**
+             * Draft Title
+             * @default
+             */
+            draft_title: string;
+            /**
+             * Draft Areas
+             * @default []
+             */
+            draft_areas: string[];
+            /**
+             * Draft By
+             * @default
+             */
+            draft_by: string;
+            /**
+             * Draft Date
+             * @default
+             */
+            draft_date: string;
+            /**
+             * Draft Note
+             * @default
+             */
+            draft_note: string;
         };
         /** RuleSkill */
         RuleSkill: {
@@ -1897,6 +1992,21 @@ export interface components {
              * @default false
              */
             may_edit: boolean;
+            /**
+             * May Decide
+             * @default false
+             */
+            may_decide: boolean;
+            /**
+             * Areas
+             * @default []
+             */
+            areas: components["schemas"]["RuleArea"][];
+            /**
+             * Me
+             * @default
+             */
+            me: string;
         };
         /** Run */
         Run: {
@@ -2839,6 +2949,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_reject_api_rulebook__module_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

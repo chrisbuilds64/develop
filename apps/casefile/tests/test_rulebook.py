@@ -64,3 +64,26 @@ def test_retiring_is_a_version_and_a_case_keeps_the_rulebook_it_started_with(tmp
     assert new_kk["B-18"]["status"] == "zurückgezogen" and new_kk["B-05"].get("_skip") and "B-19" in new_kk   # B-05 is for KH only now
     assert not rulebook.in_force_at(store, dt.date.today().isoformat(), "KH")["B-05"].get("_skip")
     assert "R-01" in old and not old["R-01"].get("_skip")                                        # never edited: as it stands
+
+
+def test_what_the_ai_proposes_waits_and_a_person_accepts_or_rejects_it_with_a_reason(tmp_path):
+    from casefile.demo.worlds import build_claims
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    du = TestClient(app)
+    assert du.post("/api/session", json={"person": "du"}).status_code == 200
+    rules = du.get("/api/rules").json()
+    waiting = {m["id"]: m for m in rules["modules"] if not m["in_force"]}
+    assert set(waiting) == {"R-10", "R-11", "R-12"} and rules["may_decide"]                     # proposals are listed, nothing of them holds
+    assert waiting["R-10"]["draft_text"].startswith("Glasschäden") and waiting["R-10"]["source"].startswith("Aus einem Gespräch")
+    assert {a["key"] for a in rules["areas"]} >= {"HR", "WG", "KFZ"} and all(a["color"] for a in rules["areas"])
+    ok = du.post("/api/rulebook/R-10/approve").json()                                           # the AI wrote it, so a person may accept it
+    assert ok["in_force"]["version"] == 1 and ok["in_force"]["approved_by"] == "Du"
+    assert not du.post("/api/rulebook/R-11/reject", json={"reason": ""}).json().get("versions")   # a reason is required
+    no = du.post("/api/rulebook/R-11/reject", json={"reason": "Gilt schon über die Hausrichtlinie"}).json()
+    assert no["in_force"] is None and no["draft"] is None and no["versions"][-1]["status"] == "verworfen"
+    assert no["versions"][-1]["reason"] == "Gilt schon über die Hausrichtlinie"                 # nothing deleted, the reason on record
+    after = {m["id"]: m for m in du.get("/api/rules").json()["modules"]}
+    assert after["R-10"]["in_force"] and "R-11" not in after                                    # accepted holds; rejected is gone from the list
+    again = du.post("/api/rulebook/R-11/draft", json={"text": "Neu formuliert.", "title": "Diebstahl", "kind": "Regel"}).json()
+    assert again["draft"]["version"] == 2                                                       # a new draft after a rejection does not overwrite it

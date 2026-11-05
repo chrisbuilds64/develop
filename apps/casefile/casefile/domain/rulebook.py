@@ -23,8 +23,8 @@ from ..store import FsStore
 FOLDER = "_bausteine"
 HISTORY = f"{FOLDER}/_fassungen"
 ID = re.compile(r"^[A-Z]{1,3}-\d{2,3}$")
-APPROVED, DRAFT, RETIRED = "freigegeben", "entwurf", "zurückgezogen"
-HEAD_ORDER = ("id", "kind", "title", "version", "status", "areas", "approved_by", "date", "drafted_by", "note")
+APPROVED, DRAFT, RETIRED, REJECTED = "freigegeben", "entwurf", "zurückgezogen", "verworfen"
+HEAD_ORDER = ("id", "kind", "title", "version", "status", "areas", "approved_by", "date", "drafted_by", "note", "source", "reason")
 
 
 class RulebookError(Exception):
@@ -87,6 +87,24 @@ def draft_of(store: FsStore, module_id: str) -> dict | None:
     return h[-1] if h and h[-1].get("status") == DRAFT else None
 
 
+def proposed(store: FsStore) -> dict[str, dict]:
+    """id → the open draft of a module that is not in force yet: a new rule proposed (by the AI or a person) and waiting."""
+    d = store.root / HISTORY
+    ids = {p.name.split(".v")[0] for p in d.glob("*.v*.md")} if d.is_dir() else set()
+    now = current(store)
+    out = {}
+    for mid in sorted(ids - set(now)):
+        dr = draft_of(store, mid)
+        if dr:
+            out[mid] = dr
+    return out
+
+
+def _next_version(store: FsStore, module_id: str) -> int:
+    h = history(store, module_id)
+    return max([int(m.get("version") or 0) for m in h] + [0]) + 1
+
+
 def _today() -> str:
     return dt.date.today().isoformat()
 
@@ -116,10 +134,10 @@ def save_draft(store: FsStore, config: DomainConfig, module_id: str, by: str, te
         base = open_ or now
         if base is None and not (title.strip() and kind.strip()):
             raise RulebookError("a new module needs a kind and a title")
-        version = int(open_["version"]) if open_ else int((now or {}).get("version") or 0) + 1
+        version = int(open_["version"]) if open_ else _next_version(store, module_id)      # after a rejected draft too
         mod = {"id": module_id, "kind": kind.strip() or base.get("kind", ""), "title": title.strip() or base.get("title", ""),
                "version": version, "status": DRAFT, "areas": ", ".join(areas) if areas is not None else (base or {}).get("areas", ""),
-               "drafted_by": config.person(by).name, "date": _today(), "note": note.strip(), "body": text.strip()}
+               "drafted_by": config.person(by).name, "date": _today(), "note": note.strip(), "source": (open_ or now or {}).get("source", ""), "body": text.strip()}
         store.write_atomic(f"{HISTORY}/{module_id}.v{version}.md", _render(mod))
         if now and not store.exists(f"{HISTORY}/{module_id}.v{now['version']}.md"):     # the version in force joins the history once
             store.write_atomic(f"{HISTORY}/{module_id}.v{now['version']}.md", _render({k: v for k, v in now.items() if not k.startswith("_")}))
@@ -159,8 +177,23 @@ def retire(store: FsStore, config: DomainConfig, module_id: str, by: str, note: 
         if not store.exists(f"{HISTORY}/{module_id}.v{now['version']}.md"):
             store.write_atomic(f"{HISTORY}/{module_id}.v{now['version']}.md", _render({k: v for k, v in now.items() if not k.startswith("_")}))
         mod = {k: v for k, v in now.items() if not k.startswith("_")}
-        mod.update(version=int(now.get("version") or 0) + 1, status=RETIRED, approved_by=config.person(by).name, date=_today(), note=note.strip())
+        mod.update(version=_next_version(store, module_id), status=RETIRED, approved_by=config.person(by).name, date=_today(), note=note.strip())
         _put_in_force(store, module_id, mod)
+    return mod
+
+
+def reject(store: FsStore, config: DomainConfig, module_id: str, by: str, reason: str) -> dict:
+    """The open draft is not taken: it stays in the history as `verworfen`, with who and why. The version in force stays."""
+    if not _may(config, by, ("operator", "approver")):
+        raise RulebookError("an operator or an approver decides on a proposed change")
+    if not reason.strip():
+        raise RulebookError("rejecting needs its reason")
+    with store.lock(f"_rulebook-{module_id}"):
+        d = draft_of(store, module_id)
+        if d is None:
+            raise RulebookError(f"{module_id} has no open draft")
+        mod = {**d, "status": REJECTED, "approved_by": config.person(by).name, "date": _today(), "reason": reason.strip()}
+        store.write_atomic(f"{HISTORY}/{module_id}.v{mod['version']}.md", _render(mod))
     return mod
 
 

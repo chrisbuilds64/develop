@@ -85,9 +85,61 @@ def _run(root: Path, cid: str, stage: str, skill: str, status: str, minutes_ago:
 CLAIMS_STAGES = ["10-meldung", "20-besichtigung", "25-abgleich", "30-pruefung", "40-regulierung", "60-abgeschlossen"]
 
 
+def _mod(mid: str, kind: str, title: str, version: int, status: str, body: str, **head: str) -> str:
+    lines = [f"id: {mid}", f"kind: {kind}", f"title: {title}", f"version: {version}", f"status: {status}"] + [f"{k}: {v}" for k, v in head.items() if v]
+    return "---\n" + "\n".join(lines) + "\n---\n" + body + "\n"
+
+
+# The claims office's rulebook (design hand-back, 2026-11-05): rules in force, letter templates, and what the AI proposes.
+CLAIMS_IN_FORCE = {
+    "R-01-freigegebene-bausteine.md": _mod("R-01", "Regel", "Briefe aus Bausteinen", 2, "freigegeben",
+        "Jeder Brief an Kunden nutzt freigegebene Textbausteine.", approved_by="Geschäftsleitung", date="2026-09-12", source="Kommunikationsrichtlinien 2026"),
+    "R-02-keine-auszahlung-ohne-rechnung.md": _mod("R-02", "Regel", "Keine Auszahlung ohne Rechnung", 1, "freigegeben",
+        "Ohne Rechnung wird nichts ausgezahlt.", areas="HR, WG", approved_by="Du", date="2026-10-30", source="Aus einem Gespräch mit Jana Koch, 30. Okt."),
+    "R-03-vier-augen-ab-5000.md": _mod("R-03", "Regel", "Vier Augen ab 5.000 €", 1, "freigegeben",
+        "Ab 5.000 € Schadenhöhe gibt eine zweite Person die Regulierung frei.", areas="WG", approved_by="Geschäftsleitung", date="2026-03-02", source="Vollmachtsregeln"),
+    "B-01-anrede-und-fallbezug.md": _mod("B-01", "Baustein", "Anrede und Fallbezug", 3, "freigegeben",
+        "Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihre Nachricht zu {Falltitel}. Ihre Schadennummer lautet {Schadennummer}. Bitte geben Sie sie bei jeder Rückfrage an.",
+        use="Jeder Brief", approved_by="Geschäftsleitung", date="2026-08-20"),
+    "B-04-naechste-schritte.md": _mod("B-04", "Baustein", "Nächste Schritte nach einer Schadenmeldung", 2, "freigegeben",
+        "Wir haben Ihre Schadenmeldung erhalten. So geht es weiter:\n\n1. Wir prüfen Ihren Vertrag und Ihre Angaben.\n2. Brauchen wir noch etwas, melden wir uns innerhalb von zwei Werktagen.\n3. Sobald alles vollständig ist, entscheiden wir und geben Ihnen Bescheid.",
+        use="Antworten auf eine neue Schadenmeldung", approved_by="Geschäftsleitung", date="2026-07-14"),
+    "B-07-fehlende-unterlagen.md": _mod("B-07", "Baustein", "Anforderung fehlender Unterlagen", 1, "freigegeben",
+        "Damit wir weitermachen können, brauchen wir noch: {fehlende Unterlagen}. Antworten Sie einfach auf diese Mail und hängen Sie die Unterlagen an.",
+        use="Wenn ein Dokument fehlt", approved_by="Du", date="2026-06-03"),
+    "B-09-auszahlung.md": _mod("B-09", "Baustein", "Auszahlung", 1, "freigegeben",
+        "Wir überweisen {Betrag} in den nächsten drei Werktagen auf das Konto, das Sie uns genannt haben.",
+        use="Jede Regulierung", approved_by="Geschäftsleitung", date="2026-05-19"),
+}
+CLAIMS_HISTORY = {
+    "R-01.v1.md": _mod("R-01", "Regel", "Briefe aus Bausteinen", 1, "freigegeben",
+        "Briefe an Kunden nutzen nach Möglichkeit freigegebene Textbausteine.", approved_by="Geschäftsleitung", date="2026-02-01", source="Kommunikationsrichtlinien 2026"),
+}
+CLAIMS_PROPOSED = {
+    "R-10.v1.md": _mod("R-10", "Regel", "Glas ohne Gutachter", 1, "entwurf",
+        "Glasschäden unter 1.000 € werden ohne Gutachter reguliert.", areas="KFZ", drafted_by="KI", date="2026-10-28",
+        source="Aus einem Gespräch mit Jana Koch, 28. Okt.", note="Gespräch mit Jana Koch: Glas unter 1.000 € zahlen wir immer direkt.  ¶  Letzte 40 Glasschäden: 38 wurden ohne Gutachter reguliert."),
+    "R-11.v1.md": _mod("R-11", "Regel", "Diebstahl wartet auf das Aktenzeichen", 1, "entwurf",
+        "Eine Diebstahlmeldung ohne polizeiliches Aktenzeichen kann angelegt werden, die Regulierung wartet aber darauf.", areas="HR", drafted_by="KI", date="2026-10-29",
+        source="Aus einem Gespräch mit Tobias Wendt, 29. Okt.", note="Gespräch mit Tobias Wendt: Ohne Aktenzeichen zahlen wir bei Diebstahl nie."),
+    "R-12.v1.md": _mod("R-12", "Regel", "Ursache bei Wasserschäden", 1, "entwurf",
+        "Bei Wasserschäden über 2.000 € bestätigt ein Installateur die Ursache, bevor reguliert wird.", areas="WG, HR", drafted_by="KI", date="2026-10-31",
+        source="Aus den letzten 30 Wasserschäden", note="Letzte 30 Wasserschäden: bei 27 lag die Bestätigung eines Installateurs vor.  ¶  Hausrichtlinie: Ursache klären, dann zahlen."),
+}
+
+
+def _claims_rulebook(root: Path) -> None:
+    (root / "_bausteine" / "_fassungen").mkdir(parents=True)
+    for name, text in CLAIMS_IN_FORCE.items():
+        (root / "_bausteine" / name).write_text(text, encoding="utf-8")
+    for name, text in {**CLAIMS_HISTORY, **CLAIMS_PROPOSED}.items():
+        (root / "_bausteine" / "_fassungen" / name).write_text(text, encoding="utf-8")
+
+
 def build_claims(root: Path) -> Path:
     cfg = CONFIG / "claims-demo"
     root = _root(root, cfg, CLAIMS_STAGES)
+    _claims_rulebook(root)
     pdf = SAMPLES / "gutachten.pdf"
     photo = SAMPLES / "foto.jpg"
     kva = SAMPLES / "kostenvoranschlag.pdf"

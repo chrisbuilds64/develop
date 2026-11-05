@@ -734,6 +734,56 @@
         }
       }
     },
+    "/api/rulebook/{module_id}/reject": {
+      "post": {
+        "summary": "Post Module Reject",
+        "description": "A proposed change not taken: it stays on record as rejected, with the reason. What was in force stays in force.",
+        "operationId": "post_module_reject_api_rulebook__module_id__reject_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/rulebook/{module_id}/retire": {
       "post": {
         "summary": "Post Module Retire",
@@ -3237,6 +3287,16 @@
             "type": "string",
             "title": "Note",
             "default": ""
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": ""
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
           }
         },
         "type": "object",
@@ -3510,6 +3570,19 @@
         "title": "PlaceOut",
         "description": "A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one."
       },
+      "RejectIn": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "RejectIn"
+      },
       "RespondentOut": {
         "properties": {
           "id": {
@@ -3627,6 +3700,30 @@
         ],
         "title": "RuleAction"
       },
+      "RuleArea": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word"
+        ],
+        "title": "RuleArea",
+        "description": "An area a rule can apply to: a case label with its word and colour (the value list `label`)."
+      },
       "RuleAuto": {
         "properties": {
           "on_file": {
@@ -3740,6 +3837,54 @@
             "type": "integer",
             "title": "Versions",
             "default": 1
+          },
+          "in_force": {
+            "type": "boolean",
+            "title": "In Force",
+            "default": true
+          },
+          "use": {
+            "type": "string",
+            "title": "Use",
+            "default": ""
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": ""
+          },
+          "draft_text": {
+            "type": "string",
+            "title": "Draft Text",
+            "default": ""
+          },
+          "draft_title": {
+            "type": "string",
+            "title": "Draft Title",
+            "default": ""
+          },
+          "draft_areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Draft Areas",
+            "default": []
+          },
+          "draft_by": {
+            "type": "string",
+            "title": "Draft By",
+            "default": ""
+          },
+          "draft_date": {
+            "type": "string",
+            "title": "Draft Date",
+            "default": ""
+          },
+          "draft_note": {
+            "type": "string",
+            "title": "Draft Note",
+            "default": ""
           }
         },
         "type": "object",
@@ -3881,6 +4026,24 @@
             "type": "boolean",
             "title": "May Edit",
             "default": false
+          },
+          "may_decide": {
+            "type": "boolean",
+            "title": "May Decide",
+            "default": false
+          },
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/RuleArea"
+            },
+            "type": "array",
+            "title": "Areas",
+            "default": []
+          },
+          "me": {
+            "type": "string",
+            "title": "Me",
+            "default": ""
           }
         },
         "type": "object",

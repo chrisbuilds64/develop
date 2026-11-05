@@ -665,6 +665,66 @@
         "de": "Eine besiegelte Entscheidung wird nicht ersetzt: die Korrektur steht daneben, mit Begründung und, wo nötig, dem korrigierten Betrag. Das Original bleibt nachvollziehbar.",
         "en": "A sealed decision is not replaced: the correction stands beside it, with its reason and, where needed, the corrected amount. The original stays traceable."
       }
+    },
+    {
+      "key": "cf.rb-waiting",
+      "since": "0.22.0",
+      "title": {
+        "de": "Wartet auf dich",
+        "en": "Waiting for you"
+      },
+      "text": {
+        "de": "Neue Regeln, die die KI oder jemand aus dem Team vorschlägt. Nichts davon gilt, bis du annimmst. Ablehnen braucht einen Satz Begründung, er bleibt in der Akte.",
+        "en": "New rules the AI or someone on the team proposes. None of it holds until you accept. Rejecting needs one sentence as the reason, and it stays on record."
+      }
+    },
+    {
+      "key": "cf.rb-in-force",
+      "since": "0.22.0",
+      "title": {
+        "de": "In Kraft",
+        "en": "In force"
+      },
+      "text": {
+        "de": "Die Regeln, die jetzt gelten, nach Bereich. Eine Änderung wird eine neue Fassung und gilt, sobald eine zweite Person sie annimmt. Bereits entschiedene Fälle behalten ihre Fassung.",
+        "en": "The rules that hold now, by area. A change becomes a new version and holds once a second person accepts it. Cases already decided keep their version."
+      }
+    },
+    {
+      "key": "cf.rb-steps",
+      "since": "0.22.0",
+      "title": {
+        "de": "Fallschritte",
+        "en": "Case steps"
+      },
+      "text": {
+        "de": "Die Schritte jedes Falls, wie sie in der Konfiguration stehen: was passieren muss, damit es weitergeht, und wer dran ist.",
+        "en": "The steps of every case, as the configuration sets them: what has to happen to move on, and whose turn it is."
+      }
+    },
+    {
+      "key": "cf.rb-limits",
+      "since": "0.22.0",
+      "title": {
+        "de": "KI-Grenzen",
+        "en": "AI limits"
+      },
+      "text": {
+        "de": "Was jeder KI-Helfer tut und was er nie von sich aus tut. Diese Grenzen sind fest.",
+        "en": "What each AI helper does and what it never does on its own. These limits are fixed."
+      }
+    },
+    {
+      "key": "cf.rb-letters",
+      "since": "0.22.0",
+      "title": {
+        "de": "Textbausteine",
+        "en": "Letter templates"
+      },
+      "text": {
+        "de": "Freigegebene Absätze für Briefe. Eine Änderung ist eine neue Fassung, die eine zweite Person annimmt. Wörter in geschweiften Klammern setzt die KI je Fall ein.",
+        "en": "Approved paragraphs for letters. A change is a new version that a second person accepts. The AI fills in the words in curly brackets for each case."
+      }
     }
   ]
 }

@@ -198,7 +198,7 @@ export function App() {
           ) : route.name === "list" ? (
             <Stacked config={config.data} go={go} w={w} />
           ) : route.name === "rules" ? (
-            <Rules config={config.data} w={w} />
+            <Rules config={config.data} w={w} lang={lang} />
           ) : route.name === "lists" ? (
             <Lists config={config.data} w={w} />
           ) : route.name === "house" ? (

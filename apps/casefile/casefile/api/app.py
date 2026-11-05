@@ -239,6 +239,15 @@ class RuleModule(BaseModel):
     areas: list[str] = []                        # the labels it applies to; empty = all (ADR-026)
     draft: int | None = None                     # the version of an open draft, waiting for a second person
     versions: int = 1                            # how many versions its history holds
+    in_force: bool = True                        # false: only proposed so far, nothing of it holds yet
+    use: str = ""                                # a letter template: where it is used ("every letter")
+    source: str = ""                             # where it came from ("from a talk with …"), as the proposal says
+    draft_text: str = ""                         # the open draft, for the person who decides on it
+    draft_title: str = ""
+    draft_areas: list[str] = []
+    draft_by: str = ""
+    draft_date: str = ""
+    draft_note: str = ""
 
 
 class ModuleVersion(BaseModel):
@@ -251,6 +260,8 @@ class ModuleVersion(BaseModel):
     approved_by: str = ""
     drafted_by: str = ""
     note: str = ""
+    source: str = ""
+    reason: str = ""                             # why it was rejected or retired
 
 
 class ModuleHistory(BaseModel):
@@ -315,6 +326,17 @@ class MatrixRow(BaseModel):
     approval: str = "human"
 
 
+class RuleArea(BaseModel):
+    """An area a rule can apply to: a case label with its word and colour (the value list `label`)."""
+    key: str
+    word: str
+    color: str = ""
+
+
+class RejectIn(BaseModel):
+    reason: str
+
+
 class RulesOut(BaseModel):
     """The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions, the connectors."""
     stages: list[RuleStage]
@@ -323,6 +345,9 @@ class RulesOut(BaseModel):
     connectors: list[RuleConnector] = []
     matrix: list[MatrixRow] = []
     may_edit: bool = False                       # the viewer may change rules and modules (an operator)
+    may_decide: bool = False                     # the viewer may accept or reject a proposed change (an operator or approver)
+    areas: list[RuleArea] = []                   # the areas rules can apply to; a rule without areas holds for the whole office
+    me: str = ""                                 # the viewer's name, so the surface can say "you wrote this" (four eyes)
 
 
 class AnswerIn(BaseModel):
@@ -1017,11 +1042,18 @@ def create_app(settings: Settings) -> FastAPI:
                   for name, spec in policy.get("skills", {}).items() if not name.startswith("$")]
         from ..domain import rulebook
         modules = []
+
+        def module_out(mid: str, m: dict, d: dict | None, in_force: bool) -> RuleModule:
+            return RuleModule(id=mid, kind=m.get("kind", ""), title=m.get("title", mid), version=int(m.get("version") or 1),
+                              status=m.get("status", ""), approved_by=m.get("approved_by", ""), date=m.get("date", ""), text=m.get("body", ""),
+                              areas=rulebook.areas_of(m), draft=int(d["version"]) if d else None, versions=len(rulebook.history(c.store, mid)),
+                              in_force=in_force, use=m.get("use", ""), source=(d or m).get("source", "") or m.get("source", ""),
+                              draft_text=(d or {}).get("body", ""), draft_title=(d or {}).get("title", ""), draft_areas=rulebook.areas_of(d) if d else [],
+                              draft_by=(d or {}).get("drafted_by", ""), draft_date=(d or {}).get("date", ""), draft_note=(d or {}).get("note", ""))
         for mid, m in rulebook.current(c.store).items():
-            d = rulebook.draft_of(c.store, mid)
-            modules.append(RuleModule(id=mid, kind=m.get("kind", ""), title=m.get("title", mid), version=int(m.get("version") or 1),
-                                      status=m.get("status", ""), approved_by=m.get("approved_by", ""), date=m.get("date", ""), text=m.get("body", ""),
-                                      areas=rulebook.areas_of(m), draft=int(d["version"]) if d else None, versions=len(rulebook.history(c.store, mid))))
+            modules.append(module_out(mid, m, rulebook.draft_of(c.store, mid), True))
+        for mid, d in rulebook.proposed(c.store).items():
+            modules.append(module_out(mid, d, d, False))
         connectors = []
         for place in (c.store.root / "connectors.json", c.config.dir / "connectors.json" if c.config.dir else None):
             if place and place.is_file():
@@ -1039,8 +1071,14 @@ def create_app(settings: Settings) -> FastAPI:
                             connected=handoff.connected(c.store, r))
                   for r in handoff.matrix(c.store, c.config)]
         me = c.config.person(who)
+        human = bool(me and me.kind == "human")
+        label = value_lists.for_field(c.config.lists, "label") or {}
+        areas = [RuleArea(key=str(e.get("key")), word=value_lists.in_lang(e.get("word"), lang, c.config.word("labels", str(e.get("key")), lang, str(e.get("key")))),
+                          color=str(e.get("color") or "")) for e in value_lists.offered(label)] if label else \
+                [RuleArea(key=k, word=c.config.word("labels", k, lang, k)) for k in ((c.config.vocabulary.get(lang) or {}).get("labels") or {})]
         return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix,
-                        may_edit=bool(me and me.kind == "human" and "operator" in me.roles))
+                        may_edit=human and "operator" in me.roles, may_decide=human and bool(set(me.roles) & {"operator", "approver"}),
+                        areas=areas, me=me.name if me else "")
 
     # ------------------------------------------------------------ the rulebook, edited as versions (request 9, ADR-026)
     def _version(m: dict | None) -> ModuleVersion | None:
@@ -1049,7 +1087,7 @@ def create_app(settings: Settings) -> FastAPI:
             return None
         return ModuleVersion(version=int(m.get("version") or 0), status=m.get("status", ""), title=m.get("title", ""), text=m.get("body", ""),
                              areas=rulebook.areas_of(m), date=m.get("date", ""), approved_by=m.get("approved_by", ""),
-                             drafted_by=m.get("drafted_by", ""), note=m.get("note", ""))
+                             drafted_by=m.get("drafted_by", ""), note=m.get("note", ""), source=m.get("source", ""), reason=m.get("reason", ""))
 
     def _history(c: Ctx, who: str, module_id: str) -> ModuleHistory:
         from ..domain import rulebook
@@ -1086,6 +1124,16 @@ def create_app(settings: Settings) -> FastAPI:
         from ..domain import rulebook
         try:
             rulebook.approve(c.store, c.config, module_id, who)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
+
+    @app.post("/api/rulebook/{module_id}/reject", response_model=ModuleHistory)
+    def post_module_reject(module_id: str, body: RejectIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A proposed change not taken: it stays on record as rejected, with the reason. What was in force stays in force."""
+        from ..domain import rulebook
+        try:
+            rulebook.reject(c.store, c.config, module_id, who, body.reason)
         except rulebook.RulebookError as exc:
             return _rulebook_refused(exc)
         return _history(c, who, module_id)
