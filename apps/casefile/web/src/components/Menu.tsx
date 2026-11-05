@@ -48,7 +48,6 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const humans = config.people.filter((p) => p.kind === "human");
   const places = me.places ?? [];
-  const here = places.find((p) => p.current);
   const inWorkspace = route.name === "group" || route.name === "case" || route.name === "board" || route.name === "list";
   const roleWord = (r: string) => ((config.words as { roles?: Record<string, string> }).roles?.[r] ?? r);
   const resettable = !!(config.theme as { resettable?: boolean }).resettable;
@@ -64,9 +63,9 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
     <>
     <nav className={`cf-rail${open ? " open" : ""}`} aria-label={w.menu}>
       <div className="rail-brand">
-        <button type="button" className="rail-home" data-help-skip="explained by cf.groups" onClick={() => goClose("/")} aria-label={`${here?.name ?? config.product}, ${w.home}`}>
+        <button type="button" className="rail-home" data-help-skip="explained by cf.groups" onClick={() => goClose("/")} aria-label={`${w.brand}, ${w.home}`}>
           <span className="rail-mark" aria-hidden="true"><i /></span>
-          <b>{here?.name ?? config.product}</b>
+          <b>{w.brand}</b>
         </button>
         {me.demo && <span className="rail-tag" title={w.fictional}>{w.demoTag}</span>}
       </div>
