@@ -1074,3 +1074,6 @@ body {
   background-attachment: fixed; } }
 .side { background: color-mix(in srgb, var(--ground-2) 82%, transparent); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4); }
 @media (prefers-reduced-transparency: reduce) { .side { background: var(--ground-2); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+.side .brand-link { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--ink); text-decoration: none; border-radius: 8px; }
+.side .brand-link:hover { text-decoration: none; opacity: .85; }
+.side .brand-link:focus-visible { outline: 2px solid var(--your-move); outline-offset: 3px; }
