@@ -2,6 +2,7 @@
 <html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2026%2026%22%3E%3Cdefs%3E%0A%3ClinearGradient%20id%3D%22cp-bg%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%234C9BFF%22/%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%231877F2%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230E5FD6%22/%3E%3C/linearGradient%3E%0A%3ClinearGradient%20id%3D%22cp-core%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23DCE8FF%22/%3E%3C/linearGradient%3E%0A%3ClinearGradient%20id%3D%22cp-ring%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%22.95%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%22.35%22/%3E%3C/linearGradient%3E%3C/defs%3E%0A%3Cpath%20d%3D%22M7.4%200h11.2C23.4%200%2026%202.6%2026%207.4v11.2C26%2023.4%2023.4%2026%2018.6%2026H7.4C2.6%2026%200%2023.4%200%2018.6V7.4C0%202.6%202.6%200%207.4%200Z%22%20fill%3D%22url%28%23cp-bg%29%22/%3E%3Cpath%20d%3D%22M7.4%200h11.2C23.4%200%2026%202.6%2026%207.4v11.2C26%2023.4%2023.4%2026%2018.6%2026H7.4C2.6%2026%200%2023.4%200%2018.6V7.4C0%202.6%202.6%200%207.4%200Z%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-opacity%3D%22.18%22%20stroke-width%3D%22.6%22/%3E%0A%3Ccircle%20cx%3D%2213%22%20cy%3D%2213%22%20r%3D%226.9%22%20fill%3D%22none%22%20stroke%3D%22url%28%23cp-ring%29%22%20stroke-width%3D%221.5%22/%3E%0A%3Ccircle%20cx%3D%2213%22%20cy%3D%2213%22%20r%3D%223.1%22%20fill%3D%22url%28%23cp-core%29%22/%3E%0A%3Ccircle%20cx%3D%2217.9%22%20cy%3D%228.1%22%20r%3D%221.75%22%20fill%3D%22%23fff%22/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }} · {{ t('app.login') }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,11 +13,14 @@
 <main class="login">
   <div class="login-card">
     <div class="login-mark">
-      <svg viewBox="0 0 60 60" width="44" height="44" aria-hidden="true">
-        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#4caf50"/></linearGradient></defs>
-        <circle cx="30" cy="30" r="26" fill="none" stroke="url(#lg)" stroke-width="2.4"/>
-        <path d="M18 31 l8 8 l16 -18" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <svg viewBox="0 0 26 26" width="44" height="44" aria-hidden="true"><defs>
+<linearGradient id="cp-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4C9BFF"/><stop offset=".55" stop-color="#1877F2"/><stop offset="1" stop-color="#0E5FD6"/></linearGradient>
+<linearGradient id="cp-core" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#DCE8FF"/></linearGradient>
+<linearGradient id="cp-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient></defs>
+<path d="M7.4 0h11.2C23.4 0 26 2.6 26 7.4v11.2C26 23.4 23.4 26 18.6 26H7.4C2.6 26 0 23.4 0 18.6V7.4C0 2.6 2.6 0 7.4 0Z" fill="url(#cp-bg)"/><path d="M7.4 0h11.2C23.4 0 26 2.6 26 7.4v11.2C26 23.4 23.4 26 18.6 26H7.4C2.6 26 0 23.4 0 18.6V7.4C0 2.6 2.6 0 7.4 0Z" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width=".6"/>
+<circle cx="13" cy="13" r="6.9" fill="none" stroke="url(#cp-ring)" stroke-width="1.5"/>
+<circle cx="13" cy="13" r="3.1" fill="url(#cp-core)"/>
+<circle cx="17.9" cy="8.1" r="1.75" fill="#fff"/></svg>
     </div>
     <h1>{{ config.name }}{% if config.environment and config.environment != 'prod' %} <span class="env env-{{ config.environment }}">{{ config.environment|upper }}</span>{% endif %}</h1>
     <p class="tag">{{ t('app.tagline') }}</p>
