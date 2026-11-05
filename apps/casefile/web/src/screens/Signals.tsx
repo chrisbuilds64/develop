@@ -95,7 +95,7 @@ export function Signals({ config, go, w, lang }: { config: ConfigView; go: (p: s
       <div className="rb-page">
         <header className="rb-head">
           <h1>{w.flagged}</h1>
-          <p className="rb-lead">{w.sgLead}</p>
+          <p className="rb-lead quiet">{w.sgLead}</p>
           {video && <button type="button" className="rb-watch" data-help-skip="a video about this page" onClick={() => setPlaying(video)}><span className="rb-play" aria-hidden="true" />{w.rbWatch} · {video.seconds} s</button>}
         </header>
         {error && <p className="rb-err">{error}</p>}

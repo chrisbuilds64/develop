@@ -88,6 +88,18 @@ class Settings:
     sessions_per_minute: int = 60                # new sandboxes per IP and minute
 
 
+def in_lang(head: dict, body: str, lang: str) -> tuple[dict, str]:
+    """A rule, template or hint in the viewer's language (request 8): header keys `title_en`, `source_en` … win over
+    `title`, `source`; a body after a line `<!-- en -->` wins over the original before it. Without them, the original."""
+    out = {**head}
+    for k, v in head.items():
+        if k.endswith(f"_{lang}") and v:
+            out[k[: -len(lang) - 1]] = v
+    parts = re.split(r"\n?<!--\s*([a-z]{2})\s*-->\n?", body or "")
+    original, versions = parts[0], dict(zip(parts[1::2], parts[2::2]))
+    return out, (versions.get(lang) or original).strip()
+
+
 class SessionIn(BaseModel):
     person: str
 
@@ -1011,7 +1023,8 @@ def create_app(settings: Settings) -> FastAPI:
                             head[k.strip()] = v.strip()
                     body = parts[2]
             ids = [x.strip() for x in head.get("cases", "").split(",") if x.strip()]
-            out.append(SignalOut(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), status=head.get("status", "offen"), date=head.get("date", ""),
+            shown, body = in_lang(head, body, c.lang)
+            out.append(SignalOut(id=head.get("id", f.stem), kind=head.get("kind", ""), title=shown.get("title", f.stem), status=head.get("status", "offen"), date=head.get("date", ""),
                                  cases=[sig_case(i) for i in ids], text=body.strip(), decided_by=head.get("decided_by", ""), decided_at=head.get("decided_at", "")))
         return out
 
@@ -1086,6 +1099,9 @@ def create_app(settings: Settings) -> FastAPI:
         modules = []
 
         def module_out(mid: str, m: dict, d: dict | None, in_force: bool) -> RuleModule:
+            m = in_lang(m, m.get("body", ""), c.lang)[0]
+            if d is not None:
+                d = in_lang(d, d.get("body", ""), c.lang)[0]
             return RuleModule(id=mid, kind=m.get("kind", ""), title=m.get("title", mid), version=int(m.get("version") or 1),
                               status=m.get("status", ""), approved_by=m.get("approved_by", ""), date=m.get("date", ""), text=m.get("body", ""),
                               areas=rulebook.areas_of(m), draft=int(d["version"]) if d else None, versions=len(rulebook.history(c.store, mid)),
@@ -1123,10 +1139,12 @@ def create_app(settings: Settings) -> FastAPI:
                         areas=areas, me=me.name if me else "")
 
     # ------------------------------------------------------------ the rulebook, edited as versions (request 9, ADR-026)
-    def _version(m: dict | None) -> ModuleVersion | None:
+    def _version(m: dict | None, lang: str = "") -> ModuleVersion | None:
         from ..domain import rulebook
         if not m:
             return None
+        if lang:
+            m = in_lang(m, m.get("body", ""), lang)[0]
         return ModuleVersion(version=int(m.get("version") or 0), status=m.get("status", ""), title=m.get("title", ""), text=m.get("body", ""),
                              areas=rulebook.areas_of(m), date=m.get("date", ""), approved_by=m.get("approved_by", ""),
                              drafted_by=m.get("drafted_by", ""), note=m.get("note", ""), source=m.get("source", ""), reason=m.get("reason", ""))
@@ -1136,7 +1154,7 @@ def create_app(settings: Settings) -> FastAPI:
         now, d = rulebook.current(c.store).get(module_id), rulebook.draft_of(c.store, module_id)
         me = c.config.person(who)
         human = bool(me and me.kind == "human")
-        return ModuleHistory(id=module_id, in_force=_version(now), draft=_version(d), versions=[_version(v) for v in rulebook.history(c.store, module_id)],
+        return ModuleHistory(id=module_id, in_force=_version(now, c.lang), draft=_version(d, c.lang), versions=[_version(v, c.lang) for v in rulebook.history(c.store, module_id)],
                              may_edit=human and "operator" in me.roles,
                              may_approve=bool(d and human and set(me.roles) & {"operator", "approver"} and d.get("drafted_by") != me.name))
 

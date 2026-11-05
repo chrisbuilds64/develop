@@ -40,12 +40,19 @@ def _parse(text: str) -> dict | None:
         if ":" in line:
             k, v = line.split(":", 1)
             head[k.strip()] = v.strip()
-    return {**head, "body": m.group(2).strip()} if head.get("id") else None
+    if not head.get("id"):
+        return None
+    # the body in other languages, after a line `<!-- en -->`: kept apart as `body_en`, so compose and every letter only
+    # ever take the original; the surface shows a reader the version in their language (request 8)
+    parts = re.split(r"\n?<!--\s*([a-z]{2})\s*-->\n?", m.group(2))
+    langs = {f"body_{k}": v.strip() for k, v in zip(parts[1::2], parts[2::2]) if v.strip()}
+    return {**head, **langs, "body": parts[0].strip()}
 
 
 def _render(mod: dict) -> str:
-    keys = [k for k in HEAD_ORDER if mod.get(k) not in (None, "")] + [k for k in mod if k not in HEAD_ORDER and k != "body" and not k.startswith("_") and mod.get(k) not in (None, "")]
-    return "---\n" + "\n".join(f"{k}: {mod[k]}" for k in keys) + "\n---\n" + str(mod.get("body", "")).strip() + "\n"
+    keys = [k for k in HEAD_ORDER if mod.get(k) not in (None, "")] + [k for k in mod if k not in HEAD_ORDER and k != "body" and not k.startswith(("_", "body_")) and mod.get(k) not in (None, "")]
+    other = "".join(f"\n<!-- {k[5:]} -->\n{str(v).strip()}" for k, v in mod.items() if k.startswith("body_") and v)
+    return "---\n" + "\n".join(f"{k}: {mod[k]}" for k in keys) + "\n---\n" + str(mod.get("body", "")).strip() + other + "\n"
 
 
 def areas_of(mod: dict) -> list[str]:

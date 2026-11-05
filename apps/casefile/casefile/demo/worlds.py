@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -50,10 +51,75 @@ def _root(root: Path, config_dir: Path, stages: list[str]) -> Path:
     return root
 
 
+# The demo cases in English too (request 8): a viewer who reads English sees these, through `i18n.en` in the case's meta.
+EN_WORDS = {
+    "Hagelschaden Reihenhaus": "Hail damage, terraced house", "Dachziegel und Dachfenster, Ostseite": "Roof tiles and roof window, east side",
+    "Wasserschaden Badezimmer": "Water damage, bathroom", "Rohrbruch hinter der Dusche, Wasser in Decke und Flur": "Burst pipe behind the shower, water in the ceiling and hall",
+    "Einbruch Wohnung 2. OG": "Burglary, 2nd floor flat", "Parkschaden Tiefgarage, Kleinwagen": "Parking damage in a garage, small car",
+    "Fahrertür und Schweller, Vollkasko": "Driver's door and sill, comprehensive cover", "Sturmschaden Carport": "Storm damage, carport",
+    "Sturz auf Glatteis, Hausmeisterdienst": "Fall on black ice, caretaker service", "Parkrempler Tiefgarage": "Parking bump in a garage",
+    "Leitungswasser Küche": "Water leak, kitchen", "Blitzschlag Dachstuhl": "Lightning strike, roof truss", "Glasbruch Wintergarten": "Broken glass, conservatory",
+    "Auffahrunfall A3, Kleinwagen": "Rear-end collision on the A3, small car", "wartet auf das eGutachten GA-2026-01182": "waiting for the assessment GA-2026-01182",
+    "Wildunfall L 412": "Wildlife collision on the L 412", "Heckschaden, Haftpflicht des Auffahrenden": "Rear damage, the other driver's liability",
+    "Hagelschaden Pkw": "Hail damage, car", "Glasschaden Frontscheibe": "Glass damage, windscreen", "Kreuzungsunfall, Seitenschaden": "Crash at a junction, side damage",
+    "Parkrempler Supermarkt": "Parking bump at a supermarket", "Marderschaden Motorraum": "Marten damage in the engine bay", "Parkschaden Tiefgarage": "Parking damage in a garage",
+}
+
+# the conversation of each demo case in English: per entry, its title and text (i18n.en.entries.<REV-id>)
+EN_LINES = {'Gutachten übergeben': 'Assessment handed over',
+    'Gutachten und Fotos liegen bei.': 'Assessment and photos attached.',
+    'Rückfrage zum Dachfenster': 'Question about the roof window',
+    'Das Dachfenster war laut Nachbar schon vor dem Hagel undicht. Soll ich es im Gutachten ausklammern oder als Vorschaden führen?': 'According to a neighbour, the roof window was already leaking before the hail. Should I leave it out of the assessment or list it as earlier damage?',
+    'Besichtigung angesetzt': 'Inspection scheduled',
+    'Gutachter Berger am Donnerstag 10 Uhr.': 'Assessor Berger, Thursday at 10.',
+    'Fotos und Gutachten übergeben': 'Photos and assessment handed over',
+    'Fünf Fotos, Feuchtemessung an drei Stellen, Gutachten als Fassung 1.': 'Five photos, moisture measured in three places, assessment as version 1.',
+    'Gutachten Fassung 2': 'Assessment version 2',
+    'Fotos der Decke nachgereicht, Gutachten in Fassung 2. Fassung 1 bleibt erhalten.': 'Photos of the ceiling added, assessment in version 2. Version 1 is kept.',
+    'Kostenvoranschlag mit Gutachten abgeglichen': 'Estimate checked against the assessment',
+    'Zwei Positionen weichen ab: Trocknung (KVA 1.840 €, Gutachten 1.420 €) und Malerarbeiten Flur (KVA 980 €, im Gutachten nicht enthalten). Die Rechnung fehlt noch; sobald sie da ist, gleiche ich alle drei ab.\n\nVorschlag mit Begründung · du entscheidest.': 'Two items differ: drying (estimate 1,840 €, assessment 1,420 €) and painting the hall (estimate 980 €, not in the assessment). The invoice is still missing; once it is in, I check all three against each other.\n\nA proposal with its reasons · you decide.',
+    'Schaden aufgenommen': 'Claim recorded',
+    'Vollkasko, Fahrzeug fahrbereit. Gutachten beauftragen.': 'Comprehensive cover, the car can be driven. Order the assessment.',
+    'Dach und Pfosten, siehe Gutachten.': 'Roof and posts, see the assessment.',
+    'Freigegeben und zur Regulierung': 'Approved for settlement',
+    'Betrag wie im Gutachten.': 'Amount as in the assessment.',
+    'Termin Freitag.': 'Appointment on Friday.',
+    'Als reguliert gemeldet': 'Reported as settled',
+    'Auftrag eingegangen': 'Order received',
+    'Nordlicht Versicherung, Haftpflicht, Besichtigung beim Kunden.': "Nordlicht Versicherung, liability, inspection at the customer's.", 'Besichtigung eingeplant': 'Inspection planned',
+    'Gutachter Lenz, Donnerstag.': 'Assessor Lenz, Thursday.',
+    'Entwurf zur Vorprüfung': 'Draft for the pre-check',
+    'Fassung 1 mit Fotos und Kalkulation.': 'Version 1 with photos and calculation.',
+    'Vorprüfung abgeschlossen': 'Pre-check done',
+    'Zwei Befunde: eine Position ohne Detailfoto, Wertminderung nicht ausgewiesen. Keiner spricht gegen die Freigabe; beide sollte der Gutachter sehen.\n\nBefund mit Begründung · du entscheidest.': 'Two findings: one item without a close-up photo, loss in value not stated. Neither speaks against approval; the assessor should see both.\n\nFindings with their reasons · you decide.',
+    'Freigegeben und Anschreiben entwerfen': 'Approved, cover letter to be drafted',
+    'Ohne Befund.': 'No findings.',
+    'Anschreiben entworfen': 'Cover letter drafted',
+    'Aus den Bausteinen B-01, B-07, B-08.\n\nEntwurf · ein Mensch versendet.': 'From the text blocks B-01, B-07, B-08.\n\nA draft · a person sends it.',
+    'Haftpflicht, Besichtigung in der Werkstatt.': 'Liability, inspection at the garage.',
+    'Fassung 1.': 'Version 1.',
+    'Versendet': 'Sent',
+    'Rückfrage des Versicherers': 'Question from the insurer',
+    'Der Restwert ist nicht ausgewiesen. Liegen die Reparaturkosten wirklich unter der Grenze? Bitte kurz bestätigen oder Nachtrag.': 'The residual value is not stated. Are the repair costs really below the limit? Please confirm briefly or send an addendum.',
+    'Gutachterin Kaya, morgen.': 'Assessor Kaya, tomorrow.',
+    'Abgeschlossen': 'Closed'}
+
+
 def _case(root: Path, stage: str, cid: str, meta: dict, files: dict[str, bytes | str | Path] | None = None, review: str = "") -> Path:
     d = root / stage / cid
     d.mkdir(parents=True)
     meta = {"configVersion": "1", "fictional": True, **meta}
+    en = {k: EN_WORDS[str(meta[k])] for k in ("title", "subtitle") if str(meta.get(k) or "") in EN_WORDS}
+    entries = {}
+    for m in re.finditer(r"^## (REV-\d+) — (.*?)\n[^\n]*\n\n(.*?)(?=\n## REV-|\Z)", review or "", re.M | re.S):
+        t, x = m.group(2).strip(), m.group(3).strip()
+        tr = {k: EN_LINES[v] for k, v in (("title", t), ("text", x)) if v in EN_LINES}
+        if tr:
+            entries[m.group(1)] = tr
+    if entries:
+        en["entries"] = entries
+    if en and "i18n" not in meta:
+        meta["i18n"] = {"en": en}
     if meta.get("label") in ("HR", "WG", "KFZ", "HP") and "external_id" not in meta:
         meta["external_id"] = "SN-" + str(meta.get("number", "")).replace("2026-", "2026-0")     # the house's claim number (fictional)
     (d / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -67,10 +133,13 @@ def _case(root: Path, stage: str, cid: str, meta: dict, files: dict[str, bytes |
     return d
 
 
-def _signal(root: Path, sid: str, kind: str, title: str, cases: list[str], text: str, days_ago: float = 0) -> None:
-    """A hint from the pattern helper across files: never a finding, always with reasoning and the files it rests on."""
+def _signal(root: Path, sid: str, kind: str, title: str, cases: list[str], text: str, days_ago: float = 0, en: tuple[str, str] | None = None) -> None:
+    """A hint from the pattern helper across files: never a finding, always with reasoning and the files it rests on.
+    `en`: its title and text in English, for a viewer who reads English (title_en, and the text after `<!-- en -->`)."""
     (root / "_signale").mkdir(exist_ok=True)
-    (root / "_signale" / f"{sid}.md").write_text(f"---\nid: {sid}\nkind: {kind}\ntitle: {title}\ncases: {', '.join(cases)}\nstatus: offen\ndate: {_stamp(days_ago)[:10]}\n---\n{text}\n", encoding="utf-8")
+    head_en = f"title_en: {en[0]}\n" if en else ""
+    body_en = f"\n<!-- en -->\n{en[1]}" if en else ""
+    (root / "_signale" / f"{sid}.md").write_text(f"---\nid: {sid}\nkind: {kind}\ntitle: {title}\n{head_en}cases: {', '.join(cases)}\nstatus: offen\ndate: {_stamp(days_ago)[:10]}\n---\n{text}{body_en}\n", encoding="utf-8")
 
 
 def _run(root: Path, cid: str, stage: str, skill: str, status: str, minutes_ago: float, by: str, **extra) -> None:
@@ -91,42 +160,61 @@ def _mod(mid: str, kind: str, title: str, version: int, status: str, body: str, 
 
 
 # The claims office's rulebook (design hand-back, 2026-11-05): rules in force, letter templates, and what the AI proposes.
+EN = "\n<!-- en -->\n"
 CLAIMS_IN_FORCE = {
     "R-01-freigegebene-bausteine.md": _mod("R-01", "Regel", "Briefe aus Bausteinen", 2, "freigegeben",
-        "Jeder Brief an Kunden nutzt freigegebene Textbausteine.", approved_by="Geschäftsleitung", date="2026-09-12", source="Kommunikationsrichtlinien 2026"),
+        "Jeder Brief an Kunden nutzt freigegebene Textbausteine." + EN + "Every letter to a customer uses approved text blocks.",
+        title_en="Letters from text blocks", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-09-12", source="Kommunikationsrichtlinien 2026", source_en="Communication guidelines 2026"),
     "R-02-keine-auszahlung-ohne-rechnung.md": _mod("R-02", "Regel", "Keine Auszahlung ohne Rechnung", 1, "freigegeben",
-        "Ohne Rechnung wird nichts ausgezahlt.", areas="HR, WG", approved_by="Du", date="2026-10-30", source="Aus einem Gespräch mit Jana Koch, 30. Okt."),
+        "Ohne Rechnung wird nichts ausgezahlt." + EN + "Nothing is paid out without an invoice.",
+        title_en="No payout without an invoice", areas="HR, WG", approved_by="Du", date="2026-10-30",
+        source="Aus einem Gespräch mit Jana Koch, 30. Okt.", source_en="Heard in a talk with Jana Koch, 30 Oct"),
     "R-03-vier-augen-ab-5000.md": _mod("R-03", "Regel", "Vier Augen ab 5.000 €", 1, "freigegeben",
-        "Ab 5.000 € Schadenhöhe gibt eine zweite Person die Regulierung frei.", areas="WG", approved_by="Geschäftsleitung", date="2026-03-02", source="Vollmachtsregeln"),
+        "Ab 5.000 € Schadenhöhe gibt eine zweite Person die Regulierung frei." + EN + "From 5,000 € of damage, a second person approves the settlement.",
+        title_en="Four eyes from 5,000 €", areas="WG", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-03-02", source="Vollmachtsregeln", source_en="Authority rules"),
     "B-01-anrede-und-fallbezug.md": _mod("B-01", "Baustein", "Anrede und Fallbezug", 3, "freigegeben",
-        "Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihre Nachricht zu {Falltitel}. Ihre Schadennummer lautet {Schadennummer}. Bitte geben Sie sie bei jeder Rückfrage an.",
-        use="Jeder Brief", approved_by="Geschäftsleitung", date="2026-08-20"),
+        "Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihre Nachricht zu {Falltitel}. Ihre Schadennummer lautet {Schadennummer}. Bitte geben Sie sie bei jeder Rückfrage an."
+        + EN + "Dear {customer name},\n\nthank you for your message about {case title}. Your claim number is {claim number}. Please mention it whenever you contact us.",
+        title_en="Greeting and case reference", use="Jeder Brief", use_en="Every letter", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-08-20"),
     "B-04-naechste-schritte.md": _mod("B-04", "Baustein", "Nächste Schritte nach einer Schadenmeldung", 2, "freigegeben",
-        "Wir haben Ihre Schadenmeldung erhalten. So geht es weiter:\n\n1. Wir prüfen Ihren Vertrag und Ihre Angaben.\n2. Brauchen wir noch etwas, melden wir uns innerhalb von zwei Werktagen.\n3. Sobald alles vollständig ist, entscheiden wir und geben Ihnen Bescheid.",
-        use="Antworten auf eine neue Schadenmeldung", approved_by="Geschäftsleitung", date="2026-07-14"),
+        "Wir haben Ihre Schadenmeldung erhalten. So geht es weiter:\n\n1. Wir prüfen Ihren Vertrag und Ihre Angaben.\n2. Brauchen wir noch etwas, melden wir uns innerhalb von zwei Werktagen.\n3. Sobald alles vollständig ist, entscheiden wir und geben Ihnen Bescheid."
+        + EN + "We have received your claim report. Here is what happens next:\n\n1. We check your policy and the details you sent.\n2. If we need anything else, we will ask you within two working days.\n3. Once everything is complete, we decide on the claim and let you know.",
+        title_en="Next steps after a claim report", use="Antworten auf eine neue Schadenmeldung", use_en="Replies to a new claim", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-07-14"),
     "B-07-fehlende-unterlagen.md": _mod("B-07", "Baustein", "Anforderung fehlender Unterlagen", 1, "freigegeben",
-        "Damit wir weitermachen können, brauchen wir noch: {fehlende Unterlagen}. Antworten Sie einfach auf diese Mail und hängen Sie die Unterlagen an.",
-        use="Wenn ein Dokument fehlt", approved_by="Du", date="2026-06-03"),
+        "Damit wir weitermachen können, brauchen wir noch: {fehlende Unterlagen}. Antworten Sie einfach auf diese Mail und hängen Sie die Unterlagen an."
+        + EN + "To continue with your case, we still need the following: {missing documents}. You can simply reply to this mail with the documents attached.",
+        title_en="Request for missing documents", use="Wenn ein Dokument fehlt", use_en="Whenever a document is missing", approved_by="Du", date="2026-06-03"),
     "B-09-auszahlung.md": _mod("B-09", "Baustein", "Auszahlung", 1, "freigegeben",
-        "Wir überweisen {Betrag} in den nächsten drei Werktagen auf das Konto, das Sie uns genannt haben.",
-        use="Jede Regulierung", approved_by="Geschäftsleitung", date="2026-05-19"),
+        "Wir überweisen {Betrag} in den nächsten drei Werktagen auf das Konto, das Sie uns genannt haben."
+        + EN + "We will transfer {amount} within the next three working days to the account you gave us.",
+        title_en="Payout", use="Jede Regulierung", use_en="Every settlement", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-05-19"),
 }
 CLAIMS_HISTORY = {
     "R-01.v1.md": _mod("R-01", "Regel", "Briefe aus Bausteinen", 1, "freigegeben",
-        "Briefe an Kunden nutzen nach Möglichkeit freigegebene Textbausteine.", approved_by="Geschäftsleitung", date="2026-02-01", source="Kommunikationsrichtlinien 2026"),
+        "Briefe an Kunden nutzen nach Möglichkeit freigegebene Textbausteine." + EN + "Letters to customers use approved text blocks where possible.",
+        title_en="Letters from text blocks", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-02-01", source="Kommunikationsrichtlinien 2026", source_en="Communication guidelines 2026"),
 }
 CLAIMS_PROPOSED = {
     "R-10.v1.md": _mod("R-10", "Regel", "Glas ohne Gutachter", 1, "entwurf",
-        "Glasschäden unter 1.000 € werden ohne Gutachter reguliert.", areas="KFZ", drafted_by="KI", date="2026-10-28",
-        source="Aus einem Gespräch mit Jana Koch, 28. Okt.", note="Gespräch mit Jana Koch: Glas unter 1.000 € zahlen wir immer direkt.  ¶  Letzte 40 Glasschäden: 38 wurden ohne Gutachter reguliert."),
+        "Glasschäden unter 1.000 € werden ohne Gutachter reguliert." + EN + "Glass damage under 1,000 € is settled without an assessor.",
+        title_en="Glass without an assessor", areas="KFZ", drafted_by="KI", date="2026-10-28",
+        source="Aus einem Gespräch mit Jana Koch, 28. Okt.", source_en="Heard in a talk with Jana Koch, 28 Oct",
+        note="Gespräch mit Jana Koch: Glas unter 1.000 € zahlen wir immer direkt.  ¶  Letzte 40 Glasschäden: 38 wurden ohne Gutachter reguliert.",
+        note_en="Interview, team lead: glass under 1,000 € we always pay directly.  ¶  Last 40 glass claims: 38 of 40 were settled without one."),
     "R-11.v1.md": _mod("R-11", "Regel", "Diebstahl wartet auf das Aktenzeichen", 1, "entwurf",
-        "Eine Diebstahlmeldung ohne polizeiliches Aktenzeichen kann angelegt werden, die Regulierung wartet aber darauf.", areas="HR", drafted_by="KI", date="2026-10-29",
-        source="Aus einem Gespräch mit Tobias Wendt, 29. Okt.", note="Gespräch mit Tobias Wendt: Ohne Aktenzeichen zahlen wir bei Diebstahl nie."),
+        "Eine Diebstahlmeldung ohne polizeiliches Aktenzeichen kann angelegt werden, die Regulierung wartet aber darauf."
+        + EN + "A theft report without a police file number can be opened, but settlement waits for it.",
+        title_en="Theft waits for the file number", areas="HR", drafted_by="KI", date="2026-10-29",
+        source="Aus einem Gespräch mit Tobias Wendt, 29. Okt.", source_en="Heard in a talk with Tobias Wendt, 29 Oct",
+        note="Gespräch mit Tobias Wendt: Ohne Aktenzeichen zahlen wir bei Diebstahl nie.", note_en="Interview, claims team: without a file number we never pay for theft."),
     "R-12.v1.md": _mod("R-12", "Regel", "Ursache bei Wasserschäden", 1, "entwurf",
-        "Bei Wasserschäden über 2.000 € bestätigt ein Installateur die Ursache, bevor reguliert wird.", areas="WG, HR", drafted_by="KI", date="2026-10-31",
-        source="Aus den letzten 30 Wasserschäden", note="Letzte 30 Wasserschäden: bei 27 lag die Bestätigung eines Installateurs vor.  ¶  Hausrichtlinie: Ursache klären, dann zahlen."),
+        "Bei Wasserschäden über 2.000 € bestätigt ein Installateur die Ursache, bevor reguliert wird."
+        + EN + "For water damage above 2,000 €, a plumber confirms the cause before it is settled.",
+        title_en="The cause of water damage", areas="WG, HR", drafted_by="KI", date="2026-10-31",
+        source="Aus den letzten 30 Wasserschäden", source_en="Taken from the last 30 water damage claims",
+        note="Letzte 30 Wasserschäden: bei 27 lag die Bestätigung eines Installateurs vor.  ¶  Hausrichtlinie: Ursache klären, dann zahlen.",
+        note_en="Last 30 water damage claims: 27 had a plumber's confirmation.  ¶  House policy: clear the cause, then pay."),
 }
-
 
 def _claims_rulebook(root: Path) -> None:
     (root / "_bausteine" / "_fassungen").mkdir(parents=True)
@@ -198,13 +286,16 @@ def build_claims(root: Path) -> Path:
           _entry(1, "Freigegeben und zur Regulierung", "Du", status="approved", stage="30-pruefung", when=_stamp(2, 9), text="Betrag wie im Gutachten.", step="demo-3", frm="30-pruefung", to="40-regulierung"))
     _signal(root, "M-001", "Wiederholung", "Gleiche Risikoanschrift in zwei Akten innerhalb von fünf Wochen",
             ["HR-2026-0417-wasserschaden-badezimmer", "HR-2026-0430-einbruch-wohnung"],
-            "Musterstraße 12, 2. OG: Wasserschaden gemeldet am {a}, Einbruch gemeldet am {b}. Zwei verschiedene Schadenarten, derselbe Vertrag. Das ist kein Verdacht; es ist ein Hinweis, die zweite Akte mit Kenntnis der ersten zu lesen (Zustand der Wohnung nach der Trocknung, Zugänglichkeit).\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*".format(a=_stamp(6)[:10], b=_stamp(0)[:10]), 0)
+            "Musterstraße 12, 2. OG: Wasserschaden gemeldet am {a}, Einbruch gemeldet am {b}. Zwei verschiedene Schadenarten, derselbe Vertrag. Das ist kein Verdacht; es ist ein Hinweis, die zweite Akte mit Kenntnis der ersten zu lesen (Zustand der Wohnung nach der Trocknung, Zugänglichkeit).\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*".format(a=_stamp(6)[:10], b=_stamp(0)[:10]), 0,
+            en=("Same insured address in two cases within five weeks", "Musterstraße 12, 2nd floor: water damage reported on {a}, a burglary reported on {b}. Two different kinds of damage, the same policy. This is not a suspicion; it is a hint to read the second case knowing the first (the state of the flat after the drying, access).\n\n*A hint, not a finding · a person decides whether anything follows.*".format(a=_stamp(6)[:10], b=_stamp(0)[:10])))
     _signal(root, "M-002", "Abweichung", "Kostenvoranschlag 18 % über dem Üblichen für diesen Schaden",
             ["WG-2026-0402-hagelschaden-reihenhaus"],
-            "Dachziegel und ein Dachfenster an einem Reihenhaus liegen hier meist bei etwa 6.200 €. Dieser Kostenvoranschlag nennt 7.300 €. Das kann am Dachfenster liegen oder an der Zufahrt; es ist ein Hinweis, die Positionen mit dem Gutachten zu lesen.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 1)
+            "Dachziegel und ein Dachfenster an einem Reihenhaus liegen hier meist bei etwa 6.200 €. Dieser Kostenvoranschlag nennt 7.300 €. Das kann am Dachfenster liegen oder an der Zufahrt; es ist ein Hinweis, die Positionen mit dem Gutachten zu lesen.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 1,
+            en=("Repair estimate 18 % above the usual for this damage", "Roof tiles and one roof window on a terraced house usually come to about 6,200 € here. This estimate says 7,300 €. That may be the roof window or the access; it is a hint to read the items against the assessment.\n\n*A hint, not a finding · a person decides whether anything follows.*"))
     _signal(root, "M-003", "Dublette", "Dasselbe Foto in zwei Kfz-Akten",
             ["KFZ-2026-0815-parkschaden-tiefgarage", "KFZ-2026-0790-parkrempler"],
-            "Das Foto der Fahrertür in der neuen Meldung ist dieselbe Datei wie in der abgeschlossenen Akte vom Oktober, mit derselben Aufnahmezeit. Vielleicht nur falsch angehängt, vielleicht derselbe Schaden zweimal gemeldet.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 0)
+            "Das Foto der Fahrertür in der neuen Meldung ist dieselbe Datei wie in der abgeschlossenen Akte vom Oktober, mit derselben Aufnahmezeit. Vielleicht nur falsch angehängt, vielleicht derselbe Schaden zweimal gemeldet.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 0,
+            en=("The same photo in two motor cases", "The photo of the driver's door in the new report is the same file as in the closed case from October, with the same time it was taken. Maybe just attached by mistake, maybe the same damage reported twice.\n\n*A hint, not a finding · a person decides whether anything follows.*"))
     for i, (cid, title, label, days) in enumerate([("HR-2026-0388-leitungswasser-kueche", "Leitungswasser Küche", "HR", 14), ("KFZ-2026-0790-parkrempler", "Parkrempler Tiefgarage", "KFZ", 21),
                                                   ("WG-2026-0371-blitzschlag-dachstuhl", "Blitzschlag Dachstuhl", "WG", 30)]):
         _case(root, "60-abgeschlossen", cid, {"label": label, "number": cid.split("-")[1] + "-" + cid.split("-")[2], "title": title, "created": _stamp(days + 10)[:10],
@@ -335,13 +426,51 @@ MODULES = {
 }
 
 
+# The assessment office's rulebook in English, for a viewer who reads English. Letters always take the German original.
+MODULES_EN = {
+    "B-01": ("Liability note", "The assessment is based on the inspection of the vehicle and the documents provided. Hidden damage that only shows during the repair is not part of this assessment; on request it is valued in an addendum."),
+    "B-05": ("Loss in value", "The loss in market value is worked out with the method approved in this office, from the vehicle's age, mileage, replacement value and repair costs. Below the minor-damage limit it is stated as 0 € with the reason."),
+    "B-07": ("Residual value and replacement", "The replacement value is worked out from the regional market. A residual value is determined once the repair costs reach the office's limit."),
+    "B-08": ("Closing line", "We are happy to answer any questions. Please quote the order number."),
+    "B-10": ("Loss of use (liability)", "Loss of use per group {nu_gruppe} of the table for {nu_tage} days: repair time plus assessment and placing the order."),
+    "B-11": ("Repair method", "The repair is done to the manufacturer's specifications in a specialist garage, with the parts and labour values stated in the calculation."),
+    "B-12": ("No total loss", "The gross repair costs are {quote_rk|pct} of the replacement value of {wbw|eur}. They are below 60 %; no residual value is needed, and there is no economic total loss."),
+    "B-13": ("Economic total loss", "The gross repair costs reach {quote_rk|pct} of the replacement value of {wbw|eur}. This is an economic total loss. Residual value {restwert|eur} (the highest of three offers from the regional market), replacement cost {wba|eur}."),
+    "B-14": ("Residual value as a check", "The gross repair costs are {quote_rk|pct} of the replacement value of {wbw|eur}, above 60 %. The residual value was determined as a check ({restwert|eur}); the repair remains economical."),
+    "B-15": ("Loss of use (comprehensive)", "Loss of use is not covered by comprehensive insurance. For information: group {nu_gruppe}, {nu_tage} days."),
+    "B-16": ("No earlier damage", "No earlier or old damage is visible on the vehicle. The order contains no notes from the insurer's HIS."),
+    "B-17": ("Earlier damage named", "Earlier and old damage, not part of this assessment: {vorschaeden_text}"),
+    "B-18": ("Photo documentation", "{fotos} photos to photo standard R-02: overall views, close-ups of each calculated item, VIN, odometer."),
+    "R-01": ("Earlier damage and HIS", "Every assessment names earlier and old damage, even when there is none. Notes from the insurer's HIS (the industry's information system) come with the order and are answered in the assessment; the pre-check reports any note left unanswered."),
+    "R-02": ("Photo standard per kind of damage", "Required views per kind of damage: front and rear overall, both sides, VIN, odometer, each calculated item in close-up. If a view is missing, the pre-check names it; it does not decide on the item."),
+    "R-03": ("A plausible calculation", "The calculation is checked against the vehicle type, the damage and the office's experience. Differences are named with their reasons; the pre-check never changes an item."),
+    "R-04": ("State the loss in value", "Every assessment says something about the loss in value, even when it is 0 €."),
+    "R-05": ("Four-eyes limit", "Above the office's damage limit, a second person approves. The limit is set in this rule, not in the code."),
+    "R-06": ("Checking the invoice", "The invoice is laid item by item against the assessment and the calculation. The AI names the differences; the reviewer makes any cuts."),
+    "R-07": ("Total loss limit and residual value", "When the repair costs reach 60 % of the replacement value, the assessor determines the residual value with three offers from the regional market (Federal Court of Justice) and states the replacement cost. From 100 % it is an economic total loss; up to 130 % a repair is possible if the owner keeps the car. The pre-check recalculates the ratio and reports a missing required part."),
+}
+PEOPLE_EN = {"Fachliche Leitung": "Technical lead", "Innendienst": "Back office", "Geschäftsleitung": "Management"}
+
+
+def _with_english(text: str) -> str:
+    """A module file with its English title, approver and text added (title_en, approved_by_en, body after `<!-- en -->`)."""
+    head, body = text.split("\n---\n", 1)
+    mid = re.search(r"^id: (\S+)", head, re.M).group(1)
+    if mid not in MODULES_EN:
+        return text
+    title, body_en = MODULES_EN[mid]
+    by = re.search(r"^approved_by: (.+)$", head, re.M)
+    extra = f"\ntitle_en: {title}" + (f"\napproved_by_en: {PEOPLE_EN[by.group(1)]}" if by and by.group(1) in PEOPLE_EN else "")
+    return head + extra + "\n---\n" + body.rstrip("\n") + f"\n<!-- en -->\n{body_en}\n"
+
+
 def build_egutachten(root: Path) -> Path:
     cfg = CONFIG / "egutachten"
     root = _root(root, cfg, EGUT_STAGES)
     (root / "DEMO.md").write_text("Fiktive Gutachtenakten für die Demonstration. Jeder Name, jede Nummer und jeder Betrag ist erfunden.\n", encoding="utf-8")
     (root / "_bausteine").mkdir()
     for name, text in MODULES.items():
-        (root / "_bausteine" / name).write_text(text, encoding="utf-8")
+        (root / "_bausteine" / name).write_text(_with_english(text), encoding="utf-8")
     photo, kalk, auftrag = SAMPLES / "foto.jpg", SAMPLES / "kostenvoranschlag.pdf", SAMPLES / "gutachten.pdf"
     pruef = (cfg / "replies" / "pruefbericht-default.md").read_text(encoding="utf-8")
 
@@ -401,10 +530,12 @@ def build_egutachten(root: Path) -> Path:
               _entry(2, "Abgeschlossen", "Innendienst", stage="60-versendet", when=_stamp(days, 15), step=f"demo-gc{i}", frm="60-versendet", to="70-abgeschlossen"))
     _signal(root, "M-001", "Dublette", "Identisches Foto in zwei Gutachtenakten",
             ["KH-2026-1140-parkrempler", "KK-2026-1131-marderschaden"],
-            "Foto 1 der beiden Akten ist byteweise identisch. Zwei Aufträge, zwei Fahrzeuge, dasselbe Bild: entweder vertauscht oder doppelt abgelegt. Beide Gutachten sind versendet.\n\n*Hinweis, keine Feststellung · der Prüfer entscheidet, ob ein Nachtrag nötig ist.*", 1)
+            "Foto 1 der beiden Akten ist byteweise identisch. Zwei Aufträge, zwei Fahrzeuge, dasselbe Bild: entweder vertauscht oder doppelt abgelegt. Beide Gutachten sind versendet.\n\n*Hinweis, keine Feststellung · der Prüfer entscheidet, ob ein Nachtrag nötig ist.*", 1,
+            en=("Identical photo in two assessment files", "Photo 1 of both files is identical byte for byte. Two orders, two vehicles, the same picture: either swapped or filed twice. Both assessments have been sent.\n\n*A hint, not a finding · the reviewer decides whether an addendum is needed.*"))
     _signal(root, "M-002", "Wiederholung", "Gleicher Halter in zwei Aufträgen innerhalb von 60 Tagen",
             ["KH-2026-1182-auffahrunfall-a3-kleinwagen", "KK-2026-0902-wildunfall-landstrasse"],
-            "Herr Beispiel, Musterstadt: Wildunfall (Kasko) vor 30 Tagen, jetzt Geschädigter eines Auffahrunfalls (Haftpflicht), zwei verschiedene Fahrzeuge. Nichts daran ist auffällig; der Hinweis spart dem Prüfer das Nachschlagen und bringt die Fotos des ersten Falls neben die des zweiten.\n\n*Hinweis, keine Feststellung · der Prüfer entscheidet.*", 0)
+            "Herr Beispiel, Musterstadt: Wildunfall (Kasko) vor 30 Tagen, jetzt Geschädigter eines Auffahrunfalls (Haftpflicht), zwei verschiedene Fahrzeuge. Nichts daran ist auffällig; der Hinweis spart dem Prüfer das Nachschlagen und bringt die Fotos des ersten Falls neben die des zweiten.\n\n*Hinweis, keine Feststellung · der Prüfer entscheidet.*", 0,
+            en=("Same owner in two orders within 60 days", "Mr Beispiel, Musterstadt: a wildlife collision (comprehensive) 30 days ago, now the injured party in a rear-end collision (liability), two different vehicles. Nothing about it is unusual; the hint saves the reviewer the lookup and puts the photos of the first case next to those of the second.\n\n*A hint, not a finding · the reviewer decides.*"))
     return root
 
 

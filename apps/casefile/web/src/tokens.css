@@ -15,11 +15,11 @@
   --hairline-2: #D8D7D2;
   --dashed: #C9C8C2;
   --chip: #F1F0EC;
-  --your-move: #1877F2;
+  --your-move: #2F6BFF;                 /* the prototype's "you" blue (design hand-back); the filled button keeps its own gradient */
   --your-move-on: #FFFFFF;
-  --your-move-soft: #E4EEFF;
-  --your-move-ink: #0F4FB8;
-  --your-move-halo: rgba(24, 119, 242, 0.18);
+  --your-move-soft: #E6EDFF;
+  --your-move-ink: #1F4FCC;
+  --your-move-halo: rgba(47, 107, 255, 0.18);
   --seal: #C2562E;
   --seal-on: #FFF8F2;
   --seal-soft: #F8E6DD;
@@ -82,7 +82,7 @@
   --scrim: rgba(30, 28, 40, .28);
   --pop-shadow: 0 18px 50px rgba(0, 0, 0, .18), 0 2px 6px rgba(0, 0, 0, .06);
   --fs-10: 10px; --fs-14-5: 14.5px; --fs-15: 15px;
-  --r-4: 4px; --r-5: 5px;
+  --r-4: 4px; --r-5: 5px; --r-6: 6px;
   /* the cockpit's own face (2026-11-05): indigo for the shell's chrome, so the room around the tools reads apart from
      Casefile's blue. --your-move stays blue and keeps its one meaning; this is only selection, links and buttons. */
   --shell: #5B4BDB;
@@ -95,6 +95,7 @@
   --shell-side: rgba(244, 242, 252, .62);
   --shell-side-line: rgba(91, 75, 219, .12);
   /* Flagged (2026-11-05): one colour per kind of hint: a possible duplicate, a repeat, an unusual amount */
+  --faint: #B5B4BC;                     /* separators, chevrons: the prototype's faintest grey */
   --sg-dup: #1E93A8; --sg-dup-soft: rgba(48, 176, 199, .13);
   --sg-rep: #D97A00; --sg-rep-soft: rgba(255, 149, 0, .14);
   --sg-dev: #5250D8; --sg-dev-soft: rgba(94, 92, 230, .12);

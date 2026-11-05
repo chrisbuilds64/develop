@@ -87,3 +87,20 @@ def test_what_the_ai_proposes_waits_and_a_person_accepts_or_rejects_it_with_a_re
     assert after["R-10"]["in_force"] and "R-11" not in after                                    # accepted holds; rejected is gone from the list
     again = du.post("/api/rulebook/R-11/draft", json={"text": "Neu formuliert.", "title": "Diebstahl", "kind": "Regel"}).json()
     assert again["draft"]["version"] == 2                                                       # a new draft after a rejection does not overwrite it
+
+
+def test_a_letter_only_ever_takes_the_original_text_and_a_reader_sees_their_language(tmp_path):
+    from casefile.demo.worlds import build_claims
+    root = build_claims(tmp_path / "claims")
+    store = FsStore(root)
+    b01 = rulebook.current(store)["B-01"]
+    assert "Sehr geehrte" in b01["body"] and "Dear" not in b01["body"] and b01["body_en"].startswith("Dear")   # compose takes body
+    assert "Dear" not in rulebook.in_force_at(store, None)["B-01"]["body"]
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    c = TestClient(app)
+    c.post("/api/session", json={"person": "du"})
+    c.post("/api/session/lang", json={"lang": "en"})
+    m = {x["id"]: x for x in c.get("/api/rules").json()["modules"]}
+    assert m["B-01"]["text"].startswith("Dear") and m["B-01"]["title"] == "Greeting and case reference" and m["R-01"]["approved_by"] == "Management"
+    c.post("/api/session/lang", json={"lang": "de"})
+    assert {x["id"]: x for x in c.get("/api/rules").json()["modules"]}["B-01"]["text"].startswith("Sehr geehrte")
