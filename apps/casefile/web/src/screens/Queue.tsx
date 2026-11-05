@@ -1,6 +1,7 @@
 // The queue beside a case (design hand-back, 2026-11-05): three tabs over the workspace's groups — for you, with others
 // (the AI, other people, a date, planned), done (out and the archive) — and one quiet row per case: the blue dot for new
 // to you, the title, who it is from, how long it has waited, and a line while the AI reads.
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, type CaseCard, type GroupOut } from "../api";
 import { ago, type words } from "../words";
@@ -24,13 +25,23 @@ function short(iso: string, lang: string): string {
   return ago(iso, lang).replace(/ (Min\.|min)$/, "m").replace(/ (Std\.|h)$/, "h").replace(/ Tage?n?$| days?$/, "d");
 }
 
-export function Queue({ tab, openId, go, w, lang }: { tab: Tab; openId?: string; go: (p: string) => void; w: ReturnType<typeof words>; lang: string }) {
+export function Queue({ tab, openId, go, w, lang, place, views, onMenu }: { tab: Tab; openId?: string; go: (p: string) => void; w: ReturnType<typeof words>; lang: string;
+  place: string; views?: ReactNode; onMenu?: () => void }) {
+  const me = useQuery({ queryKey: ["me"], queryFn: api.me });
+  const color = me.data?.places?.find((p) => p.current)?.color;
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const n = (t: Tab) => casesOf(groups.data, t).length;
   const list = casesOf(groups.data, tab);
   const open = (c: CaseCard) => go(`/case/${encodeURIComponent(c.id)}?g=${tab}`);
   return (
     <section className="queue" aria-label={w.yourMove} data-help="cf.list">
+      <div className="q-bar">
+        <button type="button" className="bar-menu" data-help-skip="opens the rail on a phone" aria-label={w.menu} onClick={onMenu}>☰</button>
+        <button type="button" className="q-crumb" data-help-skip="explained by cf.groups" onClick={() => go("/")}>{w.home}</button>
+        <span className="q-sep">/</span>
+        <span className="q-place"><span className="sq" style={{ background: color || undefined }} />{place}</span>
+        {views}
+      </div>
       <div className="q-tabs" role="tablist">
         {(["you", "others", "done"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => go(`/group/${t}`)}>

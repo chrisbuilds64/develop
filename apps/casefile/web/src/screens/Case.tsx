@@ -3,11 +3,11 @@
 // button for it — the AI's reading of a mail with its facts and suggestion, or the plain sentence of the move — and, when
 // the case lies elsewhere or is closed, remind, take back or move back; what is on the desk; the keys. Beside it the
 // conversation, the documents and the details. Every action is a step of the core; Undo follows the core's undo_step.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type ConfigView, type MeOut, type Turn, type Entry } from "../api";
 import { Conversation } from "../components/Conversation";
-import { Send, Seal } from "../components/Icons";
+import { Send, Seal, DocIcon, PenIcon, PhotoIcon } from "../components/Icons";
 import { Reader, type Doc } from "../components/Reader";
 import { MetaList } from "../components/MetaSheet";
 import { casesOf, type Tab } from "./Queue";
@@ -169,13 +169,14 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const firstFree = new Set<string>();
   const nextOfSeries = (s: { file: string }) => { const k = seriesOf(s.file); if (!k) return true; if (firstFree.has(k)) return false; firstFree.add(k); return true; };
   const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
+  const blocksMe = (s: { file: string; shape: string }) => blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))));
+  const othersDeliver = (s: { by: string; by_word: string }) => !!s.by && s.by !== "human" && !byHelper(s) && !(me.roles ?? []).some((r) => s.by === `role:${r}` || s.by === r);
   const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s)
-    && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6)))))).filter(nextOfSeries);
+    && (blocksMe(s) || (mine && (s.required || s.due_station === v.station) && !othersDeliver(s)))).filter(nextOfSeries);
   const talkSlot = v.slots.find((s) => s.shape === "interview");
   const outcomeReady = v.slots.some((s) => s.shape === "data" && s.present);
   const draftHere = v.slots.some((s) => s.file === ((config.theme as { interview?: { draft?: string } }).interview?.draft) && s.present);
   const onsiteHere = ((config.theme as { onsite?: { stages?: string[] } }).onsite?.stages ?? []).includes(v.stage);
-  const photo = desk.find((s) => s.shape.startsWith("image"));
   const party = v.party || "";
   const initials = (party || v.title).split(/[\s,]+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
   const urgent = main?.kind === "date" || r?.urgency === "high";
@@ -229,8 +230,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
         ) : (
         <div className="case">
           <header className="c-head" data-help="cf.case-head">
-            {photo ? <button type="button" className="hthumb" onClick={() => setReading(photo.versions[photo.versions.length - 1].name)} aria-label={photo.word}><img src={BASE + photo.versions[photo.versions.length - 1].url} alt="" /></button>
-              : <span className="hav" aria-hidden="true">{initials}</span>}
+            <span className="hav" aria-hidden="true">{initials}</span>
             <div className="hmain">
               <h1 className="title">{v.title}</h1>
               <div className="hsub">{party && <span>{party}</span>}{urgent && <span className="hurg">{w.urgent}</span>}</div>
@@ -291,18 +291,21 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
               {talkSlot && v.station !== "prepare" && <button type="button" className="doc tile" data-help="cf.talk-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/gespraech`)}><span className="dn">{w.talkOpen}</span><span className="dm">{w.talkOpenHint}</span></button>}
               {((talkSlot && outcomeReady) || (!talkSlot && draftHere)) && <button type="button" className="doc tile" data-help="cf.outcome-tile" data-outcome="1" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}><span className="dn">{w.outcomeOpen}</span><span className="dm">{w.outcomeOpenHint}</span></button>}
               {onsiteHere && <button type="button" className="doc tile" data-onsite="1" data-help-skip="explained by cf.desk" onClick={() => go(`/case/${encodeURIComponent(id)}/vorort`)}><span className="dn">{w.onsite} →</span><span className="dm">{w.onsiteHint}</span></button>}
-              {desk.map((s) => {
-                const newest = s.versions[s.versions.length - 1];
-                if (s.shape.startsWith("image")) return (
-                  <button key={s.file} type="button" className="doc photo" data-file={s.file} onClick={() => setReading(newest.name)}><img src={BASE + newest.url} alt="" /><span className="pn">{s.word}</span></button>
-                );
-                return (
-                  <button key={s.file} type="button" className="doc" data-file={s.file} onClick={() => setReading(newest.name)}>
-                    <span className="dn">{s.word}</span>
-                    <span className="dm">{w.version(Math.max(1, newest.version))}{s.by_word ? ` · ${s.by_word}` : ""}</span>
+              {(() => {
+                const photos = desk.filter((s) => s.shape.startsWith("image"));
+                const rest = desk.filter((s) => !s.shape.startsWith("image"));
+                const tile = (key: string, word: string, meta: string, open: () => void, icon: ReactNode) => (
+                  <button key={key} type="button" className="doc" data-file={key} onClick={open}>
+                    <span className="dn">{icon}{word}</span><span className="dm">{meta}</span>
                   </button>
                 );
-              })}
+                const metaOf = (s: CaseView["slots"][number]) => { const n = s.versions[s.versions.length - 1]; return `${w.version(Math.max(1, n.version))}${s.by_word ? ` · ${s.by_word}` : ""}`; };
+                return <>
+                  {rest.map((s) => tile(s.file, s.word, metaOf(s), () => setReading(s.versions[s.versions.length - 1].name), s.shape === "pdf" ? <DocIcon /> : s.shape === "money" ? <DocIcon /> : <PenIcon />))}
+                  {photos.length === 1 && tile(photos[0].file, photos[0].word, metaOf(photos[0]), () => setReading(photos[0].versions[photos[0].versions.length - 1].name), <PhotoIcon />)}
+                  {photos.length > 1 && tile("photos", `${w.photos} (${photos.length})`, metaOf(photos[0]), () => setReading(photos[0].versions[photos[0].versions.length - 1].name), <PhotoIcon />)}
+                </>;
+              })()}
               {missing.map((s) => <Missing key={s.file} slot={s} mine={mine && blocked.includes(s.file)} busy={busy} sample={samples.includes(s.file)} w={w}
                                            onFile={(f) => upload.mutate({ slot: s.file, file: f })} onSample={() => sampleIn.mutate(s.file)} />)}
               {desk.length === 0 && missing.length === 0 && !talkSlot && <span className="c-empty">{w.deskEmpty}</span>}

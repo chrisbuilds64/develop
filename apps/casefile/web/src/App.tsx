@@ -176,8 +176,8 @@ export function App() {
             onSignOut={async () => { await api.signOut(); if (me.data?.shell) { window.location.href = `${me.data.shell.replace(/\/?$/, "/")}logout`; return; } qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
             theme={theme} onTheme={setTheme} onLang={onLang} open={railOpen} onClose={() => setRailOpen(false)} />
       <div className="main-col">
-        <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case" || (route.name === "group" && !isPhone)} dark={dark}
-                onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={views} />
+        {!(route.name === "group" || (route.name === "case" && !isPhone)) && <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case"} dark={dark}
+                onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={views} />}
         {route.name === "home" ? (
           <Home config={config.data} go={go} w={w} />
         ) : (
@@ -204,7 +204,7 @@ export function App() {
             <Signals config={config.data} go={go} w={w} />
           ) : (
             <div className="ws">
-              {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} />}
+              {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} place={here} views={views} onMenu={() => setRailOpen(true)} />}
               {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} tab={tab} />}
               {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} tab={tab} /> : <div className="ws-case"><main className="center" /></div>)}
             </div>

@@ -185,6 +185,15 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .ws { display: flex; flex: 1; min-height: 0; width: 100%; }
 .main-col > .shell:has(> .ws) { display: flex; }
 .queue { flex: 0 0 300px; border-right: 1px solid var(--tint-8); display: flex; flex-direction: column; min-height: 0; background: var(--ground); }
+.q-bar { display: flex; align-items: center; gap: 8px; height: var(--bar-h); padding: 0 12px 0 16px; border-bottom: 1px solid var(--tint-8); flex: none; font-size: var(--fs-13); }
+.q-crumb { border: none; background: none; padding: 0; font: inherit; color: var(--sub); cursor: pointer; }
+.q-crumb:hover { color: var(--ink); }
+.q-sep { color: var(--muted); }
+.q-place { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.q-bar .bar-views { margin-left: auto; }
+.q-bar .bar-menu { display: none; }
+.dn svg { color: var(--muted); flex: none; }
+.dn { display: flex; align-items: center; gap: 7px; }
 .q-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 12px 12px 8px; padding: 2px; border-radius: var(--r-9); background: var(--tint-6); }
 .q-tabs button { font: inherit; font-size: var(--fs-12-5); border: none; background: none; color: var(--sub); border-radius: var(--r-7); padding: 5px 4px; cursor: pointer; white-space: nowrap; }
 .q-tabs button.on { background: var(--surface); color: var(--ink); font-weight: 500; box-shadow: var(--seg-shadow); }
@@ -208,7 +217,7 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 
 .ws-case { flex: 1; min-width: 0; display: flex; position: relative; }
 .center { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
-.c-bar { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 24px; border-bottom: 1px solid var(--tint-8); flex: none; font-size: var(--fs-12); color: var(--muted); }
+.c-bar { display: flex; align-items: center; gap: 6px; height: var(--bar-h); padding: 0 24px; border-bottom: 1px solid var(--tint-8); flex: none; font-size: var(--fs-12); color: var(--muted); }
 .cid { font-variant-numeric: tabular-nums; color: var(--sub); }
 .cid a { color: inherit; }
 .c-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -303,8 +312,8 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .c-keys { display: flex; gap: 16px; align-items: center; height: 34px; padding: 0 24px; border-top: 1px solid var(--tint-8); font-size: var(--fs-12); color: var(--muted); flex: none; overflow: hidden; white-space: nowrap; }
 
 .insp { flex: 0 0 340px; border-left: 1px solid var(--tint-8); background: var(--ground-2); display: flex; flex-direction: column; min-height: 0; }
-.insp .tabs { display: flex; gap: 18px; height: 44px; align-items: center; padding: 0 18px; border-bottom: 1px solid var(--tint-8); font-size: var(--fs-13); flex: none; }
-.insp .tabs button { border: none; background: none; color: var(--muted); height: 44px; cursor: pointer; padding: 0; font: inherit; }
+.insp .tabs { display: flex; gap: 18px; height: var(--bar-h); align-items: center; padding: 0 18px; border-bottom: 1px solid var(--tint-8); font-size: var(--fs-13); flex: none; }
+.insp .tabs button { border: none; background: none; color: var(--muted); height: var(--bar-h); cursor: pointer; padding: 0; font: inherit; }
 .insp .tabs button.on { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--ink); }
 .insp .i-thread { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 .conv-empty { margin: 0; font-size: var(--fs-13); color: var(--sub); }
@@ -360,6 +369,7 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 
 @media (max-width: 1200px) { .insp { flex-basis: 300px; } .queue { flex-basis: 260px; } .docs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) {
+  .q-bar .bar-menu { display: grid; }
   .ws { flex-direction: column; min-height: 0; overflow-y: auto; } .queue { flex: 1; border-right: none; }
   .ws-case { flex-direction: column; overflow: visible; } .center { overflow: visible; flex: none; } .case { overflow: visible; }
   .insp { flex: none; border-left: none; border-top: 1px solid var(--tint-8); } .insp .i-thread { overflow: visible; }
