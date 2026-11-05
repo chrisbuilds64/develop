@@ -2057,6 +2057,22 @@
             "type": "string",
             "title": "Text",
             "default": ""
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "person",
+                  "ai",
+                  "system"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
           }
         },
         "type": "object",

@@ -68,6 +68,21 @@ class GroupView(BaseModel):
     word: str
 
 
+def actor_of(config: DomainConfig, author: str) -> str:
+    """'ai' when an agent of this application wrote the entry, 'system' for the core itself, else 'person'."""
+    p = config.person(author)
+    if p is not None:
+        return "ai" if p.kind == "agent" else "person"
+    a = (author or "").strip().lower()
+    if a in ("claude", "ki", "ai") or a in (config.run_policy.get("skills") or {}):
+        return "ai"
+    return "system" if a in ("", "system") else "person"
+
+
+def with_actors(config: DomainConfig, entries: list[Entry]) -> list[Entry]:
+    return [e.model_copy(update={"actor": actor_of(config, e.author)}) for e in entries]
+
+
 class CaseView(CaseCard):
     meta: dict = Field(default_factory=dict)
     stations: list[StationView]
@@ -170,7 +185,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                       versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in s.versions], present=s.present)
              for s in case.slots]
     agent = config.agent
-    return CaseView(**c.model_dump(), meta=case.meta, stations=stations, slots=slots, entries=case.entries, turns=turns, my_turns=mine,
+    return CaseView(**c.model_dump(), meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 

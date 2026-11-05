@@ -969,6 +969,8 @@ export interface components {
              * @default
              */
             text: string;
+            /** Actor */
+            actor?: ("person" | "ai" | "system") | null;
         };
         /** EntryIn */
         EntryIn: {

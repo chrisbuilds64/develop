@@ -118,3 +118,18 @@ def test_the_e_report_path_draft_precheck_approve_letter(tmp_path):
     (root / "60-versendet" / cid3 / "gutachten.v2.md").write_text("# Nachtrag\n", encoding="utf-8")
     r = stepping.step(store, config, cid3, StepRequest(action="deliver", step_id="g3", payload={"files": ["gutachten.v2.md"]}), "lenz")
     assert r.ok and r.run and "vorpruefung" in r.run
+
+
+def test_every_entry_says_whether_a_person_or_the_ai_made_it(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    assert client.post("/api/session", json={"person": "du"}).status_code == 200
+    actors = {}
+    for group in client.get("/api/cases").json():
+        for card in group["cases"]:
+            for e in client.get(f"/api/cases/{card['id']}").json()["entries"]:
+                actors.setdefault(e["actor"], set()).add(e["author"])
+    assert "KI" in actors.get("ai", set()), actors          # the agent of people.json
+    assert actors.get("person") and not (actors["person"] & actors.get("ai", set()))
+    assert "**Actor:**" not in "".join(p.read_text(encoding="utf-8") for p in root.rglob("review.md"))   # derived, never written

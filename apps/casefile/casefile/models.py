@@ -82,6 +82,7 @@ class Entry(BaseModel):
     amount: str | None = None
     files: list[str] = Field(default_factory=list)   # deliverables this entry delivered
     text: str = ""
+    actor: Literal["person", "ai", "system"] | None = None   # who made this move, derived from the author when the surface reads it; never written to review.md
 
     model_config = {"populate_by_name": True}
 
