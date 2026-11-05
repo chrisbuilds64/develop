@@ -1,0 +1,261 @@
+{
+  "$comment": "The Casefile tutorial series (design hand-back, request 10): nine chapters, German and English, 720p with the subtitles burned in. `where` names the places that offer a chapter; `guides` is the full list. Files live in videos/.",
+  "videos": [
+    {
+      "key": "ch01",
+      "where": [
+        "guides"
+      ],
+      "title": {
+        "en": "Why Casefile"
+      },
+      "file": "en-01.mp4",
+      "poster": "en-01.jpg",
+      "seconds": 38,
+      "lang": "en"
+    },
+    {
+      "key": "ch01",
+      "where": [
+        "guides"
+      ],
+      "title": {
+        "de": "Warum Casefile"
+      },
+      "file": "de-01.mp4",
+      "poster": "de-01.jpg",
+      "seconds": 45,
+      "lang": "de"
+    },
+    {
+      "key": "ch02",
+      "where": [
+        "guides",
+        "home"
+      ],
+      "title": {
+        "en": "Starting the day"
+      },
+      "file": "en-02.mp4",
+      "poster": "en-02.jpg",
+      "seconds": 43,
+      "lang": "en"
+    },
+    {
+      "key": "ch02",
+      "where": [
+        "guides",
+        "home"
+      ],
+      "title": {
+        "de": "Der Start in den Tag"
+      },
+      "file": "de-02.mp4",
+      "poster": "de-02.jpg",
+      "seconds": 48,
+      "lang": "de"
+    },
+    {
+      "key": "ch03",
+      "where": [
+        "guides",
+        "case",
+        "outcome"
+      ],
+      "title": {
+        "en": "A case in one minute"
+      },
+      "file": "en-03.mp4",
+      "poster": "en-03.jpg",
+      "seconds": 45,
+      "lang": "en"
+    },
+    {
+      "key": "ch03",
+      "where": [
+        "guides",
+        "case",
+        "outcome"
+      ],
+      "title": {
+        "de": "Ein Fall in einer Minute"
+      },
+      "file": "de-03.mp4",
+      "poster": "de-03.jpg",
+      "seconds": 48,
+      "lang": "de"
+    },
+    {
+      "key": "ch04",
+      "where": [
+        "guides",
+        "case"
+      ],
+      "title": {
+        "en": "Conversation and documents"
+      },
+      "file": "en-04.mp4",
+      "poster": "en-04.jpg",
+      "seconds": 44,
+      "lang": "en"
+    },
+    {
+      "key": "ch04",
+      "where": [
+        "guides",
+        "case"
+      ],
+      "title": {
+        "de": "Gespräch und Dokumente"
+      },
+      "file": "de-04.mp4",
+      "poster": "de-04.jpg",
+      "seconds": 48,
+      "lang": "de"
+    },
+    {
+      "key": "ch05",
+      "where": [
+        "guides",
+        "workspace"
+      ],
+      "title": {
+        "en": "Workspaces"
+      },
+      "file": "en-05.mp4",
+      "poster": "en-05.jpg",
+      "seconds": 39,
+      "lang": "en"
+    },
+    {
+      "key": "ch05",
+      "where": [
+        "guides",
+        "workspace"
+      ],
+      "title": {
+        "de": "Arbeitsbereiche"
+      },
+      "file": "de-05.mp4",
+      "poster": "de-05.jpg",
+      "seconds": 51,
+      "lang": "de"
+    },
+    {
+      "key": "ch06",
+      "where": [
+        "guides",
+        "new-case",
+        "interview"
+      ],
+      "title": {
+        "en": "New cases, interviews and on-site"
+      },
+      "file": "en-06.mp4",
+      "poster": "en-06.jpg",
+      "seconds": 41,
+      "lang": "en"
+    },
+    {
+      "key": "ch06",
+      "where": [
+        "guides",
+        "new-case",
+        "interview"
+      ],
+      "title": {
+        "de": "Neue Fälle, Interview und Vor-Ort"
+      },
+      "file": "de-06.mp4",
+      "poster": "de-06.jpg",
+      "seconds": 48,
+      "lang": "de"
+    },
+    {
+      "key": "ch07",
+      "where": [
+        "guides",
+        "rulebook",
+        "house"
+      ],
+      "title": {
+        "en": "The rulebook"
+      },
+      "file": "en-07.mp4",
+      "poster": "en-07.jpg",
+      "seconds": 40,
+      "lang": "en"
+    },
+    {
+      "key": "ch07",
+      "where": [
+        "guides",
+        "rulebook",
+        "house"
+      ],
+      "title": {
+        "de": "Das Regelwerk"
+      },
+      "file": "de-07.mp4",
+      "poster": "de-07.jpg",
+      "seconds": 43,
+      "lang": "de"
+    },
+    {
+      "key": "ch08",
+      "where": [
+        "guides",
+        "flagged"
+      ],
+      "title": {
+        "en": "Flagged cases"
+      },
+      "file": "en-08.mp4",
+      "poster": "en-08.jpg",
+      "seconds": 35,
+      "lang": "en"
+    },
+    {
+      "key": "ch08",
+      "where": [
+        "guides",
+        "flagged"
+      ],
+      "title": {
+        "de": "Auffällige Fälle"
+      },
+      "file": "de-08.mp4",
+      "poster": "de-08.jpg",
+      "seconds": 39,
+      "lang": "de"
+    },
+    {
+      "key": "ch09",
+      "where": [
+        "guides",
+        "ai-team"
+      ],
+      "title": {
+        "en": "The AI team"
+      },
+      "file": "en-09.mp4",
+      "poster": "en-09.jpg",
+      "seconds": 34,
+      "lang": "en"
+    },
+    {
+      "key": "ch09",
+      "where": [
+        "guides",
+        "ai-team"
+      ],
+      "title": {
+        "de": "Das KI-Team"
+      },
+      "file": "de-09.mp4",
+      "poster": "de-09.jpg",
+      "seconds": 42,
+      "lang": "de"
+    }
+  ]
+}
