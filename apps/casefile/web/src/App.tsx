@@ -71,22 +71,24 @@ export function App() {
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups, enabled: !!me.data?.person });
   const config = useQuery({ queryKey: ["config"], queryFn: api.config, refetchInterval: false });
   const [route, go] = useRoute();
-  // one choice for the whole shell: the cockpit keeps it as `cockpit-theme` (light | dark | auto), same origin; the app reads
-  // that first, writes both, and follows a change made in another tab
+  // one choice for the whole shell, kept as `shell-theme` (light | dark | auto) on the shared origin and written only when
+  // the person picks one. Until then it is light, whatever the computer is set to (design hand-back, 2026-11-05).
   const readTheme = (): "light" | "dark" | "system" => {
     try {
-      const shell = localStorage.getItem("cockpit-theme");
-      if (shell) return shell === "auto" ? "system" : (shell as "light" | "dark");
-      return (localStorage.getItem("cf.theme") as "light" | "dark" | "system") || "system";
-    } catch { return "system"; }
+      const v = localStorage.getItem("shell-theme");
+      return v === "dark" ? "dark" : v === "auto" ? "system" : "light";
+    } catch { return "light"; }
   };
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(readTheme);
+  const [theme, setThemeState] = useState<"light" | "dark" | "system">(readTheme);
+  const setTheme = (t: "light" | "dark" | "system") => {
+    setThemeState(t);
+    try { localStorage.setItem("shell-theme", t === "system" ? "auto" : t); } catch { /* private window: this visit only */ }
+  };
   useEffect(() => {
-    try { localStorage.setItem("cf.theme", theme); localStorage.setItem("cockpit-theme", theme === "system" ? "auto" : theme); } catch { /* private window */ }
     if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
   }, [theme]);
   useEffect(() => {
-    const on = (e: StorageEvent) => { if (e.key === "cockpit-theme" || e.key === "cf.theme") setTheme(readTheme()); };
+    const on = (e: StorageEvent) => { if (e.key === "shell-theme") setThemeState(readTheme()); };
     window.addEventListener("storage", on);
     return () => window.removeEventListener("storage", on);
   }, []);

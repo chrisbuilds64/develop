@@ -16,8 +16,9 @@
 <script>
   // Theme, look and transparency are this browser's choice (the person menu sets them); restored before the first paint.
   try {
-    var d = document.documentElement, t = localStorage.getItem('cockpit-theme'), l = localStorage.getItem('cockpit-look'), g = localStorage.getItem('cockpit-glass');
-    if (t === 'light' || t === 'dark') d.dataset.theme = t;
+    // light until the person picks otherwise; `shell-theme` is shared with Casefile and written only by a choice
+    var d = document.documentElement, t = localStorage.getItem('shell-theme'), l = localStorage.getItem('cockpit-look'), g = localStorage.getItem('cockpit-glass');
+    if (t !== 'auto') d.dataset.theme = t === 'dark' ? 'dark' : 'light';
     // one look since the Casefile redesign: solid surfaces on a soft ambient ground; a stored 'glass' is no longer restored
     if (g) d.style.setProperty('--glass-t', Math.min(0.6, Math.max(0, Number(g) / 100)));
   } catch (e) {}
@@ -178,13 +179,13 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { pops.forEach(function (p) { p.open = false; }); meShow(false); } });
     // design, look, transparency
     function mark() {
-      var th = read('cockpit-theme') || 'auto', lk = d.dataset.look === 'glass' ? 'glass' : 'standard';
+      var th = read('shell-theme') || 'light', lk = d.dataset.look === 'glass' ? 'glass' : 'standard';
       document.querySelectorAll('[data-theme-set]').forEach(function (x) { x.classList.toggle('on', x.dataset.themeSet === th); });
       document.querySelectorAll('[data-look-set]').forEach(function (x) { x.classList.toggle('on', x.dataset.lookSet === lk); });
       var r = document.getElementById('glass-t'); if (r) { r.closest('label').hidden = lk !== 'glass'; }
     }
     document.querySelectorAll('[data-theme-set]').forEach(function (x) { x.addEventListener('click', function () {
-      var v = x.dataset.themeSet; if (v === 'auto') delete d.dataset.theme; else d.dataset.theme = v; store('cockpit-theme', v); mark(); }); });
+      var v = x.dataset.themeSet; if (v === 'auto') delete d.dataset.theme; else d.dataset.theme = v; store('shell-theme', v); mark(); }); });
     document.querySelectorAll('[data-look-set]').forEach(function (x) { x.addEventListener('click', function () {
       if (x.dataset.lookSet === 'glass') d.dataset.look = 'glass'; else delete d.dataset.look; store('cockpit-look', x.dataset.lookSet); mark(); }); });
     var r = document.getElementById('glass-t'), o = document.getElementById('glass-out');
