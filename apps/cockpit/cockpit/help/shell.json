@@ -19,15 +19,27 @@
       }
     },
     {
-      "key": "shell.workspaces",
-      "since": "0.11.2",
+      "key": "shell.tools",
+      "since": "0.19.0",
       "title": {
-        "de": "Workspaces",
-        "en": "Workspaces"
+        "de": "Werkzeuge",
+        "en": "Tools"
       },
       "text": {
-        "de": "Deine Arbeitsbereiche mit ihren Daten. Der Punkt zeigt die Anwendung, das Personen-Symbol einen gemeinsamen Bereich.",
-        "en": "Your work areas with their data. The dot shows the application, the people icon a shared area."
+        "de": "Alles, was im Cockpit lebt: Casefile und die übrigen Werkzeuge. Ein Klick öffnet es.",
+        "en": "Everything that lives in the cockpit: Casefile and the other tools. One click opens it."
+      }
+    },
+    {
+      "key": "shell.casefile",
+      "since": "0.19.0",
+      "title": {
+        "de": "Casefile",
+        "en": "Casefile"
+      },
+      "text": {
+        "de": "Öffnet Casefile dort, wo du zuletzt warst. Zwischen den Workspaces wechselst du in Casefile selbst, in seiner Seitenleiste.",
+        "en": "Opens Casefile where you left it. You switch between workspaces inside Casefile, in its sidebar."
       }
     },
     {
@@ -43,18 +55,6 @@
       }
     },
     {
-      "key": "shell.workshop",
-      "since": "0.12.0",
-      "title": {
-        "de": "Werkstatt",
-        "en": "Workshop"
-      },
-      "text": {
-        "de": "Die Werkzeuge hinter den Anwendungen: Arbeitsliste, Entscheidungen, Kanon, Pipeline, Audits.",
-        "en": "The tools behind the applications: work list, decisions, canon, pipeline, audits."
-      }
-    },
-    {
       "key": "shell.pin",
       "since": "0.12.0",
       "title": {
@@ -64,18 +64,6 @@
       "text": {
         "de": "Klappt das Menü zu einer schmalen Leiste ein. Fährst du darüber, geht es auf.",
         "en": "Folds the menu to a narrow rail. Hover over it and it opens."
-      }
-    },
-    {
-      "key": "shell.switch",
-      "since": "0.12.0",
-      "title": {
-        "de": "Workspace wechseln",
-        "en": "Switch workspace"
-      },
-      "text": {
-        "de": "Springt in einen anderen deiner Workspaces.",
-        "en": "Jumps to another of your workspaces."
       }
     },
     {
@@ -124,18 +112,6 @@
       "text": {
         "de": "Zeigt, was auf dieser Seite möglich ist, führt mit einer Tour hindurch und markiert, was neu ist. „Frag nach“ gibt deine Frage samt dieser Hilfe an dein Team.",
         "en": "Shows what this page can do, takes you through it in a tour and marks what is new. “Ask” hands your question with this help to your team."
-      }
-    },
-    {
-      "key": "shell.samples",
-      "since": "0.12.0",
-      "title": {
-        "de": "Muster",
-        "en": "Samples"
-      },
-      "text": {
-        "de": "Workspaces mit vorbereiteten Beispielfällen zum Ausprobieren — nichts davon ist echt, alles darf geklickt werden.",
-        "en": "Workspaces with prepared example cases to try out — nothing in them is real, everything may be clicked."
       }
     },
     {

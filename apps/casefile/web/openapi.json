@@ -3495,6 +3495,11 @@
             "type": "boolean",
             "title": "Current",
             "default": false
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "default": ""
           }
         },
         "type": "object",

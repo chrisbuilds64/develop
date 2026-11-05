@@ -47,6 +47,9 @@ export function parse(full: string): Route {
   return { name: "home" };
 }
 
+// Inside the cockpit, its Casefile entry opens the workspace you were last in: note it, on the shared origin.
+try { if (BASE) localStorage.setItem("casefile-last", BASE + "/"); } catch { /* storage off: the cockpit opens the first workspace */ }
+
 export function useRoute(): [Route, (path: string) => void] {
   const [path, setPath] = useState(window.location.pathname + window.location.search);
   useEffect(() => {

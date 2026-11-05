@@ -20,66 +20,44 @@
 {% if err %}<p class="notice err">{{ err }}</p>{% endif %}
 {% if ws_error %}<p class="notice err">{{ t('ws.registry_broken') }}: {{ ws_error }}</p>{% endif %}
 
-{% if applications %}
+{# The tools. Casefile is one of them: one card, opening where you left it. Its workspaces are switched inside it. #}
 {% set live = workspaces|selectattr('mode', 'equalto', 'live')|list %}
 {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
-<h2 class="section" style="margin:0 0 4px">{{ t('ws.in_use') }}</h2>
-<p class="ws-lead">{{ t('ws.in_use_hint') }}</p>
+{% set first_ws = (live + samples)|first %}
+<h2 class="section" style="margin:0 0 10px">{{ t('app.tools') }}</h2>
 <div class="ws-grid">
-{% set group = live %}
-  {% for w in group %}
-  <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
-    <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
-    <span class="title">{{ w.label }}</span>
-    <span class="meta">
-      <span>{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}</span>
-      {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
-      {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
-    </span>
+  {% if applications %}
+  <a class="ws-card app-card casefile-link" href="{{ ('/w/' ~ first_ws.id ~ '/') if first_ws else '/workspaces/new' }}" data-help="shell.casefile">
+    <span class="app-card-head"><span class="cf-mark lg" aria-hidden="true"></span><span class="title">Casefile</span></span>
+    <span class="meta"><span>{{ t('home.casefile_hint') }}</span></span>
     <span class="ws-waiting" hidden data-tpl="{{ t('ws.waiting') }}"></span>
-    {% if w.id in ws_failures %}<span class="fail">{{ ws_failures[w.id] }}</span>{% endif %}
+    {% for w in live %}<i class="ws-live" hidden data-href="/w/{{ w.id }}/"></i>{% endfor %}
+    {% for w in workspaces if w.id in ws_failures %}<span class="fail">{{ w.label }}: {{ ws_failures[w.id] }}</span>{% endfor %}
   </a>
-  {% endfor %}
-  <a class="ws-card new" href="/workspaces/new">{{ t('ws.new') }}</a>
+  {% endif %}
 </div>
-{% if samples %}
-<h2 class="section" style="margin:22px 0 4px">{{ t('ws.showcase') }}</h2>
-<p class="ws-lead">{{ t('ws.showcase_hint') }}</p>
-<div class="ws-grid">
-{% set group = samples %}
-  {% for w in group %}
-  <a class="ws-card" href="/w/{{ w.id }}/" data-mode="{{ w.mode }}" style="view-transition-name: ws-{{ w.id }}">
-    <span class="kicker">{{ applications[w.application].label if w.application in applications else w.application }}</span>
-    <span class="title">{{ w.label }}</span>
-    <span class="meta">
-      <span>{% if w.shared %}{{ t('ws.shared') }}{% if w.members %} · {{ w.members|join(', ') }}{% endif %}{% else %}{{ t('ws.mine') }}{% endif %}</span>
-      {% if w.mode == 'replay' %}<span>{{ t('ws.sample') }}</span>{% endif %}
-      {% if w.cloned_from %}<span class="mono">← {{ w.cloned_from }}</span>{% endif %}
-    </span>
-    <span class="ws-waiting" hidden data-tpl="{{ t('ws.waiting') }}"></span>
-    {% if w.id in ws_failures %}<span class="fail">{{ ws_failures[w.id] }}</span>{% endif %}
-  </a>
-  {% endfor %}
-</div>
-{% endif %}
-{% endif %}
+{% if applications %}<p class="ws-lead quiet-links"><a href="/workspaces/new" data-help="shell.new-workspace">{{ t('ws.new_short') }}</a></p>{% endif %}
 
 {% if cards %}
-<h2 class="section" style="margin:0 0 10px">{{ t('app.workshop') }}</h2>
 {% include "grid.html" %}
 {% endif %}
 <script>
+(function () { try { var u = localStorage.getItem('casefile-last'), a = document.querySelector('.app-card');
+  if (u && a && /^\/(?:[\w-]+\/)*w\/[\w-]+\/$/.test(u)) a.setAttribute('href', u); } catch (e) {} })();
 // Who waits for you, honestly: each live workspace answers for itself (its own "your move" list); sample worlds do not count.
 (function () {
-  var cards = [].slice.call(document.querySelectorAll('.ws-card[data-mode="live"]'));
+  var card = document.querySelector('.app-card');
+  var cards = [].slice.call(document.querySelectorAll('.ws-live')).map(function (i) { return { href: new URL(i.dataset.href, location.href).href }; });
   var total = Promise.all(cards.map(function (c) {
     return fetch(new URL('api/me/turns', c.href), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
       .then(function (turns) {
-        var n = new Set(turns.map(function (t) { return t.case.id; })).size, b = c.querySelector('.ws-waiting');
-        if (n && b) { b.textContent = b.dataset.tpl.replace('{n}', n); b.hidden = false; c.classList.add('mine'); }
-        return n;
+        return new Set(turns.map(function (t) { return t.case.id; })).size;
       });
-  })).then(function (ns) { return ns.reduce(function (a, b) { return a + b; }, 0); });
+  })).then(function (ns) {
+    var n = ns.reduce(function (a, b) { return a + b; }, 0), b = card && card.querySelector('.ws-waiting');
+    if (n && b) { b.textContent = b.dataset.tpl.replace('{n}', n); b.hidden = false; card.classList.add('mine'); }
+    return n;
+  });
   // the week, honestly: gates passed by this person in the last seven days, summed over the live workspaces — a rhythm, no streak
   Promise.all(cards.map(function (c) {
     return fetch(new URL('api/me/rhythm', c.href), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })

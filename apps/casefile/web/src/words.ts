@@ -13,7 +13,7 @@ const W = {
     correct: "Korrektur eröffnen", correctPh: "Warum? Was stimmt nicht?", correctAmount: "Neuer Betrag (optional)", correctSend: "Korrektur eintragen", corrected: "korrigiert", undoneWord: "zurückgenommen",
     youOnIt: "Für dich", aiOnIt: "Die KI ist dran", openDoc: "Öffnen", noDocs: "Noch keine Dokumente.", versionsN: (n: number) => (n === 1 ? "1 Fassung" : `${n} Fassungen`),
     // the design hand-back: the rail and Home (2026-11-05)
-    brand: "Casefile", home: "Start", search: "Suchen", searchNone: "Nichts gefunden.", workspaces: "Arbeitsbereiche", admin: "Verwaltung", allWorkspaces: "Alle Arbeitsbereiche",
+    brand: "Casefile", home: "Start", search: "Suchen", searchNone: "Nichts gefunden.", workspaces: "Arbeitsbereiche", admin: "Verwaltung", allWorkspaces: "Zum Cockpit",
     flagged: "Auffällig", guides: "Anleitungen", askAi: "KI fragen", demoTag: "DEMO", sideRight: "Menü rechts", sideLeft: "Menü links",
     needYou: (n: number) => (n === 0 ? "Gerade braucht dich nichts." : n === 1 ? "Eine Sache braucht dich." : `${n} Dinge brauchen dich.`),
     homeLead: (n: number) => (n === 0 ? "Neue Post und Antworten landen hier. Die KI ist dran." : "Die KI hat das meiste vorbereitet. Geh sie der Reihe nach durch."),
@@ -157,7 +157,7 @@ const W = {
     correct: "Open a correction", correctPh: "Why? What is wrong?", correctAmount: "New amount (optional)", correctSend: "Record the correction", corrected: "corrected", undoneWord: "taken back",
     youOnIt: "For you", aiOnIt: "The AI is on it", openDoc: "Open", noDocs: "No documents yet.", versionsN: (n: number) => (n === 1 ? "1 version" : `${n} versions`),
     // the design hand-back: the rail and Home (2026-11-05)
-    brand: "Casefile", home: "Home", search: "Search", searchNone: "Nothing found.", workspaces: "Workspaces", admin: "Admin", allWorkspaces: "All workspaces",
+    brand: "Casefile", home: "Home", search: "Search", searchNone: "Nothing found.", workspaces: "Workspaces", admin: "Admin", allWorkspaces: "Back to Cockpit",
     flagged: "Flagged", guides: "Guides", askAi: "Ask AI", demoTag: "DEMO", sideRight: "Menu on the right", sideLeft: "Menu on the left",
     needYou: (n: number) => (n === 0 ? "Nothing needs you right now." : n === 1 ? "One thing needs you." : `${n} things need you.`),
     homeLead: (n: number) => (n === 0 ? "New mail and replies land here. The AI is on it." : "The AI has prepared most of them. Work through them one by one."),

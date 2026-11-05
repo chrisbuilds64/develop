@@ -52,29 +52,22 @@
     {%- set c = (a.color if a and a.color else (dots[appix.index(w.application) % dots|length] if a else '#94a3b8')) -%}
     {%- if a and a.icon %}<span class="app-mark" style="--dot: {{ c }}">{{ glyph(a.icon, size) }}</span>{% else %}<span class="dot" style="--dot: {{ c }}"></span>{% endif -%}
   {%- endmacro %}
-  <details class="nav-sec" data-key="ws" data-help="shell.workspaces" open>
-    <summary class="section"><span class="tx">{{ t('ws.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
-    {% for w in live %}
-    <div class="ws-item">
-      <a href="/w/{{ w.id }}/" class="nav-row ws-row" data-help-skip="explained by shell.workspaces" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
-        <span class="ic">{{ app_mark(w, 16) }}</span>
-        <span class="tx">{{ w.label }}</span>
-        {% if w.shared %}<span class="n tx" title="{{ t('ws.shared') }}">{{ glyph('users', 15) }}</span>{% endif %}
-      </a>
-    </div>
-    {% endfor %}
-    {% if samples %}
-    <details class="nav-group" data-key="samples">
-      <summary class="nav-row quiet" data-help="shell.samples"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('ws.samples') }}</span><span class="n tx">{{ samples|length }}</span></summary>
-      {% for w in samples %}
-      <a href="/w/{{ w.id }}/" class="nav-row ws-row quiet" data-help-skip="explained by shell.samples" title="{{ w.label }}">
-        <span class="ic">{{ app_mark(w, 16) }}</span>
-        <span class="tx">{{ w.label }}</span>
-      </a>
-      {% endfor %}
-    </details>
+  {# The cockpit holds tools. Casefile is one of them, once; its workspaces (Schadenakte, PressRoom…) are switched inside Casefile. #}
+  {% set first_ws = (live + samples)|first %}
+  <details class="nav-sec" data-key="tools" data-help="shell.tools" open>
+    <summary class="section"><span class="tx">{{ t('app.tools') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
+    {% if first_ws %}
+    <a href="/w/{{ first_ws.id }}/" class="nav-row ws-row casefile-link{% if route.startswith('/w/') %} on{% endif %}" data-help="shell.casefile" title="Casefile">
+      <span class="ic"><span class="cf-mark" aria-hidden="true"></span></span><span class="tx">Casefile</span>
+    </a>
+    {% elif applications %}
+    <a href="/workspaces/new" class="nav-row ws-row" data-help="shell.casefile" title="Casefile"><span class="ic"><span class="cf-mark" aria-hidden="true"></span></span><span class="tx">Casefile</span></a>
     {% endif %}
-    {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" data-help="shell.new-workspace" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
+    {% for m in nav_modules or [] %}{% set pl = plugins.get(m.plugin) %}
+    <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" data-help-skip="explained by shell.tools" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
+      <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
+    </a>
+    {% endfor %}
   </details>
 
   {% if user %}
@@ -93,16 +86,6 @@
   </details>
   {% endif %}
 
-  {% if nav_modules %}
-  <details class="nav-sec" data-key="workshop" data-help="shell.workshop" open>
-    <summary class="section"><span class="tx">{{ t('app.workshop') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
-    {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
-    <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" data-help-skip="explained by shell.workshop" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
-      <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
-    </a>
-    {% endfor %}
-  </details>
-  {% endif %}
   {% if role.may_act('*') or role.may_act('setup.view') %}
   <a href="/setup" class="nav-row{% if route.startswith('/setup') %} on{% endif %}" data-help="shell.setup" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
   {% endif %}
@@ -127,6 +110,11 @@
   </div>
   {% endif %}
   <div class="version tx">{{ t('app.version') }} {{ version }}</div>
+<script>
+// Casefile opens where you left it: the last workspace you were in (Casefile notes it on this same origin).
+(function () { try { var u = localStorage.getItem('casefile-last'); var a = document.querySelector('a.casefile-link');
+  if (u && a && /^\/(?:[\w-]+\/)*w\/[\w-]+\/$/.test(u)) a.setAttribute('href', u); } catch (e) {} })();
+</script>
 </nav>
 {% if user %}
 <script src="/static/agent-panel.js?v={{ asset_v }}" defer></script>
@@ -152,16 +140,6 @@
       <a href="/logout" class="pop-row">{{ glyph('out', 18) }}<span><b>{{ t('app.logout') }}</b></span></a>
 </div>
 <div class="topbar">
-  <details class="switch" data-help="shell.switch">
-    <summary class="pill" data-help-skip="explained by shell.switch">{% set here = none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
-    <div class="pop right">
-      <div class="pop-title">{{ t('ws.mine_all') }}</div>
-      {% for w in workspaces %}
-      <a href="/w/{{ w.id }}/" class="pop-row">{% if here and here.id == w.id %}{{ glyph('check-mark', 16) }}{% else %}{{ app_mark(w, 15) }}{% endif %}<span>{{ w.label }}</span></a>
-      {% endfor %}
-      {% if applications %}<hr><a href="/workspaces/new" class="pop-row">{{ glyph('plus', 16) }}<span>{{ t('ws.new_short') }}</span></a>{% endif %}
-    </div>
-  </details>
   <details class="bell" data-help="shell.bell">
     <summary class="pill icon" data-help-skip="explained by shell.bell" aria-label="{{ t('note.title') }}">{{ glyph('bell', 17) }}{% if notes %}<span class="bell-dot">{{ notes|length }}</span>{% endif %}</summary>
     <div class="pop right">

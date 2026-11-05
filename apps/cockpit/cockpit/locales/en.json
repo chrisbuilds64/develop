@@ -481,5 +481,7 @@
   "ws.in_use": "In use",
   "ws.in_use_hint": "Real work. What happens here counts.",
   "ws.showcase": "Showcase",
-  "ws.showcase_hint": "Sample data with guided flows. Reset any time; none of it is real."
+  "ws.showcase_hint": "Sample data with guided flows. Reset any time; none of it is real.",
+  "app.tools": "Tools",
+  "home.casefile_hint": "Your cases, in every workspace."
 }

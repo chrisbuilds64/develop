@@ -77,7 +77,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       <div className="rail-cap" data-help="cf.workspaces">{w.workspaces}</div>
       {places.map((p) => (
         <button key={p.id} type="button" className={`nav${p.current && inWorkspace ? " on" : ""}`} data-help-skip="explained by cf.workspaces"
-                onClick={() => (p.current ? goClose("/group/you") : onFresh(p.id))}>
+                onClick={() => (p.current ? goClose("/group/you") : p.url ? window.location.assign(p.url) : onFresh(p.id))}>
           <span className="sq" style={{ background: p.color || undefined }} />
           <span className="tx">{p.name}</span>
           {p.current && mine > 0 ? <span className="n">{mine}</span> : null}

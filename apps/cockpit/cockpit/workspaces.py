@@ -316,14 +316,34 @@ def web_dist_default() -> Path | None:
     return d if d.is_dir() else None
 
 
-def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell: str | None = None):
+def peers_of(workspaces: "Workspaces", w: Workspace, identity, shell: str | None):
+    """Every workspace the person at the door may open, for the rail inside a workspace: the cockpit keeps one entry,
+    Casefile, and the switching between workspaces happens inside it. Read per request, so new ones show up at once."""
+    base = (shell or "/").rstrip("/")
+
+    def peers(request) -> list[dict]:
+        user = identity(request) if (identity is not None and request is not None) else None
+        out = []
+        for o in workspaces.items:
+            if o.id != w.id and not o.visible_to(user):
+                continue
+            a = workspaces.applications.get(o.application)
+            mark = _mark(a.config_dir) if a else {}
+            out.append({"id": o.id, "name": o.label, "url": f"{base}/w/{o.id}/", "color": mark.get("color") or "",
+                        "icon": mark.get("icon") or "", "current": o.id == w.id})
+        return out
+    return peers
+
+
+def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell: str | None = None,
+              peers=None):
     """The casefile app for one workspace: its tree, its application, the cockpit's identity, the stage it is in,
     and where the shell lives — the menu offers the way back."""
     import casefile
     from casefile.api.app import Settings, create_app
     pkg = Path(casefile.__file__).resolve().parent
     settings = Settings(
-        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell,
+        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers,
         open_identity=w.open_identity, identity=None if w.open_identity else identity,
         secret=secret, web_dist=web_dist, demo=(w.mode == "replay"), template=app.template if w.mode == "replay" else None,
         samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies",
@@ -346,4 +366,4 @@ def mount_all(shell, workspaces: Workspaces, identity, secret: str, web_dist: Pa
 
 def mount_one(shell, workspaces: Workspaces, w: Workspace, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell_url: str | None = None) -> None:
     app = workspaces.applications[w.application]
-    shell.mount(f"/w/{w.id}", build_app(w, app, identity, secret, web_dist, stage, shell_url), name=f"ws-{w.id}")
+    shell.mount(f"/w/{w.id}", build_app(w, app, identity, secret, web_dist, stage, shell_url, peers_of(workspaces, w, identity, shell_url)), name=f"ws-{w.id}")

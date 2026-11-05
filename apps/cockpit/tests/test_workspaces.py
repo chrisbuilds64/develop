@@ -88,7 +88,11 @@ def test_workspaces_are_served_behind_the_cockpit_login_with_its_identity(world)
     assert me["shell"] == "/"                                                            # and the menu knows the way back to the cockpit
     assert client.get("/w/nothing/api/me").status_code == 404
     home = client.get("/").text
-    assert 'href="/w/shared/"' in home and "PressRoom shared" in home
+    assert home.count('class="nav-row ws-row casefile-link') == 1 and 'href="/w/' in home   # the rail: Casefile once, not each workspace
+    assert "PressRoom shared" not in home                                               # the workspaces are switched inside Casefile
+    places = {p["id"]: p for p in me["places"]}
+    assert places["shared"]["current"] and places["shared"]["name"] == "PressRoom shared"   # …whose rail lists them, this one current
+    assert all(p["url"] == f"/w/{i}/" for i, p in places.items() if i != "shared")        # the others by their address in the cockpit
 
 
 def test_under_a_prefix_the_mounted_surface_is_prefixed_once(world):
@@ -139,5 +143,5 @@ def test_an_application_marks_itself_through_its_theme_not_its_id(world, tmp_pat
     assert (again.applications["plain"].icon, again.applications["plain"].color) == (None, None)   # nothing unsafe gets through
     client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
     sign_in(client)
-    home = client.get("/").text
-    assert 'class="app-mark" style="--dot: #a855f7"' in home              # the rail shows the application's own glyph and colour
+    me = client.get("/w/shared/api/me").json()
+    assert {p["color"] for p in me["places"]} >= {"#a855f7"}             # Casefile's rail shows each workspace in its application's colour

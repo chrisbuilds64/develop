@@ -1688,6 +1688,11 @@ export interface components {
              * @default false
              */
             current: boolean;
+            /**
+             * Url
+             * @default
+             */
+            url: string;
         };
         /** RespondentOut */
         RespondentOut: {

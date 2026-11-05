@@ -70,6 +70,7 @@ class Settings:
     label: str | None = None                     # what the surface calls this workspace, when it differs from the domain's product name
     stage: str | None = None                     # "entw", "test": a stripe and a badge on every page of the surface; nothing for production
     shell: str | None = None                     # where the shell that mounted this app lives ("/entw/"): the menu offers the way back
+    peers: Callable[[Request | None], list[dict]] | None = None   # inside a shell: every workspace this person may open ({id, name, url, color, icon, current})
     secret: str = field(default_factory=lambda: secrets.token_hex(16))
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
@@ -159,6 +160,7 @@ class PlaceOut(BaseModel):
     color: str = ""
     icon: str = ""
     current: bool = False
+    url: str = ""                                           # inside a shell: where this workspace lives; empty for this one and for demo worlds
 
 
 class MeOut(BaseModel):
@@ -712,6 +714,14 @@ def create_app(settings: Settings) -> FastAPI:
     def me_out(c: Ctx, person_id: str | None, request: Request | None = None) -> MeOut:
         p = c.config.person(person_id) if person_id else None
         places = [place(name, world_configs[name], c.lang, name == c.world) for name in settings.worlds] if settings.worlds else [place(c.world, c.config, c.lang, True)]
+        if settings.peers is not None:
+            # inside the cockpit: the person's other workspaces sit beside this one in the rail, in the cockpit's order
+            peers = settings.peers(request)
+            mine = places[0].model_copy(update={"id": next((str(p["id"]) for p in peers if p.get("current")), places[0].id)})
+            places = [mine if p.get("current") else PlaceOut(id=str(p["id"]), name=str(p.get("name") or p["id"]), color=str(p.get("color") or ""),
+                                                             icon=str(p.get("icon") or ""), url=str(p.get("url") or "")) for p in peers]
+            if not any(p.current for p in places):
+                places.insert(0, mine)
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
         return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
                      demo=settings.demo, world=c.world, worlds=list(settings.worlds),

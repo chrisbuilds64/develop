@@ -481,5 +481,7 @@
   "ws.in_use": "Im Einsatz",
   "ws.in_use_hint": "Echte Arbeit. Was hier geschieht, gilt.",
   "ws.showcase": "Vorführung",
-  "ws.showcase_hint": "Musterdaten mit Abläufen. Jederzeit zurücksetzbar, nichts davon ist echt."
+  "ws.showcase_hint": "Musterdaten mit Abläufen. Jederzeit zurücksetzbar, nichts davon ist echt.",
+  "app.tools": "Werkzeuge",
+  "home.casefile_hint": "Deine Fälle, in allen Workspaces."
 }

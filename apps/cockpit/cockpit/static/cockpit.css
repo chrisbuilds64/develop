@@ -1056,3 +1056,14 @@ body { background: var(--ambient); background-attachment: fixed; }
 .side .brand-link { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--ink); text-decoration: none; border-radius: var(--r-s); }
 .side .brand-link:hover { text-decoration: none; opacity: .85; }
 .side .brand-link:focus-visible { outline: 2px solid var(--your-move); outline-offset: 3px; }
+
+/* Casefile, one tool among the tools (2026-11-05): its mark in the rail and on the dashboard; workspaces live inside it */
+.cf-mark { width: 18px; height: 18px; border-radius: var(--r-5); background: var(--btn-fill); box-shadow: var(--btn-shadow); display: inline-grid; place-items: center; flex: none; }
+.cf-mark::after { content: ""; width: 7px; height: 7px; border-radius: var(--r-2); background: var(--on-accent); }
+.cf-mark.lg { width: 34px; height: 34px; border-radius: var(--r-9); }
+.cf-mark.lg::after { width: 13px; height: 13px; border-radius: var(--r-4); }
+.app-card { justify-content: space-between; }
+.app-card-head { display: flex; align-items: center; gap: 12px; }
+.quiet-links { margin: -18px 0 28px; }
+.quiet-links a { color: var(--muted); font-size: var(--fs-13); }
+.quiet-links a:hover { color: var(--ink); }
