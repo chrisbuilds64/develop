@@ -1,5 +1,6 @@
 """The demo: both worlds build, the invoice triggers the reconciliation, the replay plays it, the approval needs an amount, the sample lands."""
 
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -214,3 +215,55 @@ def test_a_case_somebody_else_holds_can_be_reminded_or_taken_back(tmp_path):
     assert v["held_by"] == [] and v["take_back_to"] == "" and any(t["actor"] == "du" or t["actor"].startswith("role:") for t in v["my_turns"])
     nohist = du.get("/api/cases/KFZ-2026-0811-auffahrunfall-a3").json()
     assert nohist["take_back_to"] == "10-meldung"                                       # no move on record: the stage before
+
+
+def test_undo_until_the_case_goes_on_then_only_a_correction(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    du, reg = TestClient(app), TestClient(app)
+    du.post("/api/session", json={"person": "du"})
+    reg.post("/api/session", json={"person": "regulierung"})
+    cid = "WG-2026-0402-hagelschaden-reihenhaus"
+    ok = du.post(f"/api/cases/{cid}/steps", json={"action": "approve_settlement", "step_id": "a1", "payload": {"amount": "4.200 €"}}).json()
+    assert ok["ok"] and ok["to"] == "40-regulierung", ok
+    v = du.get(f"/api/cases/{cid}").json()
+    assert v["undo_step"] == "a1" and v["undo_word"] and reg.get(f"/api/cases/{cid}").json()["undo_step"] == ""   # only the one who did it
+    assert not reg.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u0"}).json()["ok"]
+    u = du.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u1"}).json()
+    assert u["ok"] and u["from"] == "40-regulierung" and u["to"] == "30-pruefung", u
+    v = du.get(f"/api/cases/{cid}").json()
+    decision, undone = v["entries"][-2], v["entries"][-1]
+    assert undone["status"] == "undone" and undone["corrects"] == decision["id"] and decision["corrected_by"] == [undone["id"]]
+    assert v["stage"] == "30-pruefung" and v["undo_step"] == ""                            # an undo is not undone again
+    assert json.loads((root / "_steps" / "a1.json").read_text())["status"] == "undone"   # and no longer counts as done
+    assert du.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u1"}).json()["replayed"]
+
+    # approve again; this time the settlement desk goes on, so the decision is sealed
+    du.post(f"/api/cases/{cid}/steps", json={"action": "approve_settlement", "step_id": "a2", "payload": {"amount": "4.200 €"}})
+    reg.post(f"/api/cases/{cid}/entries", json={"kind": "note", "step_id": "n1", "text": "Zahlung vorbereitet"})
+    assert du.get(f"/api/cases/{cid}").json()["undo_step"] == ""
+    late = du.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u2"}).json()
+    assert not late["ok"] and "gone on" in late["reason"]
+    sealed = next(e for e in du.get(f"/api/cases/{cid}").json()["entries"] if e.get("step") == "a2")
+    assert not du.post(f"/api/cases/{cid}/steps", json={"action": "correct", "step_id": "c0", "payload": {"corrects": sealed["id"]}}).json()["ok"]   # a reason is required
+    c = du.post(f"/api/cases/{cid}/steps", json={"action": "correct", "step_id": "c1",
+                                                 "payload": {"corrects": sealed["id"], "text": "Selbstbehalt nicht abgezogen", "amount": "3.700 €"}}).json()
+    assert c["ok"], c
+    v = du.get(f"/api/cases/{cid}").json()
+    corr = v["entries"][-1]
+    assert corr["status"] == "correction" and corr["amount"] == "3.700 €" and corr["corrects"] == sealed["id"] and v["stage"] == "40-regulierung"
+    assert next(e for e in v["entries"] if e["id"] == sealed["id"])["amount"] == "4.200 €"   # the original stands
+    assert not du.post(f"/api/cases/{cid}/steps", json={"action": "correct", "step_id": "c2", "payload": {"corrects": undone["id"], "text": "x"}}).json()["ok"]
+    assert "**Corrects:** " + sealed["id"] in next(root.rglob(f"{cid}/review.md")).read_text(encoding="utf-8")
+
+
+def test_an_undo_left_half_way_is_completed_on_the_next_start(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    cid = "WG-2026-0402-hagelschaden-reihenhaus"
+    assert stepping.step(store, config, cid, StepRequest(action="approve_settlement", step_id="a1", payload={"amount": "1 €"}), by="du").ok
+    store.write_json("_steps/u9.json", {"step_id": "u9", "case": cid, "action": "undo", "by": "du", "status": "intent", "from": "40-regulierung",
+                                        "to": "30-pruefung", "payload": {"step": "a1"}, "created": "2026-11-05T10:00:00+01:00"})
+    done = stepping.recover(store, config)
+    assert [r.ok for r in done] == [True] and store.find(cid) == "30-pruefung"
+    assert store.read_json("_steps/a1.json")["status"] == "undone"

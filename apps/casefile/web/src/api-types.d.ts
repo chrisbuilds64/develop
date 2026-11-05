@@ -905,6 +905,16 @@ export interface components {
              * @default
              */
             take_back_word: string;
+            /**
+             * Undo Step
+             * @default
+             */
+            undo_step: string;
+            /**
+             * Undo Word
+             * @default
+             */
+            undo_word: string;
             /** Data */
             data?: {
                 [key: string]: unknown;
@@ -1017,11 +1027,15 @@ export interface components {
             amount?: string | null;
             /** Files */
             files?: string[];
+            /** Corrects */
+            corrects?: string | null;
             /**
              * Text
              * @default
              */
             text: string;
+            /** Corrected By */
+            corrected_by?: string[];
             /** Actor */
             actor?: ("person" | "ai" | "system") | null;
         };

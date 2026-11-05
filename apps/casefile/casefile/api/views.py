@@ -83,7 +83,12 @@ def actor_of(config: DomainConfig, author: str) -> str:
 
 
 def with_actors(config: DomainConfig, entries: list[Entry]) -> list[Entry]:
-    return [e.model_copy(update={"actor": actor_of(config, e.author)}) for e in entries]
+    """Derived for the surface: who made each entry, and which later entries undo or correct it (ADR-025)."""
+    later: dict[str, list[str]] = {}
+    for e in entries:
+        if e.corrects:
+            later.setdefault(e.corrects, []).append(e.id)
+    return [e.model_copy(update={"actor": actor_of(config, e.author), "corrected_by": later.get(e.id, [])}) for e in entries]
 
 
 class CaseView(CaseCard):
@@ -101,6 +106,8 @@ class CaseView(CaseCard):
     held_by: list[str] = Field(default_factory=list)      # somebody else holds the case: their names; "Send a reminder" (action `remind`) goes to them
     take_back_to: str = ""                                # the viewer's own stage it came from: "Take it back" (action `take_back`) returns it there
     take_back_word: str = ""
+    undo_step: str = ""                                   # the viewer's newest move, while nothing happened since: "Undo" (action `undo`) takes it back (ADR-025)
+    undo_word: str = ""                                   # that move in words
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
 
 
@@ -183,7 +190,7 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: 
                     unread=reads.unread(config, case, viewer, seen) if seen is not None else False)
 
 
-def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url, seen: dict[str, str] | None = None) -> CaseView:
+def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url, seen: dict[str, str] | None = None, store=None) -> CaseView:
     c = card(config, case, viewer, lang, seen)
     turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     mine = [t for t in turns if viewer and (t.actor == viewer or config.may_act(viewer, t.actor))]
@@ -197,8 +204,12 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     back = stepping.reopen_target(config, case) or ""
     held = [p.name for p in stepping.holders(config, case, viewer)] if viewer else []
     pull = stepping.take_back_target(config, case, viewer) or ""
+    undo = stepping.undoable(store, config, case, viewer) if store is not None else None
+    undo_action = config.action(undo.from_, undo.action) if undo else None
     return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
-                    held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "", meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
+                    held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "",
+                    undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
+                    meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 

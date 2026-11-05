@@ -19,7 +19,8 @@ from ..models import Entry
 HEAD = re.compile(r"^## (REV-\d{3}) — (.+?)\s*$", re.M)
 ATTR = re.compile(r"\*\*([A-Za-z]+):\*\*\s*([^·\n]+?)(?=\s*·\s*\*\*|\s*$)", re.M)
 LABELS = {"date": "Date", "author": "Author", "for_": "For", "status": "Status", "stage": "Stage",
-          "resolves": "Resolves", "step": "Step", "from_": "From", "to": "To", "amount": "Amount", "files": "Files"}
+          "resolves": "Resolves", "step": "Step", "from_": "From", "to": "To", "amount": "Amount", "files": "Files",
+          "corrects": "Corrects"}
 BY_LABEL = {v: k for k, v in LABELS.items()}
 
 
@@ -50,7 +51,7 @@ def next_id(text: str) -> str:
 def render(e: Entry) -> str:
     head = [f"**Date:** {e.date}", f"**Author:** {e.author}", f"**For:** {e.for_ or '—'}",
             f"**Status:** {e.status}", f"**Stage:** {e.stage}"]
-    for key in ("resolves", "step", "from_", "to", "amount"):
+    for key in ("resolves", "step", "from_", "to", "amount", "corrects"):
         v = getattr(e, key)
         if v:
             head.append(f"**{LABELS[key]}:** {v}")

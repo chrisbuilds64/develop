@@ -81,7 +81,9 @@ class Entry(BaseModel):
     to: str | None = None
     amount: str | None = None
     files: list[str] = Field(default_factory=list)   # deliverables this entry delivered
+    corrects: str | None = None                  # the decision entry this one undoes (status undone) or corrects (status correction), ADR-025
     text: str = ""
+    corrected_by: list[str] = Field(default_factory=list)   # later entries that undo or correct this one; derived when the surface reads the case
     actor: Literal["person", "ai", "system"] | None = None   # who made this move, derived from the author when the surface reads it; never written to review.md
 
     model_config = {"populate_by_name": True}
@@ -206,7 +208,7 @@ class Journal(BaseModel):
     case: str
     action: str
     by: str
-    status: Literal["intent", "done", "refused"] = "intent"
+    status: Literal["intent", "done", "refused", "undone"] = "intent"   # undone: a later `undo` step took it back (ADR-025)
     from_: str | None = Field(default=None, alias="from")
     to: str | None = None
     entry: str | None = None

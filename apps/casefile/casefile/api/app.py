@@ -822,7 +822,7 @@ def create_app(settings: Settings) -> FastAPI:
             case = reading.load(c.store, c.config, case_id)
         except (KeyError, StoreError) as exc:
             raise HTTPException(404, str(exc) or case_id)
-        return views.view(c.config, case, who, c.lang, file_url, reads.load(c.store, who))
+        return views.view(c.config, case, who, c.lang, file_url, reads.load(c.store, who), c.store)
 
     @app.get("/api/cases/{case_id}/files/{name}")
     def get_file(case_id: str, name: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

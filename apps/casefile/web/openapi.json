@@ -1871,6 +1871,16 @@
             "title": "Take Back Word",
             "default": ""
           },
+          "undo_step": {
+            "type": "string",
+            "title": "Undo Step",
+            "default": ""
+          },
+          "undo_word": {
+            "type": "string",
+            "title": "Undo Word",
+            "default": ""
+          },
           "data": {
             "additionalProperties": true,
             "type": "object",
@@ -2140,10 +2150,28 @@
             "type": "array",
             "title": "Files"
           },
+          "corrects": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrects"
+          },
           "text": {
             "type": "string",
             "title": "Text",
             "default": ""
+          },
+          "corrected_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Corrected By"
           },
           "actor": {
             "anyOf": [

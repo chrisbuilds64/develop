@@ -48,7 +48,9 @@
       "order_assessment": "Gutachten beauftragen",
       "reopen": "Zurückholen",
       "remind": "Erinnern",
-      "take_back": "Zurücknehmen"
+      "take_back": "Zurücknehmen",
+      "undo": "Rückgängig",
+      "correct": "Korrektur eröffnen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -66,7 +68,10 @@
       "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
       "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert.",
       "reminder": "Erinnerung",
-      "reminder_text": "Kannst du dir diesen Fall ansehen?"
+      "reminder_text": "Kannst du dir diesen Fall ansehen?",
+      "undone": "Rückgängig: {action}",
+      "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
+      "correction": "Korrektur: {title}"
     },
     "files": {
       "meldung.md": "Schadenmeldung",
@@ -184,7 +189,9 @@
       "order_assessment": "Order the assessment",
       "reopen": "Move back",
       "remind": "Send a reminder",
-      "take_back": "Take it back"
+      "take_back": "Take it back",
+      "undo": "Undo",
+      "correct": "Open a correction"
     },
     "reasons": {
       "running": "the AI is checking",
@@ -202,7 +209,10 @@
       "lock_default": "{label}; opens once {missing} is in the file.",
       "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}.",
       "reminder": "Reminder",
-      "reminder_text": "Could you take a look at this case?"
+      "reminder_text": "Could you take a look at this case?",
+      "undone": "Undone: {action}",
+      "undone_text": "Taken back before the next step started.",
+      "correction": "Correction: {title}"
     },
     "files": {
       "meldung.md": "Claim report",
