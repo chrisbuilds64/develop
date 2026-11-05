@@ -83,6 +83,17 @@
   --pop-shadow: 0 18px 50px rgba(0, 0, 0, .18), 0 2px 6px rgba(0, 0, 0, .06);
   --fs-10: 10px; --fs-14-5: 14.5px; --fs-15: 15px;
   --r-4: 4px; --r-5: 5px;
+  /* the cockpit's own face (2026-11-05): indigo for the shell's chrome, so the room around the tools reads apart from
+     Casefile's blue. --your-move stays blue and keeps its one meaning; this is only selection, links and buttons. */
+  --shell: #5B4BDB;
+  --shell-ink: #3B2DA6;
+  --shell-soft: rgba(91, 75, 219, .11);
+  --shell-halo: rgba(91, 75, 219, .20);
+  --shell-fill: linear-gradient(180deg, #7565EC 0%, #5B4BDB 55%, #4A3BC6 100%);
+  --shell-fill-hover: linear-gradient(180deg, #8072F0 0%, #6556E2 55%, #5243CE 100%);
+  --shell-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 6px 16px -8px rgba(91, 75, 219, .6);
+  --shell-side: rgba(244, 242, 252, .62);
+  --shell-side-line: rgba(91, 75, 219, .12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -129,6 +140,12 @@
     --ai-line: rgba(183, 156, 255, .22);
     --hover: #2A2A2F;
     --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .10), transparent 60%);
+    --shell: #8E80FF;
+    --shell-ink: #C3BBFF;
+    --shell-soft: rgba(142, 128, 255, .16);
+    --shell-halo: rgba(142, 128, 255, .22);
+    --shell-side: rgba(26, 24, 38, .62);
+    --shell-side-line: rgba(142, 128, 255, .14);
     --scrim: rgba(5, 5, 7, .6);
 }
 }
@@ -175,5 +192,11 @@
     --ai-line: rgba(183, 156, 255, .22);
     --hover: #2A2A2F;
     --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .10), transparent 60%);
+    --shell: #8E80FF;
+    --shell-ink: #C3BBFF;
+    --shell-soft: rgba(142, 128, 255, .16);
+    --shell-halo: rgba(142, 128, 255, .22);
+    --shell-side: rgba(26, 24, 38, .62);
+    --shell-side-line: rgba(142, 128, 255, .14);
     --scrim: rgba(5, 5, 7, .6);
 }

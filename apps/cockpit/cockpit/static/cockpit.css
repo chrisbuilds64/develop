@@ -1067,3 +1067,19 @@ body { background: var(--ambient); background-attachment: fixed; }
 .quiet-links { margin: -18px 0 28px; }
 .quiet-links a { color: var(--muted); font-size: var(--fs-13); }
 .quiet-links a:hover { color: var(--ink); }
+
+/* The cockpit's own face (2026-11-05): same family as Casefile (type, cards, spacing), its own colour and frame.
+   Indigo for selection, links and buttons; a tinted glass rail. Blue stays for "waits for you" only. */
+a { color: var(--shell); }
+.side { background: var(--shell-side); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); border-right: 1px solid var(--shell-side-line); }
+.side .nav-row:hover { background: var(--shell-soft); }
+.side .nav-row.on { background: var(--shell-soft); color: var(--shell-ink); font-weight: 600; }
+.side .nav-row.on .ic, .side .nav-row.on:hover .ic { color: var(--shell); }
+.side a.nav-row, .side a.nav-row:hover { color: inherit; }
+.side a.nav-row.on { color: var(--shell-ink); }
+.side .nav-row .cf-mark { box-shadow: none; }
+.button, .btn-primary, .form-card button, .action button, .login-form button { background: var(--shell-fill); box-shadow: var(--shell-shadow); }
+.button:hover, .btn-primary:hover, .form-card button:hover, .action button:hover, .login-form button:hover { background: var(--shell-fill-hover); }
+.form-card input:focus, .action input:focus, .action textarea:focus, .login-form input:focus { border-color: var(--shell); box-shadow: 0 0 0 3px var(--shell-halo); }
+.app-card:hover { border-color: var(--shell-side-line); }
+@media (prefers-reduced-transparency: reduce) { .side { background: var(--ground-2); backdrop-filter: none; -webkit-backdrop-filter: none; } }
