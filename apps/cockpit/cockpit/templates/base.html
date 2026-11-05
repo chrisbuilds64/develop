@@ -17,7 +17,7 @@
   try {
     var d = document.documentElement, t = localStorage.getItem('cockpit-theme'), l = localStorage.getItem('cockpit-look'), g = localStorage.getItem('cockpit-glass');
     if (t === 'light' || t === 'dark') d.dataset.theme = t;
-    if (l === 'glass') d.dataset.look = 'glass';
+    // one look since the Casefile redesign: solid surfaces on a soft ambient ground; a stored 'glass' is no longer restored
     if (g) d.style.setProperty('--glass-t', Math.min(0.6, Math.max(0, Number(g) / 100)));
   } catch (e) {}
 </script>
@@ -135,15 +135,6 @@
         <button type="button" data-theme-set="dark">{{ t('me.dark') }}</button>
         <button type="button" data-theme-set="auto">{{ t('me.auto') }}</button>
       </div>
-      <div class="pop-label">{{ t('me.look') }}</div>
-      <div class="look-pick">
-        <button type="button" data-look-set="standard"><b>{{ t('me.standard') }}</b><span>{{ t('me.standard_hint') }}</span></button>
-        <button type="button" data-look-set="glass"><b>{{ t('me.glass') }}</b><span>{{ t('me.glass_hint') }}</span></button>
-      </div>
-      <label class="glass-range"><span>{{ t('me.transparency') }} <output id="glass-out"></output></span>
-        <input type="range" min="0" max="60" step="1" id="glass-t">
-        <small>{{ t('me.transparency_hint') }}</small>
-      </label>
       <div class="pop-label">{{ t('app.language') }}</div>
       <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
         {% for code, name in languages %}<option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>{% endfor %}
