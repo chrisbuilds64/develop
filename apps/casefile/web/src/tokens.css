@@ -94,6 +94,10 @@
   --shell-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 6px 16px -8px rgba(91, 75, 219, .6);
   --shell-side: rgba(244, 242, 252, .62);
   --shell-side-line: rgba(91, 75, 219, .12);
+  /* Flagged (2026-11-05): one colour per kind of hint: a possible duplicate, a repeat, an unusual amount */
+  --sg-dup: #1E93A8; --sg-dup-soft: rgba(48, 176, 199, .13);
+  --sg-rep: #D97A00; --sg-rep-soft: rgba(255, 149, 0, .14);
+  --sg-dev: #5250D8; --sg-dev-soft: rgba(94, 92, 230, .12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -146,6 +150,7 @@
     --shell-halo: rgba(142, 128, 255, .22);
     --shell-side: rgba(26, 24, 38, .62);
     --shell-side-line: rgba(142, 128, 255, .14);
+    --sg-dup: #5AC8DA; --sg-rep: #FFA94D; --sg-dev: #8E8CF5;
     --scrim: rgba(5, 5, 7, .6);
 }
 }
@@ -198,5 +203,6 @@
     --shell-halo: rgba(142, 128, 255, .22);
     --shell-side: rgba(26, 24, 38, .62);
     --shell-side-line: rgba(142, 128, 255, .14);
+    --sg-dup: #5AC8DA; --sg-rep: #FFA94D; --sg-dev: #8E8CF5;
     --scrim: rgba(5, 5, 7, .6);
 }

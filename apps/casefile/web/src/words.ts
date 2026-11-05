@@ -7,6 +7,11 @@ const W = {
     gdVideosLead: (n: number) => `${n} kurze Kapitel, vom Warum bis zum KI-Team.`, keysTitle: "Tastenkürzel",
     ksAnywhere: "Überall", ksSearch: "Fälle suchen", ksTheme: "Hell oder dunkel", ksThis: "Diese Übersicht", ksHome: "Auf Start", ksOpenNext: "Nächste Akte öffnen",
     ksCase: "In einem Fall", ksConfirm: "Vorschlag bestätigen", ksNextPrev: "Nächster / voriger Fall", ksAsk: "Die KI fragen", ksBack: "Zurück zum Start",
+    sgLead: "Die KI vergleicht Fälle miteinander und zeigt, was seltsam wirkt: derselbe Schaden doppelt gemeldet, eine Adresse, die immer wiederkommt, ein Betrag weit über dem Üblichen. Sie entscheidet nie etwas. Du prüfst und wählst, was passiert.",
+    sgToCheck: "Zu prüfen", sgLooking: "Wird geprüft", sgDone: "Erledigt", sgNone: "Gerade nichts Auffälliges. Die KI vergleicht neue Fälle, sobald sie ankommen.",
+    sgDup: "Mögliche Doppelung", sgRep: "Wiederholung", sgDev: "Ungewöhnlicher Betrag", sgLook: "Ansehen", sgNothing: "Nichts zu tun", sgMarkDone: "Als erledigt markieren", sgMoveBack: "Zurückholen",
+    sgDoneLook: "Nach „Wird geprüft“ verschoben", sgDoneNothing: "Geprüft, nichts zu tun", sgDoneDone: "Als erledigt markiert", sgDoneBack: "Zurück nach „Zu prüfen“",
+    sgBy: (who: string, at: string) => `${who} · ${at}`,
     // the rulebook of the design hand-back (2026-11-05)
     rbLead: "Alles, wonach dein Büro und die KI arbeiten, an einem Ort: die Regeln, die Schritte eines Falls, was jeder KI-Helfer darf, und die freigegebenen Formulierungen für Briefe.",
     rbWatch: "Video", rbTabRules: "Regeln", rbTabSteps: "Fallschritte", rbTabLimits: "KI-Grenzen", rbTabLetters: "Textbausteine", rbTabLinks: "Verbindungen",
@@ -182,6 +187,11 @@ const W = {
     gdVideosLead: (n: number) => `${n} short chapters, from the why to the AI team.`, keysTitle: "Keyboard shortcuts",
     ksAnywhere: "Anywhere", ksSearch: "Search cases", ksTheme: "Light or dark", ksThis: "This overview", ksHome: "On Home", ksOpenNext: "Open the next case",
     ksCase: "In a case", ksConfirm: "Confirm the proposal", ksNextPrev: "Next / previous case", ksAsk: "Ask the AI", ksBack: "Back to Home",
+    sgLead: "The AI compares cases with each other and points out anything that looks odd: the same damage reported twice, an address that keeps coming back, an amount far above the usual. It never decides anything. You check and choose what happens.",
+    sgToCheck: "To check", sgLooking: "Looking into it", sgDone: "Done", sgNone: "Nothing unusual right now. The AI keeps comparing new cases as they come in.",
+    sgDup: "Possible duplicate", sgRep: "Repeat", sgDev: "Unusual amount", sgLook: "Look into it", sgNothing: "Nothing to do", sgMarkDone: "Mark as done", sgMoveBack: "Move back",
+    sgDoneLook: "Moved to “Looking into it”", sgDoneNothing: "Checked, nothing to do", sgDoneDone: "Marked as done", sgDoneBack: "Moved back to “To check”",
+    sgBy: (who: string, at: string) => `${who} · ${at}`,
     // the rulebook of the design hand-back (2026-11-05)
     rbLead: "Everything your office and the AI work by, in one place: the rules you follow, the steps a case goes through, what each AI helper may do, and the approved wording for letters.",
     rbWatch: "Watch", rbTabRules: "Rules", rbTabSteps: "Case steps", rbTabLimits: "AI limits", rbTabLetters: "Letter templates", rbTabLinks: "Connections",

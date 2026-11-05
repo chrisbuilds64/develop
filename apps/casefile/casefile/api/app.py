@@ -28,7 +28,7 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Literal
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -299,6 +299,11 @@ class SignalCase(BaseModel):
     title: str
     external_id: str = ""
     stage_word: str = ""
+    color: str = ""                              # its label's colour (the value list `label`), for the chip
+
+
+class SignalStatusIn(BaseModel):
+    status: Literal["offen", "in_pruefung", "erledigt"]
 
 
 class SignalOut(BaseModel):
@@ -310,6 +315,8 @@ class SignalOut(BaseModel):
     date: str
     cases: list[SignalCase]
     text: str
+    decided_by: str = ""                         # who last moved it (looking into it, done, back to open)
+    decided_at: str = ""
 
 
 class MatrixRow(BaseModel):
@@ -969,14 +976,28 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(404, name)
         return FileResponse(p)
 
+    def _signal_file(c: Ctx, signal_id: str) -> Path | None:
+        folder = c.store.root / "_signale"
+        for f in sorted(folder.glob("*.md")) if folder.is_dir() else []:
+            if f.stem == signal_id or re.search(rf"^id:\s*{re.escape(signal_id)}\s*$", f.read_text(encoding="utf-8").split("---", 2)[1] if f.read_text(encoding="utf-8").startswith("---") else "", re.M):
+                return f
+        return None
+
     @app.get("/api/signals", response_model=list[SignalOut])
     def get_signals(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         """What the pattern helper noticed across the files of this world: `_signale/*.md` at the pipeline root."""
         folder = c.store.root / "_signale"
         if not folder.is_dir():
             return []
-        titles = {case.id: (str(case.meta.get("title") or case.id), str(case.meta.get("external_id") or ""), c.config.word("stages", case.stage, c.lang, case.stage))
-                  for case in reading.load_all(c.store, c.config)}
+        cases_by_id = {case.id: case for case in reading.load_all(c.store, c.config)}
+
+        def sig_case(i: str) -> SignalCase:
+            case = cases_by_id.get(i)
+            if case is None:
+                return SignalCase(id=i, title=i)
+            e = value_lists.entry(c.config.lists, "label", case.label) or {}
+            return SignalCase(id=i, title=str(views.localized(case.meta, c.lang).get("title") or case.meta.get("title") or i), external_id=str(case.meta.get("external_id") or ""),
+                              stage_word=c.config.word("stages", case.stage, c.lang, case.stage), color=str(e.get("color") or ""))
         out = []
         for f in sorted(folder.glob("*.md"), reverse=True):
             text = f.read_text(encoding="utf-8")
@@ -991,9 +1012,30 @@ def create_app(settings: Settings) -> FastAPI:
                     body = parts[2]
             ids = [x.strip() for x in head.get("cases", "").split(",") if x.strip()]
             out.append(SignalOut(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), status=head.get("status", "offen"), date=head.get("date", ""),
-                                 cases=[SignalCase(id=i, title=titles.get(i, (i, "", ""))[0], external_id=titles.get(i, (i, "", ""))[1], stage_word=titles.get(i, (i, "", ""))[2]) for i in ids],
-                                 text=body.strip()))
+                                 cases=[sig_case(i) for i in ids], text=body.strip(), decided_by=head.get("decided_by", ""), decided_at=head.get("decided_at", "")))
         return out
+
+    @app.post("/api/signals/{signal_id}/status", response_model=SignalOut)
+    def post_signal_status(signal_id: str, body: SignalStatusIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A person moves a hint: looking into it, done (nothing to do, or handled), or back to open. The hint itself is never
+        changed or deleted; only its status, with who and when, in its header."""
+        me = c.config.person(who)
+        if not me or me.kind != "human":
+            raise HTTPException(403, "a person decides what follows from a hint")
+        f = _signal_file(c, signal_id)
+        if f is None:
+            raise HTTPException(404, signal_id)
+        rel = str(f.relative_to(c.store.root))
+        with c.store.lock(f"_signal-{signal_id}"):
+            text = f.read_text(encoding="utf-8")
+            parts = text.split("---", 2)
+            if not text.startswith("---") or len(parts) < 3:
+                raise HTTPException(409, "this hint has no header to keep its status in")
+            lines = [l for l in parts[1].strip("\n").splitlines() if not re.match(r"^(status|decided_by|decided_at):", l)]
+            stamp = dt.datetime.now().astimezone().isoformat(timespec="minutes")
+            lines += [f"status: {body.status}", f"decided_by: {me.name}", f"decided_at: {stamp}"]
+            c.store.write_atomic(rel, "---\n" + "\n".join(lines) + "\n---" + parts[2])
+        return next(s for s in get_signals(c, who) if s.id == signal_id)
 
     @app.get("/api/canon")
     def get_canon(c: Ctx = Depends(ctx), who: str = Depends(viewer)):

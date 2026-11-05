@@ -199,6 +199,12 @@ def build_claims(root: Path) -> Path:
     _signal(root, "M-001", "Wiederholung", "Gleiche Risikoanschrift in zwei Akten innerhalb von fünf Wochen",
             ["HR-2026-0417-wasserschaden-badezimmer", "HR-2026-0430-einbruch-wohnung"],
             "Musterstraße 12, 2. OG: Wasserschaden gemeldet am {a}, Einbruch gemeldet am {b}. Zwei verschiedene Schadenarten, derselbe Vertrag. Das ist kein Verdacht; es ist ein Hinweis, die zweite Akte mit Kenntnis der ersten zu lesen (Zustand der Wohnung nach der Trocknung, Zugänglichkeit).\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*".format(a=_stamp(6)[:10], b=_stamp(0)[:10]), 0)
+    _signal(root, "M-002", "Abweichung", "Kostenvoranschlag 18 % über dem Üblichen für diesen Schaden",
+            ["WG-2026-0402-hagelschaden-reihenhaus"],
+            "Dachziegel und ein Dachfenster an einem Reihenhaus liegen hier meist bei etwa 6.200 €. Dieser Kostenvoranschlag nennt 7.300 €. Das kann am Dachfenster liegen oder an der Zufahrt; es ist ein Hinweis, die Positionen mit dem Gutachten zu lesen.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 1)
+    _signal(root, "M-003", "Dublette", "Dasselbe Foto in zwei Kfz-Akten",
+            ["KFZ-2026-0815-parkschaden-tiefgarage", "KFZ-2026-0790-parkrempler"],
+            "Das Foto der Fahrertür in der neuen Meldung ist dieselbe Datei wie in der abgeschlossenen Akte vom Oktober, mit derselben Aufnahmezeit. Vielleicht nur falsch angehängt, vielleicht derselbe Schaden zweimal gemeldet.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 0)
     for i, (cid, title, label, days) in enumerate([("HR-2026-0388-leitungswasser-kueche", "Leitungswasser Küche", "HR", 14), ("KFZ-2026-0790-parkrempler", "Parkrempler Tiefgarage", "KFZ", 21),
                                                   ("WG-2026-0371-blitzschlag-dachstuhl", "Blitzschlag Dachstuhl", "WG", 30)]):
         _case(root, "60-abgeschlossen", cid, {"label": label, "number": cid.split("-")[1] + "-" + cid.split("-")[2], "title": title, "created": _stamp(days + 10)[:10],

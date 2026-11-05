@@ -208,7 +208,7 @@ export function App() {
           ) : route.name === "house" ? (
             <HouseScreen config={config.data} go={go} w={w} />
           ) : route.name === "signals" ? (
-            <Signals config={config.data} go={go} w={w} />
+            <Signals config={config.data} go={go} w={w} lang={lang} />
           ) : (
             <div className="ws">
               {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} place={here} views={views} onMenu={() => setRailOpen(true)} />}

@@ -288,6 +288,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/signals/{signal_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Signal Status
+         * @description A person moves a hint: looking into it, done (nothing to do, or handled), or back to open. The hint itself is never
+         *     changed or deleted; only its status, with who and when, in its header.
+         */
+        post: operations["post_signal_status_api_signals__signal_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/canon": {
         parameters: {
             query?: never;
@@ -2134,6 +2155,11 @@ export interface components {
              * @default
              */
             stage_word: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
         };
         /**
          * SignalOut
@@ -2154,6 +2180,24 @@ export interface components {
             cases: components["schemas"]["SignalCase"][];
             /** Text */
             text: string;
+            /**
+             * Decided By
+             * @default
+             */
+            decided_by: string;
+            /**
+             * Decided At
+             * @default
+             */
+            decided_at: string;
+        };
+        /** SignalStatusIn */
+        SignalStatusIn: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "offen" | "in_pruefung" | "erledigt";
         };
         /** SlotView */
         SlotView: {
@@ -2798,6 +2842,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignalOut"][];
+                };
+            };
+        };
+    };
+    post_signal_status_api_signals__signal_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                signal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignalStatusIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

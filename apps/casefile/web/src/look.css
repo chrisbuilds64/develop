@@ -523,3 +523,28 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .ks-r:last-child { border-bottom: none; }
 .ks-k { display: inline-flex; gap: 4px; align-items: center; flex: none; }
 .ks-or { color: var(--muted-2); font-size: var(--fs-12); }
+
+/* ---------------------------------------------------------------- Flagged (design hand-back, 2026-11-05) */
+.sg-row { padding: 18px 0; }
+.rb-card > .sg-row:first-child { padding-top: 12px; }
+.sg-i { flex: none; width: 30px; height: 30px; border-radius: var(--r-9); display: grid; place-items: center; margin-top: -3px; }
+.sg-i.dup { background: var(--sg-dup-soft); color: var(--sg-dup); }
+.sg-i.rep { background: var(--sg-rep-soft); color: var(--sg-rep); }
+.sg-i.dev { background: var(--sg-dev-soft); color: var(--sg-dev); }
+.sg-row .rb-t { font-weight: 500; color: var(--ink); }
+.sg-k { margin: 2px 0 0; font-size: var(--fs-12-5); font-weight: 500; }
+.sg-k.dup { color: var(--sg-dup); } .sg-k.rep { color: var(--sg-rep); } .sg-k.dev { color: var(--sg-dev); }
+.sg-why { margin: 6px 0 0; font-size: var(--fs-13-5); line-height: 1.5; color: var(--sub); white-space: pre-line; }
+.sg-cs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sg-c { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: var(--r-s); border: 1px solid var(--hairline); background: var(--ground);
+  font: inherit; font-size: var(--fs-12-5); color: var(--ink-2); cursor: pointer; }
+.sg-c i { width: 7px; height: 7px; border-radius: var(--r-2); flex: none; background: var(--muted-2); }
+.sg-c:hover { color: var(--ink); border-color: var(--tint-18); }
+.sg-a { color: var(--muted-2); margin-left: 2px; }
+.sg-by { margin: 8px 0 0; font-size: var(--fs-12); color: var(--muted); }
+.sg-back { border: none; background: none; padding: 6px 8px; border-radius: var(--r-s); font: inherit; font-size: var(--fs-13-5); color: var(--sub); cursor: pointer; white-space: nowrap; }
+.sg-back:hover { color: var(--ink); background: var(--hover); }
+.sg-row.in .sg-i, .sg-row.in .sg-k { opacity: .55; }
+.sg-row.in .rb-t { color: var(--ink-2); font-weight: 400; }
+.rb-dot.urgent { background: var(--urgent); }
+@media (max-width: 760px) { .sg-row { flex-direction: row; flex-wrap: wrap; } .sg-row .rb-side { width: 100%; padding-left: 46px; } }

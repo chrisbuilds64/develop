@@ -71,6 +71,7 @@ export const api = {
   moduleRetire: (id: string, note: string) => call<ModuleHistory>("POST", `/api/rulebook/${encodeURIComponent(id)}/retire`, { note }),
   rhythm: () => call<RhythmOut>("GET", "/api/me/rhythm"),
   signals: () => call<SignalOut[]>("GET", "/api/signals"),
+  signalStatus: (id: string, status: "offen" | "in_pruefung" | "erledigt") => call<SignalOut>("POST", `/api/signals/${encodeURIComponent(id)}/status`, { status }),
   case: (id: string) => call<CaseView>("GET", `/api/cases/${encodeURIComponent(id)}`),
   step: (id: string, action: string, step_id: string, payload: Record<string, unknown> = {}) =>
     call<StepResult>("POST", `/api/cases/${encodeURIComponent(id)}/steps`, { action, step_id, payload }),

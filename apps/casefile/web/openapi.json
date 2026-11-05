@@ -531,6 +531,56 @@
         }
       }
     },
+    "/api/signals/{signal_id}/status": {
+      "post": {
+        "summary": "Post Signal Status",
+        "description": "A person moves a hint: looking into it, done (nothing to do, or handled), or back to open. The hint itself is never\nchanged or deleted; only its status, with who and when, in its header.",
+        "operationId": "post_signal_status_api_signals__signal_id__status_post",
+        "parameters": [
+          {
+            "name": "signal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Signal Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignalStatusIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/canon": {
       "get": {
         "summary": "Get Canon",
@@ -4387,6 +4437,11 @@
             "type": "string",
             "title": "Stage Word",
             "default": ""
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
           }
         },
         "type": "object",
@@ -4428,6 +4483,16 @@
           "text": {
             "type": "string",
             "title": "Text"
+          },
+          "decided_by": {
+            "type": "string",
+            "title": "Decided By",
+            "default": ""
+          },
+          "decided_at": {
+            "type": "string",
+            "title": "Decided At",
+            "default": ""
           }
         },
         "type": "object",
@@ -4442,6 +4507,24 @@
         ],
         "title": "SignalOut",
         "description": "A hint the pattern helper found across files: never a finding, always with its reasoning and the files it rests on."
+      },
+      "SignalStatusIn": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "offen",
+              "in_pruefung",
+              "erledigt"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SignalStatusIn"
       },
       "SlotView": {
         "properties": {
