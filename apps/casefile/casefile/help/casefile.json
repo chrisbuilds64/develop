@@ -725,6 +725,18 @@
         "de": "Freigegebene Absätze für Briefe. Eine Änderung ist eine neue Fassung, die eine zweite Person annimmt. Wörter in geschweiften Klammern setzt die KI je Fall ein.",
         "en": "Approved paragraphs for letters. A change is a new version that a second person accepts. The AI fills in the words in curly brackets for each case."
       }
+    },
+    {
+      "key": "cf.guides",
+      "since": "0.22.0",
+      "title": {
+        "de": "Anleitungen",
+        "en": "Guides"
+      },
+      "text": {
+        "de": "Geführte Touren, wo es sie gibt, die kurzen Videokapitel, die Hilfe und die Tastenkürzel an einem Ort.",
+        "en": "Guided tours where there are some, the short video chapters, help and the keyboard shortcuts, in one place."
+      }
     }
   ]
 }

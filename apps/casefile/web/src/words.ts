@@ -3,6 +3,10 @@ export type Lang = "de" | "en";
 
 const W = {
   de: {
+    gdTours: "Geführte Touren", gdToursLead: "Schau zu, wie es in der App passiert. Jede dauert unter einer Minute.", gdVideos: "Videos",
+    gdVideosLead: (n: number) => `${n} kurze Kapitel, vom Warum bis zum KI-Team.`, keysTitle: "Tastenkürzel",
+    ksAnywhere: "Überall", ksSearch: "Fälle suchen", ksTheme: "Hell oder dunkel", ksThis: "Diese Übersicht", ksHome: "Auf Start", ksOpenNext: "Nächste Akte öffnen",
+    ksCase: "In einem Fall", ksConfirm: "Vorschlag bestätigen", ksNextPrev: "Nächster / voriger Fall", ksAsk: "Die KI fragen", ksBack: "Zurück zum Start",
     // the rulebook of the design hand-back (2026-11-05)
     rbLead: "Alles, wonach dein Büro und die KI arbeiten, an einem Ort: die Regeln, die Schritte eines Falls, was jeder KI-Helfer darf, und die freigegebenen Formulierungen für Briefe.",
     rbWatch: "Video", rbTabRules: "Regeln", rbTabSteps: "Fallschritte", rbTabLimits: "KI-Grenzen", rbTabLetters: "Textbausteine", rbTabLinks: "Verbindungen",
@@ -174,6 +178,10 @@ const W = {
     threadEmpty: "Noch kein Eintrag. Die erste Notiz legt den Verlauf an.", originUnknown: "Herkunft nicht erfasst", delivers: (who: string) => `liefert ${who}`, deskEmpty: "Noch nichts in der Akte.", locked: "gesperrt",
   },
   en: {
+    gdTours: "Guided tours", gdToursLead: "Watch it happen in the app. Each one takes under a minute.", gdVideos: "Videos",
+    gdVideosLead: (n: number) => `${n} short chapters, from the why to the AI team.`, keysTitle: "Keyboard shortcuts",
+    ksAnywhere: "Anywhere", ksSearch: "Search cases", ksTheme: "Light or dark", ksThis: "This overview", ksHome: "On Home", ksOpenNext: "Open the next case",
+    ksCase: "In a case", ksConfirm: "Confirm the proposal", ksNextPrev: "Next / previous case", ksAsk: "Ask the AI", ksBack: "Back to Home",
     // the rulebook of the design hand-back (2026-11-05)
     rbLead: "Everything your office and the AI work by, in one place: the rules you follow, the steps a case goes through, what each AI helper may do, and the approved wording for letters.",
     rbWatch: "Watch", rbTabRules: "Rules", rbTabSteps: "Case steps", rbTabLimits: "AI limits", rbTabLetters: "Letter templates", rbTabLinks: "Connections",

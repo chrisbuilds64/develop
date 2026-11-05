@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BASE, type ConfigView, type MeOut } from "../api";
 import { VideoStage, type Video } from "./Explain";
 import { MenuIcon, Play, Contrast } from "./Icons";
+import { openKeys } from "./Keys";
 import type { words } from "../words";
 
 type Panel = { dock: (host: HTMLElement) => void; help: () => void };
@@ -32,7 +33,9 @@ export function TopBar({ config, w, crumb, canAsk, dark, onTheme, onMenu, views 
     return () => window.removeEventListener("agent-panel:ready", dock);
   }, []);
   useEffect(() => { document.body.classList.add("has-bar"); return () => document.body.classList.remove("has-bar"); }, []);
-  const guides = () => { if (videos.length === 1) setPlaying(videos[0]); else setVideoList(!videoList); };
+  const flowList = ((flows.data?.flows ?? []) as { id: string; title: string; summary?: string }[]);
+  const guides = () => setVideoList(!videoList);
+  const close = () => setVideoList(false);
   const ask = () => document.querySelector<HTMLInputElement>(".i-ask input, .ask input, .ask textarea")?.focus();
 
   return (
@@ -41,23 +44,41 @@ export function TopBar({ config, w, crumb, canAsk, dark, onTheme, onMenu, views 
       <span className="bar-crumb">{crumb}{stage && <span className={`bar-stage ${stage}`}>{stage.toUpperCase()}</span>}</span>
       {views}
       <span className="bar-right" data-help="cf.support">
-        {videos.length > 0 && <button type="button" className="btn" onClick={guides} aria-expanded={videoList}><Play /><span>{w.guides}</span></button>}
-        {hasPanel && <button type="button" className="btn" onClick={() => panel()?.help()} title={w.helpHint}><span className="i">?</span><span>{w.help}</span></button>}
-        {hasFlows && <button type="button" className="btn" onClick={() => window.dispatchEvent(new CustomEvent("cf:director"))} title="Shift+Alt+D"><span>{w.flows}</span></button>}
+        <button type="button" className="btn" data-help="cf.guides" onClick={guides} aria-expanded={videoList}><Play /><span>{w.guides}</span></button>
         {canAsk && <button type="button" className="btn ai" data-help="cf.ask" onClick={ask}>✦ <span>{w.askAi}</span> <span className="kbd">{mac ? "⌘J" : "Ctrl J"}</span></button>}
         <button type="button" className="theme" data-help-skip="explained by cf.theme" aria-label={w.theme} title={dark ? w.light : w.dark} onClick={onTheme}><Contrast /></button>
         <span ref={agents} className="bar-agents" />
       </span>
-      {videoList && videos.length > 1 && (
+      {videoList && (
         <>
-          <button type="button" className="pop-scrim" aria-label={w.close} onClick={() => setVideoList(false)} />
-          <div className="cf-bar-pop" role="menu">
-            {videos.map((v) => (
-              <button key={v.key} type="button" onClick={() => { setVideoList(false); setPlaying(v); }}>
-                {v.poster ? <img src={BASE + v.poster} alt="" /> : <span className="poster" />}
-                <span><b>{v.title}</b><small>{v.seconds ? `${v.seconds} s` : ""}</small></span>
-              </button>
-            ))}
+          <button type="button" className="pop-scrim" aria-label={w.close} onClick={close} />
+          <div className="cf-bar-pop gd" role="menu">
+            {hasFlows && (
+              <>
+                <div className="gd-h"><b>{w.gdTours}</b><span>{w.gdToursLead}</span></div>
+                {flowList.map((f) => (
+                  <button key={f.id} type="button" className="gd-tour" onClick={() => { close(); window.dispatchEvent(new CustomEvent("cf:director")); }}>
+                    <span className="gd-play"><Play /></span><span><b>{f.title}</b>{f.summary && <small>{f.summary}</small>}</span>
+                  </button>
+                ))}
+                <hr />
+              </>
+            )}
+            {videos.length > 0 && (
+              <>
+                <div className="gd-h"><b>{w.gdVideos}</b><span>{w.gdVideosLead(videos.length)}</span></div>
+                <div className="gd-vids">
+                  {videos.map((v, i) => (
+                    <button key={v.key} type="button" className="gd-v" onClick={() => { close(); setPlaying(v); }}>
+                      <span className="gd-n">{i + 1}</span><span className="gd-vt">{v.title}</span><span className="gd-vd">{v.seconds ? `${v.seconds} s` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+                <hr />
+              </>
+            )}
+            {hasPanel && <button type="button" className="gd-row" onClick={() => { close(); panel()?.help(); }}><span className="gd-ic">?</span>{w.help}</button>}
+            <button type="button" className="gd-row" onClick={() => { close(); openKeys(); }}><span className="gd-ic kb" aria-hidden="true" />{w.keysTitle}<span className="kbd">?</span></button>
           </div>
         </>
       )}

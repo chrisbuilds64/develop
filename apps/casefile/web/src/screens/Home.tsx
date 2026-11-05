@@ -3,6 +3,7 @@
 // right now and what you sealed today. Everything comes from the core: /api/me/turns, /api/cases, /api/me/rhythm.
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { openKeys } from "../components/Keys";
 import { api, type ConfigView, type TurnOut, type CaseCard } from "../api";
 import { ago, type words } from "../words";
 import { Seal } from "../components/Icons";
@@ -116,6 +117,7 @@ export function Home({ config, go, w }: { config: ConfigView; go: (p: string) =>
               </button>
             ))}
           </div>
+          <button type="button" className="kbhint" data-help-skip="opens the keyboard shortcuts" onClick={openKeys}><span className="gd-ic kb" aria-hidden="true" />{w.keysTitle}<span className="kbd">?</span></button>
         </aside>
       </div>
     </main>
