@@ -30,8 +30,9 @@ def may_order(config: DomainConfig, skill: str, person: Person) -> str | None:
 
 
 def order(store: FsStore, config: DomainConfig, case_id: str, stage: str, skill: str, by: str, note: str = "", request_id: str | None = None,
-          background: bool = False) -> str:
-    """Write the order. With a request id, a second call with the same id returns the first order's id. A background
+          background: bool = False, lang: str | None = None, extra: dict | None = None) -> str:
+    """Write the order. With a request id, a second call with the same id returns the first order's id. `lang` is the language
+    the helper writes its summary, titles and facts in; the original stays as it came. A background
     order works beside the people and is never anybody's move (a follow-up while somebody answers)."""
     if request_id:
         for name in store.runs():
@@ -40,7 +41,10 @@ def order(store: FsStore, config: DomainConfig, case_id: str, stage: str, skill:
                 return doc["id"]
     now = dt.datetime.now().astimezone()
     run = {"id": f"{now.strftime('%Y%m%d-%H%M%S')}_{skill}_{case_id}", "skill": skill, "container": f"{stage}/{case_id}",
-           "requested_by": by, "runner": "claude-code", "status": "queued", "created": now.isoformat(timespec="seconds")}
+           "requested_by": by, "runner": "claude-code", "status": "queued", "created": now.isoformat(timespec="seconds"),
+           "lang": lang or config.lang}               # the language the helper writes in: the requester's, else the application's
+    for k, v in (extra or {}).items():
+        run.setdefault(k, v)
     if note.strip():
         run["note"] = note.strip()
     if request_id:

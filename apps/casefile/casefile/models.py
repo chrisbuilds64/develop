@@ -130,6 +130,9 @@ class Run(BaseModel):
     model: str | None = None
     turns: int | None = None
     duration_s: float | None = None
+    lang: str | None = None                      # the language the helper writes in (the requester's)
+    file: str | None = None                      # translate: the original it reads
+    out: str | None = None                       # translate: the file it writes beside the original
     background: bool = False                     # a helper that works beside the people (a follow-up while someone answers): never anybody's move
 
 

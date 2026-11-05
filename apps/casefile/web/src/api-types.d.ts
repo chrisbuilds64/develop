@@ -461,6 +461,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/translate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Translate
+         * @description "Show translation": the helper `translate` writes `<stem>.<lang>.md` beside the original, which stays as it
+         *     came. Once there, the same request answers at once. A background order: no thread entry, nobody's move.
+         */
+        post: operations["post_translate_api_cases__case_id__translate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/runs": {
         parameters: {
             query?: never;
@@ -915,6 +936,12 @@ export interface components {
              * @default
              */
             undo_word: string;
+            /** Translations */
+            translations?: {
+                [key: string]: {
+                    [key: string]: string;
+                };
+            };
             /** Data */
             data?: {
                 [key: string]: unknown;
@@ -1691,6 +1718,12 @@ export interface components {
             turns?: number | null;
             /** Duration S */
             duration_s?: number | null;
+            /** Lang */
+            lang?: string | null;
+            /** File */
+            file?: string | null;
+            /** Out */
+            out?: string | null;
             /**
              * Background
              * @default false
@@ -1876,6 +1909,28 @@ export interface components {
              * @default false
              */
             replayed: boolean;
+        };
+        /** TranslateIn */
+        TranslateIn: {
+            /** File */
+            file: string;
+            /** Lang */
+            lang?: string | null;
+            /** Request Id */
+            request_id: string;
+        };
+        /** TranslateOut */
+        TranslateOut: {
+            /** Original */
+            original: string;
+            /** Lang */
+            lang: string;
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+            /** Run */
+            run?: string | null;
         };
         /**
          * Turn
@@ -2687,6 +2742,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StepResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_translate_api_cases__case_id__translate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranslateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslateOut"];
                 };
             };
             /** @description Validation Error */

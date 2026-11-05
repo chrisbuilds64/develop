@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
@@ -71,6 +73,39 @@ class GroupView(BaseModel):
     word: str
 
 
+LANG_FILE = re.compile(r"^(?P<stem>.+)\.(?P<lang>[a-z]{2})\.md$")
+TRANSLATABLE = (".md", ".txt", ".eml")
+
+
+def localized(doc: dict, lang: str) -> dict:
+    """Content in the viewer's language (request 8): a helper writes the original's language into the document and,
+    per further language, `i18n.<lang>` with the same keys (title, subtitle, summary, fields …). The viewer's
+    language wins key by key; `lang` keeps saying which language the original is in."""
+    if not isinstance(doc, dict):
+        return doc
+    over = (doc.get("i18n") or {}).get(lang) if isinstance(doc.get("i18n"), dict) else None
+    if not isinstance(over, dict):
+        return doc
+    out = {**doc}
+    for k, v in over.items():
+        out[k] = {**out[k], **v} if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
+def translations(files: list[str]) -> dict[str, dict[str, str]]:
+    """`mail.md` and `mail.en.md` beside it: the original → {language: its translation}. The original is never replaced."""
+    names = set(files)
+    out: dict[str, dict[str, str]] = {}
+    for f in files:
+        m = LANG_FILE.match(f)
+        if not m:
+            continue
+        orig = next((m["stem"] + ext for ext in TRANSLATABLE if m["stem"] + ext in names), None)
+        if orig:
+            out.setdefault(orig, {})[m["lang"]] = f
+    return out
+
+
 def actor_of(config: DomainConfig, author: str) -> str:
     """'ai' when an agent of this application wrote the entry, 'system' for the core itself, else 'person'."""
     p = config.person(author)
@@ -108,6 +143,7 @@ class CaseView(CaseCard):
     take_back_word: str = ""
     undo_step: str = ""                                   # the viewer's newest move, while nothing happened since: "Undo" (action `undo`) takes it back (ADR-025)
     undo_word: str = ""                                   # that move in words
+    translations: dict[str, dict[str, str]] = Field(default_factory=dict)   # an original file → {language: the translation beside it}
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
 
 
@@ -181,7 +217,7 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: 
     ext = str(case.meta.get("external_id") or case.meta.get("claim_number") or "")
     tpl = str(config.theme.get("external_url") or "")
     tint = value_lists.tint(config.lists, config.theme, case.meta)
-    return CaseCard(id=case.id, number=str(case.meta.get("number") or ""), tint=tint, title=str(case.meta.get("title") or case.meta.get("working_title") or case.id), label=case.label,
+    return CaseCard(id=case.id, number=str(case.meta.get("number") or ""), tint=tint, title=str(localized(case.meta, lang).get("title") or case.meta.get("working_title") or case.id), label=case.label,
                     external_id=ext, external_url=(tpl.replace("{external_id}", ext) if ext and tpl else ""),
                     label_word=value_lists.value_word(config.lists, "label", case.label, lang, config.word("labels", case.label, lang, case.label)), stage=case.stage,
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,
@@ -208,10 +244,10 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     undo_action = config.action(undo.from_, undo.action) if undo else None
     return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
                     held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "",
-                    undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
-                    meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
+                    translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
+                    meta=localized(case.meta, lang), stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
-                    data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
+                    data={k: localized(v, lang) for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
 
 def list_views(config: DomainConfig, lang: str, counts: dict | None = None) -> list[ListView]:

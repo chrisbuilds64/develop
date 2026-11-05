@@ -267,3 +267,40 @@ def test_an_undo_left_half_way_is_completed_on_the_next_start(tmp_path):
     done = stepping.recover(store, config)
     assert [r.ok for r in done] == [True] and store.find(cid) == "30-pruefung"
     assert store.read_json("_steps/a1.json")["status"] == "undone"
+
+
+def test_content_follows_the_viewers_language_and_the_original_stays(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    client.post("/api/session", json={"person": "du"})
+    client.post("/api/session/lang", json={"lang": "en"})
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    cid = "WG-2026-0425-glasbruch-wintergarten"
+
+    # a helper's titles and facts in several languages: the viewer's wins, the original stays on record
+    meta = store.case_json(cid, "meta.json")
+    store.write_json(f"{store.find(cid)}/{cid}/meta.json", {**meta, "lang": "de", "i18n": {"en": {"title": "Conservatory glass cracked"}}})
+    card = next(c for g in client.get("/api/cases").json() for c in g["cases"] if c["id"] == cid)
+    v = client.get(f"/api/cases/{cid}").json()
+    assert card["title"] == v["title"] == "Conservatory glass cracked" and v["meta"]["lang"] == "de"
+    assert store.case_json(cid, "meta.json")["title"] == meta["title"]                  # nothing overwritten
+
+    # every order says the language the helper writes in
+    r = client.post(f"/api/cases/{cid}/runs", json={"skill": "ask", "note": "Status?", "request_id": "q1"}).json()
+    assert store.read_json(f"_runs/{r['run']}.json")["lang"] == "en"
+
+    # "Show translation": ordered once, written beside the original, then answered at once
+    t = client.post(f"/api/cases/{cid}/translate", json={"file": "meldung.md", "request_id": "t1"}).json()
+    assert t == {"original": "meldung.md", "lang": "en", "name": "meldung.en.md", "ready": False, "run": t["run"]} and t["run"]
+    order = store.read_json(f"_runs/{t['run']}.json")
+    assert order["background"] and order["file"] == "meldung.md" and order["out"] == "meldung.en.md"
+    entries_before = len(client.get(f"/api/cases/{cid}").json()["entries"])
+    assert play(store, config, t["run"] + ".json", HERE / "replies", wait=False)
+    v = client.get(f"/api/cases/{cid}").json()
+    assert v["translations"] == {"meldung.md": {"en": "meldung.en.md"}} and len(v["entries"]) == entries_before   # no thread noise
+    assert "meldung.md" in store.case_text(cid, "meldung.en.md") and store.case_text(cid, "meldung.md").startswith("# Schadenmeldung")
+    again = client.post(f"/api/cases/{cid}/translate", json={"file": "meldung.md", "request_id": "t2"}).json()
+    assert again["ready"] and again["run"] is None
+    assert client.post(f"/api/cases/{cid}/translate", json={"file": "meta.json", "request_id": "t3"}).status_code == 404
+    assert client.post(f"/api/cases/{cid}/translate", json={"file": "meldung.md", "lang": "english", "request_id": "t4"}).status_code == 422

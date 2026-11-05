@@ -38,6 +38,7 @@ from pydantic import BaseModel, Field
 from .. import __version__
 from ..config import DomainConfig
 from ..domain import assets, cases as reading, step as stepping
+from ..domain import runs as runs_
 from ..domain import seen as reads
 from ..domain import turn as whose
 from ..models import Case, StepRequest, StepResult, Turn
@@ -117,6 +118,20 @@ class EntryIn(BaseModel):
     title: str | None = None
 
     model_config = {"populate_by_name": True}
+
+
+class TranslateIn(BaseModel):
+    file: str                                    # the original in the case: mail.md, meldung.md …
+    lang: str | None = None                      # the language wanted; the viewer's when empty
+    request_id: str
+
+
+class TranslateOut(BaseModel):
+    original: str
+    lang: str
+    name: str                                    # the translation's file beside the original
+    ready: bool                                  # true: it is there; false: a helper is writing it
+    run: str | None = None
 
 
 class RunIn(BaseModel):
@@ -1028,12 +1043,18 @@ def create_app(settings: Settings) -> FastAPI:
         return out
 
     # ------------------------------------------------------------ writing: every write is a step
+    def _step(c: Ctx, case_id: str, req: StepRequest, who: str) -> StepResult:
+        """Every step from the surface carries the viewer's language, so a helper it orders writes in it (request 8)."""
+        if "_lang" not in req.payload:
+            req = req.model_copy(update={"payload": {**req.payload, "_lang": c.lang}})
+        return stepping.step(c.store, c.config, case_id, req, who)
+
     def _answer(result: StepResult) -> JSONResponse:
         return JSONResponse(status_code=200 if result.ok else 409, content=result.model_dump(by_alias=True))
 
     @app.post("/api/cases/{case_id}/steps", response_model=StepResult)
     def post_step(case_id: str, body: StepRequest, request: Request, response: Response, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        result = stepping.step(c.store, c.config, case_id, body, who)
+        result = _step(c, case_id, body, who)
         if result.ok and not result.replayed:
             action = next((a for st in c.config.stages for a in st.actions if a.id == body.action and a.handover), None)
             if action:
@@ -1062,11 +1083,36 @@ def create_app(settings: Settings) -> FastAPI:
         if body.kind not in ("note", "answer", "done"):
             raise HTTPException(422, "kind must be note, answer or done")
         payload = {"text": body.text, "resolves": body.resolves or "", "for": body.for_ or "", "title": body.title or ""}
-        return _answer(stepping.step(c.store, c.config, case_id, StepRequest(action=body.kind, step_id=body.step_id, payload=payload), who))
+        return _answer(_step(c, case_id, StepRequest(action=body.kind, step_id=body.step_id, payload=payload), who))
+
+    @app.post("/api/cases/{case_id}/translate", response_model=TranslateOut)
+    def post_translate(case_id: str, body: TranslateIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """"Show translation": the helper `translate` writes `<stem>.<lang>.md` beside the original, which stays as it
+        came. Once there, the same request answers at once. A background order: no thread entry, nobody's move."""
+        try:
+            case = reading.load(c.store, c.config, case_id)
+        except (KeyError, StoreError) as exc:
+            raise HTTPException(404, str(exc) or case_id)
+        lang = (body.lang or c.lang or "").lower()
+        if not re.fullmatch(r"[a-z]{2}", lang):
+            raise HTTPException(422, "lang must be two letters")
+        stem, dot, ext = body.file.rpartition(".")
+        if body.file not in case.files or "/" in body.file or f".{ext}" not in views.TRANSLATABLE or views.LANG_FILE.match(body.file):
+            raise HTTPException(404, f"no text file '{body.file}' in this case")
+        out = f"{stem}.{lang}.md"
+        if out in case.files:
+            return TranslateOut(original=body.file, lang=lang, name=out, ready=True)
+        person = c.config.person(who)
+        refusal = runs_.may_order(c.config, "translate", person) if person else "not a person of this application"
+        if refusal:
+            raise HTTPException(409, refusal)
+        run = runs_.order(c.store, c.config, case_id, case.stage, "translate", who, f"{body.file} → {lang}", request_id=body.request_id,
+                          background=True, lang=lang, extra={"file": body.file, "out": out})
+        return TranslateOut(original=body.file, lang=lang, name=out, ready=False, run=run)
 
     @app.post("/api/cases/{case_id}/runs", response_model=StepResult)
     def post_run(case_id: str, body: RunIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        return _answer(stepping.step(c.store, c.config, case_id, StepRequest(action="ask", step_id=body.request_id, payload={"skill": body.skill, "text": body.note}), who))
+        return _answer(_step(c, case_id, StepRequest(action="ask", step_id=body.request_id, payload={"skill": body.skill, "text": body.note}), who))
 
     @app.post("/api/cases/{case_id}/assets", response_model=AssetOut)
     async def post_asset(case_id: str, slot: str = Form(...), step_id: str = Form(...), file: UploadFile = File(...), c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1075,12 +1121,12 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(413, f"larger than {settings.max_upload_mb} MB")
         prior = stepping.read_journal(c.store, step_id)
         if prior is not None:
-            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=step_id), who))
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=step_id), who))
         try:
             name = assets.put(c.store, c.config, case_id, slot, data, file.filename or "")
         except StoreError as exc:
             raise HTTPException(409, str(exc))
-        return AssetOut(name=name, slot=slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=step_id, payload={"files": [name], "title": ""}), who))
+        return AssetOut(name=name, slot=slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=step_id, payload={"files": [name], "title": ""}), who))
 
     @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
     def post_sample(case_id: str, body: SampleIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1091,12 +1137,12 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(404, "no sample for that slot")
         prior = stepping.read_journal(c.store, body.step_id)
         if prior is not None:
-            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
         try:
             name = assets.put(c.store, c.config, case_id, body.slot, samples_dir / source, source)
         except StoreError as exc:
             raise HTTPException(409, str(exc))
-        return AssetOut(name=name, slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
+        return AssetOut(name=name, slot=body.slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
 
     @app.put("/api/cases/{case_id}/vorort")
     def put_onsite(case_id: str, body: OnsiteIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

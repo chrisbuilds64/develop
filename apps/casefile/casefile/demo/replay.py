@@ -102,7 +102,13 @@ def play(store: FsStore, config: DomainConfig, run_name: str, replies_dir: Path,
     person = next((part.split("=", 1)[1] for part in str(doc.get("note") or "").split() if part.startswith("person=")), "")
     for name, src in (reply.get("files") or {}).items():
         name = name.replace("{person}", person or "du")
+        for key in ("out", "file", "lang"):                      # a translation order names its files (request 8)
+            name = name.replace("{" + key + "}", str(doc.get(key) or ""))
+        if not name:
+            continue
         content = (replies_dir / src).read_bytes() if not str(src).startswith("inline:") else str(src)[7:].encode("utf-8")
+        for key in ("file", "lang"):
+            content = content.replace(("{" + key + "}").encode(), str(doc.get(key) or "").encode())
         from ..domain import assets
         try:
             files_written.append(assets.put(store, config, case_id, name, content, name))

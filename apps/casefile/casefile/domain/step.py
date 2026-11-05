@@ -357,7 +357,7 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
         e["status"] = "info"
         if agent:
             e["for"] = agent.name
-        j.run = ordering.order(store, config, j.case, case.stage, skill, person_id, text, request_id=j.step_id)
+        j.run = ordering.order(store, config, j.case, case.stage, skill, person_id, text, request_id=j.step_id, lang=j.payload.get("_lang"))
     target = config.person(str(req.payload.get("for", "")))
     if req.action == "answer":
         src = next((x for x in case.entries if x.id == resolves), None)
@@ -371,7 +371,7 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
         stage = config.stage(case.stage)
         for rule in (stage.auto if stage else []):
             if rule.on_file in delivered and j.run is None:
-                j.run = ordering.order(store, config, j.case, case.stage, rule.skill, person_id, rule.note, request_id=f"{j.step_id}-auto")
+                j.run = ordering.order(store, config, j.case, case.stage, rule.skill, person_id, rule.note, request_id=f"{j.step_id}-auto", lang=j.payload.get("_lang"))
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)
@@ -416,7 +416,8 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
 
     # 4c. a run, once
     if action and action.run and j.run is None:
-        j.run = ordering.order(store, config, j.case, stage_now, action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id)
+        j.run = ordering.order(store, config, j.case, stage_now, action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
+                               lang=j.payload.get("_lang"))
         _write_journal(store, j)
 
     # 4d. a hand-off to another application (the rule matrix's action), once, before the move: if it fails, nothing moved

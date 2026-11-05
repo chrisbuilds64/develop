@@ -880,6 +880,56 @@
         }
       }
     },
+    "/api/cases/{case_id}/translate": {
+      "post": {
+        "summary": "Post Translate",
+        "description": "\"Show translation\": the helper `translate` writes `<stem>.<lang>.md` beside the original, which stays as it\ncame. Once there, the same request answers at once. A background order: no thread entry, nobody's move.",
+        "operationId": "post_translate_api_cases__case_id__translate_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}/runs": {
       "post": {
         "summary": "Post Run",
@@ -1880,6 +1930,16 @@
             "type": "string",
             "title": "Undo Word",
             "default": ""
+          },
+          "translations": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Translations"
           },
           "data": {
             "additionalProperties": true,
@@ -3542,6 +3602,39 @@
             ],
             "title": "Duration S"
           },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "out": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Out"
+          },
           "background": {
             "type": "boolean",
             "title": "Background",
@@ -3979,6 +4072,74 @@
           "action"
         ],
         "title": "StepResult"
+      },
+      "TranslateIn": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "request_id"
+        ],
+        "title": "TranslateIn"
+      },
+      "TranslateOut": {
+        "properties": {
+          "original": {
+            "type": "string",
+            "title": "Original"
+          },
+          "lang": {
+            "type": "string",
+            "title": "Lang"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original",
+          "lang",
+          "name",
+          "ready"
+        ],
+        "title": "TranslateOut"
       },
       "Turn": {
         "properties": {

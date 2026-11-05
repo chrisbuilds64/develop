@@ -31,6 +31,12 @@
       "does": "Beantwortet eine freie Frage zur Mail.",
       "never": "Handelt.",
       "rules": []
+    },
+    "translate": {
+      "$comment": "Show translation (request 8): writes <stem>.<lang>.md beside a customer's text; the original stays. In the order: file, out, lang.",
+      "orderable_by": [
+        "operator"
+      ]
     }
   },
   "agents": []
