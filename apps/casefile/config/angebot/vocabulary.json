@@ -1,6 +1,7 @@
 {
   "de": {
     "product": "Angebotsakte",
+    "workspace": "Angebote",
     "labels": {
       "KFZ": "Kfz",
       "HR": "Hausrat"
@@ -82,8 +83,8 @@
       "meta.json": "Kopfdaten"
     },
     "roles": {
-      "operator": "Innendienst",
-      "approver": "Freigabe"
+      "operator": "Betrieb",
+      "approver": "Sachbearbeitung"
     },
     "words": {
       "external_id": "Angebotsnummer"
@@ -107,6 +108,7 @@
   },
   "en": {
     "product": "Quote file",
+    "workspace": "Quotes",
     "labels": {
       "KFZ": "Motor",
       "HR": "Contents"
@@ -188,8 +190,8 @@
       "meta.json": "Head data"
     },
     "roles": {
-      "operator": "Back office",
-      "approver": "Approval"
+      "operator": "operator",
+      "approver": "handler"
     },
     "words": {
       "external_id": "Quote number"

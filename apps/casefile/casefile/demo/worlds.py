@@ -8,6 +8,7 @@ core can serve; the demo copies it once per visitor (ADR-016).
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import re
 import shutil
@@ -102,7 +103,9 @@ EN_LINES = {'Gutachten übergeben': 'Assessment handed over',
     'Rückfrage des Versicherers': 'Question from the insurer',
     'Der Restwert ist nicht ausgewiesen. Liegen die Reparaturkosten wirklich unter der Grenze? Bitte kurz bestätigen oder Nachtrag.': 'The residual value is not stated. Are the repair costs really below the limit? Please confirm briefly or send an addendum.',
     'Gutachterin Kaya, morgen.': 'Assessor Kaya, tomorrow.',
-    'Abgeschlossen': 'Closed'}
+    'Abgeschlossen': 'Closed',
+    'Angebot freigegeben und Anschreiben entwerfen': 'Quote approved, letter to be drafted',
+    'An den Kunden versendet': 'Sent to the customer'}
 
 
 def _case(root: Path, stage: str, cid: str, meta: dict, files: dict[str, bytes | str | Path] | None = None, review: str = "") -> Path:
@@ -539,9 +542,203 @@ def build_egutachten(root: Path) -> Path:
     return root
 
 
+# ---------------------------------------------------------------------------------------------------- the inbox and the quotes
+# (design hand-back, 2026-11-05): the two workspaces the design draws first. Both run on Chris's own configuration
+# (config/posteingang, config/angebot); the demo only adds example content: real mails taken in by the mailbox connector,
+# and quote requests whose premium the core computes from the questionnaire. Everything in German with English beside it.
+INBOX_STAGES = ["10-eingang", "30-erledigt", "40-abgelegt"]
+QUOTE_STAGES = ["10-anfrage", "20-rueckfrage", "30-angebot", "40-versand", "50-versendet"]
+DEMO_PEOPLE = {"people": [{"id": "du", "name": "Du", "kind": "human", "roles": ["operator", "approver"]},
+                          {"id": "ki", "name": "KI", "kind": "agent", "roles": []}]}
+
+
+def _mail(subject: str, sender: str, address: str, body: str, days_ago: float, photo: Path | None = None, newsletter: bool = False) -> bytes:
+    from email.message import EmailMessage
+    from email.utils import format_datetime
+    m = EmailMessage()
+    m["From"] = f"{sender} <{address}>"
+    m["To"] = "post@example.invalid"
+    m["Subject"] = subject
+    m["Date"] = format_datetime(dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days_ago))
+    m["Message-ID"] = f"<{hashlib.sha1(subject.encode()).hexdigest()[:16]}@example.invalid>"
+    m.set_content(body)
+    if photo is not None:
+        m.add_attachment(photo.read_bytes(), maintype="image", subtype="jpeg", filename="foto.jpg")
+    return bytes(m)
+
+
+INBOX_MAILS = [
+    # (subject, sender, address, body, days ago, photo?, reading, English: (subject, body, summary, title, short))
+    ("Unfall gestern Abend auf der B27, Seitenschaden", "Erika Brandt", "erika.brandt@example.invalid",
+     "Guten Tag,\n\ngestern Abend hat mich auf der B27 bei Tübingen ein Transporter beim Spurwechsel seitlich gestreift. Fahrertür und hintere Tür sind eingedrückt, das Auto fährt noch. Kennzeichen TÜ-EB 118, Police KFZ 4471-2209. Fotos anbei.\n\nViele Grüße\nErika Brandt",
+     3, True, {"kind": "schadensmeldung", "rule": "R-01", "summary": "Seitenschaden nach einem Spurwechsel-Unfall auf der B27. Fahrzeug fahrbereit, Fotos liegen bei.",
+               "fields": {"title": "Unfall auf der B27, Seitenschaden", "summary_short": "Fahrertür und hintere Tür, TÜ-EB 118", "policy": "KFZ 4471-2209"}},
+     ("Accident last night on the B27, side damage",
+      "Hello,\n\nlast night on the B27 near Tübingen a van scraped the side of my car while changing lanes. The driver's door and the rear door are dented, the car still drives. Plate TÜ-EB 118, policy KFZ 4471-2209. Photos attached.\n\nKind regards\nErika Brandt",
+      "Side damage after a lane-change accident on the B27. The car can be driven, photos attached.", "Accident on the B27, side damage", "Driver's door and rear door, TÜ-EB 118")),
+    ("Herbstangebot: 20 % auf die Reifeneinlagerung", "Fuhrpark-Profi", "news@example.invalid",
+     "Jetzt Winterreifen einlagern und 20 % sparen. Nur bis Ende November.\n\nIhr Fuhrpark-Profi-Team",
+     3, False, {"kind": "werbung", "rule": "R-09", "summary": "Werbung für Reifeneinlagerung. Keine Aufgabe für uns.", "fields": {}},
+     ("Autumn offer: 20 % off winter tyre storage", "Store your winter tyres now and save 20 %. Only until the end of November.\n\nYour Fuhrpark-Profi team",
+      "An advert for tyre storage. No task for us.", "", "")),
+    ("Kfz-Versicherung für einen neuen Skoda Octavia", "Lukas Hartmann", "lukas.hartmann@example.invalid",
+     "Hallo,\n\nich hole nächste Woche einen neuen Skoda Octavia ab und möchte ihn bei Ihnen versichern, Haftpflicht und Vollkasko. Ich fahre etwa 12.000 km im Jahr, SF-Klasse 8, das Auto steht in der Garage.\n\nGruß\nLukas Hartmann",
+     3, False, {"kind": "angebotsanfrage-kfz", "rule": "R-05", "summary": "Angebotsanfrage für einen neuen Skoda Octavia, Haftpflicht und Vollkasko.",
+                "fields": {"title": "Skoda Octavia, Haftpflicht und Vollkasko", "summary_short": "Neuwagen, 12.000 km, SF 8, Garage", "customer": "Lukas Hartmann"}},
+     ("Car insurance quote for a new Skoda Octavia",
+      "Hello,\n\nI am picking up a new Skoda Octavia next week and would like to insure it with you, liability and comprehensive. I drive about 12,000 km a year, no-claims class 8, the car is kept in a garage.\n\nRegards\nLukas Hartmann",
+      "A quote request for a new Skoda Octavia, liability and comprehensive.", "Skoda Octavia, liability and comprehensive", "New car, 12,000 km, class 8, garage")),
+    ("Hausratversicherung für unsere neue Wohnung", "Anna Vogel", "anna.vogel@example.invalid",
+     "Guten Tag,\n\nwir ziehen zum 1. Dezember in eine neue Wohnung, etwa 70 m², und brauchen eine Hausratversicherung. Was würde das kosten?\n\nAnna Vogel",
+     2 / 24, False, {"kind": "angebotsanfrage-hausrat", "rule": "R-06", "summary": "Angebotsanfrage Hausrat für eine neue Wohnung, etwa 70 m², ab 1. Dezember.",
+                     "fields": {"title": "Hausrat, neue Wohnung", "summary_short": "etwa 70 m², ab 1. Dezember", "customer": "Anna Vogel"}},
+     ("Contents insurance for our new flat",
+      "Hello,\n\nwe are moving into a new flat on 1 December, about 70 m², and need contents insurance. What would it cost?\n\nAnna Vogel",
+      "A contents quote request for a new flat, about 70 m², from 1 December.", "Contents, new flat", "about 70 m², from 1 December")),
+]
+INBOX_LIVE = ("Wasserschaden in der Wohnung, Rohrbruch in der Dusche", "Sabine Kühn", "sabine.kuehn@example.invalid",
+              "Hallo,\n\nheute früh ist hinter der Dusche ein Rohr geplatzt, das Wasser steht im Bad und läuft in den Flur. Der Installateur kommt am Nachmittag. Police HR 3390-1182.\n\nSabine Kühn",
+              2 / 24, False, {"kind": "schadensmeldung-hausrat", "rule": "R-02", "summary": "Rohrbruch hinter der Dusche, Wasser in Bad und Flur. Installateur kommt heute.",
+                              "fields": {"title": "Wasserschaden, Rohrbruch in der Dusche", "summary_short": "Bad und Flur, Installateur heute", "policy": "HR 3390-1182"}},
+              ("Water damage in the flat, burst pipe in the shower",
+               "Hello,\n\nthis morning a pipe burst behind the shower, the water is standing in the bathroom and running into the hall. The plumber comes this afternoon. Policy HR 3390-1182.\n\nSabine Kühn",
+               "A burst pipe behind the shower, water in the bathroom and hall. The plumber comes today.", "Water damage, burst pipe in the shower", "Bathroom and hall, plumber today"))
+
+
+def _reading(reading: dict, en: tuple) -> dict:
+    _, _, summary, title, short = en
+    fields = {k: v for k, v in (("title", title), ("summary_short", short)) if v}
+    return {**reading, "i18n": {"en": {"summary": summary, **({"fields": {**reading.get("fields", {}), **fields}} if fields else {})}}}
+
+
+def build_inbox(root: Path) -> Path:
+    """The inbox: every mail is a case. The AI has read four of them and proposes a row of the rule matrix; the fifth it is reading now."""
+    from ..config import DomainConfig
+    from ..connectors import mailbox
+    from ..store import FsStore
+    cfg = CONFIG / "posteingang"
+    root = _root(root, cfg, INBOX_STAGES)
+    (root / "people.json").write_text(json.dumps(DEMO_PEOPLE, ensure_ascii=False, indent=2), encoding="utf-8")
+    store, config = FsStore(root), DomainConfig.load(cfg, root)
+    photo = SAMPLES / "foto.jpg"
+
+    def take_in(mail: tuple, read: bool) -> str:
+        subject, sender, address, body, days, with_photo, reading, en = mail
+        cid, _ = mailbox.ingest(store, config, _mail(subject, sender, address, body, days, photo if with_photo else None), by="du", source="demo")
+        for f in (root / "_runs").glob("*.json"):                 # the demo reads its mails itself; no order stays open
+            if cid in f.read_text(encoding="utf-8"):
+                f.unlink()
+        meta_p = root / "10-eingang" / cid / "meta.json"
+        meta = json.loads(meta_p.read_text(encoding="utf-8"))
+        entries = {"REV-001": {"title": "Mail received", "text": en[1][:600]}}
+        if read:
+            (root / "10-eingang" / cid / "einordnung.json").write_text(json.dumps(_reading(reading, en), ensure_ascii=False, indent=2), encoding="utf-8")
+            from ..domain import step as stepping
+            stepping._append_entry(store, config, cid, "10-eingang", {"author": "KI", "status": "info", "title": "Mail eingeordnet",
+                                   "text": reading["summary"] + "\n\nVorschlag mit Begründung · du entscheidest."})
+            entries["REV-002"] = {"title": "Mail read", "text": en[2] + "\n\nA proposal with its reasons · you decide."}
+        meta["i18n"] = {"en": {"title": en[0], "entries": entries}}
+        meta_p.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        when = (dt.datetime.now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M")
+        rev = root / "10-eingang" / cid / "review.md"
+        rev.write_text(re.sub(r"\*\*Date:\*\* [0-9-]+ [0-9:]+", f"**Date:** {when}", rev.read_text(encoding="utf-8")), encoding="utf-8")
+        return cid
+
+    for m in INBOX_MAILS:
+        take_in(m, True)
+    live = take_in(INBOX_LIVE, False)
+    # the fifth mail: the AI is reading it right now; its prepared answer plays when the order runs
+    from ..domain import runs as ordering
+    ordering.order(store, config, live, "10-eingang", "posteingang-einordnen", "du", "", request_id=f"demo-read-{live}"[:60])
+    (root / "_replies").mkdir(exist_ok=True)
+    (root / "_replies" / f"einordnung-{live}.json").write_text(json.dumps(_reading(INBOX_LIVE[6], INBOX_LIVE[7]), ensure_ascii=False, indent=2), encoding="utf-8")
+    (root / "_replies" / f"posteingang-einordnen.{live}.json").write_text(json.dumps({
+        "delay_s": 25, "files": {"einordnung.json": f"einordnung-{live}.json"},
+        "entry": {"title": "Mail eingeordnet", "text": INBOX_LIVE[6]["summary"] + "\n\nVorschlag mit Begründung · du entscheidest."}, "model": "replay"},
+        ensure_ascii=False, indent=2), encoding="utf-8")
+    return root
+
+
+QUOTE_KFZ_TIGUAN = dict(sf_klasse=6, sf_klasse_vk=6, fahrleistung=15000, juengster_fahrer=19, garage="nein", kasko="vollkasko")
+QUOTE_KFZ_MAZDA = dict(sf_klasse=14, sf_klasse_vk=14, fahrleistung=8000, juengster_fahrer=52, garage="ja", kasko="keine")
+
+
+def _form(product: str, values: dict, words: dict[str, tuple[str, str]], missing: tuple[str, ...] = ()) -> dict:
+    fields = [{"id": k, "word": words.get(k, (k, k))[0], "value": v, "quote": "…"} for k, v in values.items()]
+    fields += [{"id": k, "word": words.get(k, (k, k))[0], "value": None, "missing": True} for k in missing]
+    return {"product": product, "fields": fields,
+            "i18n": {"en": {"fields": [{**f, "word": words.get(f["id"], (f["id"], f["id"]))[1]} for f in fields]}}}
+
+
+QUOTE_WORDS = {"sf_klasse": ("SF-Klasse Haftpflicht", "No-claims class, liability"), "sf_klasse_vk": ("SF-Klasse Vollkasko", "No-claims class, comprehensive"),
+               "fahrleistung": ("Fahrleistung pro Jahr", "Mileage per year"), "juengster_fahrer": ("Jüngster Fahrer", "Youngest driver"),
+               "garage": ("Garage", "Garage"), "kasko": ("Kasko", "Own-damage cover"), "wohnflaeche": ("Wohnfläche (m²)", "Living space (m²)"),
+               "tarifzone": ("Tarifzone", "Rate zone"), "vorschaeden": ("Schäden in den letzten fünf Jahren", "Claims in the last five years"),
+               "elementar": ("Elementarschutz", "Flood cover"), "fahrrad": ("Fahrrad über 1.000 €", "Bicycle over 1,000 €")}
+
+
+def build_quotes(root: Path) -> Path:
+    """Quote requests: one waits for answers from the customer, one is computed and waits for approval, one went out today."""
+    from ..config import DomainConfig
+    from ..domain import step as stepping
+    from ..models import StepRequest
+    from ..store import FsStore
+    cfg = CONFIG / "angebot"
+    root = _root(root, cfg, QUOTE_STAGES)
+    (root / "people.json").write_text(json.dumps(DEMO_PEOPLE, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # waits for the customer's answers: the AI filled what the mail said and drafted the question for the rest
+    c = "HR-2026-0007-hausrat-tuebingen"
+    _case(root, "10-anfrage", c, {"label": "HR", "number": "2026-0007", "title": "Hausrat, Wohnung in Tübingen", "reported_by": "Familie Neumann", "customer": "Familie Neumann",
+                                  "created": _stamp(0)[:10], "subtitle": "Umzug zum 1. Dezember, etwa 85 m²",
+                                  "i18n": {"en": {"title": "Contents cover, flat in Tübingen", "subtitle": "Moving on 1 December, about 85 m²"}}},
+          {"anfrage.md": "# Anfrage\n\nFiktiv. Familie Neumann zieht in eine Wohnung in Tübingen und fragt nach einer Hausratversicherung.\n",
+           "fragebogen.json": json.dumps(_form("HR", {"wohnflaeche": 85, "tarifzone": "2"}, QUOTE_WORDS, ("vorschaeden", "elementar", "fahrrad")), ensure_ascii=False, indent=2),
+           "rueckfrage.md": "Guten Tag,\n\nfür Ihr Angebot fehlen uns noch drei Angaben: Hatten Sie in den letzten fünf Jahren Schäden? Sollen Überschwemmung und Starkregen mitversichert sein? Haben Sie ein Fahrrad im Wert von über 1.000 €?\n"},
+          _entry(1, "Anfrage eingegangen", "Familie Neumann", stage="10-anfrage", when=_stamp(0, 8), files=["anfrage.md"], text="Hausrat für die neue Wohnung in Tübingen.") +
+          _entry(2, "Fragebogen vorausgefüllt", "KI", stage="10-anfrage", when=_stamp(0, 9), files=["fragebogen.json", "rueckfrage.md"],
+                 text="Wohnfläche und Tarifzone stehen in der Anfrage. Drei Antworten fehlen; die Rückfrage an die Kundin ist entworfen.\n\nVorschlag mit Begründung · du entscheidest."))
+    meta_p = root / "10-anfrage" / c / "meta.json"
+    meta = json.loads(meta_p.read_text(encoding="utf-8"))
+    meta["i18n"]["en"]["entries"] = {"REV-001": {"title": "Request received", "text": "Contents cover for the new flat in Tübingen."},
+                                     "REV-002": {"title": "Questionnaire prefilled", "text": "Living space and rate zone are in the request. Three answers are missing; the question to the customer is drafted.\n\nA proposal with its reasons · you decide."}}
+    meta_p.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # computed by the core from the questionnaire, waits for approval
+    store, config = FsStore(root), DomainConfig.load(cfg, root)
+    c = "KFZ-2026-0005-tiguan"
+    _case(root, "10-anfrage", c, {"label": "KFZ", "number": "2026-0005", "title": "Tiguan, Sohn fährt mit", "reported_by": "Familie Roth", "customer": "Familie Roth",
+                                  "created": _stamp(4)[:10], "subtitle": "VW Tiguan, Haftpflicht und Vollkasko, Fahrer ab 19",
+                                  "i18n": {"en": {"title": "Tiguan, son also drives", "subtitle": "VW Tiguan, liability and comprehensive, drivers from 19"}}},
+          {"anfrage.md": "# Anfrage\n\nFiktiv. Familie Roth möchte ihren Tiguan versichern; der Sohn (19) fährt mit.\n",
+           "fragebogen.json": json.dumps(_form("KFZ", QUOTE_KFZ_TIGUAN, QUOTE_WORDS), ensure_ascii=False, indent=2)},
+          _entry(1, "Anfrage eingegangen", "Familie Roth", stage="10-anfrage", when=_stamp(4, 10), files=["anfrage.md"], text="Tiguan, der Sohn fährt mit.") +
+          _entry(2, "Fragebogen ausgefüllt", "KI", stage="10-anfrage", when=_stamp(4, 11), files=["fragebogen.json"], text="Alle Antworten stehen in der Anfrage."))
+    stepping.step(store, config, c, StepRequest(action="calculate", step_id="demo-q1"), "du")     # the core computes the premium; the AI never does
+    rev = root / "30-angebot" / c / "review.md"                   # computed four days ago, in the story
+    rev.write_text(re.sub(r"(## REV-003[^\n]*\n\*\*Date:\*\* )[0-9-]+ [0-9:]+", lambda m: m.group(1) + _stamp(4, 12), rev.read_text(encoding="utf-8")), encoding="utf-8")
+    meta_p = root / "30-angebot" / c / "meta.json"
+    meta = json.loads(meta_p.read_text(encoding="utf-8"))
+    meta.setdefault("i18n", {}).setdefault("en", {})["entries"] = {"REV-001": {"title": "Request received", "text": "Tiguan, the son also drives."},
+                                                                  "REV-002": {"title": "Questionnaire filled", "text": "Every answer is in the request."}}
+    meta_p.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # went out today
+    c = "KFZ-2026-0003-mazda-2"
+    _case(root, "50-versendet", c, {"label": "KFZ", "number": "2026-0003", "title": "Mazda 2, nur Haftpflicht", "reported_by": "Marco Seidel", "customer": "Marco Seidel",
+                                    "created": _stamp(2)[:10], "i18n": {"en": {"title": "Mazda 2, liability only"}}},
+          {"anfrage.md": "# Anfrage\n\nFiktiv. Mazda 2, nur Haftpflicht.\n", "fragebogen.json": json.dumps(_form("KFZ", QUOTE_KFZ_MAZDA, QUOTE_WORDS), ensure_ascii=False, indent=2),
+           "angebot.md": "# Angebot\n\nKfz-Haftpflicht, 412,60 € im Jahr.\n", "anschreiben.md": "Sehr geehrter Herr Seidel,\n\nanbei Ihr Angebot für den Mazda 2.\n"},
+          _entry(1, "Angebot freigegeben und Anschreiben entwerfen", "Du", status="approved", stage="30-angebot", when=_stamp(0, 9), step="demo-m1", frm="30-angebot", to="40-versand") +
+          _entry(2, "An den Kunden versendet", "Du", status="approved", stage="40-versand", when=_stamp(0, 9), step="demo-m2", frm="40-versand", to="50-versendet"))
+    return root
+
+
 if __name__ == "__main__":
     import sys
     target = Path(sys.argv[1]).expanduser()
+    build_inbox(target / "inbox")
+    build_quotes(target / "quotes")
     build_claims(target / "claims")
     build_pressroom(target / "pressroom")
     build_egutachten(target / "egutachten")

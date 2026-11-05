@@ -132,7 +132,7 @@ def test_a_person_of_the_tree_works_in_it_and_a_clone_is_one_form_away(world):
 def test_an_application_marks_itself_through_its_theme_not_its_id(world, tmp_path):
     ws = Workspaces(world / "workspaces.json", world)
     app = ws.applications["pressroom"]
-    assert (app.icon, app.color) == ("mic", "#a855f7")                   # config/pressroom/theme.json → app
+    assert (app.icon, app.color) == ("mic", "#F07A5C")                   # config/pressroom/theme.json → app
     plain = tmp_path / "plain"
     plain.mkdir()
     (plain / "theme.json").write_text(json.dumps({"name": "Plain", "app": {"icon": "<script>", "color": "red"}}))
@@ -144,4 +144,4 @@ def test_an_application_marks_itself_through_its_theme_not_its_id(world, tmp_pat
     client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
     sign_in(client)
     me = client.get("/w/shared/api/me").json()
-    assert {p["color"] for p in me["places"]} >= {"#a855f7"}             # Casefile's rail shows each workspace in its application's colour
+    assert {p["color"] for p in me["places"]} >= {"#F07A5C"}             # Casefile's rail shows each workspace in its application's colour

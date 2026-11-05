@@ -196,6 +196,17 @@ def create(store: FsStore, config: DomainConfig, case_id: str, tgt: Target, spec
         meta["external_id"] = ref
     if case.meta.get("fictional"):
         meta["fictional"] = True                    # an invented case begets an invented case
+    # the reading in other languages (request 8): the new case carries its title and fields there too, as i18n.<lang>
+    over = (case.data.get("einordnung.json") or {}).get("i18n") if isinstance(case.data.get("einordnung.json"), dict) else None
+    tmpl = dict(spec.get("meta") or {})
+    for lang, doc in (over or {}).items():
+        if not isinstance(doc, dict):
+            continue
+        lctx = {**ctx, "fields": {**(ctx.get("fields") or {}), **(doc.get("fields") or {})}, "summary": doc.get("summary", ctx.get("summary", ""))}
+        tr = {k: fill(v, lctx) for k, v in tmpl.items() if isinstance(v, str) and k in ("title", "subtitle")}
+        tr = {k: v for k, v in tr.items() if v and v != meta.get(k)}
+        if tr:
+            meta.setdefault("i18n", {})[lang] = tr
     tgt.store.write_json(f"{stage}/{tid}/meta.json", {k: v for k, v in meta.items() if v != ""})
     for name, path in files:
         tgt.store.put_bytes(tid, name, path.read_bytes())

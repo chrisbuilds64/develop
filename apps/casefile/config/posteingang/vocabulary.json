@@ -1,6 +1,7 @@
 {
   "de": {
     "product": "Posteingang",
+    "workspace": "Posteingang",
     "labels": {
       "MAIL": "Mail"
     },
@@ -72,7 +73,8 @@
       "aktion.json": "Ausgeführt"
     },
     "roles": {
-      "operator": "Posteingang"
+      "operator": "Betrieb",
+      "approver": "Sachbearbeitung"
     },
     "words": {
       "external_id": "Mail"
@@ -98,6 +100,7 @@
   },
   "en": {
     "product": "Inbox",
+    "workspace": "Inbox",
     "labels": {
       "MAIL": "Mail"
     },
@@ -169,7 +172,8 @@
       "aktion.json": "Carried out"
     },
     "roles": {
-      "operator": "Inbox"
+      "operator": "operator",
+      "approver": "handler"
     },
     "words": {
       "external_id": "Mail"

@@ -57,6 +57,7 @@ class World:
     template: Path                               # a built pipeline root to copy per visitor
     person: str                                  # the visitor's identity in this world
     lang: str | None = None
+    targets: dict[str, str] = field(default_factory=dict)   # hand-off target → world: the inbox opens cases in the visitor's other sandboxes
 
 
 @dataclass
@@ -1317,8 +1318,30 @@ def create_app(settings: Settings) -> FastAPI:
     def _answer(result: StepResult) -> JSONResponse:
         return JSONResponse(status_code=200 if result.ok else 409, content=result.model_dump(by_alias=True))
 
+    def _connect(request: Request, response: Response, c: Ctx) -> None:
+        """In the public demo, a world that hands cases on (the inbox) is connected to the visitor's own sandboxes of the
+        worlds it names, made on the spot when missing: `targets.json` in its sandbox, as the cockpit writes it for real."""
+        if not settings.worlds or not c.world or not settings.worlds[c.world].targets:
+            return
+        mapping = _read_worlds(request)
+        if c.session:
+            mapping[c.world] = c.session
+        out = {}
+        for key, name in settings.worlds[c.world].targets.items():
+            if name not in settings.worlds:
+                continue
+            other = _session_ctx(mapping[name]) if name in mapping else None
+            if other is None:
+                other = _new_session(name)
+                mapping[name] = other.session
+            out[key] = {"label": other.config.name, "root": str(other.store.root), "config": str(settings.worlds[name].config_dir),
+                        "url": "", "external_prefix": "SN-" if name == "claims" else ""}
+        c.store.write_json("targets.json", out)
+        _set_worlds(response, mapping)
+
     @app.post("/api/cases/{case_id}/steps", response_model=StepResult)
     def post_step(case_id: str, body: StepRequest, request: Request, response: Response, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        _connect(request, response, c)
         result = _step(c, case_id, body, who)
         if result.ok and not result.replayed:
             action = next((a for st in c.config.stages for a in st.actions if a.id == body.action and a.handover), None)
@@ -1682,9 +1705,14 @@ def app_from_env() -> FastAPI:
         worlds_dir = Path(os.environ["CASEFILE_DEMO_WORLDS"]).expanduser()
         return create_app(Settings(secret=secret, web_dist=web, demo=True, samples_dir=here / "casefile" / "demo" / "samples",
                                    replies_dir=here / "casefile" / "demo" / "replies",
-                                   worlds={"claims": World(config_dir=here / "config" / "claims-demo", template=worlds_dir / "claims", person="du", lang="de"),
-                                           "pressroom": World(config_dir=here / "config" / "pressroom", template=worlds_dir / "pressroom", person="chris", lang="en"),
-                                           "egutachten": World(config_dir=here / "config" / "egutachten", template=worlds_dir / "egutachten", person="du", lang="de")},
+                                   worlds={name: w for name, w in {         # in the design's order; a world not built yet is left out
+                                       "inbox": World(config_dir=here / "config" / "posteingang", template=worlds_dir / "inbox", person="du", lang="de",
+                                                      targets={"schadenakte": "claims", "angebot": "quotes", "pressroom": "pressroom"}),
+                                       "quotes": World(config_dir=here / "config" / "angebot", template=worlds_dir / "quotes", person="du", lang="de"),
+                                       "claims": World(config_dir=here / "config" / "claims-demo", template=worlds_dir / "claims", person="du", lang="de"),
+                                       "egutachten": World(config_dir=here / "config" / "egutachten", template=worlds_dir / "egutachten", person="du", lang="de"),
+                                       "pressroom": World(config_dir=here / "config" / "pressroom", template=worlds_dir / "pressroom", person="chris", lang="en"),
+                                   }.items() if w.template.is_dir()},
                                    default_world=os.environ.get("CASEFILE_DEFAULT_WORLD", "claims"),
                                    sessions_dir=Path(os.environ.get("CASEFILE_SESSIONS") or worlds_dir / "sessions"),
                                    open_identity=True))
