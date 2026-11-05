@@ -1,5 +1,6 @@
 {
   "name": "Änderungsakte",
+  "app": {"icon": "pen", "color": "#f59e0b"},
   "lang": "de",
   "accent": "your-move",
   "covers": {

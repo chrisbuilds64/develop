@@ -1,5 +1,6 @@
 {
   "name": "Posteingang",
+  "app": {"icon": "inbox", "color": "#14b8a6"},
   "lang": "de",
   "accent": "your-move",
   "$comment": "mailbox: where a message lands and which helper reads it; mail_drop: a person may drop an .eml in by hand.",

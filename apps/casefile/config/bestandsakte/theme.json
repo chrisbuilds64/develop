@@ -1,5 +1,6 @@
 {
   "name": "Bestandsakte",
+  "app": {"icon": "folder", "color": "#64748b"},
   "lang": "de",
   "accent": "your-move",
   "$comment": "`interview` names the files of the decision screen (findings, draft, decisions) without a conversation before it; `words` replaces the decision screen's Gatehouse words for this application ({0}, {1} … are the arguments).",

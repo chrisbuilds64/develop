@@ -123,3 +123,21 @@ def test_a_person_of_the_tree_works_in_it_and_a_clone_is_one_form_away(world):
     assert "chris-sandbox" in client.get("/").text
     acct = client.get("/account").text
     assert "CLAUDE_CODE_OAUTH_TOKEN" in acct and "sk-ant" not in acct.replace("sk-ant-…", "")
+
+
+def test_an_application_marks_itself_through_its_theme_not_its_id(world, tmp_path):
+    ws = Workspaces(world / "workspaces.json", world)
+    app = ws.applications["pressroom"]
+    assert (app.icon, app.color) == ("mic", "#a855f7")                   # config/pressroom/theme.json → app
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    (plain / "theme.json").write_text(json.dumps({"name": "Plain", "app": {"icon": "<script>", "color": "red"}}))
+    reg = json.loads((world / "workspaces.json").read_text())
+    reg["applications"]["plain"] = {"label": "Plain", "config_dir": str(plain)}
+    (world / "workspaces.json").write_text(json.dumps(reg))
+    again = Workspaces(world / "workspaces.json", world)
+    assert (again.applications["plain"].icon, again.applications["plain"].color) == (None, None)   # nothing unsafe gets through
+    client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
+    sign_in(client)
+    home = client.get("/").text
+    assert 'class="app-mark" style="--dot: #a855f7"' in home              # the rail shows the application's own glyph and colour

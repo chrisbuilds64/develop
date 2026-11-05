@@ -40,6 +40,21 @@ class WorkspaceError(Exception):
     """A sentence for the person, never a stack trace."""
 
 
+COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def _mark(config_dir: Path | None) -> dict:
+    """How an application marks itself in the shell: `app.icon` and `app.color` of its theme.json. An application is
+    only configuration, so its look comes from there and not from its id; anything unreadable is simply no mark."""
+    try:
+        app = json.loads((Path(config_dir) / "theme.json").read_text(encoding="utf-8")).get("app") or {}
+    except (OSError, ValueError, TypeError, AttributeError):
+        return {}
+    icon, color = app.get("icon"), app.get("color")
+    return {"icon": icon if isinstance(icon, str) and NAME.match(icon) else None,
+            "color": color if isinstance(color, str) and COLOR.match(color) else None}
+
+
 @dataclass(frozen=True)
 class Application:
     id: str
@@ -47,6 +62,8 @@ class Application:
     config_dir: Path
     template: Path | None = None               # a built tree to copy for a new workspace; None = start empty
     mode: str = "live"                         # the mode a new workspace of this application gets
+    icon: str | None = None                    # the shell glyph that marks it, from the theme's `app.icon`
+    color: str | None = None                   # its colour, from the theme's `app.color`
 
 
 @dataclass(frozen=True)
@@ -129,8 +146,11 @@ class Workspaces:
                 raise WorkspaceError(f"application id '{aid}' — lower-case letters, digits, - and _")
             if not a.get("config_dir"):
                 raise WorkspaceError(f"application '{aid}': config_dir is missing")
-            self.applications[aid] = Application(id=aid, label=str(a.get("label", aid)), config_dir=self._abs(a["config_dir"]),
-                                                 template=self._abs(a.get("template")), mode=str(a.get("mode", "live")))
+            config_dir = self._abs(a["config_dir"])
+            mark = _mark(config_dir)
+            self.applications[aid] = Application(id=aid, label=str(a.get("label", aid)), config_dir=config_dir,
+                                                 template=self._abs(a.get("template")), mode=str(a.get("mode", "live")),
+                                                 icon=mark.get("icon"), color=mark.get("color"))
         self.defaults = self._components(raw.get("defaults") or {}, "defaults")
         seen = set()
         for w in raw.get("workspaces") or []:

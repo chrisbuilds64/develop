@@ -1,5 +1,6 @@
 {
   "name": "Gutachtenakte",
+  "app": {"icon": "clipboard", "color": "#0ea5e9"},
   "lang": "de",
   "accent": "your-move",
   "$comment": "Same tokens as the other worlds; the one accent means only: this waits for you. external_url: a template with {external_id} turns the order number into a link into the organisation's order system; empty in the demo.",

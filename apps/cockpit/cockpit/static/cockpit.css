@@ -789,6 +789,8 @@ pre.log { white-space: pre-wrap; font-size: 13px; }
 .topbar .pill.icon { width: 40px; padding: 0; justify-content: center; position: relative; }
 .topbar .pill .glyph { color: var(--muted); }
 .topbar .pop.right { right: 0; top: 48px; }
+.app-mark { display: inline-flex; color: var(--dot); flex: none; }
+.pop-row .app-mark { margin: 0 1px; }
 .topbar .dot, .pop-row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dot); flex: none; margin: 0 4px; }
 .bell-dot { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--your-move); color: var(--your-move-on);
   font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
