@@ -72,6 +72,17 @@
   --fs-11: 11px; --fs-11-5: 11.5px; --fs-12: 12px; --fs-12-5: 12.5px; --fs-13: 13px; --fs-13-5: 13.5px; --fs-14: 14px;
   --fs-17: 17px; --fs-26: 26px; --fs-28: 28px; --fs-34: 34px;
   --r-2: 2.5px; --r-7: 7px; --r-9: 9px; --r-10: 10px;
+  /* Casefile app (2026-11-05): the AI's violet, the hover ground, a few more steps of the type scale */
+  --ai: #7046D8;
+  --ai-deep: #9B7BF5;
+  --ai-soft: rgba(183, 156, 255, .08);
+  --ai-line: rgba(183, 156, 255, .25);
+  --hover: #F3F2EE;
+  --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .14), transparent 60%);
+  --scrim: rgba(30, 28, 40, .28);
+  --pop-shadow: 0 18px 50px rgba(0, 0, 0, .18), 0 2px 6px rgba(0, 0, 0, .06);
+  --fs-10: 10px; --fs-14-5: 14.5px; --fs-15: 15px;
+  --r-4: 4px; --r-5: 5px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -112,7 +123,14 @@
       radial-gradient(1000px 640px at 10% -6%, rgba(155, 123, 245, .14), transparent 62%),
       radial-gradient(760px 520px at 92% 22%, rgba(24, 119, 242, .08), transparent 66%),
       #161618;
-  }
+    --ai: #CDBBFF;
+    --ai-deep: #B79CFF;
+    --ai-soft: rgba(183, 156, 255, .10);
+    --ai-line: rgba(183, 156, 255, .22);
+    --hover: #2A2A2F;
+    --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .10), transparent 60%);
+    --scrim: rgba(5, 5, 7, .6);
+}
 }
 :root[data-theme="dark"] {
   --ground: #161618;
@@ -151,4 +169,11 @@
       radial-gradient(1000px 640px at 10% -6%, rgba(155, 123, 245, .14), transparent 62%),
       radial-gradient(760px 520px at 92% 22%, rgba(24, 119, 242, .08), transparent 66%),
       #161618;
+    --ai: #CDBBFF;
+    --ai-deep: #B79CFF;
+    --ai-soft: rgba(183, 156, 255, .10);
+    --ai-line: rgba(183, 156, 255, .22);
+    --hover: #2A2A2F;
+    --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .10), transparent 60%);
+    --scrim: rgba(5, 5, 7, .6);
 }

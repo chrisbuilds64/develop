@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./tokens.css";
 import "./app.css";
+import "./look.css";
 import { App } from "./App";
 import { Director } from "./components/Director";
 import { initPresenting } from "./moments";

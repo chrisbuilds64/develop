@@ -152,6 +152,15 @@ class OnsiteIn(BaseModel):
     hints: dict[str, dict] = {}
 
 
+class PlaceOut(BaseModel):
+    """A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one."""
+    id: str
+    name: str
+    color: str = ""
+    icon: str = ""
+    current: bool = False
+
+
 class MeOut(BaseModel):
     person: str | None
     name: str | None
@@ -164,6 +173,7 @@ class MeOut(BaseModel):
     open_identity: bool = True                              # false: who you are was decided outside; no person picker
     identity: str | None = None                             # the outside identity, even when it matches nobody in people.json
     shell: str | None = None                                # the shell's URL, when this app runs inside one
+    places: list[PlaceOut] = []                             # this workspace and, in the demo, the other worlds
 
 
 class TurnOut(BaseModel):
@@ -693,12 +703,19 @@ def create_app(settings: Settings) -> FastAPI:
         v = c.config.vocabulary.get(c.lang) or c.config.vocabulary.get("en") or {}
         return str(v.get("product") or c.config.name)
 
+    def place(world: str | None, cfg: DomainConfig, lang: str, current: bool) -> PlaceOut:
+        v = cfg.vocabulary.get(lang) or cfg.vocabulary.get("en") or {}
+        mark = cfg.theme.get("app") if isinstance(cfg.theme.get("app"), dict) else {}
+        name = (settings.label if current and settings.label else None) or str(v.get("product") or cfg.name)
+        return PlaceOut(id=world or "here", name=name, color=str(mark.get("color") or ""), icon=str(mark.get("icon") or ""), current=current)
+
     def me_out(c: Ctx, person_id: str | None, request: Request | None = None) -> MeOut:
         p = c.config.person(person_id) if person_id else None
+        places = [place(name, world_configs[name], c.lang, name == c.world) for name in settings.worlds] if settings.worlds else [place(c.world, c.config, c.lang, True)]
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
         return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
                      demo=settings.demo, world=c.world, worlds=list(settings.worlds),
-                     open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell)
+                     open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell, places=places)
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")

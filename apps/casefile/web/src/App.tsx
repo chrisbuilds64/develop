@@ -19,6 +19,8 @@ import { OutcomeScreen } from "./screens/Outcome";
 import { OnSiteScreen } from "./screens/OnSite";
 import { CanonScreen } from "./screens/Canon";
 import { HouseScreen } from "./screens/House";
+import { Home } from "./screens/Home";
+import { ViewCases, ViewBoard, ViewList } from "./components/Icons";
 import { words } from "./words";
 import { presenting, setPresenting } from "./moments";
 
@@ -85,6 +87,13 @@ export function App() {
     window.addEventListener("storage", on);
     return () => window.removeEventListener("storage", on);
   }, []);
+  const [railOpen, setRailOpen] = useState(false);
+  // opening a case reads it: the blue dot goes (request 7); the lists learn it on their next look
+  const openedId = route.name === "case" ? route.id : null;
+  useEffect(() => {
+    if (!openedId || !me.data?.person) return;
+    api.seen(openedId).then(() => { qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); }).catch(() => { /* a case that is gone */ });
+  }, [openedId, me.data?.person]);
   const [side, setSide] = useState<"left" | "right">(() => {
     try { return (localStorage.getItem("cf.side") as "left" | "right") || "left"; } catch { return "left"; }
   });
@@ -139,48 +148,69 @@ export function App() {
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
   const onLang = async (l: string) => { await api.setLang(l); await qc.invalidateQueries(); };
   const w = words(lang, ((config.data?.theme as Record<string, unknown> | undefined)?.words as Record<string, Record<string, unknown>> | undefined)?.[lang]);
-  const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : groups.data?.find((g) => g.key === "you")?.cases[0]?.id;
+  const first = route.name === "group" ? groups.data?.find((g) => g.key === route.key)?.cases[0]?.id : undefined;
   const isPhone = window.matchMedia("(max-width: 900px)").matches;
-  const showList = !isPhone || route.name === "home" || route.name === "group";
-  const showMain = !isPhone || route.name !== "home";
+  const showList = !isPhone || route.name === "group";
+  const showMain = !isPhone || route.name !== "group";
 
   if (route.name === "doc") return <div className="shell"><DocWindow id={route.id} name={route.file} config={config.data} w={w} /></div>;
 
+  const here = me.data.places?.find((p) => p.current)?.name ?? config.data.product;
+  const inWorkspace = route.name === "group" || route.name === "case" || route.name === "board" || route.name === "list";
+  const crumb = route.name === "home" ? w.home : route.name === "rules" ? w.rules : route.name === "signals" ? w.flagged : route.name === "lists" ? w.lists
+    : route.name === "house" ? w.house : here;
+  const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
+  const views = inWorkspace ? (
+    <span className="bar-views" role="tablist" aria-label={w.views} data-help="cf.views">
+      <button type="button" role="tab" aria-selected={view === "cases"} className={view === "cases" ? "on" : ""} onClick={() => go("/group/you")} title={w.casesView}><ViewCases /></button>
+      <button type="button" role="tab" aria-selected={view === "board"} className={view === "board" ? "on" : ""} onClick={() => go("/board")} title={w.board}><ViewBoard /></button>
+      <button type="button" role="tab" aria-selected={view === "list"} className={view === "list" ? "on" : ""} onClick={() => go("/list")} title={w.stacked}><ViewList /></button>
+    </span>
+  ) : null;
+
   return (
-    <>
-    <TopBar config={config.data} me={me.data} w={w} onSwap={() => setSide(side === "left" ? "right" : "left")} onFresh={() => onFresh()} />
-    <div className={`shell ${side}`} style={{ viewTransitionName: (/\/w\/([^/]+)/.exec(BASE)?.[1] ? `ws-${/\/w\/([^/]+)/.exec(BASE)![1]}` : undefined) }}>
+    <div className={`app ${side}`} style={{ viewTransitionName: (/\/w\/([^/]+)/.exec(BASE)?.[1] ? `ws-${/\/w\/([^/]+)/.exec(BASE)![1]}` : undefined) }}>
       <Menu config={config.data} me={me.data} route={route} go={go} side={side} onSwap={() => setSide(side === "left" ? "right" : "left")} w={w}
             onSignOut={async () => { await api.signOut(); if (me.data?.shell) { window.location.href = `${me.data.shell.replace(/\/?$/, "/")}logout`; return; } qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
-            theme={theme} onTheme={setTheme} onLang={onLang} />
-      {route.name === "talk" ? (
-        <InterviewScreen id={route.id} config={config.data} go={go} w={w} />
-      ) : route.name === "canon" ? (
-        <CanonScreen id={route.id} config={config.data} go={go} w={w} />
-      ) : route.name === "outcome" ? (
-        <OutcomeScreen id={route.id} config={config.data} go={go} w={w} />
-      ) : route.name === "onsite" ? (
-        <OnSiteScreen id={route.id} config={config.data} go={go} w={w} />
-      ) : route.name === "board" ? (
-        <Board config={config.data} go={go} w={w} />
-      ) : route.name === "list" ? (
-        <Stacked config={config.data} go={go} w={w} />
-      ) : route.name === "rules" ? (
-        <Rules config={config.data} w={w} />
-      ) : route.name === "lists" ? (
-        <Lists config={config.data} w={w} />
-      ) : route.name === "house" ? (
-        <HouseScreen config={config.data} go={go} w={w} />
-      ) : route.name === "signals" ? (
-        <Signals config={config.data} go={go} w={w} />
-      ) : (
-        <>
-          {showList && <List config={config.data} route={route} go={go} w={w} me={me.data.person ?? ""} />}
-          {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} />}
-          {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} /> : <main className="main" />)}
-        </>
-      )}
+            theme={theme} onTheme={setTheme} onLang={onLang} open={railOpen} onClose={() => setRailOpen(false)} />
+      <div className="main-col">
+        <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case" || (route.name === "group" && !isPhone)} dark={dark}
+                onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={views} />
+        {route.name === "home" ? (
+          <Home config={config.data} go={go} w={w} />
+        ) : (
+        <div className="shell">
+          {route.name === "talk" ? (
+            <InterviewScreen id={route.id} config={config.data} go={go} w={w} />
+          ) : route.name === "canon" ? (
+            <CanonScreen id={route.id} config={config.data} go={go} w={w} />
+          ) : route.name === "outcome" ? (
+            <OutcomeScreen id={route.id} config={config.data} go={go} w={w} />
+          ) : route.name === "onsite" ? (
+            <OnSiteScreen id={route.id} config={config.data} go={go} w={w} />
+          ) : route.name === "board" ? (
+            <Board config={config.data} go={go} w={w} />
+          ) : route.name === "list" ? (
+            <Stacked config={config.data} go={go} w={w} />
+          ) : route.name === "rules" ? (
+            <Rules config={config.data} w={w} />
+          ) : route.name === "lists" ? (
+            <Lists config={config.data} w={w} />
+          ) : route.name === "house" ? (
+            <HouseScreen config={config.data} go={go} w={w} />
+          ) : route.name === "signals" ? (
+            <Signals config={config.data} go={go} w={w} />
+          ) : (
+            <>
+              {showList && <List config={config.data} route={route} go={go} w={w} me={me.data.person ?? ""} />}
+              {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} />}
+              {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} /> : <main className="main" />)}
+            </>
+          )}
+        </div>
+        )}
+      </div>
     </div>
-    </>
   );
 }

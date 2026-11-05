@@ -304,3 +304,14 @@ def test_content_follows_the_viewers_language_and_the_original_stays(tmp_path):
     assert again["ready"] and again["run"] is None
     assert client.post(f"/api/cases/{cid}/translate", json={"file": "meta.json", "request_id": "t3"}).status_code == 404
     assert client.post(f"/api/cases/{cid}/translate", json={"file": "meldung.md", "lang": "english", "request_id": "t4"}).status_code == 422
+
+
+def test_the_menu_knows_its_workspaces_and_each_card_who_it_is_from(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    me = client.post("/api/session", json={"person": "du"}).json()
+    assert [(p["current"], bool(p["name"])) for p in me["places"]] == [(True, True)]          # one pipeline: this workspace only
+    assert me["places"][0]["color"].startswith("#")                                           # theme.app
+    cards = [c for g in client.get("/api/cases").json() for c in g["cases"]]
+    assert any(c["party"] == "Familie Beispiel" for c in cards)                               # meta.reported_by, before the address

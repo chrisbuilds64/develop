@@ -59,6 +59,7 @@ class CaseCard(BaseModel):
     external_url: str = ""                                # a link into that system, from the theme's url template
     number: str = ""                                      # the short number on the cover (meta.number)
     tint: str = ""                                        # the cover's colour, from theme.covers (by one meta key)
+    party: str = ""                                       # who the case is from, for the first column of a row: reported_by, client, the mail's sender
     unread: bool = False                                  # new to the viewer: never opened, or somebody else wrote since (domain/seen.py)
 
 
@@ -217,7 +218,8 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: 
     ext = str(case.meta.get("external_id") or case.meta.get("claim_number") or "")
     tpl = str(config.theme.get("external_url") or "")
     tint = value_lists.tint(config.lists, config.theme, case.meta)
-    return CaseCard(id=case.id, number=str(case.meta.get("number") or ""), tint=tint, title=str(localized(case.meta, lang).get("title") or case.meta.get("working_title") or case.id), label=case.label,
+    party = next((str(case.meta.get(k)).split(",")[0].strip() for k in ("reported_by", "customer", "client", "from_name", "from") if case.meta.get(k)), "")
+    return CaseCard(id=case.id, party=party, number=str(case.meta.get("number") or ""), tint=tint, title=str(localized(case.meta, lang).get("title") or case.meta.get("working_title") or case.id), label=case.label,
                     external_id=ext, external_url=(tpl.replace("{external_id}", ext) if ext and tpl else ""),
                     label_word=value_lists.value_word(config.lists, "label", case.label, lang, config.word("labels", case.label, lang, case.label)), stage=case.stage,
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,

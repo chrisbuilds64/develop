@@ -3,6 +3,13 @@ export type Lang = "de" | "en";
 
 const W = {
   de: {
+    // the design hand-back: the rail and Home (2026-11-05)
+    home: "Start", search: "Suchen", searchNone: "Nichts gefunden.", workspaces: "Arbeitsbereiche", admin: "Verwaltung", allWorkspaces: "Alle Arbeitsbereiche",
+    flagged: "Auffällig", guides: "Anleitungen", askAi: "KI fragen", demoTag: "DEMO", sideRight: "Menü rechts", sideLeft: "Menü links",
+    needYou: (n: number) => (n === 0 ? "Gerade braucht dich nichts." : n === 1 ? "Eine Sache braucht dich." : `${n} Dinge brauchen dich.`),
+    homeLead: (n: number) => (n === 0 ? "Neue Post und Antworten landen hier. Die KI ist dran." : "Die KI hat das meiste vorbereitet. Geh sie der Reihe nach durch."),
+    openNext: "Nächste Akte öffnen", urgent: "Dringend", ready: "Bereit zum Bestätigen", waitingSomething: "Wartet auf etwas", aiWorking: "Die KI arbeitet",
+    aiCard: "KI arbeitet", aiCardNote: "Du bekommst die Akte mit einem Vorschlag zurück.", doneToday: "Heute erledigt", doneNone: "Heute noch nichts besiegelt.", isNew: "neu",
     nothing: "Nichts wartet auf dich.",
     one: "Eine Sache wartet auf dich.",
     many: (n: number) => `${n} Dinge warten auf dich.`,
@@ -131,6 +138,13 @@ const W = {
     threadEmpty: "Noch kein Eintrag. Die erste Notiz legt den Verlauf an.", originUnknown: "Herkunft nicht erfasst", delivers: (who: string) => `liefert ${who}`, deskEmpty: "Noch nichts in der Akte.", locked: "gesperrt",
   },
   en: {
+    // the design hand-back: the rail and Home (2026-11-05)
+    home: "Home", search: "Search", searchNone: "Nothing found.", workspaces: "Workspaces", admin: "Admin", allWorkspaces: "All workspaces",
+    flagged: "Flagged", guides: "Guides", askAi: "Ask AI", demoTag: "DEMO", sideRight: "Menu on the right", sideLeft: "Menu on the left",
+    needYou: (n: number) => (n === 0 ? "Nothing needs you right now." : n === 1 ? "One thing needs you." : `${n} things need you.`),
+    homeLead: (n: number) => (n === 0 ? "New mail and replies land here. The AI is on it." : "The AI has prepared most of them. Work through them one by one."),
+    openNext: "Open next case", urgent: "Urgent", ready: "Ready to confirm", waitingSomething: "Waiting for something", aiWorking: "The AI is working",
+    aiCard: "AI is working", aiCardNote: "You get it back with a proposal.", doneToday: "Done today", doneNone: "Nothing sealed yet today.", isNew: "new",
     nothing: "Nothing waits for you.",
     one: "One thing waits for you.",
     many: (n: number) => `${n} things wait for you.`,

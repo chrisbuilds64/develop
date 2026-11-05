@@ -19,6 +19,7 @@ export type ListView = components["schemas"]["ListView"];
 export type ListEntryView = components["schemas"]["ListEntryView"];
 export type ListsOut = components["schemas"]["ListsOut"];
 export type ListChangeOut = components["schemas"]["ListChangeOut"];
+export type PlaceOut = components["schemas"]["PlaceOut"];
 
 export class ApiError extends Error {
   status: number;
@@ -68,6 +69,7 @@ export const api = {
     call<StepResult>("POST", `/api/cases/${encodeURIComponent(id)}/entries`, body),
   run: (id: string, body: { skill?: string; note: string; request_id: string }) =>
     call<StepResult>("POST", `/api/cases/${encodeURIComponent(id)}/runs`, body),
+  seen: (id: string, unread = false) => call<{ case: string; unread: boolean }>("POST", `/api/cases/${encodeURIComponent(id)}/seen`, { unread }),
   lists: () => call<ListsOut>("GET", "/api/lists"),
   putList: (body: { id: string; word: Record<string, string>; field?: string; on_create?: boolean; step_id: string }) => call<ListChangeOut>("POST", "/api/lists", body),
   putEntry: (list: string, body: { key: string; word?: Record<string, string>; color?: string; description?: string; status?: string; step_id: string }) =>

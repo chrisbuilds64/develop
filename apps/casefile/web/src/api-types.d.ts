@@ -894,6 +894,11 @@ export interface components {
              */
             tint: string;
             /**
+             * Party
+             * @default
+             */
+            party: string;
+            /**
              * Unread
              * @default false
              */
@@ -954,6 +959,11 @@ export interface components {
              * @default
              */
             tint: string;
+            /**
+             * Party
+             * @default
+             */
+            party: string;
             /**
              * Unread
              * @default false
@@ -1463,6 +1473,11 @@ export interface components {
             identity?: string | null;
             /** Shell */
             shell?: string | null;
+            /**
+             * Places
+             * @default []
+             */
+            places: components["schemas"]["PlaceOut"][];
         };
         /** ModuleHistory */
         ModuleHistory: {
@@ -1648,6 +1663,31 @@ export interface components {
             kind: string;
             /** Roles */
             roles: string[];
+        };
+        /**
+         * PlaceOut
+         * @description A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one.
+         */
+        PlaceOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
+            /**
+             * Icon
+             * @default
+             */
+            icon: string;
+            /**
+             * Current
+             * @default false
+             */
+            current: boolean;
         };
         /** RespondentOut */
         RespondentOut: {

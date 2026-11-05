@@ -1894,6 +1894,11 @@
             "title": "Tint",
             "default": ""
           },
+          "party": {
+            "type": "string",
+            "title": "Party",
+            "default": ""
+          },
           "unread": {
             "type": "boolean",
             "title": "Unread",
@@ -2000,6 +2005,11 @@
           "tint": {
             "type": "string",
             "title": "Tint",
+            "default": ""
+          },
+          "party": {
+            "type": "string",
+            "title": "Party",
             "default": ""
           },
           "unread": {
@@ -3108,6 +3118,14 @@
               }
             ],
             "title": "Shell"
+          },
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceOut"
+            },
+            "type": "array",
+            "title": "Places",
+            "default": []
           }
         },
         "type": "object",
@@ -3452,6 +3470,40 @@
           "roles"
         ],
         "title": "PersonView"
+      },
+      "PlaceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon",
+            "default": ""
+          },
+          "current": {
+            "type": "boolean",
+            "title": "Current",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "PlaceOut",
+        "description": "A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one."
       },
       "RespondentOut": {
         "properties": {

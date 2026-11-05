@@ -56,7 +56,7 @@ export function CaseScreen({ id, config, me, go, w }: { id: string; config: Conf
   useEffect(() => { const down = () => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }; down(); document.fonts?.ready.then(down); const t = setTimeout(down, 250); return () => clearTimeout(t); }, [entryCount, id]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); askRef.current?.focus(); } };
+    const onKey = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") { e.preventDefault(); askRef.current?.focus(); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
