@@ -342,7 +342,7 @@ def build_egutachten(root: Path) -> Path:
     # the demo path: draft and pre-check are in, you approve, the letter gets drafted, the back office sends
     c = "KH-2026-1182-auffahrunfall-a3-kleinwagen"
     _case(root, "40-fachpruefung", c,
-          {"label": "KH", "number": "2026-1182", "title": "Auffahrunfall A3, Kleinwagen", "created": _stamp(4)[:10], "external_id": "GA-2026-01182", "subtitle": "Heckschaden, Haftpflicht des Auffahrenden", "client": "Nordlicht Versicherung", "schaden_nr": "SN-2026-00811"},
+          {"label": "KH", "number": "2026-1182", "title": "Auffahrunfall A3, Kleinwagen", "reported_by": "Marco Seidel", "created": _stamp(4)[:10], "external_id": "GA-2026-01182", "subtitle": "Heckschaden, Haftpflicht des Auffahrenden", "client": "Nordlicht Versicherung", "schaden_nr": "SN-2026-00811"},
           {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk,
            "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-01182", car="Kleinwagen, EZ 2022, 31.400 km", seen=_stamp(2)[:10], story="Auffahrunfall am Stauende der A3. Heck, Stoßfänger, Rückleuchte links.",
                                                finding="Stoßfänger hinten verformt, Heckklappe eingedrückt, Rückleuchte links gebrochen. Heckrahmen vermessen, ohne Befund. Airbags nicht ausgelöst.", amount="2.900 €", wm="Noch nicht ausgewiesen."),
@@ -355,13 +355,13 @@ def build_egutachten(root: Path) -> Path:
 
     # with the assessor: order placed, draft missing
     c = "KK-2026-1190-parkschaden-tiefgarage"
-    _case(root, "20-besichtigung", c, {"label": "KK", "number": "2026-1190", "title": "Parkschaden Tiefgarage", "created": _stamp(1)[:10], "external_id": "GA-2026-01190", "client": "Nordlicht Versicherung"},
+    _case(root, "20-besichtigung", c, {"label": "KK", "number": "2026-1190", "title": "Parkschaden Tiefgarage", "reported_by": "Erika Brandt", "created": _stamp(1)[:10], "external_id": "GA-2026-01190", "client": "Nordlicht Versicherung"},
           {"auftrag.pdf": auftrag},
           _entry(1, "Besichtigung eingeplant", "Innendienst", stage="10-auftrag", when=_stamp(1, 9), text="Gutachterin Kaya, morgen.", step="demo-g4", frm="10-auftrag", to="20-besichtigung"))
 
     # the AI is pre-checking right now (the replay finishes it after the sandbox opens)
     c = "KK-2026-1203-hagelschaden-pkw"
-    _case(root, "30-vorpruefung", c, {"label": "KK", "number": "2026-1203", "title": "Hagelschaden Pkw", "created": _stamp(3)[:10], "external_id": "GA-2026-01203", "client": "Nordlicht Versicherung"},
+    _case(root, "30-vorpruefung", c, {"label": "KK", "number": "2026-1203", "title": "Hagelschaden Pkw", "reported_by": "Familie Roth", "created": _stamp(3)[:10], "external_id": "GA-2026-01203", "client": "Nordlicht Versicherung"},
           {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk,
            "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-01203", car="Kombi, EZ 2021, 58.200 km", seen=_stamp(1)[:10], story="Hagel am Abend, Fahrzeug im Freien.", finding="Dach, Motorhaube und Kofferraumdeckel mit zahlreichen Dellen, keine Lackrisse.", amount="3.480 €", wm="0 €, Bagatellgrenze.")},
           _entry(1, "Entwurf zur Vorprüfung", "Gutachterin Kaya", stage="20-besichtigung", when=_stamp(0, 8), files=["gutachten.md", "kalkulation.pdf", "fotos-1.jpg"], text="Fassung 1.", step="demo-g5", frm="20-besichtigung", to="30-vorpruefung"))
@@ -369,7 +369,7 @@ def build_egutachten(root: Path) -> Path:
 
     # approved, the letter is drafted, the back office sends
     c = "KH-2026-1175-glasschaden-frontscheibe"
-    _case(root, "50-versand", c, {"label": "KH", "number": "2026-1175", "title": "Glasschaden Frontscheibe", "created": _stamp(6)[:10], "external_id": "GA-2026-01175", "client": "Nordlicht Versicherung"},
+    _case(root, "50-versand", c, {"label": "KH", "number": "2026-1175", "title": "Glasschaden Frontscheibe", "reported_by": "Lukas Hartmann", "created": _stamp(6)[:10], "external_id": "GA-2026-01175", "client": "Nordlicht Versicherung"},
           {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk, "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-01175", car="Limousine, EZ 2019", seen=_stamp(4)[:10], story="Steinschlag auf der Autobahn.", finding="Frontscheibe im Sichtfeld gerissen, Austausch erforderlich.", amount="1.120 €", wm="0 €."),
            "pruefbericht.md": pruef, "anschreiben.md": (cfg / "replies" / "anschreiben-default.md").read_text(encoding="utf-8")},
           _entry(1, "Freigegeben und Anschreiben entwerfen", "Du", status="approved", stage="40-fachpruefung", when=_stamp(1, 11), text="Ohne Befund.", step="demo-g6", frm="40-fachpruefung", to="50-versand") +
@@ -377,7 +377,7 @@ def build_egutachten(root: Path) -> Path:
 
     # sent, the insurer asks, a follow-up becomes version 2
     c = "KK-2026-0902-wildunfall-landstrasse"
-    _case(root, "60-versendet", c, {"label": "KK", "number": "2026-0902", "title": "Wildunfall L 412", "created": _stamp(30)[:10], "external_id": "GA-2026-00902", "client": "Nordlicht Versicherung"},
+    _case(root, "60-versendet", c, {"label": "KK", "number": "2026-0902", "title": "Wildunfall L 412", "reported_by": "Sabine Krüger", "created": _stamp(30)[:10], "external_id": "GA-2026-00902", "client": "Nordlicht Versicherung"},
           {"auftrag.pdf": auftrag, "fotos-1.jpg": photo, "kalkulation.pdf": kalk, "gutachten.md": GUTACHTEN_MD.format(order="GA-2026-00902", car="Kombi, EZ 2021, 58.200 km", seen=_stamp(27)[:10], story="Zusammenstoß mit einem Reh auf der L 412.", finding="Frontschaden: Stoßfänger, Scheinwerfer links, Motorhaube, Grill, Lüfter. Kein Rahmenschaden.", amount="4.880 €", wm="250 €."),
            "pruefbericht.md": pruef, "anschreiben.md": (cfg / "replies" / "anschreiben-default.md").read_text(encoding="utf-8")},
           _entry(1, "Versendet", "Innendienst", stage="50-versand", when=_stamp(20, 10), step="demo-g7", frm="50-versand", to="60-versendet") +
@@ -385,7 +385,7 @@ def build_egutachten(root: Path) -> Path:
                  text="Der Restwert ist nicht ausgewiesen. Liegen die Reparaturkosten wirklich unter der Grenze? Bitte kurz bestätigen oder Nachtrag."))
 
     # new order
-    _case(root, "10-auftrag", "KH-2026-1210-kreuzungsunfall", {"label": "KH", "number": "2026-1210", "title": "Kreuzungsunfall, Seitenschaden", "created": _stamp(0)[:10], "external_id": "GA-2026-01210", "client": "Nordlicht Versicherung"},
+    _case(root, "10-auftrag", "KH-2026-1210-kreuzungsunfall", {"label": "KH", "number": "2026-1210", "title": "Kreuzungsunfall, Seitenschaden", "reported_by": "Jonas Weber", "created": _stamp(0)[:10], "external_id": "GA-2026-01210", "client": "Nordlicht Versicherung"},
           {"auftrag.pdf": auftrag}, _entry(1, "Auftrag eingegangen", "Innendienst", stage="10-auftrag", when=_stamp(0, 9), files=["auftrag.pdf"], text="Haftpflicht, Besichtigung in der Werkstatt."))
     # closed
     for i, (cid, title, label, days) in enumerate([("KH-2026-1140-parkrempler", "Parkrempler Supermarkt", "KH", 12), ("KK-2026-1131-marderschaden", "Marderschaden Motorraum", "KK", 18)]):
