@@ -31,7 +31,7 @@
 <button type="button" class="scrim" aria-label="{{ t('app.menu') }}" onclick="document.querySelector('.side').classList.remove('open');this.classList.remove('open')"></button>
 <nav class="side" aria-label="{{ t('app.menu') }}">
   <div class="menu-head">
-    <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#1877F2"/><rect x="7.5" y="7.5" width="11" height="11" rx="3" fill="#fff"/></svg>
     <span class="brand-name tx">{{ config.name }}</span>
     {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
     <button type="button" class="rail-toggle tx" data-help="shell.pin" onclick="cockpitRail()" aria-label="{{ t('app.pin') }}" title="{{ t('app.pin') }}">{{ glyph('pin', 17) }}</button>
