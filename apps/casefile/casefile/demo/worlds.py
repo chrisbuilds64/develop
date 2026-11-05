@@ -160,7 +160,7 @@ def build_claims(root: Path) -> Path:
 
     # a question from the assessor waits for you
     _case(root, "30-pruefung", "WG-2026-0402-hagelschaden-reihenhaus",
-          {"label": "WG", "number": "2026-0402", "title": "Hagelschaden Reihenhaus", "created": _stamp(9)[:10], "subtitle": "Dachziegel und Dachfenster, Ostseite"},
+          {"label": "WG", "number": "2026-0402", "title": "Hagelschaden Reihenhaus", "reported_by": "Petra Lang, Am Hang 4", "created": _stamp(9)[:10], "subtitle": "Dachziegel und Dachfenster, Ostseite"},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Hagel am Abend des 9., Ziegel gebrochen, ein Dachfenster undicht.\n", "fotos-1.jpg": photo, "gutachten.pdf": pdf, "kostenvoranschlag.pdf": kva, "rechnung.pdf": kva},
           _entry(1, "Gutachten übergeben", "Gutachter Berger", stage="20-besichtigung", when=_stamp(4, 15), files=["gutachten.pdf", "fotos-1.jpg"], text="Gutachten und Fotos liegen bei.") +
           _entry(2, "Rückfrage zum Dachfenster", "Gutachter Berger", status="open", for_="Du", stage="30-pruefung", when=_stamp(2, 9),
@@ -168,32 +168,32 @@ def build_claims(root: Path) -> Path:
 
     # the AI is reconciling right now
     _case(root, "25-abgleich", "WG-2026-0421-sturmschaden-carport",
-          {"label": "WG", "number": "2026-0421", "title": "Sturmschaden Carport", "created": _stamp(2)[:10]},
+          {"label": "WG", "number": "2026-0421", "title": "Sturmschaden Carport", "reported_by": "Jonas Weber, Lindenweg 9", "created": _stamp(2)[:10]},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Sturm, Carportdach abgedeckt.\n", "gutachten.pdf": pdf, "kostenvoranschlag.pdf": kva, "rechnung.pdf": kva},
           _entry(1, "Gutachten übergeben", "Gutachter Berger", stage="20-besichtigung", when=_stamp(1, 14), files=["gutachten.pdf"], text="Dach und Pfosten, siehe Gutachten.", step="demo-c21", frm="20-besichtigung", to="25-abgleich"))
     _run(root, "WG-2026-0421-sturmschaden-carport", "25-abgleich", "reconcile", "queued", 3, "du")   # the replay finishes it a few seconds after the sandbox opens
 
     # with the assessor
     _case(root, "20-besichtigung", "WG-2026-0425-glasbruch-wintergarten",
-          {"label": "WG", "number": "2026-0425", "title": "Glasbruch Wintergarten", "created": _stamp(1)[:10], "publishDate": (dt.date.today() + dt.timedelta(days=2)).isoformat()},
+          {"label": "WG", "number": "2026-0425", "title": "Glasbruch Wintergarten", "reported_by": "Familie Roth, Gartenstraße 3", "created": _stamp(1)[:10], "publishDate": (dt.date.today() + dt.timedelta(days=2)).isoformat()},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Scheibe im Wintergarten gesprungen, Ursache unklar.\n"},
           _entry(1, "Besichtigung angesetzt", "Du", stage="10-meldung", when=_stamp(1, 10), text="Termin Freitag.", step="demo-2", frm="10-meldung", to="20-besichtigung"))
     _case(root, "20-besichtigung", "KFZ-2026-0811-auffahrunfall-a3",
-          {"label": "KFZ", "number": "2026-0811", "title": "Auffahrunfall A3, Kleinwagen", "created": _stamp(3)[:10], "gutachten_auftrag": "GA-2026-01182", "subtitle": "wartet auf das eGutachten GA-2026-01182"},
+          {"label": "KFZ", "number": "2026-0811", "title": "Auffahrunfall A3, Kleinwagen", "reported_by": "Marco Seidel", "created": _stamp(3)[:10], "gutachten_auftrag": "GA-2026-01182", "subtitle": "wartet auf das eGutachten GA-2026-01182"},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Auffahrunfall im Stau, Heck und Stoßfänger.\n", "fotos-1.jpg": photo})
 
     # newly reported: a motor claim that orders its assessment (the hand-over into the e-report world)
     _case(root, "10-meldung", "KFZ-2026-0815-parkschaden-tiefgarage",
-          {"label": "KFZ", "number": "2026-0815", "title": "Parkschaden Tiefgarage, Kleinwagen", "created": _stamp(0)[:10], "subtitle": "Fahrertür und Schweller, Vollkasko"},
+          {"label": "KFZ", "number": "2026-0815", "title": "Parkschaden Tiefgarage, Kleinwagen", "reported_by": "Erika Brandt", "created": _stamp(0)[:10], "subtitle": "Fahrertür und Schweller, Vollkasko"},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Beim Ausparken in der Tiefgarage an einem Betonpfeiler entlanggeschrammt. Fahrertür und Schweller. Fahrzeug fahrbereit, Fotos liegen bei.\n", "fotos-1.jpg": photo},
           _entry(1, "Schaden aufgenommen", "Du", stage="10-meldung", when=_stamp(0, 9), files=["meldung.md", "fotos-1.jpg"], text="Vollkasko, Fahrzeug fahrbereit. Gutachten beauftragen."))
     _case(root, "10-meldung", "HR-2026-0430-einbruch-wohnung",
-          {"label": "HR", "number": "2026-0430", "title": "Einbruch Wohnung 2. OG", "created": _stamp(0)[:10]},
+          {"label": "HR", "number": "2026-0430", "title": "Einbruch Wohnung 2. OG", "reported_by": "Anna Vogel, Schillerstraße 21", "created": _stamp(0)[:10]},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv. Balkontür aufgehebelt, Laptop und Schmuck fehlen. Polizeiliche Anzeige liegt vor.\n"})
 
     # in settlement and closed
     _case(root, "40-regulierung", "HP-2026-0309-sturz-glatteis",
-          {"label": "HP", "number": "2026-0309", "title": "Sturz auf Glatteis, Hausmeisterdienst", "created": _stamp(20)[:10]},
+          {"label": "HP", "number": "2026-0309", "title": "Sturz auf Glatteis, Hausmeisterdienst", "reported_by": "Hausverwaltung Sommer", "created": _stamp(20)[:10]},
           {"meldung.md": "# Schadenmeldung\n\nFiktiv.\n", "gutachten.pdf": pdf, "rechnung.pdf": kva, "abgleich.md": "# Abgleich\n\nKeine Abweichung.\n"},
           _entry(1, "Freigegeben und zur Regulierung", "Du", status="approved", stage="30-pruefung", when=_stamp(2, 9), text="Betrag wie im Gutachten.", step="demo-3", frm="30-pruefung", to="40-regulierung"))
     _signal(root, "M-001", "Wiederholung", "Gleiche Risikoanschrift in zwei Akten innerhalb von fünf Wochen",

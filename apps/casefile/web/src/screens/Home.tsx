@@ -20,7 +20,7 @@ function Row({ card, action, since, lang, w, go }: { card: CaseCard; action: str
     <div className={`row${card.unread ? " unread" : ""}`} role="link" tabIndex={0} onClick={open} onKeyDown={(e) => { if (e.key === "Enter") open(); }}>
       <span className="sq" style={{ background: card.tint || undefined }} />
       <span className="r-party">{card.party || card.external_id || card.label_word}</span>
-      <span className="r-title">{card.unread && <i className="r-new" aria-label={w.isNew} />}{card.title}</span>
+      <span className="r-title">{card.title}</span>
       <span className="r-action">{action}</span>
       <span className="r-age">{since ? short(since, lang) : ""}</span>
       <span className="kbd rk">⏎</span>
