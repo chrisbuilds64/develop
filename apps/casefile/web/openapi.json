@@ -605,6 +605,185 @@
         }
       }
     },
+    "/api/rulebook/{module_id}": {
+      "get": {
+        "summary": "Get Module",
+        "operationId": "get_module_api_rulebook__module_id__get",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}/draft": {
+      "post": {
+        "summary": "Post Module Draft",
+        "description": "A change as a draft: a new version, or the open draft written over. A new id starts a new module.",
+        "operationId": "post_module_draft_api_rulebook__module_id__draft_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}/approve": {
+      "post": {
+        "summary": "Post Module Approve",
+        "description": "The open draft comes into force; four eyes. Cases that started before keep the version they started with.",
+        "operationId": "post_module_approve_api_rulebook__module_id__approve_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}/retire": {
+      "post": {
+        "summary": "Post Module Retire",
+        "description": "Out of force, as a version of its own with the reason. Nothing is deleted.",
+        "operationId": "post_module_retire_api_rulebook__module_id__retire_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetireIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lists": {
       "get": {
         "summary": "Get Lists",
@@ -2107,6 +2286,48 @@
         "type": "object",
         "title": "DemoSessionIn"
       },
+      "DraftIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": ""
+          },
+          "areas": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Areas"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "DraftIn"
+      },
       "Entry": {
         "properties": {
           "id": {
@@ -2902,6 +3123,113 @@
         ],
         "title": "MeOut"
       },
+      "ModuleHistory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "in_force": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModuleVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModuleVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ModuleVersion"
+            },
+            "type": "array",
+            "title": "Versions"
+          },
+          "may_edit": {
+            "type": "boolean",
+            "title": "May Edit",
+            "default": false
+          },
+          "may_approve": {
+            "type": "boolean",
+            "title": "May Approve",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "versions"
+        ],
+        "title": "ModuleHistory"
+      },
+      "ModuleVersion": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Areas",
+            "default": []
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "default": ""
+          },
+          "approved_by": {
+            "type": "string",
+            "title": "Approved By",
+            "default": ""
+          },
+          "drafted_by": {
+            "type": "string",
+            "title": "Drafted By",
+            "default": ""
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "status",
+          "title",
+          "text"
+        ],
+        "title": "ModuleVersion"
+      },
       "NewCaseIn": {
         "properties": {
           "title": {
@@ -3163,6 +3491,19 @@
         ],
         "title": "RespondentOut"
       },
+      "RetireIn": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "note"
+        ],
+        "title": "RetireIn"
+      },
       "RhythmOut": {
         "properties": {
           "today_steps": {
@@ -3318,6 +3659,30 @@
           "text": {
             "type": "string",
             "title": "Text"
+          },
+          "areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Areas",
+            "default": []
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft"
+          },
+          "versions": {
+            "type": "integer",
+            "title": "Versions",
+            "default": 1
           }
         },
         "type": "object",
@@ -3454,6 +3819,11 @@
             "type": "array",
             "title": "Matrix",
             "default": []
+          },
+          "may_edit": {
+            "type": "boolean",
+            "title": "May Edit",
+            "default": false
           }
         },
         "type": "object",

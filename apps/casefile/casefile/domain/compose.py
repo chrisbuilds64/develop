@@ -113,8 +113,9 @@ def compose(result: dict, spec: dict, mods: dict[str, dict]) -> tuple[str, list[
         body = []
         if sec.get("text"):
             body.append(_fill(sec["text"], values, missing))
-        for choice in ([next((c for c in sec["choose"] if _holds(c.get("when"), values)), None)] if sec.get("choose") else []) + \
-                [m for m in sec.get("always", [])]:
+        skip = lambda c: (mods.get(c["module"]) or {}).get("_skip")      # outside the case's areas (rulebook.applies)
+        for choice in ([next((c for c in sec["choose"] if _holds(c.get("when"), values) and not skip(c)), None)] if sec.get("choose") else []) + \
+                [m for m in sec.get("always", []) if not skip(m)]:
             if not choice:
                 continue
             mod = mods.get(choice["module"])
@@ -147,7 +148,14 @@ def compile_document(store: FsStore, config: DomainConfig, case_id: str) -> dict
     versions = sorted((split_version(f)[1], f) for f in files if split_version(f)[0] == source)
     if not versions:
         raise ComposeError(f"the result ({source}) is missing")
-    text, used = compose(store.read_json(f"{stage}/{case_id}/{versions[-1][1]}"), spec, modules(store, spec.get("modules", "_bausteine")))
+    folder = spec.get("modules", "_bausteine")
+    if folder == "_bausteine":                                           # the rulebook the case started with, in its areas (ADR-026)
+        from .rulebook import in_force_at
+        meta = store.case_json(case_id, "meta.json") if store.exists(f"{stage}/{case_id}/meta.json") else {}
+        mods = in_force_at(store, str(meta.get("created") or ""), str(meta.get("label") or "") or None)
+    else:
+        mods = modules(store, folder)
+    text, used = compose(store.read_json(f"{stage}/{case_id}/{versions[-1][1]}"), spec, mods)
     name = next_name(files, target)
     store.write_atomic(f"{stage}/{case_id}/{name}", text)
     return {"file": name, "modules": [u["module"] for u in used]}

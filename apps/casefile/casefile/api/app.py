@@ -224,6 +224,42 @@ class RuleModule(BaseModel):
     approved_by: str
     date: str
     text: str
+    areas: list[str] = []                        # the labels it applies to; empty = all (ADR-026)
+    draft: int | None = None                     # the version of an open draft, waiting for a second person
+    versions: int = 1                            # how many versions its history holds
+
+
+class ModuleVersion(BaseModel):
+    version: int
+    status: str
+    title: str
+    text: str
+    areas: list[str] = []
+    date: str = ""
+    approved_by: str = ""
+    drafted_by: str = ""
+    note: str = ""
+
+
+class ModuleHistory(BaseModel):
+    id: str
+    in_force: ModuleVersion | None = None
+    draft: ModuleVersion | None = None
+    versions: list[ModuleVersion]
+    may_edit: bool = False                       # the viewer writes drafts and retires
+    may_approve: bool = False                    # the viewer may bring the open draft into force (not its author)
+
+
+class DraftIn(BaseModel):
+    text: str
+    title: str = ""
+    kind: str = ""                               # a new module: Regel, Baustein …
+    areas: list[str] | None = None               # None keeps the areas it had
+    note: str = ""                               # what changed, for the history
+
+
+class RetireIn(BaseModel):
+    note: str
 
 
 class RuleConnector(BaseModel):
@@ -274,6 +310,7 @@ class RulesOut(BaseModel):
     modules: list[RuleModule]
     connectors: list[RuleConnector] = []
     matrix: list[MatrixRow] = []
+    may_edit: bool = False                       # the viewer may change rules and modules (an operator)
 
 
 class AnswerIn(BaseModel):
@@ -924,7 +961,7 @@ def create_app(settings: Settings) -> FastAPI:
         return {"file": file, "html": render(text, "md" if file.endswith(".md") else "plain")}
 
     @app.get("/api/rules", response_model=RulesOut)
-    def get_rules(c: Ctx = Depends(ctx)):
+    def get_rules(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         """The rulebook of this world: read from the configuration and from `_bausteine/` at the pipeline root."""
         lang = c.lang
 
@@ -951,22 +988,13 @@ def create_app(settings: Settings) -> FastAPI:
         skills = [RuleSkill(name=name, does=str(spec.get("does", "")), never=str(spec.get("never", "")), rules=list(spec.get("rules", [])),
                             orderable_by=[c.config.word("roles", r, lang, r) for r in spec.get("orderable_by", default.get("orderable_by", []))])
                   for name, spec in policy.get("skills", {}).items() if not name.startswith("$")]
+        from ..domain import rulebook
         modules = []
-        folder = c.store.root / "_bausteine"
-        if folder.is_dir():
-            for f in sorted(folder.glob("*.md")):
-                text = f.read_text(encoding="utf-8")
-                head, body = {}, text
-                if text.startswith("---"):
-                    parts = text.split("---", 2)
-                    if len(parts) == 3:
-                        for line in parts[1].splitlines():
-                            if ":" in line:
-                                k, v = line.split(":", 1)
-                                head[k.strip()] = v.strip()
-                        body = parts[2]
-                modules.append(RuleModule(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), version=int(head.get("version", "1") or 1),
-                                          status=head.get("status", ""), approved_by=head.get("approved_by", ""), date=head.get("date", ""), text=body.strip()))
+        for mid, m in rulebook.current(c.store).items():
+            d = rulebook.draft_of(c.store, mid)
+            modules.append(RuleModule(id=mid, kind=m.get("kind", ""), title=m.get("title", mid), version=int(m.get("version") or 1),
+                                      status=m.get("status", ""), approved_by=m.get("approved_by", ""), date=m.get("date", ""), text=m.get("body", ""),
+                                      areas=rulebook.areas_of(m), draft=int(d["version"]) if d else None, versions=len(rulebook.history(c.store, mid))))
         connectors = []
         for place in (c.store.root / "connectors.json", c.config.dir / "connectors.json" if c.config.dir else None):
             if place and place.is_file():
@@ -983,7 +1011,67 @@ def create_app(settings: Settings) -> FastAPI:
                             target_word=str((tg.get(r.get("target", "")) or {}).get("label", "")), approval=str(r.get("approval", "human")),
                             connected=handoff.connected(c.store, r))
                   for r in handoff.matrix(c.store, c.config)]
-        return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix)
+        me = c.config.person(who)
+        return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix,
+                        may_edit=bool(me and me.kind == "human" and "operator" in me.roles))
+
+    # ------------------------------------------------------------ the rulebook, edited as versions (request 9, ADR-026)
+    def _version(m: dict | None) -> ModuleVersion | None:
+        from ..domain import rulebook
+        if not m:
+            return None
+        return ModuleVersion(version=int(m.get("version") or 0), status=m.get("status", ""), title=m.get("title", ""), text=m.get("body", ""),
+                             areas=rulebook.areas_of(m), date=m.get("date", ""), approved_by=m.get("approved_by", ""),
+                             drafted_by=m.get("drafted_by", ""), note=m.get("note", ""))
+
+    def _history(c: Ctx, who: str, module_id: str) -> ModuleHistory:
+        from ..domain import rulebook
+        now, d = rulebook.current(c.store).get(module_id), rulebook.draft_of(c.store, module_id)
+        me = c.config.person(who)
+        human = bool(me and me.kind == "human")
+        return ModuleHistory(id=module_id, in_force=_version(now), draft=_version(d), versions=[_version(v) for v in rulebook.history(c.store, module_id)],
+                             may_edit=human and "operator" in me.roles,
+                             may_approve=bool(d and human and set(me.roles) & {"operator", "approver"} and d.get("drafted_by") != me.name))
+
+    def _rulebook_refused(exc: Exception) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"ok": False, "reason": str(exc)})
+
+    @app.get("/api/rulebook/{module_id}", response_model=ModuleHistory)
+    def get_module(module_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        h = _history(c, who, module_id)
+        if not h.versions:
+            raise HTTPException(404, module_id)
+        return h
+
+    @app.post("/api/rulebook/{module_id}/draft", response_model=ModuleHistory)
+    def post_module_draft(module_id: str, body: DraftIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A change as a draft: a new version, or the open draft written over. A new id starts a new module."""
+        from ..domain import rulebook
+        try:
+            rulebook.save_draft(c.store, c.config, module_id, who, body.text, body.title, body.kind, body.areas, body.note)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
+
+    @app.post("/api/rulebook/{module_id}/approve", response_model=ModuleHistory)
+    def post_module_approve(module_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The open draft comes into force; four eyes. Cases that started before keep the version they started with."""
+        from ..domain import rulebook
+        try:
+            rulebook.approve(c.store, c.config, module_id, who)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
+
+    @app.post("/api/rulebook/{module_id}/retire", response_model=ModuleHistory)
+    def post_module_retire(module_id: str, body: RetireIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Out of force, as a version of its own with the reason. Nothing is deleted."""
+        from ..domain import rulebook
+        try:
+            rulebook.retire(c.store, c.config, module_id, who, body.note)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
 
     # ------------------------------------------------------------ value lists (SYS-105): read by all, changed by the operators
     from ..domain import lists as value_lists

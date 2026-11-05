@@ -348,6 +348,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rulebook/{module_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Module */
+        get: operations["get_module_api_rulebook__module_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Draft
+         * @description A change as a draft: a new version, or the open draft written over. A new id starts a new module.
+         */
+        post: operations["post_module_draft_api_rulebook__module_id__draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Approve
+         * @description The open draft comes into force; four eyes. Cases that started before keep the version they started with.
+         */
+        post: operations["post_module_approve_api_rulebook__module_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Retire
+         * @description Out of force, as a version of its own with the reason. Nothing is deleted.
+         */
+        post: operations["post_module_retire_api_rulebook__module_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lists": {
         parameters: {
             query?: never;
@@ -1011,6 +1088,28 @@ export interface components {
              */
             fresh: boolean;
         };
+        /** DraftIn */
+        DraftIn: {
+            /** Text */
+            text: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Kind
+             * @default
+             */
+            kind: string;
+            /** Areas */
+            areas?: string[] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /**
          * Entry
          * @description One item of the thread (review.md): `## REV-NNN — title`, a head line, text.
@@ -1365,6 +1464,61 @@ export interface components {
             /** Shell */
             shell?: string | null;
         };
+        /** ModuleHistory */
+        ModuleHistory: {
+            /** Id */
+            id: string;
+            in_force?: components["schemas"]["ModuleVersion"] | null;
+            draft?: components["schemas"]["ModuleVersion"] | null;
+            /** Versions */
+            versions: components["schemas"]["ModuleVersion"][];
+            /**
+             * May Edit
+             * @default false
+             */
+            may_edit: boolean;
+            /**
+             * May Approve
+             * @default false
+             */
+            may_approve: boolean;
+        };
+        /** ModuleVersion */
+        ModuleVersion: {
+            /** Version */
+            version: number;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /** Text */
+            text: string;
+            /**
+             * Areas
+             * @default []
+             */
+            areas: string[];
+            /**
+             * Date
+             * @default
+             */
+            date: string;
+            /**
+             * Approved By
+             * @default
+             */
+            approved_by: string;
+            /**
+             * Drafted By
+             * @default
+             */
+            drafted_by: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** NewCaseIn */
         NewCaseIn: {
             /** Title */
@@ -1513,6 +1667,11 @@ export interface components {
              */
             me: boolean;
         };
+        /** RetireIn */
+        RetireIn: {
+            /** Note */
+            note: string;
+        };
         /**
          * RhythmOut
          * @description What this person moved, honestly counted from the step journals: today and the last seven days. No streak, nothing
@@ -1614,6 +1773,18 @@ export interface components {
             date: string;
             /** Text */
             text: string;
+            /**
+             * Areas
+             * @default []
+             */
+            areas: string[];
+            /** Draft */
+            draft?: number | null;
+            /**
+             * Versions
+             * @default 1
+             */
+            versions: number;
         };
         /** RuleSkill */
         RuleSkill: {
@@ -1676,6 +1847,11 @@ export interface components {
              * @default []
              */
             matrix: components["schemas"]["MatrixRow"][];
+            /**
+             * May Edit
+             * @default false
+             */
+            may_edit: boolean;
         };
         /** Run */
         Run: {
@@ -2538,6 +2714,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RulesOut"];
+                };
+            };
+        };
+    };
+    get_module_api_rulebook__module_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_draft_api_rulebook__module_id__draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_approve_api_rulebook__module_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_retire_api_rulebook__module_id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetireIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
