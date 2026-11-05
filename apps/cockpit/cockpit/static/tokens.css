@@ -43,6 +43,35 @@
   --touch: 44px;
   --ease: cubic-bezier(.2, .8, .2, 1);
   --slide: 420ms;
+
+  /* the Casefile look (2026-11-05): secondary text, quiet tints of the ink, the button, the ambient ground, a type scale */
+  --fg: 20, 20, 40;
+  --sub: #5E5E68;
+  --muted-2: #8A8A95;
+  --avatar: #E4E2DC;
+  --chart-quiet: #C9C8C2;
+  --urgent: #B86E00;
+  --ok-ink: #2E8A5C;
+  --ok-chart: #34A86F;
+  --ok-soft: rgba(48, 164, 108, .11);
+  --bad-ink: #B03A2E;
+  --bad-soft: rgba(176, 58, 46, .08);
+  --on-accent: #FFFFFF;
+  --tint-4: rgba(var(--fg), .04); --tint-5: rgba(var(--fg), .05); --tint-6: rgba(var(--fg), .06); --tint-7: rgba(var(--fg), .07);
+  --tint-8: rgba(var(--fg), .08); --tint-10: rgba(var(--fg), .10); --tint-12: rgba(var(--fg), .12); --tint-14: rgba(var(--fg), .14); --tint-18: rgba(var(--fg), .18);
+  --shadow-card: 0 1px 2px rgba(20, 20, 40, .05), 0 8px 24px rgba(20, 20, 40, .06);
+  --seg-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .04);
+  --btn-fill: linear-gradient(180deg, #3A8DFF 0%, #1877F2 55%, #0F66DB 100%);
+  --btn-fill-hover: linear-gradient(180deg, #4A97FF 0%, #2483F8 55%, #136DE4 100%);
+  --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 6px 16px -8px rgba(24, 119, 242, .55);
+  --ambient:
+    radial-gradient(900px 600px at 12% 8%, rgba(24, 119, 242, .18), transparent 70%),
+    radial-gradient(700px 500px at 85% 30%, rgba(245, 158, 11, .12), transparent 70%),
+    radial-gradient(800px 600px at 30% 100%, rgba(168, 85, 247, .12), transparent 70%),
+    #F6F5F2;
+  --fs-11: 11px; --fs-11-5: 11.5px; --fs-12: 12px; --fs-12-5: 12.5px; --fs-13: 13px; --fs-13-5: 13.5px; --fs-14: 14px;
+  --fs-17: 17px; --fs-26: 26px; --fs-28: 28px; --fs-34: 34px;
+  --r-2: 2.5px; --r-7: 7px; --r-9: 9px; --r-10: 10px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -69,6 +98,20 @@
     --bubble-you: #EDEDF0;
     --bubble-you-ink: #161618;
     --bubble-you-muted: #5E5E68;
+
+    --fg: 255, 255, 255;
+    --sub: #A3A3AD;
+    --muted-2: #8A8A95;
+    --avatar: #2C2C32;
+    --chart-quiet: #4A4A52;
+    --urgent: #F2A541;
+    --ok-ink: #5FD39A;
+    --bad-ink: #FF8A7A;
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 8px 24px rgba(0, 0, 0, .28);
+    --ambient:
+      radial-gradient(1000px 640px at 10% -6%, rgba(155, 123, 245, .14), transparent 62%),
+      radial-gradient(760px 520px at 92% 22%, rgba(24, 119, 242, .08), transparent 66%),
+      #161618;
   }
 }
 :root[data-theme="dark"] {
@@ -94,4 +137,18 @@
   --bubble-you: #EDEDF0;
   --bubble-you-ink: #161618;
   --bubble-you-muted: #5E5E68;
+
+    --fg: 255, 255, 255;
+    --sub: #A3A3AD;
+    --muted-2: #8A8A95;
+    --avatar: #2C2C32;
+    --chart-quiet: #4A4A52;
+    --urgent: #F2A541;
+    --ok-ink: #5FD39A;
+    --bad-ink: #FF8A7A;
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 8px 24px rgba(0, 0, 0, .28);
+    --ambient:
+      radial-gradient(1000px 640px at 10% -6%, rgba(155, 123, 245, .14), transparent 62%),
+      radial-gradient(760px 520px at 92% 22%, rgba(24, 119, 242, .08), transparent 66%),
+      #161618;
 }
