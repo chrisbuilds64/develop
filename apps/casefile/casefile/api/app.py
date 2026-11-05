@@ -1026,7 +1026,7 @@ def create_app(settings: Settings) -> FastAPI:
         known = {x.get("file") for x in c.config.videos} | {x.get("poster") for x in c.config.videos}
         if name not in known or "/" in name or name.startswith(".") or not c.config.dir:
             raise HTTPException(404, name)
-        p = c.config.dir / "videos" / name
+        p = (c.config.videos_dir or c.config.dir / "videos") / name
         if not p.is_file():
             raise HTTPException(404, name)
         return FileResponse(p)

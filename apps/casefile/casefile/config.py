@@ -29,6 +29,15 @@ def _read(p: Path) -> dict | None:
     return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else None
 
 
+
+def _videos_home(domain_dir: Path) -> Path:
+    """The explainers are about Casefile, not one domain: a domain without its own may borrow another's
+    (`videos.json` with `{"from": "../claims-demo"}`)."""
+    doc = _read(domain_dir / "videos.json") or {}
+    src = doc.get("from") if isinstance(doc, dict) else None
+    return (domain_dir / src).resolve() if isinstance(src, str) and src else domain_dir
+
+
 @dataclass
 class DomainConfig:
     name: str
@@ -44,6 +53,7 @@ class DomainConfig:
     config_version: str = "1"
     dir: Path | None = None                       # where the domain files came from (replies for the demo live beside them)
     videos: list = field(default_factory=list)    # explainer videos (videos.json): key, where, title, file, poster, minutes
+    videos_dir: Path | None = None                # where their files are: <domain>/videos, or the domain videos.json `from` names
     lists: dict = field(default_factory=dict)     # the value lists (domain/lists.py): id → {id, word, field, on_create, entries}
 
     # ------------------------------------------------------------------ loading
@@ -81,7 +91,8 @@ class DomainConfig:
             config_version=str(stages_doc.get("configVersion") or "1"),
             order=[str(k) for k in (stages_doc.get("order") or [])],
             dir=domain_dir,
-            videos=[v for v in ((_read(domain_dir / "videos.json") or {}).get("videos") or []) if isinstance(v, dict) and v.get("key") and v.get("file")],
+            videos=[v for v in ((_read(_videos_home(domain_dir) / "videos.json") or {}).get("videos") or []) if isinstance(v, dict) and v.get("key") and v.get("file")],
+            videos_dir=_videos_home(domain_dir) / "videos",
         )
 
     # ------------------------------------------------------------------ stages

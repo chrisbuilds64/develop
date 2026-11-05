@@ -315,9 +315,22 @@ PRESSROOM_STAGES = ["00-archive", "05-operational-observations", "10-ideas", "15
                     "40-asset-generation", "50-ready-to-publish", "55-scheduled", "60-published", "61-field-observation", "65-canonical-review", "66-reviewed", "70-reference-frames"]
 
 
+# the PressRoom's rulebook: in English, the language it works in
+PRESS_RULES = {
+    "R-01-sources.md": _mod("R-01", "Rule", "Every claim has a source", 1, "freigegeben",
+        "Every factual claim in a piece names its source, or it comes out before review.", approved_by="Chris", date="2026-09-20", source="Editorial guidelines"),
+}
+PRESS_PROPOSED = {
+    "R-02.v1.md": _mod("R-02", "Rule", "One idea per piece", 1, "entwurf",
+        "A piece carries one idea; a second one becomes its own piece in Ideas.", drafted_by="KI", date="2026-11-03",
+        source="Taken from the last 12 reviews", note="Last 12 reviews: 7 asked to split a piece in two.  ¶  Editorial guidelines: one piece, one point."),
+}
+
+
 def build_pressroom(root: Path) -> Path:
     cfg = CONFIG / "pressroom"
     root = _root(root, cfg, PRESSROOM_STAGES)
+    _rulebook(root, PRESS_RULES, PRESS_PROPOSED)
     png = SAMPLES / "thumbnail.png"
     script = (SAMPLES / "script.md").read_text(encoding="utf-8")
     draft = (SAMPLES / "draft.md").read_text(encoding="utf-8")
@@ -611,6 +624,48 @@ def _reading(reading: dict, en: tuple) -> dict:
     return {**reading, "i18n": {"en": {"summary": summary, **({"fields": {**reading.get("fields", {}), **fields}} if fields else {})}}}
 
 
+# the rulebooks of the inbox and the quotes (design hand-back, 2026-11-05): the prototype's rules, in German with English beside
+INBOX_RULES = {
+    "R-01-werbung-ablegen.md": _mod("R-01", "Regel", "Werbung ohne Aufgabe ablegen", 1, "freigegeben",
+        "Newsletter und Werbung werden ohne Aufgabe abgelegt." + EN + "Newsletters and adverts are archived without a task.",
+        title_en="File adverts without a task", approved_by="Du", date="2026-10-02", source="Posteingangsregeln", source_en="Inbox rules"),
+}
+INBOX_PROPOSED = {
+    "R-02.v1.md": _mod("R-02", "Regel", "Aktenzeichen bei Diebstahl", 1, "entwurf",
+        "Eine Schadenmeldung ohne polizeiliches Aktenzeichen kann angelegt werden, die Regulierung wartet aber darauf."
+        + EN + "A claim report without a police file number can be opened, but settlement waits for it.",
+        title_en="File number for theft", drafted_by="KI", date="2026-10-30",
+        source="Aus einem Gespräch mit Jana Koch, 30. Okt.", source_en="Heard in a talk with Jana Koch, 30 Oct",
+        note="Gespräch mit Jana Koch: Ohne Aktenzeichen legen wir die Akte an, zahlen aber nicht.", note_en="Interview, claims team: without a file number we open the file but do not pay."),
+}
+QUOTE_RULES = {
+    "R-01-zweite-unterschrift.md": _mod("R-01", "Regel", "Zweite Unterschrift ab 1.200 €", 1, "freigegeben",
+        "Angebote über 1.200 € im Jahr brauchen eine Zweitunterschrift." + EN + "Quotes above 1,200 € a year need a second signature.",
+        title_en="Second signature from 1,200 €", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-04-14",
+        source="Vollmachtsregeln", source_en="Authority rules"),
+    "B-11-anschreiben-angebot.md": _mod("B-11", "Baustein", "Anschreiben zum Angebot", 4, "freigegeben",
+        "Anbei erhalten Sie Ihr Angebot für {versichertes Objekt}. Der Jahresbeitrag beträgt {Beitrag}. Das Angebot gilt bis {gültig bis}. Wenn Sie es annehmen möchten, antworten Sie einfach auf diese Mail."
+        + EN + "Please find your quote for {insured object} attached. The yearly premium is {premium}. The quote is valid until {valid until}. If you would like to go ahead, simply reply to this mail.",
+        title_en="Quote cover letter", use="Jedes versendete Angebot", use_en="Every quote that is sent", approved_by="Geschäftsleitung", approved_by_en="Management", date="2026-09-01"),
+}
+QUOTE_PROPOSED = {
+    "R-02.v1.md": _mod("R-02", "Regel", "Junge Fahrer", 1, "entwurf",
+        "Ein Fahrer unter 25 erhöht den Haftpflichtbeitrag um den Faktor 1,6." + EN + "A young driver under 25 raises the liability premium by a factor of 1.6.",
+        title_en="Young drivers", areas="KFZ", drafted_by="KI", date="2026-10-29",
+        source="Aus einem Gespräch mit Tobias Wendt, 29. Okt.", source_en="Heard in a talk with Tobias Wendt, 29 Oct",
+        note="Tarifblatt 2026: Abschnitt 4.2, junge Fahrer.  ¶  Gespräch mit Tobias Wendt: Unter 25 rechnen wir immer mit 1,6.",
+        note_en="Tariff sheet 2026: section 4.2, young drivers.  ¶  Interview, underwriting: under 25 we always reckon with 1.6."),
+}
+
+
+def _rulebook(root: Path, in_force: dict[str, str], proposed: dict[str, str]) -> None:
+    (root / "_bausteine" / "_fassungen").mkdir(parents=True, exist_ok=True)
+    for name, text in in_force.items():
+        (root / "_bausteine" / name).write_text(text, encoding="utf-8")
+    for name, text in proposed.items():
+        (root / "_bausteine" / "_fassungen" / name).write_text(text, encoding="utf-8")
+
+
 def build_inbox(root: Path) -> Path:
     """The inbox: every mail is a case. The AI has read four of them and proposes a row of the rule matrix; the fifth it is reading now."""
     from ..config import DomainConfig
@@ -621,6 +676,7 @@ def build_inbox(root: Path) -> Path:
     (root / "people.json").write_text(json.dumps(DEMO_PEOPLE, ensure_ascii=False, indent=2), encoding="utf-8")
     store, config = FsStore(root), DomainConfig.load(cfg, root)
     photo = SAMPLES / "foto.jpg"
+    _rulebook(root, INBOX_RULES, INBOX_PROPOSED)
 
     def take_in(mail: tuple, read: bool) -> str:
         subject, sender, address, body, days, with_photo, reading, en = mail
@@ -644,9 +700,11 @@ def build_inbox(root: Path) -> Path:
         rev.write_text(re.sub(r"\*\*Date:\*\* [0-9-]+ [0-9:]+", f"**Date:** {when}", rev.read_text(encoding="utf-8")), encoding="utf-8")
         return cid
 
-    for m in INBOX_MAILS:
-        take_in(m, True)
+    made = [take_in(m, True) for m in INBOX_MAILS]
     live = take_in(INBOX_LIVE, False)
+    _signal(root, "M-001", "Wiederholung", "Dritte Meldung für das Kennzeichen TÜ-EB 118 in diesem Jahr", [made[0]],
+            "Für dieses Auto kamen am 14. März und am 2. Juli schon Glasschäden, jetzt ein Seitenschaden. Das kann bei einem langen Arbeitsweg normal sein oder einen Anruf wert.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 0,
+            en=("Third report for plate TÜ-EB 118 this year", "This car already had glass claims on 14 March and 2 July, now side damage. That can be normal for a long commute, or worth a call.\n\n*A hint, not a finding · a person decides whether anything follows.*"))
     # the fifth mail: the AI is reading it right now; its prepared answer plays when the order runs
     from ..domain import runs as ordering
     ordering.order(store, config, live, "10-eingang", "posteingang-einordnen", "du", "", request_id=f"demo-read-{live}"[:60])
@@ -686,6 +744,7 @@ def build_quotes(root: Path) -> Path:
     cfg = CONFIG / "angebot"
     root = _root(root, cfg, QUOTE_STAGES)
     (root / "people.json").write_text(json.dumps(DEMO_PEOPLE, ensure_ascii=False, indent=2), encoding="utf-8")
+    _rulebook(root, QUOTE_RULES, QUOTE_PROPOSED)
 
     # waits for the customer's answers: the AI filled what the mail said and drafted the question for the rest
     c = "HR-2026-0007-hausrat-tuebingen"
@@ -715,6 +774,9 @@ def build_quotes(root: Path) -> Path:
           _entry(1, "Anfrage eingegangen", "Familie Roth", stage="10-anfrage", when=_stamp(4, 10), files=["anfrage.md"], text="Tiguan, der Sohn fährt mit.") +
           _entry(2, "Fragebogen ausgefüllt", "KI", stage="10-anfrage", when=_stamp(4, 11), files=["fragebogen.json"], text="Alle Antworten stehen in der Anfrage."))
     stepping.step(store, config, c, StepRequest(action="calculate", step_id="demo-q1"), "du")     # the core computes the premium; the AI never does
+    _signal(root, "M-001", "Abweichung", "Beitrag 22 % über ähnlichen Angeboten", [c],
+            "Ein Tiguan mit SF 6 liegt hier meist bei etwa 1.080 € im Jahr. Dieses Angebot nennt 1.322,57 €, weil der jüngste Fahrer 19 ist. Das ist richtig gerechnet; der Hinweis zeigt nur, warum der Betrag auffällt.\n\n*Hinweis, keine Feststellung · ein Mensch entscheidet, ob daraus etwas folgt.*", 0,
+            en=("Premium 22 % above similar quotes", "A Tiguan with no-claims class 6 usually comes to about 1,080 € a year here. This quote says 1,322.57 €, because the youngest driver is 19. That is computed correctly; the hint only shows why the amount stands out.\n\n*A hint, not a finding · a person decides whether anything follows.*"))
     rev = root / "30-angebot" / c / "review.md"                   # computed four days ago, in the story
     rev.write_text(re.sub(r"(## REV-003[^\n]*\n\*\*Date:\*\* )[0-9-]+ [0-9:]+", lambda m: m.group(1) + _stamp(4, 12), rev.read_text(encoding="utf-8")), encoding="utf-8")
     meta_p = root / "30-angebot" / c / "meta.json"

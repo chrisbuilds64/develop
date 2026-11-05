@@ -552,3 +552,7 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 
 .cf-rail .ndot { margin-left: auto; width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--your-move); opacity: .7; flex: none; }
 .cf-rail .rail-brand b, .cf-rail .rail-tag, .cf-rail .rail-search { letter-spacing: normal; }
+
+/* focus: a soft ring in the "you" blue, never the browser's black frame (keyboard focus only) */
+.main.rb button:focus, .cf-rail button:focus, .cf-rail a:focus { outline: none; }
+.main.rb button:focus-visible, .cf-rail button:focus-visible, .cf-rail a:focus-visible { outline: 2px solid var(--your-move-halo); outline-offset: 1px; }
