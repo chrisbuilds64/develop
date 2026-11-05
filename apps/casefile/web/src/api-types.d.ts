@@ -423,6 +423,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Seen
+         * @description Read or unread for the viewer alone (domain/seen.py). The surface sends it when a case is opened, and from
+         *     "Mark as unread". Not a step: nothing in the case changes.
+         */
+        post: operations["post_seen_api_cases__case_id__seen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/entries": {
         parameters: {
             query?: never;
@@ -774,6 +795,11 @@ export interface components {
              * @default
              */
             tint: string;
+            /**
+             * Unread
+             * @default false
+             */
+            unread: boolean;
         };
         /** CaseView */
         CaseView: {
@@ -830,6 +856,11 @@ export interface components {
              * @default
              */
             tint: string;
+            /**
+             * Unread
+             * @default false
+             */
+            unread: boolean;
             /** Meta */
             meta?: {
                 [key: string]: unknown;
@@ -1676,6 +1707,21 @@ export interface components {
             action: string;
             /** At */
             at: string;
+        };
+        /** SeenIn */
+        SeenIn: {
+            /**
+             * Unread
+             * @default false
+             */
+            unread: boolean;
+        };
+        /** SeenOut */
+        SeenOut: {
+            /** Case */
+            case: string;
+            /** Unread */
+            unread: boolean;
         };
         /** SessionIn */
         SessionIn: {
@@ -2545,6 +2591,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StepResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_seen_api_cases__case_id__seen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeenOut"];
                 };
             };
             /** @description Validation Error */

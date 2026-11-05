@@ -157,3 +157,31 @@ def test_a_closed_case_moves_back_to_where_it_left_the_work(tmp_path):
     store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
     ai = stepping.step(store, config, other, StepRequest(action="reopen", step_id="back-4"), by="ki")
     assert not ai.ok and "a person does that" in ai.reason                                  # the AI never reopens
+
+
+def test_read_and_unread_are_per_person_like_mail(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    du, berger = TestClient(app), TestClient(app)
+    assert du.post("/api/session", json={"person": "du"}).status_code == 200
+    assert berger.post("/api/session", json={"person": "gutachter"}).status_code == 200
+
+    def unread(client, cid):
+        return next(c["unread"] for g in client.get("/api/cases").json() for c in g["cases"] if c["id"] == cid)
+
+    cid = "HR-2026-0417-wasserschaden-badezimmer"
+    assert unread(du, cid) and unread(berger, cid)                                        # never opened: new to both
+    assert du.post(f"/api/cases/{cid}/seen", json={}).json() == {"case": cid, "unread": False}
+    assert not unread(du, cid) and unread(berger, cid)                                    # per person
+    assert not du.get(f"/api/cases/{cid}").json()["unread"]
+    du.post(f"/api/cases/{cid}/entries", json={"kind": "note", "step_id": "n1", "text": "Fotos angefragt"})
+    assert not unread(du, cid)                                                            # my own note is nothing new to me
+    berger.post(f"/api/cases/{cid}/entries", json={"kind": "note", "step_id": "n2", "text": "Termin steht"})
+    assert unread(du, cid)                                                                # somebody else wrote since
+    du.post(f"/api/cases/{cid}/seen", json={})
+    assert du.post(f"/api/cases/{cid}/seen", json={"unread": True}).json()["unread"] is True   # mark as unread again
+    assert unread(du, cid)
+    closed = "KFZ-2026-0790-parkrempler"
+    assert not unread(du, closed)                                                         # a closed case has nothing new
+    assert du.post("/api/cases/nothing/seen", json={}).status_code == 404
+    assert (root / "_seen" / "du.json").is_file() and not any(p.name == "_seen" for p in root.iterdir() if p.name[:2].isdigit())

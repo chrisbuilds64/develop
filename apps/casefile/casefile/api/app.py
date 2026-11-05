@@ -38,6 +38,7 @@ from pydantic import BaseModel, Field
 from .. import __version__
 from ..config import DomainConfig
 from ..domain import assets, cases as reading, step as stepping
+from ..domain import seen as reads
 from ..domain import turn as whose
 from ..models import Case, StepRequest, StepResult, Turn
 from ..store import FsStore, StoreError
@@ -96,6 +97,15 @@ class LangIn(BaseModel):
 class DemoSessionIn(BaseModel):
     world: str | None = None                                # switch to this world (the visitor's sandbox there is kept)
     fresh: bool = False                                     # a new sandbox for that world (start over)
+
+
+class SeenIn(BaseModel):
+    unread: bool = False                         # false: the viewer has read the case now; true: mark it as new again
+
+
+class SeenOut(BaseModel):
+    case: str
+    unread: bool
 
 
 class EntryIn(BaseModel):
@@ -751,12 +761,14 @@ def create_app(settings: Settings) -> FastAPI:
     def my_turns(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         stepping.detect(c.store, c.config)
         all_cases = reading.load_all(c.store, c.config)
-        return [TurnOut(case=views.card(c.config, case, who, c.lang), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
+        seen = reads.load(c.store, who)
+        return [TurnOut(case=views.card(c.config, case, who, c.lang, seen), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
 
     @app.get("/api/cases", response_model=list[GroupOut])
     def list_cases(group: str | None = None, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         stepping.detect(c.store, c.config)
-        cards = [views.card(c.config, case, who, c.lang) for case in reading.load_all(c.store, c.config)]
+        seen = reads.load(c.store, who)
+        cards = [views.card(c.config, case, who, c.lang, seen) for case in reading.load_all(c.store, c.config)]
         order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
         out = []
         for g in order:
@@ -810,7 +822,7 @@ def create_app(settings: Settings) -> FastAPI:
             case = reading.load(c.store, c.config, case_id)
         except (KeyError, StoreError) as exc:
             raise HTTPException(404, str(exc) or case_id)
-        return views.view(c.config, case, who, c.lang, file_url)
+        return views.view(c.config, case, who, c.lang, file_url, reads.load(c.store, who))
 
     @app.get("/api/cases/{case_id}/files/{name}")
     def get_file(case_id: str, name: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1007,10 +1019,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.get("/api/stages", response_model=list[StageOut])
     def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        out = []
+        out, seen = [], reads.load(c.store, who)
         for folder in c.store.stages():
             st = c.config.stage(folder)
-            cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang) for cid in c.store.cases(folder)]
+            cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang, seen) for cid in c.store.cases(folder)]
             out.append(StageOut(folder=folder, key=st.key if st else "", word=c.config.word("stages", folder, c.lang, folder),
                                 station=c.config.word("stations", st.key, c.lang, "") if st and st.key else "", cases=cards))
         return out
@@ -1031,6 +1043,19 @@ def create_app(settings: Settings) -> FastAPI:
             if k.lower() == "set-cookie":
                 answer.headers.append(k, v)
         return answer
+
+    @app.post("/api/cases/{case_id}/seen", response_model=SeenOut)
+    def post_seen(case_id: str, body: SeenIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Read or unread for the viewer alone (domain/seen.py). The surface sends it when a case is opened, and from
+        "Mark as unread". Not a step: nothing in the case changes."""
+        try:
+            case = reading.load(c.store, c.config, case_id)
+        except (KeyError, StoreError) as exc:
+            raise HTTPException(404, str(exc) or case_id)
+        try:
+            return SeenOut(case=case_id, unread=reads.mark(c.store, c.config, case, who, body.unread))
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
 
     @app.post("/api/cases/{case_id}/entries", response_model=StepResult)
     def post_entry(case_id: str, body: EntryIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

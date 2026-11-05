@@ -781,6 +781,56 @@
         }
       }
     },
+    "/api/cases/{case_id}/seen": {
+      "post": {
+        "summary": "Post Seen",
+        "description": "Read or unread for the viewer alone (domain/seen.py). The surface sends it when a case is opened, and from\n\"Mark as unread\". Not a step: nothing in the case changes.",
+        "operationId": "post_seen_api_cases__case_id__seen_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeenIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}/entries": {
       "post": {
         "summary": "Post Entry",
@@ -1614,6 +1664,11 @@
             "type": "string",
             "title": "Tint",
             "default": ""
+          },
+          "unread": {
+            "type": "boolean",
+            "title": "Unread",
+            "default": false
           }
         },
         "type": "object",
@@ -1717,6 +1772,11 @@
             "type": "string",
             "title": "Tint",
             "default": ""
+          },
+          "unread": {
+            "type": "boolean",
+            "title": "Unread",
+            "default": false
           },
           "meta": {
             "additionalProperties": true,
@@ -3537,6 +3597,35 @@
           "at"
         ],
         "title": "SealOut"
+      },
+      "SeenIn": {
+        "properties": {
+          "unread": {
+            "type": "boolean",
+            "title": "Unread",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SeenIn"
+      },
+      "SeenOut": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "unread": {
+            "type": "boolean",
+            "title": "Unread"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case",
+          "unread"
+        ],
+        "title": "SeenOut"
       },
       "SessionIn": {
         "properties": {

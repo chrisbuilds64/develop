@@ -31,7 +31,7 @@ from pathlib import Path
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{1,47}$")
 MODES = ("live", "replay")
-CLEARED = ("_runs", "_steps", "_audit")        # a copy starts without the source's orders, journals and audit
+CLEARED = ("_runs", "_steps", "_audit", "_seen")   # a copy starts without the source's orders, journals, audit and read markers
 COMPONENTS = ("pipeline",)
 RETIRED = ("agents", "sessions")                 # ADR-019 components, skipped when an older registry still names them
 

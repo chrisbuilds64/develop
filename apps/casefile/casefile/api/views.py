@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
 from ..domain import lists as value_lists
+from ..domain import seen as reads
 from ..domain import step as stepping
 from ..domain import turn as whose
 from ..models import Case, Entry, Run, Turn
@@ -56,6 +57,7 @@ class CaseCard(BaseModel):
     external_url: str = ""                                # a link into that system, from the theme's url template
     number: str = ""                                      # the short number on the cover (meta.number)
     tint: str = ""                                        # the cover's colour, from theme.covers (by one meta key)
+    unread: bool = False                                  # new to the viewer: never opened, or somebody else wrote since (domain/seen.py)
 
 
 class StationView(BaseModel):
@@ -161,7 +163,7 @@ def group_of(config: DomainConfig, case: Case, main: Turn | None, viewer: str | 
     return "others" if g == "you" else g
 
 
-def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> CaseCard:
+def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: dict[str, str] | None = None) -> CaseCard:
     turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     main = turns[0] if turns else None
     key, idx = station_of(config, case.stage)
@@ -174,11 +176,12 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> Cas
                     label_word=value_lists.value_word(config.lists, "label", case.label, lang, config.word("labels", case.label, lang, case.label)), stage=case.stage,
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,
                     group_word=config.word("groups", g, lang, g), since=case.since, date=str(case.meta.get("publishDate") or "")[:10],
-                    turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))))
+                    turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))),
+                    unread=reads.unread(config, case, viewer, seen) if seen is not None else False)
 
 
-def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url) -> CaseView:
-    c = card(config, case, viewer, lang)
+def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url, seen: dict[str, str] | None = None) -> CaseView:
+    c = card(config, case, viewer, lang, seen)
     turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     mine = [t for t in turns if viewer and (t.actor == viewer or config.may_act(viewer, t.actor))]
     stations = [StationView(key=k, word=config.word("stations", k, lang, k), state="done" if i < c.station_index else "current" if i == c.station_index else "todo")
