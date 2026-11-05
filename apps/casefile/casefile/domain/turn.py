@@ -191,7 +191,8 @@ def classify(case: Case, action: Action | None, t: Turn) -> str:
 
 def sentence(config: DomainConfig, case: Case, t: Turn, lang: str | None) -> tuple[str, str]:
     """(headline, lock) from the vocabulary's templates, with {title}, {label}, {missing}, {first}, {n} filled; defaults when none is configured."""
-    title = str(case.meta.get("title") or case.meta.get("working_title") or case.id)
+    over = ((case.meta.get("i18n") or {}).get(lang or "") or {}) if isinstance(case.meta.get("i18n"), dict) else {}
+    title = str(over.get("title") or case.meta.get("title") or case.meta.get("working_title") or case.id)   # in the reader's language (request 8)
     words = missing_words(config, t.blocked_by, lang)
     ctx = {"title": title, "label": t.label, "missing": ", ".join(words), "first": words[0] if words else "", "n": str(len(words))}
 
