@@ -185,3 +185,32 @@ def test_read_and_unread_are_per_person_like_mail(tmp_path):
     assert not unread(du, closed)                                                         # a closed case has nothing new
     assert du.post("/api/cases/nothing/seen", json={}).status_code == 404
     assert (root / "_seen" / "du.json").is_file() and not any(p.name == "_seen" for p in root.iterdir() if p.name[:2].isdigit())
+
+
+def test_a_case_somebody_else_holds_can_be_reminded_or_taken_back(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    du, berger = TestClient(app), TestClient(app)
+    du.post("/api/session", json={"person": "du"})
+    berger.post("/api/session", json={"person": "gutachter"})
+    cid = "WG-2026-0425-glasbruch-wintergarten"
+    v = du.get(f"/api/cases/{cid}").json()
+    assert v["held_by"] == ["Gutachter Berger"] and v["take_back_to"] == "10-meldung" and v["take_back_word"]
+    assert berger.get(f"/api/cases/{cid}").json()["held_by"] == []                       # it is his own move
+    berger.post(f"/api/cases/{cid}/seen", json={})
+    r = du.post(f"/api/cases/{cid}/steps", json={"action": "remind", "step_id": "r1"}).json()
+    assert r["ok"] and r["entry"], r
+    last = du.get(f"/api/cases/{cid}").json()["entries"][-1]
+    assert last["for"] == "Gutachter Berger" and last["status"] == "info" and last["text"]
+    turns = berger.get(f"/api/cases/{cid}").json()["turns"]
+    assert [t["action"] for t in turns].count("answer") == 0                              # a nudge, not a new task
+    assert next(c["unread"] for g in berger.get("/api/cases").json() for c in g["cases"] if c["id"] == cid)   # but new to him
+    no = berger.post(f"/api/cases/{cid}/steps", json={"action": "remind", "step_id": "r2"}).json()
+    assert not no["ok"] and "nobody else" in no["reason"]
+    assert not berger.post(f"/api/cases/{cid}/steps", json={"action": "take_back", "step_id": "t0"}).json()["ok"]
+    r = du.post(f"/api/cases/{cid}/steps", json={"action": "take_back", "step_id": "t1"}).json()
+    assert r["ok"] and r["from"] == "20-besichtigung" and r["to"] == "10-meldung", r
+    v = du.get(f"/api/cases/{cid}").json()
+    assert v["held_by"] == [] and v["take_back_to"] == "" and any(t["actor"] == "du" or t["actor"].startswith("role:") for t in v["my_turns"])
+    nohist = du.get("/api/cases/KFZ-2026-0811-auffahrunfall-a3").json()
+    assert nohist["take_back_to"] == "10-meldung"                                       # no move on record: the stage before

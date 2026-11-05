@@ -893,6 +893,18 @@ export interface components {
              * @default
              */
             reopen_word: string;
+            /** Held By */
+            held_by?: string[];
+            /**
+             * Take Back To
+             * @default
+             */
+            take_back_to: string;
+            /**
+             * Take Back Word
+             * @default
+             */
+            take_back_word: string;
             /** Data */
             data?: {
                 [key: string]: unknown;

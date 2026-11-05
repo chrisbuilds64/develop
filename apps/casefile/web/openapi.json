@@ -1854,6 +1854,23 @@
             "title": "Reopen Word",
             "default": ""
           },
+          "held_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Held By"
+          },
+          "take_back_to": {
+            "type": "string",
+            "title": "Take Back To",
+            "default": ""
+          },
+          "take_back_word": {
+            "type": "string",
+            "title": "Take Back Word",
+            "default": ""
+          },
           "data": {
             "additionalProperties": true,
             "type": "object",

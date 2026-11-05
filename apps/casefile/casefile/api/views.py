@@ -98,6 +98,9 @@ class CaseView(CaseCard):
     agent: str = "Claude"
     reopen_to: str = ""                                   # a closed case: the stage "Move back" (action `reopen`) returns it to; empty while it is in the work
     reopen_word: str = ""                                 # that stage in words
+    held_by: list[str] = Field(default_factory=list)      # somebody else holds the case: their names; "Send a reminder" (action `remind`) goes to them
+    take_back_to: str = ""                                # the viewer's own stage it came from: "Take it back" (action `take_back`) returns it there
+    take_back_word: str = ""
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
 
 
@@ -192,7 +195,10 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
              for s in case.slots]
     agent = config.agent
     back = stepping.reopen_target(config, case) or ""
-    return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "", meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
+    held = [p.name for p in stepping.holders(config, case, viewer)] if viewer else []
+    pull = stepping.take_back_target(config, case, viewer) or ""
+    return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
+                    held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "", meta=case.meta, stations=stations, slots=slots, entries=with_actors(config, case.entries), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 

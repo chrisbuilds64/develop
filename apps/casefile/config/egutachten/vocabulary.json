@@ -51,7 +51,9 @@
       "capture_result": "Ergebnis aus dem Diktat erfassen lassen",
       "compose_report": "Gutachten aus Bausteinen zusammenstellen",
       "close_inspection": "Besichtigung abschließen",
-      "reopen": "Zurückholen"
+      "reopen": "Zurückholen",
+      "remind": "Erinnern",
+      "take_back": "Zurücknehmen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -67,7 +69,9 @@
       "replay_moved": "Weiter.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
-      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert.",
+      "reminder": "Erinnerung",
+      "reminder_text": "Kannst du dir diesen Fall ansehen?"
     },
     "files": {
       "auftrag.pdf": "Gutachtenauftrag",
@@ -184,7 +188,9 @@
       "capture_result": "Have the result taken from the dictation",
       "compose_report": "Compose the report from modules",
       "close_inspection": "Close the inspection",
-      "reopen": "Move back"
+      "reopen": "Move back",
+      "remind": "Send a reminder",
+      "take_back": "Take it back"
     },
     "reasons": {
       "running": "the AI is checking",
@@ -200,7 +206,9 @@
       "replay_moved": "On.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; opens once {missing} is in the file.",
-      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}.",
+      "reminder": "Reminder",
+      "reminder_text": "Could you take a look at this case?"
     },
     "files": {
       "auftrag.pdf": "Assessment order",

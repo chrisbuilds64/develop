@@ -46,7 +46,9 @@
       "see_failure": "Nachsehen, was schiefging",
       "wait": "Warten",
       "order_assessment": "Gutachten beauftragen",
-      "reopen": "Zurückholen"
+      "reopen": "Zurückholen",
+      "remind": "Erinnern",
+      "take_back": "Zurücknehmen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -62,7 +64,9 @@
       "replay_moved": "Weiter.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
-      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert.",
+      "reminder": "Erinnerung",
+      "reminder_text": "Kannst du dir diesen Fall ansehen?"
     },
     "files": {
       "meldung.md": "Schadenmeldung",
@@ -178,7 +182,9 @@
       "see_failure": "See what went wrong",
       "wait": "Wait",
       "order_assessment": "Order the assessment",
-      "reopen": "Move back"
+      "reopen": "Move back",
+      "remind": "Send a reminder",
+      "take_back": "Take it back"
     },
     "reasons": {
       "running": "the AI is checking",
@@ -194,7 +200,9 @@
       "replay_moved": "Moved on.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; opens once {missing} is in the file.",
-      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}.",
+      "reminder": "Reminder",
+      "reminder_text": "Could you take a look at this case?"
     },
     "files": {
       "meldung.md": "Claim report",

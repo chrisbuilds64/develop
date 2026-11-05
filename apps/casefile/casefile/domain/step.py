@@ -117,6 +117,10 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
         # ---- reopen: a closed case goes back into the work, logged like any move
         if req.action == "reopen":
             return _reopen(store, config, j, case, person, req)
+        if req.action == "remind":
+            return _remind(store, config, j, case, person, req)
+        if req.action == "take_back":
+            return _take_back(store, config, j, case, person, req)
 
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
@@ -156,6 +160,67 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
         j.to = action.to
         _write_journal(store, j)                                                   # 3. intent
         return _complete(store, config, j, action=action, case_meta=case.meta)
+
+
+def holders(config: DomainConfig, case, viewer: str | None) -> list:
+    """The people who hold the case right now: the actors of its main move, when that is not the viewer's own and
+    not a helper at work. Empty for a closed case or when it waits for the viewer."""
+    from .turn import turn as whose
+    here = config.stage(case.stage)
+    if here is None or here.group in CLOSED:
+        return []
+    moves = whose(case, config)
+    if not moves or moves[0].actor == "claude":
+        return []
+    people = [p for p in config.persons_for(moves[0].actor) if p.kind == "human"]
+    if viewer and any(p.id == viewer for p in people):
+        return []
+    return people
+
+
+def take_back_target(config: DomainConfig, case, viewer: str | None) -> str | None:
+    """Where `take_back` pulls a case somebody else holds: the stage it came from, when that stage is the viewer's to act in."""
+    if not viewer or not holders(config, case, viewer):
+        return None
+    came = next((e.from_ for e in reversed(case.entries) if e.to == case.stage and e.from_), None)
+    if came is None:                                          # no move on record: the stage just before, in the configured order
+        folders = [x.folder for x in config.stages]
+        before = [f for f in folders[:folders.index(case.stage)] if config.stage(f).group not in CLOSED] if case.stage in folders else []
+        came = before[-1] if before else None
+    st = config.stage(came) if came else None
+    if st is None or st.group in CLOSED or not st.turn or st.turn == "claude":
+        return None
+    return came if config.may_act(viewer, st.turn) else None
+
+
+def _remind(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """A note to whoever holds the case. It adds no move of theirs (status info, not open); it makes the case new to
+    them (domain/seen.py), which is the nudge."""
+    if person.kind != "human":
+        return _refuse(store, j, f"{person.name} may not send reminders; a person does that")
+    who = holders(config, case, person.id)
+    if not who:
+        return _refuse(store, j, "nobody else holds this case right now")
+    names = ", ".join(p.name for p in who)
+    text = str(req.payload.get("text") or "").strip() or config.word("texts", "reminder_text", None, "Could you take a look at this case?")
+    _write_journal(store, j)
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "for": names, "step": j.step_id,
+                                                               "title": config.word("texts", "reminder", None, "Reminder")[:120], "text": text})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _take_back(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Pull a case somebody else holds back to the stage it came from, the viewer's own. A move like any other."""
+    target = take_back_target(config, case, person.id)
+    if target is None:
+        return _refuse(store, j, "this case cannot be taken back: nobody else holds it, or it did not come from your stage")
+    if target not in store.stages():
+        return _refuse(store, j, f"stage '{target}' does not exist")
+    j.to = target
+    _write_journal(store, j)
+    return _complete(store, config, j)
 
 
 def _reopen(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
