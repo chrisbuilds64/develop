@@ -139,6 +139,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/setup/schemas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Schema
+         * @description A new kind of case, copied from an existing one: a list entry and a format (domain/schemas.py).
+         */
+        post: operations["post_schema_api_setup_schemas_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/team": {
         parameters: {
             query?: never;
@@ -2209,6 +2229,19 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** SchemaIn */
+        SchemaIn: {
+            /** Key */
+            key: string;
+            /** Word */
+            word?: {
+                [key: string]: string;
+            };
+            /** Based On */
+            based_on: string;
+            /** Step Id */
+            step_id: string;
+        };
         /** SealOut */
         SealOut: {
             /** Case */
@@ -2277,6 +2310,11 @@ export interface components {
             roles: components["schemas"]["SetupItem"][];
             /** Schemas */
             schemas: components["schemas"]["SetupItem"][];
+            /**
+             * May Add
+             * @default false
+             */
+            may_add: boolean;
         };
         /** SignalCase */
         SignalCase: {
@@ -2731,6 +2769,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SetupOut"];
+                };
+            };
+        };
+    };
+    post_schema_api_setup_schemas_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

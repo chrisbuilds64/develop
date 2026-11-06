@@ -21,7 +21,9 @@ const W = {
     suPlugins: "Plugins", suSources: "Quellen", suModules: "Module", suRoles: "Rollen", suSchemas: "Schemata", suLists: "Listen",
     suPluginsText: "Gehört zum Cockpit. Jeder Arbeitsbereich nutzt es.", suModulesText: "Ein Arbeitsbereich. Seine Stufen, Regeln und Wörter kommen aus seiner Konfiguration.",
     suCases: (n: number) => (n === 1 ? "1 Fall für dich" : `${n} Fälle für dich`), suHere: "Hier", suNone: "Hier ist nichts eingerichtet.",
-    suNoSources: "Neue Fälle legt hier ein Mensch an. Es ist keine Quelle angebunden.", suAdd: "+ Hinzufügen", suInCases: (n: number) => (n === 1 ? "in 1 Fall" : `in ${n} Fällen`), suAddEntry: "Eintrag hinzufügen",
+    suNoSources: "Neue Fälle legt hier ein Mensch an. Es ist keine Quelle angebunden.", suAdd: "+ Hinzufügen", suAddSchema: "Schema hinzufügen", suSchemaLead: "Eine neue Art von Fall, zum Beispiel eine neue Schadenart. Sie startet mit den Dokumenten einer bestehenden.",
+    suNameEn: "Name auf Englisch", suNameDe: "Name auf Deutsch", suCode: "Kürzel", suCodeHint: "Steht vorn in jeder Fallnummer dieser Art.", suBasedOn: "Basiert auf",
+    suAdded: (n: string) => `Schema „${n}“ hinzugefügt`, suNeedName: "Bitte gib zuerst einen Namen ein", suNamePh: "Zum Beispiel: Fahrrad", suInCases: (n: number) => (n === 1 ? "in 1 Fall" : `in ${n} Fällen`), suAddEntry: "Eintrag hinzufügen",
     // the AI team (ADR-020): the person's helpers, their sessions and the log folder
     team: "KI-Team", tmLead: "Helfer, die mit dir arbeiten. Jeder hat ein Berufsprofil, und jede Sitzung wird protokolliert.", tmAdd: "Helfer hinzufügen",
     tmOnTeam: "Im Team", tmReady: "Bereit", tmBusy: "In einer Sitzung", tmStart: "Sitzung starten", tmOpen: "Sitzung öffnen", tmRemove: "Entfernen",
@@ -222,7 +224,9 @@ const W = {
     suPlugins: "Plugins", suSources: "Sources", suModules: "Modules", suRoles: "Roles", suSchemas: "Schemas", suLists: "Lists",
     suPluginsText: "Part of the cockpit. Every workspace uses it.", suModulesText: "A workspace. Its stages, rules and words come from its configuration.",
     suCases: (n: number) => (n === 1 ? "1 case for you" : `${n} cases for you`), suHere: "Here", suNone: "Nothing is set up here.",
-    suNoSources: "A person opens new cases here. No source is connected.", suAdd: "+ Add", suInCases: (n: number) => (n === 1 ? "on 1 case" : `on ${n} cases`), suAddEntry: "Add an entry",
+    suNoSources: "A person opens new cases here. No source is connected.", suAdd: "+ Add", suAddSchema: "Add a schema", suSchemaLead: "A new kind of case, for example a new claim type. It starts with the documents of an existing one.",
+    suNameEn: "Name in English", suNameDe: "Name in German", suCode: "Code", suCodeHint: "Starts every case number of this kind.", suBasedOn: "Based on",
+    suAdded: (n: string) => `Schema “${n}” added`, suNeedName: "Please give it a name first", suNamePh: "For example: Bicycle", suInCases: (n: number) => (n === 1 ? "on 1 case" : `on ${n} cases`), suAddEntry: "Add an entry",
     // the AI team (ADR-020): the person's helpers, their sessions and the log folder
     team: "AI team", tmLead: "Helpers that work alongside you. Each one has a job profile, and every session is logged.", tmAdd: "Add a helper",
     tmOnTeam: "On the team", tmReady: "Ready", tmBusy: "In a session", tmStart: "Start session", tmOpen: "Open session", tmRemove: "Remove",

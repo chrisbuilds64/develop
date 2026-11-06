@@ -733,3 +733,10 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .su-form { margin: 0 0 14px; }
 .main.view-setup .su-head { margin-bottom: 18px; }
 @media (max-width: 760px) { .su-seg { overflow-x: auto; } .su-seg button { flex: none; } }
+.su-fields .tm-fl { margin-top: 12px; }
+.su-fields .tm-fl:first-child { margin-top: 0; }
+.su-in { display: block; width: 100%; font-family: inherit; font-size: var(--fs-15); }
+.su-code { display: flex; align-items: center; gap: 12px; }
+.su-code .tm-fin { flex: none; width: 110px; text-transform: uppercase; }
+.su-code span { font-size: var(--fs-12-5); color: var(--muted); }
+.su-gap { margin-top: 14px; }

@@ -1,7 +1,7 @@
 // Setup (design hand-back, 2026-11-06): what this workspace is built from, in six tabs: the cockpit's plugins, where new
 // cases come from, the workspaces, the roles and who holds them, the kinds of case and what each collects, and the value
 // lists. Everything is read from the configuration (GET /api/setup); only the lists are edited here, as before (SYS-105).
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, stepId, ApiError, type MeOut, type SetupItem } from "../api";
 import { EntryForm, Status, STATUSES } from "./Lists";
@@ -86,9 +86,61 @@ function ListsTab({ w }: { w: W }) {
   );
 }
 
+function SchemaSheet({ w, lang, bases, onClose, onDone }: { w: W; lang: string; bases: SetupItem[]; onClose: () => void; onDone: (name: string) => void }) {
+  const [en, setEn] = useState("");
+  const [de, setDe] = useState("");
+  const [code, setCode] = useState("");
+  const [touched, setTouched] = useState(false);              // the code follows the name until someone types one
+  const [base, setBase] = useState(bases[0]?.id ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const first = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    first.current?.focus();
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  const auto = (name: string) => name.normalize("NFD").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase();
+  const mine = lang === "de" ? de : en;
+  const submit = async () => {
+    if (!en.trim() || !de.trim()) { setError(w.suNeedName); (en.trim() ? null : first.current)?.focus(); return; }
+    try { await api.addSchema({ key: code, word: { en: en.trim(), de: de.trim() }, based_on: base, step_id: stepId("schema") }); onDone(mine.trim()); }
+    catch (e) { setError(e instanceof ApiError ? e.message : String(e)); }
+  };
+  return (
+    <div className="tm-scrim" role="presentation" onClick={onClose}>
+      <form className="tm-sheet" role="dialog" aria-label={w.suAddSchema} onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); submit(); }}>
+        <div className="tm-sh"><b>{w.suAddSchema}</b><span>{w.suSchemaLead}</span></div>
+        <div className="tm-hb su-fields">
+          <label className="tm-fl" htmlFor="su-en">{w.suNameEn}</label>
+          <input id="su-en" ref={first} className="tm-fin su-in" value={en} placeholder={w.suNamePh} autoComplete="off" maxLength={80}
+                 onChange={(e) => { setEn(e.target.value); if (!touched) setCode(auto(e.target.value)); }} />
+          <label className="tm-fl" htmlFor="su-de">{w.suNameDe}</label>
+          <input id="su-de" className="tm-fin su-in" value={de} autoComplete="off" maxLength={80} onChange={(e) => setDe(e.target.value)} />
+          <label className="tm-fl" htmlFor="su-code">{w.suCode}</label>
+          <div className="su-code"><input id="su-code" className="tm-fin" value={code} maxLength={8} autoComplete="off"
+                 onChange={(e) => { setTouched(true); setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "")); }} /><span>{w.suCodeHint}</span></div>
+          <div className="tm-fl su-gap">{w.suBasedOn}</div>
+          <div className="tm-seg" role="radiogroup" aria-label={w.suBasedOn}>
+            {bases.map((b) => <button key={b.id} type="button" role="radio" aria-checked={base === b.id} className={base === b.id ? "on" : ""} data-help-skip="picks the model" onClick={() => setBase(b.id)}>{b.name}</button>)}
+          </div>
+          {error && <p className="rb-err">{error}</p>}
+        </div>
+        <div className="tm-sf">
+          <button type="button" className="tm-btn big" data-help-skip="closes the sheet" onClick={onClose}>{w.cancel}</button>
+          <button type="submit" className="primary tm-p" data-help-skip="explained by cf.setup">{w.suAddSchema}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function Setup({ me, tab, go, w }: { me: MeOut; tab: SetupTab; go: (p: string) => void; w: W }) {
   const q = useQuery({ queryKey: ["setup", me.lang, me.world], queryFn: api.setup });
   const [open, setOpen] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const qc = useQueryClient();
   const label: Record<SetupTab, string> = { plugins: w.suPlugins, sources: w.suSources, modules: w.suModules, roles: w.suRoles, schemas: w.suSchemas, lists: w.suLists };
   const modules: SetupItem[] = (me.places ?? []).map((p) => ({ id: p.id, name: p.name, side: p.current ? w.suHere : (p.count ? w.suCases(p.count) : ""), text: "", items: [] }));
   const d = q.data;
@@ -100,6 +152,7 @@ export function Setup({ me, tab, go, w }: { me: MeOut; tab: SetupTab; go: (p: st
             <h1>{w.setup}</h1>
             <p className="rb-lead quiet">{tab === "lists" ? w.suListsLead : w.suLead}</p>
           </div>
+          {tab === "schemas" && d?.may_add && <button type="button" className="primary" data-help="cf.setup" onClick={() => setAdding(true)}>{w.suAddSchema}</button>}
         </header>
         <div className="su-seg" role="tablist" aria-label={w.setup}>
           {SETUP_TABS.map((t) => (
@@ -119,6 +172,12 @@ export function Setup({ me, tab, go, w }: { me: MeOut; tab: SetupTab; go: (p: st
           </section>
         )}
       </div>
+      {adding && d && <SchemaSheet w={w} lang={me.lang} bases={d.schemas} onClose={() => setAdding(false)} onDone={async (name) => {
+        setAdding(false);
+        await Promise.all(["setup", "lists", "config"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+        setToast(w.suAdded(name)); window.setTimeout(() => setToast(null), 3000);
+      }} />}
+      {toast && <div className="rb-toast" role="status">{toast}</div>}
     </main>
   );
 }

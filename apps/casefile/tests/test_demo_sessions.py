@@ -243,3 +243,26 @@ def test_setup_shows_what_the_workspace_is_built_from_in_the_readers_language(de
     s = a.get("/api/setup").json()
     assert {x["id"]: x["name"] for x in s["sources"]}["bestand"] == "Bestandssystem"
     assert {x["id"]: x["side"] for x in s["roles"]}["approver"] == "Du"
+
+
+def test_an_operator_adds_a_kind_of_case_that_starts_from_an_existing_one(demo):
+    """Add a schema: a new entry in the list of kinds and a copy of the model's documents; the next case of that kind uses them."""
+    app, _ = demo
+    a = TestClient(app)
+    a.get("/api/me")
+    a.post("/api/session/lang", json={"lang": "en"})
+    assert a.get("/api/setup").json()["may_add"]
+    r = a.post("/api/setup/schemas", json={"key": "KFZ", "word": {"de": "X", "en": "X"}, "based_on": "KFZ", "step_id": "s-1"})
+    assert r.status_code >= 400 and "already" in r.json()["reason"]
+    r = a.post("/api/setup/schemas", json={"key": "fr", "word": {"de": "Fahrrad", "en": "Bicycle"}, "based_on": "KFZ", "step_id": "s-2"})
+    assert r.status_code == 200, r.text
+    s = r.json()
+    bike = next(x for x in s["schemas"] if x["id"] == "FR")
+    motor = next(x for x in s["schemas"] if x["id"] == "KFZ")
+    assert bike["name"] == "Bicycle" and bike["items"] == motor["items"]
+    kinds = next(l for l in a.get("/api/lists").json()["lists"] if l["field"] == "label")
+    assert "FR" in [e["key"] for e in kinds["entries"]]
+    # the next request reads the tree again: the new kind stays
+    assert any(x["id"] == "FR" for x in TestClient(app, cookies=a.cookies).get("/api/setup").json()["schemas"])
+    made = a.post("/api/cases", json={"title": "Stolen e-bike", "values": {"label": "FR"}, "step_id": "c-1"})
+    assert made.status_code == 200 and made.json()["id"].startswith("FR-"), made.text

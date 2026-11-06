@@ -74,6 +74,7 @@ export const api = {
   rhythm: () => call<RhythmOut>("GET", "/api/me/rhythm"),
   signals: () => call<SignalOut[]>("GET", "/api/signals"),
   setup: () => call<SetupOut>("GET", "/api/setup"),
+  addSchema: (body: { key: string; word: Record<string, string>; based_on: string; step_id: string }) => call<SetupOut>("POST", "/api/setup/schemas", body),
   signalStatus: (id: string, status: "offen" | "in_pruefung" | "erledigt") => call<SignalOut>("POST", `/api/signals/${encodeURIComponent(id)}/status`, { status }),
   case: (id: string) => call<CaseView>("GET", `/api/cases/${encodeURIComponent(id)}`),
   step: (id: string, action: string, step_id: string, payload: Record<string, unknown> = {}) =>

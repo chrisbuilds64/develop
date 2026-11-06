@@ -326,6 +326,14 @@ class SetupOut(BaseModel):
     sources: list[SetupItem]
     roles: list[SetupItem]
     schemas: list[SetupItem]
+    may_add: bool = False                                   # the viewer runs the place (operator): may add a kind of case
+
+
+class SchemaIn(BaseModel):
+    key: str                                                # the code that starts every case number of this kind
+    word: dict[str, str] = Field(default_factory=dict)      # its name per language
+    based_on: str                                           # the kind it copies its documents from
+    step_id: str
 
 
 class SignalCase(BaseModel):
@@ -947,7 +955,7 @@ def create_app(settings: Settings) -> FastAPI:
         return []
 
     @app.get("/api/setup", response_model=SetupOut)
-    def get_setup(c: Ctx = Depends(ctx)):
+    def get_setup(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         lang = c.lang
         de = lang == "de"
         # plugins: the shell's, or the demo's copy of them
@@ -987,10 +995,7 @@ def create_app(settings: Settings) -> FastAPI:
                                    else (f"In this workspace: {', '.join(holders)}." if holders else "Nobody holds this role here.")))
         # schemas: per kind of case, the documents it collects
         schemas = []
-        try:
-            arts = json.loads((c.config.dir / "artifacts.json").read_text(encoding="utf-8")) if c.config.dir else {}
-        except (OSError, ValueError):
-            arts = {}
+        arts = c.config.artifacts or {}
         files = (c.config.vocabulary.get(lang) or {}).get("files") or {}
         kinds = {e.key: e.word for l in views.config_view(c.config, lang).lists for e in l.entries}
         def doc(a: dict) -> str:
@@ -1011,7 +1016,24 @@ def create_app(settings: Settings) -> FastAPI:
             n = len(docs)
             schemas.append(SetupItem(id=key, name=str(kinds.get(key) or key), side=(f"{n} Dokumente" if de else f"{n} documents"), items=docs,
                                      text="Was ein Fall dieser Art sammelt. Die KI füllt es aus, ein Mensch prüft es." if de else "What a case of this kind collects. The AI fills it in; a person checks it."))
-        return SetupOut(plugins=plugins, sources=sources, roles=roles, schemas=schemas)
+        me = c.config.person(who) if who else None
+        from ..domain import schemas as kinds
+        may_add = bool(me and me.kind == "human" and "operator" in me.roles and kinds.label_list(c.config) and schemas)
+        return SetupOut(plugins=plugins, sources=sources, roles=roles, schemas=schemas, may_add=may_add)
+
+    @app.post("/api/setup/schemas", response_model=SetupOut)
+    def post_schema(body: SchemaIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A new kind of case, copied from an existing one: a list entry and a format (domain/schemas.py)."""
+        from ..domain import schemas as kinds
+        if (refused := _lists_refused(c, who)) is not None:
+            return refused
+        if not stepping.STEP_ID.match(body.step_id):
+            return _refuse(Exception("step id must be 1–80 letters, digits, '-' or '_'"))
+        try:
+            kinds.add(c.store, c.config, who, body.key, body.word, body.based_on, body.step_id)
+        except kinds.SchemaError as exc:
+            return _refuse(exc)
+        return get_setup(c, who)
 
     # ------------------------------------------------------------ the AI team (demo only; inside the cockpit the surface asks the shell)
     from ..domain.team import DemoTeam, TeamError

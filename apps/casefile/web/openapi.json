@@ -211,6 +211,45 @@
         }
       }
     },
+    "/api/setup/schemas": {
+      "post": {
+        "summary": "Post Schema",
+        "description": "A new kind of case, copied from an existing one: a list entry and a format (domain/schemas.py).",
+        "operationId": "post_schema_api_setup_schemas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchemaIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/team": {
       "get": {
         "summary": "Team View",
@@ -4516,6 +4555,36 @@
         ],
         "title": "SampleIn"
       },
+      "SchemaIn": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Word"
+          },
+          "based_on": {
+            "type": "string",
+            "title": "Based On"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "based_on",
+          "step_id"
+        ],
+        "title": "SchemaIn"
+      },
       "SealOut": {
         "properties": {
           "case": {
@@ -4656,6 +4725,11 @@
             },
             "type": "array",
             "title": "Schemas"
+          },
+          "may_add": {
+            "type": "boolean",
+            "title": "May Add",
+            "default": false
           }
         },
         "type": "object",

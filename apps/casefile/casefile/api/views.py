@@ -101,6 +101,17 @@ def entries_in(entries: list, over) -> list:
     return [e.model_copy(update={k: v for k, v in (over.get(e.id) or {}).items() if k in ("title", "text") and v}) for e in entries]
 
 
+def names_in(config: DomainConfig, entries: list, lang: str) -> list:
+    """Who wrote an entry and whom it is for, as the people file names them in the viewer's language ("Du" → "You").
+    After the actors are known, since those are found by the name as written."""
+    def name(n: str | None) -> str | None:
+        if not n:
+            return n
+        p = config.person(n)
+        return p.name_in(lang) if p is not None else n
+    return [e.model_copy(update={"author": name(e.author), "for_": name(e.for_)}) for e in entries]
+
+
 def translations(files: list[str]) -> dict[str, dict[str, str]]:
     """`mail.md` and `mail.en.md` beside it: the original → {language: its translation}. The original is never replaced."""
     names = set(files)
@@ -255,7 +266,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
                     held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "",
                     translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
-                    meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), turns=turns, my_turns=mine,
+                    meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     data={k: localized(v, lang) for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
