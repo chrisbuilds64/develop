@@ -252,7 +252,8 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                 <div className="src"><div className="srch">{w.fromMail}</div>{r.reasons.slice(0, 3).map((x, i) => <div key={i} className="srcq"><span>{x}</span></div>)}</div>
               )}
               {done ? (
-                <div className="proposal done"><span className="plab"><Seal /> {w.sealed}</span><b>{done.case ? `${w.triageDone(done.target_label ?? "")} ${done.title ?? done.case}` : w.triageFiled}</b></div>
+                <div className="proposal done triage-done"><span className="plab"><Seal /> {w.sealed}</span>
+                  <b>{done.case ? <>{w.triageDone(done.target_label ?? "")} {done.url ? <a href={new URL(done.url, window.location.origin + BASE + "/").pathname}>{done.title ?? done.case}</a> : (done.title ?? done.case)}</> : w.triageFiled}</b></div>
               ) : primaryTurn ? (
                 <div className="proposal">
                   <div className="p-what"><span className="plab"><span>✦</span> {w.aiSuggestion}</span>
@@ -268,10 +269,12 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                 <><p>{w.closedNote}</p><div className="pacts"><button type="button" className="primary" data-help="cf.move-back" disabled={busy} onClick={() => step.mutate({ action: "reopen", label: w.moveBack })}>{w.moveBack} · {v.reopen_word}</button></div></>
               ) : (v.held_by ?? []).length > 0 ? (
                 <><p>{w.heldBy((v.held_by ?? []).join(", "))}</p>
+                  {primaryTurn && <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>}
                   <div className="pacts" data-help="cf.held">
-                    <button type="button" className="primary" disabled={busy} onClick={() => step.mutate({ action: "remind" })}>{w.remind}</button>
+                    <button type="button" className={primaryTurn ? "ghost" : "primary"} disabled={busy} onClick={() => step.mutate({ action: "remind" })}>{w.remind}</button>
                     {v.take_back_to && <button type="button" className="ghost" disabled={busy} onClick={() => step.mutate({ action: "take_back", label: w.takeBack })}>{w.takeBack} · {v.take_back_word}</button>}
-                  </div></>
+                  </div>
+                  {primaryTurn && (secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
               ) : primaryTurn ? (
                 <><p>{cap(headline || primaryTurn.reason || primaryTurn.label)}</p>
                   <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>
