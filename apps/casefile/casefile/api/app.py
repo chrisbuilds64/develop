@@ -201,6 +201,13 @@ class TurnOut(BaseModel):
     turn: Turn
 
 
+class HomePlace(BaseModel):
+    """Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning."""
+    place: PlaceOut
+    turns: list[TurnOut]                                    # what waits for the person there, ranked by the core
+    working: list[views.CaseCard]                           # what the AI is doing there right now
+
+
 class GroupOut(BaseModel):
     key: str
     word: str
@@ -1131,6 +1138,48 @@ def create_app(settings: Settings) -> FastAPI:
 
     def file_url(case: Case, name: str) -> str:
         return f"/api/cases/{case.id}/files/{name}"
+
+    def home_part(store: FsStore, config: DomainConfig, person: str, lang: str, live: bool) -> tuple[list[TurnOut], list[views.CaseCard]]:
+        """What waits for the person in one tree, and what the AI is doing there. `live`: the tree may be stepped on (a
+        sandbox or the workspace itself); a world's template is only read."""
+        if live:
+            stepping.detect(store, config)
+        cases = reading.load_all(store, config)
+        seen = reads.load(store, person)
+        turns = [TurnOut(case=views.card(config, case, person, lang, seen), turn=t) for case, t in whose.turns_for(person, cases, config, lang)]
+        working = sorted((x for x in (views.card(config, case, person, lang, seen) for case in cases) if x.group == "claude"), key=lambda x: x.since)
+        return turns, working
+
+    @app.get("/api/home", response_model=list[HomePlace])
+    def home(request: Request, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Home: in the demo every world the visitor has (their sandbox there, or the world as it starts); in a shell or a
+        single tree this workspace only; the surface asks the other workspaces of the shell itself, each at its own address."""
+        me = me_out(c, who, request)
+        out: list[HomePlace] = []
+        if settings.worlds:
+            mapping = _read_worlds(request)
+            if c.world and c.session:
+                mapping[c.world] = c.session
+            for pl in me.places:
+                name = pl.id
+                w = settings.worlds.get(name)
+                if w is None:
+                    continue
+                cfg = world_configs[name]
+                lang = c.lang if c.lang in cfg.vocabulary else cfg.lang
+                other = c if name == c.world else (_session_ctx(mapping[name]) if name in mapping else None)
+                try:
+                    if other is not None:
+                        turns, working = home_part(other.store, other.config, w.person, lang, True)
+                    else:
+                        turns, working = home_part(FsStore(w.template), cfg, w.person, lang, False)
+                except Exception:                        # noqa: BLE001 — one broken world never empties Home
+                    continue
+                out.append(HomePlace(place=pl, turns=turns, working=working))
+            return out
+        here = next((p for p in me.places if p.current), me.places[0] if me.places else place(c.world, c.config, c.lang, True))
+        turns, working = home_part(c.store, c.config, who, c.lang, True)
+        return [HomePlace(place=here, turns=turns, working=working)]
 
     @app.get("/api/me/rhythm", response_model=RhythmOut)
     def my_rhythm(c: Ctx = Depends(ctx), who: str = Depends(viewer)):

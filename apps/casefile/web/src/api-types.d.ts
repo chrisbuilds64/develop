@@ -283,6 +283,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home
+         * @description Home: in the demo every world the visitor has (their sandbox there, or the world as it starts); in a shell or a
+         *     single tree this workspace only; the surface asks the other workspaces of the shell itself, each at its own address.
+         */
+        get: operations["home_api_home_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/rhythm": {
         parameters: {
             query?: never;
@@ -1380,6 +1401,17 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HomePlace
+         * @description Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning.
+         */
+        HomePlace: {
+            place: components["schemas"]["PlaceOut"];
+            /** Turns */
+            turns: components["schemas"]["TurnOut"][];
+            /** Working */
+            working: components["schemas"]["CaseCard"][];
         };
         /**
          * InterviewOut
@@ -3029,6 +3061,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    home_api_home_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomePlace"][];
                 };
             };
         };

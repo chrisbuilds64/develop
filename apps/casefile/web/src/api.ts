@@ -24,6 +24,7 @@ export type ListsOut = components["schemas"]["ListsOut"];
 export type ListChangeOut = components["schemas"]["ListChangeOut"];
 export type PlaceOut = components["schemas"]["PlaceOut"];
 export type SetupOut = components["schemas"]["SetupOut"];
+export type HomePlace = components["schemas"]["HomePlace"];
 export type SetupItem = components["schemas"]["SetupItem"];
 
 export class ApiError extends Error {
@@ -62,6 +63,14 @@ export const api = {
   demoSession: (world?: string) => call<MeOut>("POST", "/api/demo/session", { world: world ?? null }),
   config: () => call<ConfigView>("GET", "/api/config"),
   turns: () => call<TurnOut[]>("GET", "/api/me/turns"),
+  home: () => call<HomePlace[]>("GET", "/api/home"),
+  /** Inside a shell, another workspace's part of Home, at its own address (same origin, the shell's login). */
+  homeAt: async (url: string): Promise<HomePlace[]> => {
+    const res = await fetch(`${url.replace(/\/?$/, "/")}api/home`, { credentials: "same-origin" });
+    if (!res.ok) return [];
+    const parts = (await res.json()) as HomePlace[];
+    return parts.map((p) => ({ ...p, place: { ...p.place, url: url.replace(/\/?$/, "/"), current: false } }));
+  },
   groups: () => call<GroupOut[]>("GET", "/api/cases"),
   stages: () => call<StageOut[]>("GET", "/api/stages"),
   rules: () => call<RulesOut>("GET", "/api/rules"),

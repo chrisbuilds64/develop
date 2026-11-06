@@ -26,6 +26,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
   const mine = counts.get("you") ?? 0;
+  const everywhere = mine + (me.places ?? []).filter((p) => !p.current).reduce((n, p) => n + (p.count ?? 0), 0);   // Home gathers every workspace
   const [pop, setPop] = useState(false);
   const [sound, setSoundState] = useState(soundOn());
   const goClose = (p: string) => { setPop(false); onClose(); go(p); };
@@ -78,7 +79,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       </div>
       <Search w={w} cases={(groups.data ?? []).flatMap((g) => g.cases)} go={goClose} />
       <button type="button" className={`nav${route.name === "home" ? " on" : ""}`} data-help="cf.groups" onClick={() => goClose("/")}>
-        <HomeIcon /><span className="tx">{w.home}</span>{mine > 0 ? <span className="badge">{mine}</span> : null}
+        <HomeIcon /><span className="tx">{w.home}</span>{everywhere > 0 ? <span className="badge">{everywhere}</span> : null}
       </button>
 
       <div className="rail-cap" data-help="cf.workspaces">{w.workspaces}</div>

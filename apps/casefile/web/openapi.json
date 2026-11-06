@@ -506,6 +506,29 @@
         }
       }
     },
+    "/api/home": {
+      "get": {
+        "summary": "Home",
+        "description": "Home: in the demo every world the visitor has (their sandbox there, or the world as it starts); in a shell or a\nsingle tree this workspace only; the surface asks the other workspaces of the shell itself, each at its own address.",
+        "operationId": "home_api_home_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HomePlace"
+                  },
+                  "type": "array",
+                  "title": "Response Home Api Home Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/rhythm": {
       "get": {
         "summary": "My Rhythm",
@@ -2923,6 +2946,35 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HomePlace": {
+        "properties": {
+          "place": {
+            "$ref": "#/components/schemas/PlaceOut"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TurnOut"
+            },
+            "type": "array",
+            "title": "Turns"
+          },
+          "working": {
+            "items": {
+              "$ref": "#/components/schemas/CaseCard"
+            },
+            "type": "array",
+            "title": "Working"
+          }
+        },
+        "type": "object",
+        "required": [
+          "place",
+          "turns",
+          "working"
+        ],
+        "title": "HomePlace",
+        "description": "Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning."
       },
       "InterviewOut": {
         "properties": {

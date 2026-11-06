@@ -2,7 +2,7 @@
 // Routes, read from the location: /, /case/<id>, /group/<key> (cases), /board, /list, and /doc/<id>/<name> as the reader in its own window.
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, BASE } from "./api";
+import { api, BASE, type PlaceOut } from "./api";
 import { Keys } from "./components/Keys";
 import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
@@ -155,6 +155,15 @@ export function App() {
     return <Gate config={config.data} me={me.data} onSignedIn={() => qc.invalidateQueries()} />;
   }
   // a fresh sandbox or the other world: the cookie changes, then every live query reloads against it (removing them instead left the observers on the old world for one round)
+  // Home across workspaces: a row in another workspace opens there (inside a shell at its address; in the demo the visitor's sandbox of that world)
+  const onPlace = async (place: PlaceOut, path: string) => {
+    if (place.current) { go(path); return; }
+    if (place.url) { window.location.assign(place.url.replace(/\/?$/, "/") + path.replace(/^\//, "")); return; }
+    await api.demoSession(place.id);
+    qc.removeQueries({ queryKey: ["case"] });
+    await Promise.all([qc.resetQueries({ queryKey: ["groups"] }), qc.resetQueries({ queryKey: ["turns"] }), qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["config"] })]);
+    go(path);
+  };
   const onFresh = async (world?: string) => { await api.demoSession(world); go("/"); qc.removeQueries({ queryKey: ["case"] }); await Promise.all([qc.resetQueries({ queryKey: ["groups"] }), qc.resetQueries({ queryKey: ["turns"] }), qc.invalidateQueries({ queryKey: ["me"] }), qc.invalidateQueries({ queryKey: ["config"] })]); };
   const onPerson = async (person: string) => { await api.signIn(person); qc.invalidateQueries(); };
   const onLang = async (l: string) => { await api.setLang(l); await qc.invalidateQueries(); };
@@ -191,7 +200,7 @@ export function App() {
         {!(route.name === "group" || route.name === "board" || route.name === "list" || route.name === "teamSession" || (route.name === "case" && !isPhone)) && <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case"} dark={dark}
                 onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={views} />}
         {route.name === "home" ? (
-          <Home config={config.data} go={go} w={w} />
+          <Home config={config.data} me={me.data} go={go} open={onPlace} w={w} />
         ) : (
         <div className="shell">
           {route.name === "talk" ? (

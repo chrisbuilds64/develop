@@ -266,3 +266,15 @@ def test_an_operator_adds_a_kind_of_case_that_starts_from_an_existing_one(demo):
     assert any(x["id"] == "FR" for x in TestClient(app, cookies=a.cookies).get("/api/setup").json()["schemas"])
     made = a.post("/api/cases", json={"title": "Stolen e-bike", "values": {"label": "FR"}, "step_id": "c-1"})
     assert made.status_code == 200 and made.json()["id"].startswith("FR-"), made.text
+
+
+def test_home_gathers_what_waits_in_every_world(demo):
+    """Home in the demo: every world, the one open now from the sandbox, the others as they start; each with its place."""
+    app, _ = demo
+    a = TestClient(app)
+    a.get("/api/me")
+    parts = a.get("/api/home").json()
+    assert [p["place"]["id"] for p in parts] == ["claims", "pressroom"]
+    claims = parts[0]
+    assert claims["place"]["current"] and claims["turns"] and all("case" in t and "turn" in t for t in claims["turns"])
+    assert len({t["case"]["id"] for t in claims["turns"]}) == a.get("/api/me").json()["places"][0]["count"]
