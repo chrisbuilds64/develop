@@ -169,3 +169,38 @@ export function stepId(prefix: string): string {
   const r = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2)).replace(/-/g, "").slice(0, 12);
   return `${prefix}-${Date.now().toString(36)}-${r}`.slice(0, 80);
 }
+
+// The AI team (ADR-020): helpers belong to the person. Inside the cockpit the page works on the person's own team through the
+// shell (`<shell>api/cf-team`, same origin, the shell's csrf cookie); in the public demo on the visitor's team here.
+export type TeamAgent = { id: string; label: string; role: string; model?: string | null; session?: string | null };
+export type TeamTemplate = { id: string; label: string; role: string; taken: boolean };
+export type TeamSessionHead = { id: string; agent: string; label: string; topic: string; note: string; started?: string | null; ended?: string | null };
+export type TeamView = { source: "demo" | "cockpit"; agents: TeamAgent[]; hireable: TeamTemplate[]; models: { id: string; label: string }[]; sessions: TeamSessionHead[]; logs_dir: string };
+export type TeamTurn = { who: "you" | "ai"; text: string; thinking?: boolean };
+export type TeamSession = TeamSessionHead & { role: string; does: string; status: "open" | "closed"; turns: TeamTurn[]; suggestions: string[] };
+
+export function teamApi(me: MeOut) {
+  const shell = me.team === "cockpit" && me.shell ? me.shell.replace(/\/?$/, "/") : null;
+  const root = shell ? `${shell}api/cf-team` : `${BASE}/api/team`;
+  const csrf = () => (document.cookie.split("; ").find((c) => c.startsWith("csrf=")) ?? "").slice(5);
+  async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const headers: Record<string, string> = {};
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (shell && method !== "GET") headers["X-CSRF"] = csrf();
+    const res = await fetch(root + path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, credentials: "same-origin" });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+    if (!res.ok) throw new ApiError(res.status, data && typeof data === "object" && "detail" in data ? { reason: (data as { detail: string }).detail } : data);
+    return data as T;
+  }
+  return {
+    view: () => req<TeamView>("GET", ""),
+    hire: (template: string, model: string) => req<TeamView>("POST", "", { what: "hire", template, model }),
+    dismiss: (agent: string) => req<TeamView>("POST", "", { what: "dismiss", agent }),
+    logs: (logs_dir: string) => req<TeamView>("POST", "", { what: "logs_dir", logs_dir }),
+    start: (agent: string, topic: string, place?: Record<string, string>) => req<{ id: string }>("POST", "/sessions", { agent, topic, place }),
+    session: (id: string) => req<TeamSession>("GET", `/sessions/${encodeURIComponent(id)}`),
+    say: (id: string, text: string) => req<TeamSession>("POST", `/sessions/${encodeURIComponent(id)}/say`, { text }),
+    end: (id: string, note: string) => req<TeamSession>("POST", `/sessions/${encodeURIComponent(id)}/end`, { note }),
+  };
+}

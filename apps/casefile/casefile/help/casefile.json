@@ -761,6 +761,66 @@
         "de": "Legt im Cockpit einen weiteren Arbeitsbereich an, für eine neue Art von Fällen.",
         "en": "Creates another workspace in the cockpit, for a new kind of case."
       }
+    },
+    {
+      "key": "cf.team",
+      "since": "0.22.0",
+      "title": {
+        "de": "KI-Team",
+        "en": "AI team"
+      },
+      "text": {
+        "de": "Deine Helfer. Jeder hat ein Berufsprofil, arbeitet nur in Sitzungen, die du startest, und jede Sitzung wird protokolliert. Die Helfer gehören dir, nicht einem Arbeitsbereich.",
+        "en": "Your helpers. Each has a job profile, works only in sessions you start, and every session is logged. The helpers belong to you, not to one workspace."
+      }
+    },
+    {
+      "key": "cf.team-add",
+      "since": "0.22.0",
+      "title": {
+        "de": "Helfer hinzufügen",
+        "en": "Add a helper"
+      },
+      "text": {
+        "de": "Holt einen Helfer mit einem Berufsprofil in dein Team.",
+        "en": "Brings a helper with a job profile onto your team."
+      }
+    },
+    {
+      "key": "cf.team-session",
+      "since": "0.22.0",
+      "title": {
+        "de": "Sitzung",
+        "en": "Session"
+      },
+      "text": {
+        "de": "Ein Gespräch mit einem Helfer. Was er tut, schlägt er vor; du entscheidest.",
+        "en": "A conversation with a helper. It proposes what to do; you decide."
+      }
+    },
+    {
+      "key": "cf.team-end",
+      "since": "0.22.0",
+      "title": {
+        "de": "Sitzung beenden",
+        "en": "End session"
+      },
+      "text": {
+        "de": "Beendet die Sitzung mit einem Satz dazu, was herauskam. Der Satz kommt ins Protokoll.",
+        "en": "Ends the session with one sentence on what came out of it. The sentence goes into the log."
+      }
+    },
+    {
+      "key": "cf.team-logs",
+      "since": "0.22.0",
+      "title": {
+        "de": "Sitzungsprotokolle",
+        "en": "Session logs"
+      },
+      "text": {
+        "de": "Der Ordner, in den jede Sitzung geschrieben wird.",
+        "en": "The folder every session is written to."
+      }
     }
   ]
 }

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut, type CaseCard } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Book, RulebookIcon, ListsIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
+import { Book, TeamIcon, RulebookIcon, ListsIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
 import { setSound, soundOn, chime, paper as paperSound } from "../moments";
 
 type Props = {
@@ -107,6 +107,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       {madeError && <span className="talk-error">{madeError}</span>}
 
       <div className="rail-cap">{w.admin}</div>
+      {me.team && <button type="button" className={`nav${route.name === "team" || route.name === "teamSession" ? " on" : ""}`} data-help="cf.team" onClick={() => goClose("/team")}><TeamIcon /><span className="tx">{w.team}</span></button>}
       <button type="button" className={`nav${route.name === "rules" ? " on" : ""}`} data-help="cf.rules" onClick={() => goClose("/rules")}><RulebookIcon /><span className="tx">{w.rules}</span>{me.waiting_rules > 0 && <span className="ndot" title={w.ndotRules(me.waiting_rules)} aria-label={w.ndotRules(me.waiting_rules)} />}</button>
       <button type="button" className={`nav${route.name === "signals" ? " on" : ""}`} data-help="cf.patterns" onClick={() => goClose("/signals")}><Pulse /><span className="tx">{w.flagged}</span>{me.waiting_signals > 0 && <span className="ndot" title={w.ndotSignals(me.waiting_signals)} aria-label={w.ndotSignals(me.waiting_signals)} />}</button>
       {(config.theme as { canon?: boolean }).canon && (

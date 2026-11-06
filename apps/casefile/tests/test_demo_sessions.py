@@ -197,3 +197,28 @@ def test_inside_the_cockpit_the_shells_language_holds_until_the_viewer_picks_one
     inside.post("/api/session/lang", json={"lang": "de"})
     assert inside.get("/api/me").json()["lang"] == "de"
     assert client(None).get("/api/me").json()["lang"] == "de"
+
+
+def test_the_visitor_keeps_an_ai_team_of_their_own_across_worlds(demo):
+    """The demo has no cockpit, so the visitor's helpers and sessions live beside the sandboxes; answers are prepared."""
+    app, _ = demo
+    a, b = TestClient(app), TestClient(app)
+    assert a.get("/api/me").json()["team"] == "demo"
+    a.post("/api/session/lang", json={"lang": "en"})
+    v = a.get("/api/team").json()
+    assert [x["label"] for x in v["agents"]] == ["Mail reader", "Quote calculator", "Assessment checker"]
+    assert [s["note"] for s in v["sessions"]] == ["Quote priced", "Settlement checked", "Two mails sorted"]
+    assert a.post("/api/team", json={"what": "hire", "template": "mail"}).status_code == 400
+    v = a.post("/api/team", json={"what": "hire", "template": "letter", "model": "fast"}).json()
+    assert v["agents"][-1]["label"] == "Letter writer" and v["agents"][-1]["model"] == "fast"
+    sid = a.post("/api/team/sessions", json={"agent": "quote"}).json()["id"]
+    s = a.get(f"/api/team/sessions/{sid}").json()
+    assert s["status"] == "open" and s["turns"] == [] and s["suggestions"]
+    s = a.post(f"/api/team/sessions/{sid}/say", json={"text": "How was the Tiguan price made?"}).json()
+    assert "1,322.57 €" in s["turns"][-1]["text"] and s["topic"] == "How was the Tiguan price made?"
+    assert a.post(f"/api/team/sessions/{sid}/end", json={"note": ""}).status_code == 400
+    s = a.post(f"/api/team/sessions/{sid}/end", json={"note": "Explained the price"}).json()
+    assert s["status"] == "closed"
+    a.post("/api/demo/session", json={"world": "pressroom"})
+    assert a.get("/api/team").json()["sessions"][0]["note"] == "Explained the price"       # the same team in another world
+    assert len(b.get("/api/team").json()["sessions"]) == 3                                 # another visitor has their own

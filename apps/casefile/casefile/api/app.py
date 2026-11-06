@@ -192,6 +192,7 @@ class MeOut(BaseModel):
     places: list[PlaceOut] = []                             # this workspace and, in the demo, the other worlds
     waiting_rules: int = 0                                  # rule changes this person may accept, waiting (the dot on Rulebook)
     waiting_signals: int = 0                                # hints still to check (the dot on Flagged)
+    team: str | None = None                                 # where the AI team lives: "cockpit" (the shell's, the person's own), "demo" (the visitor's), none
 
 
 class TurnOut(BaseModel):
@@ -812,7 +813,7 @@ def create_app(settings: Settings) -> FastAPI:
         return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
                      demo=settings.demo, world=c.world, worlds=list(settings.worlds),
                      open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell, places=places,
-                     waiting_rules=wr, waiting_signals=ws)
+                     waiting_rules=wr, waiting_signals=ws, team="cockpit" if settings.shell else ("demo" if settings.worlds else None))
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")
@@ -915,6 +916,68 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/api/me", response_model=MeOut)
     def me(request: Request, c: Ctx = Depends(ctx)):
         return me_out(c, getattr(request.state, "fresh_person", None) or _who(request, c.config), request)
+
+    # ------------------------------------------------------------ the AI team (demo only; inside the cockpit the surface asks the shell)
+    from ..domain.team import DemoTeam, TeamError
+    TEAM_COOKIE = "cf_team"
+
+    def _team(request: Request, response: Response) -> DemoTeam:
+        if not settings.worlds:
+            raise HTTPException(404, "The AI team lives in the cockpit here.")
+        raw = request.cookies.get(TEAM_COOKIE, "")
+        if "." in raw:
+            tid, sig = raw.rsplit(".", 1)
+            d = settings.sessions_dir / tid
+            if tid.startswith("team-") and "/" not in tid and hmac.compare_digest(sig, _sign(settings.secret, tid)) and d.is_dir():
+                return DemoTeam(d)
+        t = DemoTeam.create(settings.sessions_dir)
+        response.set_cookie(TEAM_COOKIE, f"{t.dir.name}.{_sign(settings.secret, t.dir.name)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
+        return t
+
+    def _team_do(fn):
+        try:
+            return fn()
+        except TeamError as exc:
+            raise HTTPException(400, str(exc))
+
+    @app.get("/api/team")
+    def team_view(request: Request, response: Response, c: Ctx = Depends(ctx)):
+        return _team(request, response).view(c.lang if c.lang in ("en", "de") else "en")
+
+    @app.post("/api/team")
+    async def team_change(request: Request, response: Response, c: Ctx = Depends(ctx)):
+        t, body = _team(request, response), await request.json()
+        what = str(body.get("what", ""))
+        if what == "hire":
+            _team_do(lambda: t.hire(str(body.get("template", "")), str(body.get("model", ""))))
+        elif what == "dismiss":
+            _team_do(lambda: t.dismiss(str(body.get("agent", ""))))
+        elif what == "logs_dir":
+            _team_do(lambda: t.set_logs(str(body.get("logs_dir", ""))))
+        else:
+            raise HTTPException(400, f"'{what}' is not a change")
+        return t.view(c.lang if c.lang in ("en", "de") else "en")
+
+    @app.post("/api/team/sessions")
+    async def team_start(request: Request, response: Response):
+        t, body = _team(request, response), await request.json()
+        return {"id": _team_do(lambda: t.start(str(body.get("agent", ""))))}
+
+    @app.get("/api/team/sessions/{sid}")
+    def team_session(sid: str, request: Request, response: Response, c: Ctx = Depends(ctx)):
+        t = _team(request, response)
+        return _team_do(lambda: t.session(sid, c.lang if c.lang in ("en", "de") else "en"))
+
+    @app.post("/api/team/sessions/{sid}/{what}")
+    async def team_act(sid: str, what: str, request: Request, response: Response, c: Ctx = Depends(ctx)):
+        t, body = _team(request, response), await request.json()
+        if what == "say":
+            _team_do(lambda: t.say(sid, str(body.get("text", ""))))
+        elif what == "end":
+            _team_do(lambda: t.end(sid, str(body.get("note", ""))))
+        else:
+            raise HTTPException(404, f"'{what}' is not an action")
+        return t.session(sid, c.lang if c.lang in ("en", "de") else "en")
 
     # ------------------------------------------------------------ reading
     @app.get("/api/config", response_model=views.ConfigView)

@@ -446,6 +446,94 @@ def create_app(config: Config) -> FastAPI:
             return JSONResponse({"reason": str(exc)}, status_code=400)
         return JSONResponse({"ok": True})
 
+    # ---------------------------------------------------------------- the team as a mounted application shows it (ADR-020)
+    # Casefile's AI team page works on the person's own team: the same agents and sessions as /team, in the shape the
+    # application speaks (`casefile/domain/team.py`). Same origin as the app, so the shell's login and csrf cookie hold.
+    def cf_team_view(user, role) -> dict:
+        team, store = team_of(user), store_of(user)
+        running = {}
+        for s in store.active():
+            running.setdefault(s.agent, s.id)
+        def head(s) -> dict:
+            a = team.get(s.agent)
+            return {"id": s.id, "agent": s.agent, "label": a.label if a else s.agent, "topic": "", "note": s.topic,
+                    "started": (s.started or "")[11:16], "ended": (s.ended or "")[11:16] or None}
+        return {"source": "cockpit",
+                "agents": [{"id": a.id, "label": a.label, "role": a.role, "model": a.model, "session": running.get(a.id)} for a in team.agents.values()],
+                "hireable": [{"id": t.id, "label": t.label, "role": t.role, "taken": t.id in team.agents} for t in team.hireable(role.id)],
+                "models": [], "sessions": [head(s) for s in reversed(store.closed())][:15],
+                "logs_dir": accounts.settings(user.name).get("logs_dir", ""), "csrf": None}
+
+    def cf_session(user, sid: str) -> dict | None:
+        from .sessions import SessionError
+        store, team = store_of(user), team_of(user)
+        try:
+            s = store.get(sid)
+        except SessionError:
+            return None
+        if s is None:
+            return None
+        a = team.get(s.agent)
+        turns = [{"who": "you" if t["role"] == "user" else "ai", "text": t["text"]} for t in store.transcript(s.id)]
+        if store.pending(s.id):
+            turns.append({"who": "ai", "text": "", "thinking": True})
+        return {"id": s.id, "agent": s.agent, "label": a.label if a else s.agent, "topic": s.topic, "note": "",
+                "started": (s.started or "")[11:16], "ended": (s.ended or "")[11:16] or None, "role": a.role if a else "", "does": "",
+                "status": "closed" if s.status == "closed" else "open", "turns": turns, "suggestions": []}
+
+    @app.get("/api/cf-team")
+    def api_cf_team(request: Request):
+        c = ctx(request)
+        if not c["user"]:
+            return JSONResponse({"reason": "not signed in"}, status_code=401)
+        out = cf_team_view(c["user"], c["role"])
+        out["csrf"] = csrf_token(request)
+        return JSONResponse(out)
+
+    @app.post("/api/cf-team")
+    async def api_cf_team_change(request: Request):
+        c = ctx(request)
+        if not c["user"] or not api_csrf_ok(request):
+            return JSONResponse({"reason": "not signed in, or the page is stale — reload it"}, status_code=403)
+        from .agents import AgentError
+        from .account import AccountError
+        body = await request.json()
+        team = team_of(c["user"])
+        try:
+            what = str(body.get("what", ""))
+            if what == "hire":
+                a = team.hire(str(body.get("template", "")), None, role=c["role"].id, model=str(body.get("model", "")).strip() or None)
+                audit.record(c["user"].name, "team", a.id, "agent.hire")
+            elif what == "dismiss":
+                if team.dismiss(str(body.get("agent", ""))):
+                    audit.record(c["user"].name, "team", str(body.get("agent", "")), "agent.dismiss")
+            elif what == "logs_dir":
+                accounts.set(c["user"].name, "logs_dir", str(body.get("logs_dir", "")))
+            else:
+                return JSONResponse({"reason": f"'{what}' is not a change"}, status_code=400)
+        except (AgentError, AccountError) as exc:
+            return JSONResponse({"reason": str(exc)}, status_code=400)
+        return JSONResponse(cf_team_view(c["user"], c["role"]))
+
+    @app.post("/api/cf-team/sessions")
+    async def api_cf_start(request: Request):
+        return await api_start(request)
+
+    @app.get("/api/cf-team/sessions/{sid}")
+    def api_cf_session(request: Request, sid: str):
+        c = ctx(request)
+        if not c["user"]:
+            return JSONResponse({"reason": "not signed in"}, status_code=401)
+        v = cf_session(c["user"], sid)
+        return JSONResponse(v) if v else JSONResponse({"reason": "no such session of yours"}, status_code=404)
+
+    @app.post("/api/cf-team/sessions/{sid}/{what}")
+    async def api_cf_act(request: Request, sid: str, what: str):
+        r = await api_act(request, sid, what)
+        if r.status_code != 200:
+            return r
+        return JSONResponse(cf_session(ctx(request)["user"], sid))
+
     @app.get("/api/agents/{aid}/avatar")
     def agent_avatar(request: Request, aid: str):
         c = ctx(request)

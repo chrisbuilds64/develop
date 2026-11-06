@@ -8,6 +8,7 @@ import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
 import { TopBar } from "./components/TopBar";
 import { CaseScreen } from "./screens/Case";
+import { Team, TeamSessionScreen } from "./screens/Team";
 import { Board, Table } from "./screens/Board";
 import { Rules } from "./screens/Rules";
 import { Lists } from "./screens/Lists";
@@ -24,7 +25,7 @@ import { ViewCases, ViewBoard, ViewList } from "./components/Icons";
 import { words } from "./words";
 import { presenting, setPresenting } from "./moments";
 
-export type Route = { name: "home" } | { name: "case"; id: string; group?: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "lists" } | { name: "signals" } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
+export type Route = { name: "home" } | { name: "case"; id: string; group?: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "lists" } | { name: "signals" } | { name: "team" } | { name: "teamSession"; id: string } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
   const [bare, search = ""] = full.split("?");
@@ -41,6 +42,9 @@ export function parse(full: string): Route {
   if (path.startsWith("/list")) return { name: "list" };
   if (path.startsWith("/rules")) return { name: "rules" };
   if (path.startsWith("/signals")) return { name: "signals" };
+  const ts = path.match(/^\/team\/([^/]+)/);
+  if (ts) return { name: "teamSession", id: decodeURIComponent(ts[1]) };
+  if (path === "/team") return { name: "team" };
   if (path === "/kanon" || path.startsWith("/kanon/")) return { name: "house" };
   const g = path.match(/^\/group\/([^/]+)/);
   if (g) return { name: "group", key: g[1] };
@@ -163,7 +167,7 @@ export function App() {
 
   const here = me.data.places?.find((p) => p.current)?.name ?? config.data.product;
   const inWorkspace = route.name === "group" || route.name === "case" || route.name === "board" || route.name === "list";
-  const crumb = route.name === "home" ? w.home : route.name === "rules" ? w.rules : route.name === "signals" ? w.flagged : route.name === "lists" ? w.lists
+  const crumb = route.name === "home" ? w.home : route.name === "rules" ? w.rules : route.name === "signals" ? w.flagged : route.name === "team" ? w.team : route.name === "lists" ? w.lists
     : route.name === "house" ? w.house : here;
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
@@ -182,7 +186,7 @@ export function App() {
             theme={theme} onTheme={setTheme} onLang={onLang} open={railOpen} onClose={() => setRailOpen(false)} />
       <Keys w={w} onTheme={() => setTheme(dark ? "light" : "dark")} />
       <div className="main-col">
-        {!(route.name === "group" || route.name === "board" || route.name === "list" || (route.name === "case" && !isPhone)) && <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case"} dark={dark}
+        {!(route.name === "group" || route.name === "board" || route.name === "list" || route.name === "teamSession" || (route.name === "case" && !isPhone)) && <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case"} dark={dark}
                 onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={views} />}
         {route.name === "home" ? (
           <Home config={config.data} go={go} w={w} />
@@ -208,6 +212,10 @@ export function App() {
             <HouseScreen config={config.data} go={go} w={w} />
           ) : route.name === "signals" ? (
             <Signals config={config.data} go={go} w={w} lang={lang} />
+          ) : route.name === "team" ? (
+            <Team config={config.data} me={me.data} go={go} w={w} />
+          ) : route.name === "teamSession" ? (
+            <TeamSessionScreen id={route.id} me={me.data} go={go} w={w} />
           ) : (
             <div className="ws">
               {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} place={here} views={views} onMenu={() => setRailOpen(true)} />}

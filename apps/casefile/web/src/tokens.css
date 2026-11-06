@@ -81,8 +81,8 @@
   --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .14), transparent 60%);
   --scrim: rgba(30, 28, 40, .28);
   --pop-shadow: 0 18px 50px rgba(0, 0, 0, .18), 0 2px 6px rgba(0, 0, 0, .06);
-  --fs-10: 10px; --fs-14-5: 14.5px; --fs-15: 15px;
-  --r-4: 4px; --r-5: 5px; --r-6: 6px;
+  --fs-10: 10px; --fs-14-5: 14.5px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-24: 24px;
+  --r-3: 3px; --r-4: 4px; --r-5: 5px; --r-6: 6px; --r-12: 12px;
   /* the cockpit's own face (2026-11-05): indigo for the shell's chrome, so the room around the tools reads apart from
      Casefile's blue. --your-move stays blue and keeps its one meaning; this is only selection, links and buttons. */
   --shell: #5B4BDB;
