@@ -91,10 +91,11 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .bar-menu { display: none; width: 32px; height: 30px; place-items: center; border: 1px solid var(--tint-8); border-radius: var(--r-s); background: var(--surface); color: var(--ink); cursor: pointer; }
 .bar-menu svg { width: 16px; height: 16px; }
 .bar-crumb { font-size: var(--fs-13); font-weight: 500; color: var(--ink); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.bar-views { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-s); background: var(--tint-6); }
-.bar-views button { width: 30px; height: 24px; border: none; background: none; border-radius: var(--r-5); color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.bar-views { display: inline-flex; gap: 2px; align-items: center; }
+.bar-views button { width: 28px; height: 26px; border: none; background: none; border-radius: var(--r-7); color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.bar-views button:hover { background: var(--hover); color: var(--ink); }
 .bar-views button svg { width: 15px; height: 15px; }
-.bar-views button.on { background: var(--surface); color: var(--ink); box-shadow: var(--seg-shadow); }
+.bar-views button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-card); }
 .bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .cf-bar .btn { min-height: 0; transform: none; font-weight: 400; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--r-9); border: 1px solid var(--tint-10); background: var(--surface);
   font: inherit; font-size: var(--fs-13); color: var(--ink); cursor: pointer; white-space: nowrap; }
@@ -556,3 +557,37 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 /* focus: a soft ring in the "you" blue, never the browser's black frame (keyboard focus only) */
 .main.rb button:focus, .cf-rail button:focus, .cf-rail a:focus { outline: none; }
 .main.rb button:focus-visible, .cf-rail button:focus-visible, .cf-rail a:focus-visible { outline: 2px solid var(--your-move-halo); outline-offset: 1px; }
+
+/* ---------------------------------------------------------------- board and table (design hand-back, 2026-11-06) */
+.main.wide { padding: 0; gap: 0; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.wide-bar { gap: 10px; padding: 0 16px; font-size: var(--fs-14); }
+.wide-l { flex: 0 0 267px; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wide-views { margin-left: auto; display: flex; }
+.wb-board { flex: 1; min-height: 0; display: flex; gap: 14px; padding: 18px 20px; overflow: auto; align-items: flex-start; }
+.wb-col { flex: 0 0 270px; display: flex; flex-direction: column; gap: 8px; background: var(--tint-3); border-radius: var(--r-14); padding: 10px; }
+.wb-ch { display: flex; align-items: center; gap: 8px; padding: 4px 6px 6px; font-size: var(--fs-12-5); font-weight: 600; color: var(--sub); }
+.wb-ch em { font-style: normal; font-weight: 400; color: var(--muted); }
+.wb-card { display: flex; flex-direction: column; gap: 4px; text-align: left; border: 1px solid var(--hairline); background: var(--surface); border-radius: var(--r-11); padding: 11px 12px;
+  font: inherit; color: var(--ink); cursor: pointer; box-shadow: var(--shadow-card); transition: transform .12s; }
+.wb-card:hover { transform: translateY(-1px); }
+.wb-card b { font-size: var(--fs-13-5); font-weight: 600; line-height: 1.3; }
+.wb-dot { display: inline-block; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--your-move); margin-right: 6px; vertical-align: 1px; }
+.wb-m { font-size: var(--fs-12-5); color: var(--sub); }
+.wb-f { display: flex; justify-content: space-between; margin-top: 4px; font-size: var(--fs-11-5); color: var(--muted); }
+.wb-card.fade, .wb-tbl tr.fade { opacity: .6; }
+.wb-empty { font-size: var(--fs-12-5); color: var(--muted); padding: 10px 6px; }
+.wb-w { font-size: var(--fs-12); color: var(--sub); }
+.wb-w.you { color: var(--your-move); font-weight: 500; }
+.wb-filter { margin-left: 16px; height: 28px; width: 220px; border: 1px solid var(--tint-12); border-radius: var(--r-s); padding: 0 10px; font: inherit; font-size: var(--fs-13); background: var(--surface); color: var(--ink); outline: none; }
+.wb-filter:focus { border-color: var(--your-move); }
+.wb-tblw { flex: 1; overflow: auto; padding: 12px 20px 24px; }
+.wb-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-13-5); }
+.wb-tbl th { position: sticky; top: 0; background: var(--ground); text-align: left; font-weight: 500; font-size: var(--fs-12); color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--hairline); }
+.wb-tbl td { padding: 10px; border-bottom: 1px solid var(--hairline); color: var(--ink-2); white-space: nowrap; }
+.wb-tbl td b { font-weight: 500; color: var(--ink); white-space: normal; }
+.wb-tbl tbody tr { cursor: pointer; }
+.wb-tbl tbody tr:hover td { background: var(--hover); }
+.wb-tbl .tn { font-family: inherit; font-variant-numeric: tabular-nums; color: var(--muted); font-size: var(--fs-12-5); }
+.wb-tbl .ta { text-align: right; color: var(--muted); }
+.wb-tbl .tnone { text-align: center; color: var(--muted); padding: 30px; }
+@media (max-width: 760px) { .wide-l { flex: 1; } .wb-filter { width: 120px; margin-left: 8px; } .wb-col { flex-basis: 240px; } }

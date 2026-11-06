@@ -21,7 +21,7 @@ export function casesOf(groups: GroupOut[] | undefined, tab: Tab): CaseCard[] {
   return (groups ?? []).filter((g) => keys.includes(g.key)).flatMap((g) => g.cases).filter((c) => !seen.has(c.id) && !!seen.add(c.id));
 }
 
-function short(iso: string, lang: string): string {
+export function short(iso: string, lang: string): string {
   return ago(iso, lang).replace(/ (Min\.|min)$/, "m").replace(/ (Std\.|h)$/, "h").replace(/ Tage?n?$| days?$/, "d");
 }
 

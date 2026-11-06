@@ -57,7 +57,7 @@
   --bad-ink: #B03A2E;
   --bad-soft: rgba(176, 58, 46, .08);
   --on-accent: #FFFFFF;
-  --tint-4: rgba(var(--fg), .04); --tint-5: rgba(var(--fg), .05); --tint-6: rgba(var(--fg), .06); --tint-7: rgba(var(--fg), .07);
+  --tint-3: rgba(var(--fg), .03); --tint-4: rgba(var(--fg), .04); --tint-5: rgba(var(--fg), .05); --tint-6: rgba(var(--fg), .06); --tint-7: rgba(var(--fg), .07);
   --tint-8: rgba(var(--fg), .08); --tint-10: rgba(var(--fg), .10); --tint-12: rgba(var(--fg), .12); --tint-14: rgba(var(--fg), .14); --tint-18: rgba(var(--fg), .18);
   --shadow-card: 0 1px 2px rgba(20, 20, 40, .05), 0 8px 24px rgba(20, 20, 40, .06);
   --seg-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .04);
@@ -71,7 +71,7 @@
     #F6F5F2;
   --fs-11: 11px; --fs-11-5: 11.5px; --fs-12: 12px; --fs-12-5: 12.5px; --fs-13: 13px; --fs-13-5: 13.5px; --fs-14: 14px;
   --fs-17: 17px; --fs-26: 26px; --fs-28: 28px; --fs-34: 34px;
-  --r-2: 2.5px; --r-7: 7px; --r-9: 9px; --r-10: 10px;
+  --r-2: 2.5px; --r-7: 7px; --r-9: 9px; --r-10: 10px; --r-11: 11px; --r-14: 14px;
   /* Casefile app (2026-11-05): the AI's violet, the hover ground, a few more steps of the type scale */
   --ai: #7046D8;
   --ai-deep: #9B7BF5;

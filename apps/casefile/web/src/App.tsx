@@ -8,8 +8,7 @@ import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
 import { TopBar } from "./components/TopBar";
 import { CaseScreen } from "./screens/Case";
-import { Board } from "./screens/Board";
-import { Stacked } from "./screens/Stacked";
+import { Board, Table } from "./screens/Board";
 import { Rules } from "./screens/Rules";
 import { Lists } from "./screens/Lists";
 import { Signals } from "./screens/Signals";
@@ -170,9 +169,9 @@ export function App() {
   const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
   const views = inWorkspace ? (
     <span className="bar-views" role="tablist" aria-label={w.views} data-help="cf.views">
-      <button type="button" role="tab" aria-selected={view === "cases"} className={view === "cases" ? "on" : ""} onClick={() => go("/group/you")} title={w.casesView}><ViewCases /></button>
+      <button type="button" role="tab" aria-selected={view === "cases"} className={view === "cases" ? "on" : ""} onClick={() => go("/group/you")} title={w.casesView}><ViewList /></button>
       <button type="button" role="tab" aria-selected={view === "board"} className={view === "board" ? "on" : ""} onClick={() => go("/board")} title={w.board}><ViewBoard /></button>
-      <button type="button" role="tab" aria-selected={view === "list"} className={view === "list" ? "on" : ""} onClick={() => go("/list")} title={w.stacked}><ViewList /></button>
+      <button type="button" role="tab" aria-selected={view === "list"} className={view === "list" ? "on" : ""} onClick={() => go("/list")} title={w.stacked}><ViewCases /></button>
     </span>
   ) : null;
 
@@ -183,7 +182,7 @@ export function App() {
             theme={theme} onTheme={setTheme} onLang={onLang} open={railOpen} onClose={() => setRailOpen(false)} />
       <Keys w={w} onTheme={() => setTheme(dark ? "light" : "dark")} />
       <div className="main-col">
-        {!(route.name === "group" || (route.name === "case" && !isPhone)) && <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case"} dark={dark}
+        {!(route.name === "group" || route.name === "board" || route.name === "list" || (route.name === "case" && !isPhone)) && <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case"} dark={dark}
                 onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={views} />}
         {route.name === "home" ? (
           <Home config={config.data} go={go} w={w} />
@@ -198,9 +197,9 @@ export function App() {
           ) : route.name === "onsite" ? (
             <OnSiteScreen id={route.id} config={config.data} go={go} w={w} />
           ) : route.name === "board" ? (
-            <Board config={config.data} go={go} w={w} />
+            <Board config={config.data} go={go} w={w} views={views} />
           ) : route.name === "list" ? (
-            <Stacked config={config.data} go={go} w={w} />
+            <Table config={config.data} go={go} w={w} views={views} />
           ) : route.name === "rules" ? (
             <Rules config={config.data} w={w} lang={lang} />
           ) : route.name === "lists" ? (
