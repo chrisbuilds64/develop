@@ -821,6 +821,18 @@
         "de": "Der Ordner, in den jede Sitzung geschrieben wird.",
         "en": "The folder every session is written to."
       }
+    },
+    {
+      "key": "cf.setup",
+      "since": "0.22.0",
+      "title": {
+        "de": "Einrichtung",
+        "en": "Setup"
+      },
+      "text": {
+        "de": "Woraus dieser Arbeitsbereich besteht: Plugins, Quellen, Module, Rollen, Schemata und Wertelisten. Das meiste kommt aus der Konfiguration; die Wertelisten änderst du hier.",
+        "en": "What this workspace is built from: plugins, sources, modules, roles, schemas and value lists. Most of it comes from the configuration; the value lists you change here."
+      }
     }
   ]
 }

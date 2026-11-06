@@ -699,3 +699,37 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .tm-ask input:focus-visible, .tm-fin:focus-visible, .tm-ta:focus-visible { outline: none; border-radius: inherit; }
 .tm-ask input:focus-visible { box-shadow: none; border-radius: 0; }
 .main.view-team-session button:focus-visible, .tm-sheet button:focus-visible { outline: 2px solid var(--your-move-halo); outline-offset: 1px; box-shadow: none; }
+
+/* Setup (design hand-back, 2026-11-06): what the workspace is built from, six tabs; values from the design */
+.su-seg { display: flex; gap: 2px; max-width: 820px; margin: 0 4px 4px; padding: 3px; border-radius: var(--r-9); background: var(--surface); }
+.su-seg button { flex: 1 1 0; white-space: nowrap; padding: 0 8px; height: 26px; border: none; border-radius: var(--r-6); background: transparent; color: var(--muted); font: inherit; font-size: var(--fs-12); cursor: pointer; }
+.su-seg button:hover { color: var(--ink); }
+.su-seg button.on { background: var(--surface); color: var(--ink); font-weight: 500; box-shadow: var(--shadow-card); }
+.su-card { max-width: 820px; background: var(--surface); border-radius: var(--r-14); box-shadow: var(--shadow-card); border: 1px solid var(--hairline); padding: 6px 18px; margin: 16px 0; }
+.su-card h3 { margin: 14px 0 4px; font-size: var(--fs-13); font-weight: 600; color: var(--sub); }
+.su-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 0; border: none; border-bottom: 1px solid var(--tint-6); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.su-row:last-child { border-bottom: none; }
+.su-row.open { align-items: flex-start; }
+.su-n { flex: 1; min-width: 0; }
+.su-n b { display: block; font-size: var(--fs-14); font-weight: 500; color: var(--ink); }
+.su-t { display: block; font-size: var(--fs-12-5); color: var(--muted); margin-top: 1px; white-space: pre-line; }
+.su-items { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.su-items i { font-style: normal; font-size: var(--fs-12); color: var(--ink-2); background: var(--tint-4); border-radius: var(--r-pill); padding: 2px 9px; }
+.su-side { flex: none; font-size: var(--fs-12); color: var(--sub); }
+.su-go { flex: none; color: var(--faint); font-size: var(--fs-18); }
+.su-empty { margin: 8px 0 14px; font-size: var(--fs-14); color: var(--sub); }
+.su-lents { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 0 14px; align-items: center; }
+.su-lent { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: var(--r-pill); border: 1px solid var(--hairline); background: var(--ground);
+  font: inherit; font-size: var(--fs-13-5); color: var(--ink); cursor: pointer; }
+.su-lent i { width: 8px; height: 8px; border-radius: var(--r-pill); flex: none; }
+.su-lent i.none { background: var(--tint-18); }
+.su-lent.on { border-color: var(--tint-18); background: var(--surface); box-shadow: var(--shadow-card); }
+.su-lent.retired { color: var(--muted); text-decoration: line-through; }
+.su-lent.su-add { color: var(--sub); border-style: dashed; }
+.su-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: -4px 0 14px; padding: 10px 12px; border-radius: var(--r-10); background: var(--tint-3); font-size: var(--fs-13); color: var(--sub); }
+.su-key { font-family: var(--mono); font-size: var(--fs-12); color: var(--ink-2); }
+.su-desc { color: var(--ink-2); }
+.su-pick .status-pick { margin-left: auto; }
+.su-form { margin: 0 0 14px; }
+.main.view-setup .su-head { margin-bottom: 18px; }
+@media (max-width: 760px) { .su-seg { overflow-x: auto; } .su-seg button { flex: none; } }

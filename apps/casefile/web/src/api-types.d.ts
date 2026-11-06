@@ -122,6 +122,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Setup */
+        get: operations["get_setup_api_setup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/team": {
         parameters: {
             query?: never;
@@ -2225,6 +2242,42 @@ export interface components {
             /** Person */
             person: string;
         };
+        /** SetupItem */
+        SetupItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Side
+             * @default
+             */
+            side: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Items
+             * @default []
+             */
+            items: string[];
+        };
+        /**
+         * SetupOut
+         * @description Setup (design hand-back, 2026-11-06): what this workspace is built from, read from its configuration.
+         */
+        SetupOut: {
+            /** Plugins */
+            plugins: components["schemas"]["SetupItem"][];
+            /** Sources */
+            sources: components["schemas"]["SetupItem"][];
+            /** Roles */
+            roles: components["schemas"]["SetupItem"][];
+            /** Schemas */
+            schemas: components["schemas"]["SetupItem"][];
+        };
         /** SignalCase */
         SignalCase: {
             /** Id */
@@ -2658,6 +2711,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    get_setup_api_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupOut"];
                 };
             };
         };

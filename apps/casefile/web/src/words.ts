@@ -15,6 +15,13 @@ const W = {
     newCaseShort: "+ Neuer Fall", newWorkspace: "+ Neuer Arbeitsbereich", ndotRules: (n: number) => (n === 1 ? "1 neue Regel zu prüfen" : `${n} neue Regeln zu prüfen`), ndotSignals: (n: number) => `${n} zu prüfen`,
     aiReading: "Liest…", tblFilter: "Filtern", withName: (n: string) => `Bei ${n}`, nothingHere: "Hier ist nichts", colCase: "Fall", colCustomer: "Kunde",
     colStage: "Station", colAge: "Alter", noMatch: (q: string) => `Kein Fall passt zu „${q}“.`,
+    // Setup: what this workspace is built from
+    setup: "Einrichtung", suLead: "Woraus dieser Arbeitsbereich besteht. Das meiste ändert deine Administration in der Konfiguration.",
+    suListsLead: "Wertelisten sind die Auswahl, aus der man beim Ausfüllen eines Falls wählt.",
+    suPlugins: "Plugins", suSources: "Quellen", suModules: "Module", suRoles: "Rollen", suSchemas: "Schemata", suLists: "Listen",
+    suPluginsText: "Gehört zum Cockpit. Jeder Arbeitsbereich nutzt es.", suModulesText: "Ein Arbeitsbereich. Seine Stufen, Regeln und Wörter kommen aus seiner Konfiguration.",
+    suCases: (n: number) => (n === 1 ? "1 Fall für dich" : `${n} Fälle für dich`), suHere: "Hier", suNone: "Hier ist nichts eingerichtet.",
+    suNoSources: "Neue Fälle legt hier ein Mensch an. Es ist keine Quelle angebunden.", suAdd: "+ Hinzufügen", suInCases: (n: number) => (n === 1 ? "in 1 Fall" : `in ${n} Fällen`), suAddEntry: "Eintrag hinzufügen",
     // the AI team (ADR-020): the person's helpers, their sessions and the log folder
     team: "KI-Team", tmLead: "Helfer, die mit dir arbeiten. Jeder hat ein Berufsprofil, und jede Sitzung wird protokolliert.", tmAdd: "Helfer hinzufügen",
     tmOnTeam: "Im Team", tmReady: "Bereit", tmBusy: "In einer Sitzung", tmStart: "Sitzung starten", tmOpen: "Sitzung öffnen", tmRemove: "Entfernen",
@@ -209,6 +216,13 @@ const W = {
     newCaseShort: "+ New case", newWorkspace: "+ New workspace", ndotRules: (n: number) => (n === 1 ? "1 new rule to review" : `${n} new rules to review`), ndotSignals: (n: number) => `${n} to check`,
     aiReading: "Reading…", tblFilter: "Filter", withName: (n: string) => `With ${n}`, nothingHere: "Nothing here", colCase: "Case", colCustomer: "Customer",
     colStage: "Stage", colAge: "Age", noMatch: (q: string) => `No case matches “${q}”.`,
+    // Setup: what this workspace is built from
+    setup: "Setup", suLead: "What this workspace is built from. Most of it is changed in the configuration by your administrator.",
+    suListsLead: "Value lists are the choices you pick from when you fill in a case.",
+    suPlugins: "Plugins", suSources: "Sources", suModules: "Modules", suRoles: "Roles", suSchemas: "Schemas", suLists: "Lists",
+    suPluginsText: "Part of the cockpit. Every workspace uses it.", suModulesText: "A workspace. Its stages, rules and words come from its configuration.",
+    suCases: (n: number) => (n === 1 ? "1 case for you" : `${n} cases for you`), suHere: "Here", suNone: "Nothing is set up here.",
+    suNoSources: "A person opens new cases here. No source is connected.", suAdd: "+ Add", suInCases: (n: number) => (n === 1 ? "on 1 case" : `on ${n} cases`), suAddEntry: "Add an entry",
     // the AI team (ADR-020): the person's helpers, their sessions and the log folder
     team: "AI team", tmLead: "Helpers that work alongside you. Each one has a job profile, and every session is logged.", tmAdd: "Add a helper",
     tmOnTeam: "On the team", tmReady: "Ready", tmBusy: "In a session", tmStart: "Start session", tmOpen: "Open session", tmRemove: "Remove",

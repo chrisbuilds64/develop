@@ -222,3 +222,24 @@ def test_the_visitor_keeps_an_ai_team_of_their_own_across_worlds(demo):
     a.post("/api/demo/session", json={"world": "pressroom"})
     assert a.get("/api/team").json()["sessions"][0]["note"] == "Explained the price"       # the same team in another world
     assert len(b.get("/api/team").json()["sessions"]) == 3                                 # another visitor has their own
+
+
+def test_setup_shows_what_the_workspace_is_built_from_in_the_readers_language(demo):
+    """Plugins (the demo's copy of the cockpit's), sources (connectors), roles with who holds them, kinds of case and their documents."""
+    app, _ = demo
+    a = TestClient(app)
+    a.get("/api/me")
+    a.post("/api/session/lang", json={"lang": "en"})
+    s = a.get("/api/setup").json()
+    assert ("Canon", "0.2.0") in [(p["name"], p["side"]) for p in s["plugins"]]
+    src = {x["id"]: x for x in s["sources"]}
+    assert src["bestand"]["name"] == "Policy system" and src["zahlung"]["side"] == "outgoing"
+    roles = {x["id"]: x["side"] for x in s["roles"]}
+    assert roles["approver"] == "You" and roles["assessor"] == "Assessor Berger"
+    motor = next(x for x in s["schemas"] if x["id"] == "KFZ")
+    assert motor["name"] == "Motor" and "Photos" in motor["items"] and not any(i.endswith((".json", ".md", ".jpg")) for i in motor["items"])
+    assert a.get("/api/me").json()["name"] == "You"
+    a.post("/api/session/lang", json={"lang": "de"})
+    s = a.get("/api/setup").json()
+    assert {x["id"]: x["name"] for x in s["sources"]}["bestand"] == "Bestandssystem"
+    assert {x["id"]: x["side"] for x in s["roles"]}["approver"] == "Du"

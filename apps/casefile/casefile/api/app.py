@@ -72,6 +72,7 @@ class Settings:
     stage: str | None = None                     # "entw", "test": a stripe and a badge on every page of the surface; nothing for production
     shell: str | None = None                     # where the shell that mounted this app lives ("/entw/"): the menu offers the way back
     peers: Callable[[Request | None], list[dict]] | None = None   # inside a shell: every workspace this person may open ({id, name, url, color, icon, current})
+    plugins: list[dict] | None = None             # inside a shell: the shell's plugins ({id, name, version, text}); without one, the demo's copy
     secret: str = field(default_factory=lambda: secrets.token_hex(16))
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
@@ -309,6 +310,22 @@ class RuleConnector(BaseModel):
     carries: str = ""
     direction: str = ""
     note: str = ""
+
+
+class SetupItem(BaseModel):
+    id: str
+    name: str
+    side: str = ""                                          # the short word on the right: a version, a direction, who holds it, how many
+    text: str = ""                                          # what opens below: what it is, what it carries
+    items: list[str] = []                                   # the parts, where it has some (a schema's documents)
+
+
+class SetupOut(BaseModel):
+    """Setup (design hand-back, 2026-11-06): what this workspace is built from, read from its configuration."""
+    plugins: list[SetupItem]
+    sources: list[SetupItem]
+    roles: list[SetupItem]
+    schemas: list[SetupItem]
 
 
 class SignalCase(BaseModel):
@@ -810,7 +827,7 @@ def create_app(settings: Settings) -> FastAPI:
             if not any(p.current for p in places):
                 places.insert(0, mine)
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
-        return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
+        return MeOut(person=p.id if p else None, name=p.name_in(c.lang) if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
                      demo=settings.demo, world=c.world, worlds=list(settings.worlds),
                      open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell, places=places,
                      waiting_rules=wr, waiting_signals=ws, team="cockpit" if settings.shell else ("demo" if settings.worlds else None))
@@ -916,6 +933,85 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/api/me", response_model=MeOut)
     def me(request: Request, c: Ctx = Depends(ctx)):
         return me_out(c, getattr(request.state, "fresh_person", None) or _who(request, c.config), request)
+
+    def connectors_of(c: Ctx) -> list[RuleConnector]:
+        """The workspace's connectors, in the reader's language: a field's English twin (`<field>_en`) where there is one."""
+        for place in (c.store.root / "connectors.json", c.config.dir / "connectors.json" if c.config.dir else None):
+            if place and place.is_file():
+                try:
+                    raw = json.loads(place.read_text(encoding="utf-8")).get("connectors", [])
+                    return [RuleConnector(**{k: str(item.get(f"{k}_{c.lang}") or item.get(k) or "") for k in RuleConnector.model_fields if k in item or f"{k}_{c.lang}" in item})
+                            for item in raw if isinstance(item, dict) and item.get("id")]
+                except (OSError, ValueError, TypeError):
+                    return []
+        return []
+
+    @app.get("/api/setup", response_model=SetupOut)
+    def get_setup(c: Ctx = Depends(ctx)):
+        lang = c.lang
+        de = lang == "de"
+        # plugins: the shell's, or the demo's copy of them
+        plugins: list[SetupItem] = []
+        if settings.plugins is not None:
+            plugins = [SetupItem(id=str(p.get("id")), name=str(p.get("name") or p.get("id")), side=str(p.get("version") or ""), text=str(p.get("text") or p.get("description") or ""))
+                       for p in settings.plugins]
+        else:
+            f = Path(__file__).resolve().parent.parent / "demo" / "plugins.json"
+            try:
+                for p in json.loads(f.read_text(encoding="utf-8")).get("plugins", []):
+                    t = p.get("text") or {}
+                    plugins.append(SetupItem(id=p["id"], name=p["name"], side=p.get("version", ""), text=t.get(lang) or t.get("en", "") if isinstance(t, dict) else str(t)))
+            except (OSError, ValueError, KeyError):
+                plugins = []
+        # sources: where new cases come from, the mailbox first, then the connectors
+        sources: list[SetupItem] = []
+        mb = c.config.theme.get("mailbox") if isinstance(c.config.theme.get("mailbox"), dict) else None
+        if mb:
+            sources.append(SetupItem(id="mailbox", name="Postfach" if de else "Mail inbox", side="Verbunden" if de else "Connected",
+                                     text="Neue Mails werden gelesen, sobald sie ankommen, und als Fall angelegt." if de else "New mail is read as soon as it arrives and opened as a case."))
+        if c.config.theme.get("mail_drop"):
+            sources.append(SetupItem(id="drop", name="Mail-Ablage (.eml)" if de else "File drop (.eml)", side="Verbunden" if de else "Connected",
+                                     text="Eine Mail, von Hand hereingezogen, nimmt denselben Weg wie aus dem Postfach." if de else "A mail dropped in by hand takes the same way in as one from the inbox."))
+        for k in connectors_of(c):
+            sources.append(SetupItem(id=k.id, name=k.name, side=k.direction, text=" · ".join(x for x in (k.carries, k.standard) if x) + (f"\n{k.note}" if k.note else "")))
+        # roles: the words, and who holds each in this workspace
+        words = (c.config.vocabulary.get(lang) or c.config.vocabulary.get("en") or {}).get("roles") or {}
+        people = [p for p in c.config.people if p.kind == "human"]
+        seen_roles = list(words) + [r for p in people for r in p.roles if r not in words]
+        roles = []
+        for r in dict.fromkeys(seen_roles):
+            holders = [p.name_in(lang) for p in people if r in p.roles]
+            w_ = str(words.get(r) or r)
+            roles.append(SetupItem(id=r, name=w_[:1].upper() + w_[1:], side=", ".join(holders) or ("niemand" if de else "nobody"),
+                                   text=(f"In diesem Arbeitsbereich: {', '.join(holders)}." if holders else "Diese Rolle hat hier niemand.") if de
+                                   else (f"In this workspace: {', '.join(holders)}." if holders else "Nobody holds this role here.")))
+        # schemas: per kind of case, the documents it collects
+        schemas = []
+        try:
+            arts = json.loads((c.config.dir / "artifacts.json").read_text(encoding="utf-8")) if c.config.dir else {}
+        except (OSError, ValueError):
+            arts = {}
+        files = (c.config.vocabulary.get(lang) or {}).get("files") or {}
+        kinds = {e.key: e.word for l in views.config_view(c.config, lang).lists for e in l.entries}
+        def doc(a: dict) -> str:
+            """A document as the reader calls it; numbered photos are one entry; a file without a word is a working file, not shown."""
+            f = str(a.get("file", ""))
+            if f.endswith(".json") or f == "review.md":            # the record and the thread are the case itself, not something it collects
+                return ""
+            if re.match(r"fotos?-\d+\.", f):
+                return "Fotos" if de else "Photos"
+            return str(files.get(f) or "")
+        def docs_of(items) -> list[str]:
+            return [d for d in (doc(a) for a in items if isinstance(a, dict)) if d]
+        common = docs_of(arts.get("common", []))
+        for key, fmt in (arts.get("formats") or {}).items():
+            if not isinstance(fmt, dict):
+                continue
+            docs = list(dict.fromkeys(common + docs_of(fmt.get("artifacts", []))))
+            n = len(docs)
+            schemas.append(SetupItem(id=key, name=str(kinds.get(key) or key), side=(f"{n} Dokumente" if de else f"{n} documents"), items=docs,
+                                     text="Was ein Fall dieser Art sammelt. Die KI füllt es aus, ein Mensch prüft es." if de else "What a case of this kind collects. The AI fills it in; a person checks it."))
+        return SetupOut(plugins=plugins, sources=sources, roles=roles, schemas=schemas)
 
     # ------------------------------------------------------------ the AI team (demo only; inside the cockpit the surface asks the shell)
     from ..domain.team import DemoTeam, TeamError
@@ -1218,14 +1314,7 @@ def create_app(settings: Settings) -> FastAPI:
             modules.append(module_out(mid, m, rulebook.draft_of(c.store, mid), True))
         for mid, d in rulebook.proposed(c.store).items():
             modules.append(module_out(mid, d, d, False))
-        connectors = []
-        for place in (c.store.root / "connectors.json", c.config.dir / "connectors.json" if c.config.dir else None):
-            if place and place.is_file():
-                try:
-                    connectors = [RuleConnector(**{k: str(v) for k, v in item.items() if not k.startswith("$")}) for item in json.loads(place.read_text(encoding="utf-8")).get("connectors", [])]
-                except (OSError, ValueError, TypeError):
-                    connectors = []
-                break
+        connectors = connectors_of(c)
         from ..domain import handoff
         tg = handoff.targets(c.store)
         loc = lambda d, k: (d.get(k) or {}).get(lang) or (d.get(k) or {}).get("en") or "" if isinstance(d.get(k), dict) else str(d.get(k) or "")

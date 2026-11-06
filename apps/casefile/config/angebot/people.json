@@ -2,6 +2,6 @@
   "$comment": "Default people of a quote workspace; the workspace's own people.json wins.",
   "people": [
     {"id": "chris", "name": "Chris", "kind": "human", "roles": ["operator", "approver"]},
-    {"id": "ki", "name": "KI", "kind": "agent", "roles": []}
+    {"id": "ki", "name": "KI", "name_en": "AI", "kind": "agent", "roles": []}
   ]
 }

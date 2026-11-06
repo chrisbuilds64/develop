@@ -62,6 +62,10 @@ class Person(BaseModel):
     kind: Literal["human", "agent"] = "human"
     roles: list[str] = Field(default_factory=list)
     deputy: str | None = None                    # who stands in when this person is away
+    name_en: str | None = None                   # the name on the English surface, where it is a word more than a name ("Du" → "You")
+
+    def name_in(self, lang: str) -> str:
+        return (self.name_en or self.name) if lang == "en" else self.name
 
 
 # ----------------------------------------------------------------------------- the case as read

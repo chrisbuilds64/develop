@@ -8,9 +8,9 @@ import { api, stepId, ApiError, type ConfigView, type ListView } from "../api";
 import type { words } from "../words";
 
 type W = ReturnType<typeof words>;
-const STATUSES = ["planned", "active", "retired"] as const;
+export const STATUSES = ["planned", "active", "retired"] as const;
 
-function Status({ s, w, bare }: { s: string; w: W; bare?: boolean }) {
+export function Status({ s, w, bare }: { s: string; w: W; bare?: boolean }) {
   // the shape carries the state as much as the word: a ring planned, a disc active, a struck ring retired
   return (
     <span className={`entry-status ${s}`}>
@@ -32,7 +32,7 @@ function errorOf(e: unknown): string {
   return e instanceof ApiError ? e.message : String((e as Error)?.message ?? e);
 }
 
-function EntryForm({ list, w, done }: { list: ListView; w: W; done: () => void }) {
+export function EntryForm({ list, w, done }: { list: ListView; w: W; done: () => void }) {
   const [key, setKey] = useState("");
   const [de, setDe] = useState("");
   const [en, setEn] = useState("");

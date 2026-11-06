@@ -23,6 +23,8 @@ export type ListEntryView = components["schemas"]["ListEntryView"];
 export type ListsOut = components["schemas"]["ListsOut"];
 export type ListChangeOut = components["schemas"]["ListChangeOut"];
 export type PlaceOut = components["schemas"]["PlaceOut"];
+export type SetupOut = components["schemas"]["SetupOut"];
+export type SetupItem = components["schemas"]["SetupItem"];
 
 export class ApiError extends Error {
   status: number;
@@ -71,6 +73,7 @@ export const api = {
   moduleRetire: (id: string, note: string) => call<ModuleHistory>("POST", `/api/rulebook/${encodeURIComponent(id)}/retire`, { note }),
   rhythm: () => call<RhythmOut>("GET", "/api/me/rhythm"),
   signals: () => call<SignalOut[]>("GET", "/api/signals"),
+  setup: () => call<SetupOut>("GET", "/api/setup"),
   signalStatus: (id: string, status: "offen" | "in_pruefung" | "erledigt") => call<SignalOut>("POST", `/api/signals/${encodeURIComponent(id)}/status`, { status }),
   case: (id: string) => call<CaseView>("GET", `/api/cases/${encodeURIComponent(id)}`),
   step: (id: string, action: string, step_id: string, payload: Record<string, unknown> = {}) =>

@@ -561,8 +561,8 @@ def build_egutachten(root: Path) -> Path:
 # and quote requests whose premium the core computes from the questionnaire. Everything in German with English beside it.
 INBOX_STAGES = ["10-eingang", "30-erledigt", "40-abgelegt"]
 QUOTE_STAGES = ["10-anfrage", "20-rueckfrage", "30-angebot", "40-versand", "50-versendet"]
-DEMO_PEOPLE = {"people": [{"id": "du", "name": "Du", "kind": "human", "roles": ["operator", "approver"]},
-                          {"id": "ki", "name": "KI", "kind": "agent", "roles": []}]}
+DEMO_PEOPLE = {"people": [{"id": "du", "name": "Du", "name_en": "You", "kind": "human", "roles": ["operator", "approver"]},
+                          {"id": "ki", "name": "KI", "name_en": "AI", "kind": "agent", "roles": []}]}
 
 
 def _mail(subject: str, sender: str, address: str, body: str, days_ago: float, photo: Path | None = None, newsletter: bool = False) -> bytes:

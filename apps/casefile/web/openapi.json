@@ -193,6 +193,24 @@
         }
       }
     },
+    "/api/setup": {
+      "get": {
+        "summary": "Get Setup",
+        "operationId": "get_setup_api_setup_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/team": {
       "get": {
         "summary": "Team View",
@@ -4572,6 +4590,83 @@
           "person"
         ],
         "title": "SessionIn"
+      },
+      "SetupItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "side": {
+            "type": "string",
+            "title": "Side",
+            "default": ""
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "SetupItem"
+      },
+      "SetupOut": {
+        "properties": {
+          "plugins": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Plugins"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Roles"
+          },
+          "schemas": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Schemas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plugins",
+          "sources",
+          "roles",
+          "schemas"
+        ],
+        "title": "SetupOut",
+        "description": "Setup (design hand-back, 2026-11-06): what this workspace is built from, read from its configuration."
       },
       "SignalCase": {
         "properties": {

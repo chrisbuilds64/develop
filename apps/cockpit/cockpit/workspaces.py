@@ -335,6 +335,20 @@ def peers_of(workspaces: "Workspaces", w: Workspace, identity, shell: str | None
     return peers
 
 
+def shell_plugins() -> list[dict]:
+    """The plugins this cockpit carries, for the Setup page of a mounted application: id, name, version, the first sentence."""
+    out = []
+    for f in sorted((Path(__file__).resolve().parent / "plugins").glob("*/plugin.json")):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        text = str(d.get("description") or "")
+        out.append({"id": str(d.get("id") or f.parent.name), "name": str(d.get("name") or f.parent.name), "version": str(d.get("version") or ""),
+                    "text": (text.split(". ")[0].rstrip(".") + ".") if text else ""})
+    return out
+
+
 def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell: str | None = None,
               peers=None):
     """The casefile app for one workspace: its tree, its application, the cockpit's identity, the stage it is in,
@@ -343,7 +357,7 @@ def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: P
     from casefile.api.app import Settings, create_app
     pkg = Path(casefile.__file__).resolve().parent
     settings = Settings(
-        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers,
+        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers, plugins=shell_plugins(),
         open_identity=w.open_identity, identity=None if w.open_identity else identity,
         secret=secret, web_dist=web_dist, demo=(w.mode == "replay"), template=app.template if w.mode == "replay" else None,
         samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies",

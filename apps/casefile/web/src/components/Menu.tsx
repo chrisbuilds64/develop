@@ -6,13 +6,20 @@ import { useQuery } from "@tanstack/react-query";
 import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut, type CaseCard } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Book, TeamIcon, RulebookIcon, ListsIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
+import { Book, TeamIcon, SetupIcon, RulebookIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
 import { setSound, soundOn, chime, paper as paperSound } from "../moments";
 
 type Props = {
   config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
   onFresh: (world?: string) => void; onPerson: (person: string) => void; onLang: (lang: string) => void; w: ReturnType<typeof words>;
   theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void; open: boolean; onClose: () => void;
+};
+
+/** Two letters for a name of two words or a long one ("Chris Moser" → CM, "designer" → DE); a short word gets its first ("You" → Y). */
+const initials = (name?: string | null) => {
+  const parts = (name ?? "?").trim().split(/\s+/);
+  if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return (parts[0].length <= 3 ? parts[0][0] : parts[0].slice(0, 2)).toUpperCase();
 };
 
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme, open, onClose }: Props) {
@@ -113,10 +120,10 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       {(config.theme as { canon?: boolean }).canon && (
         <button type="button" className={`nav${route.name === "house" ? " on" : ""}`} data-help="cf.house" onClick={() => goClose("/kanon")}><Book /><span className="tx">{w.house}</span></button>
       )}
-      <button type="button" className={`nav${route.name === "lists" ? " on" : ""}`} data-help="cf.lists" onClick={() => goClose("/lists")}><ListsIcon /><span className="tx">{w.lists}</span></button>
+      <button type="button" className={`nav${route.name === "setup" ? " on" : ""}`} data-help="cf.setup" onClick={() => goClose("/setup")}><SetupIcon /><span className="tx">{w.setup}</span></button>
 
       <button type="button" className={`me${pop ? " on" : ""}`} data-help="cf.person" aria-haspopup="true" aria-expanded={pop} onClick={() => setPop(!pop)}>
-        <span className="av">{(me.name ?? "?").slice(0, 2).toUpperCase()}</span>
+        <span className="av">{initials(me.name)}</span>
         <span className="me-tx"><span className="me-name">{me.name}</span><span className="me-role">{me.roles.map(roleWord).join(", ")}</span></span>
         <Updown />
       </button>
@@ -126,7 +133,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       <>
         <button type="button" className="pop-scrim" aria-label={w.close} onClick={() => setPop(false)} />
         <div className={`me-pop ${side}`} role="menu">
-          <div className="me-head"><span className="av lg">{(me.name ?? "?").slice(0, 2).toUpperCase()}</span>
+          <div className="me-head"><span className="av lg">{initials(me.name)}</span>
             <span><b>{me.name}</b><small>{me.roles.map(roleWord).join(", ")}</small></span></div>
           {me.demo && humans.length > 1 && (
             <label className="pop-field"><span>{w.signIn}</span>

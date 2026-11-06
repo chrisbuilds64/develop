@@ -6,49 +6,78 @@
       "name": "Bestandssystem",
       "standard": "eigenes Kernsystem",
       "carries": "Vertrag, versichertes Risiko, Selbstbehalt, Vollmachten",
-      "direction": "eingehend"
+      "direction": "eingehend",
+      "name_en": "Policy system",
+      "standard_en": "own core system",
+      "carries_en": "Contract, insured risk, deductible, powers of attorney",
+      "direction_en": "incoming"
     },
     {
       "id": "schaden",
       "name": "Schadensystem",
       "standard": "eigenes Kernsystem",
       "carries": "Schadennummer, Reserve, Zahlungsstatus",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "Claims system",
+      "standard_en": "own core system",
+      "carries_en": "Claim number, reserve, payment status",
+      "direction_en": "both ways"
     },
     {
       "id": "gutachter",
       "name": "Sachverständige",
       "standard": "GDV Schadennetz · Kfz-Schadenservice",
       "carries": "Gutachtenauftrag, eGutachten, Rechnungsprüfung, Honorar",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "Assessors",
+      "standard_en": "GDV Schadennetz · Kfz-Schadenservice",
+      "carries_en": "Assessment order, e-assessment, invoice check, fee",
+      "direction_en": "both ways"
     },
     {
       "id": "vermittler",
       "name": "Makler und Vermittler",
       "standard": "BiPRO 503 (Schadenmeldung) · 430.5 (Schadenstatus) · 430.1 (Dokumente)",
       "carries": "Schadenmeldung, Status, Dokumente",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "Brokers and agents",
+      "standard_en": "BiPRO 503 (claim report) · 430.5 (claim status) · 430.1 (documents)",
+      "carries_en": "Claim report, status, documents",
+      "direction_en": "both ways"
     },
     {
       "id": "werkstatt",
       "name": "Werkstattnetz",
       "standard": "GDV Schadennetz",
       "carries": "Kostenvoranschlag, Reparaturfreigabe, Rechnung",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "Repair shop network",
+      "standard_en": "GDV Schadennetz",
+      "carries_en": "Estimate, repair approval, invoice",
+      "direction_en": "both ways"
     },
     {
       "id": "his",
       "name": "HIS",
       "standard": "Hinweis- und Informationssystem",
       "carries": "Vorschäden, Auffälligkeiten",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "HIS",
+      "standard_en": "Insurers' hint and information system",
+      "carries_en": "Previous claims, irregularities",
+      "direction_en": "both ways"
     },
     {
       "id": "zahlung",
       "name": "Zahlung",
       "standard": "SEPA über das Schadensystem",
       "carries": "Auszahlung, nur nach Freigabe",
-      "direction": "ausgehend"
+      "direction": "ausgehend",
+      "name_en": "Payment",
+      "standard_en": "SEPA through the claims system",
+      "carries_en": "Payout, only after approval",
+      "direction_en": "outgoing"
     }
-  ]
+  ],
+  "$comment_en": "Every field has an English twin (<field>_en) for the English surface; the German stays the original."
 }

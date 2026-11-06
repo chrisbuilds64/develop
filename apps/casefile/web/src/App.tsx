@@ -8,10 +8,10 @@ import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
 import { TopBar } from "./components/TopBar";
 import { CaseScreen } from "./screens/Case";
+import { Setup, SETUP_TABS, type SetupTab } from "./screens/Setup";
 import { Team, TeamSessionScreen } from "./screens/Team";
 import { Board, Table } from "./screens/Board";
 import { Rules } from "./screens/Rules";
-import { Lists } from "./screens/Lists";
 import { Signals } from "./screens/Signals";
 import { DocWindow } from "./screens/DocWindow";
 import { InterviewScreen } from "./screens/Interview";
@@ -25,7 +25,7 @@ import { ViewCases, ViewBoard, ViewList } from "./components/Icons";
 import { words } from "./words";
 import { presenting, setPresenting } from "./moments";
 
-export type Route = { name: "home" } | { name: "case"; id: string; group?: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "lists" } | { name: "signals" } | { name: "team" } | { name: "teamSession"; id: string } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
+export type Route = { name: "home" } | { name: "case"; id: string; group?: string } | { name: "talk"; id: string } | { name: "outcome"; id: string } | { name: "onsite"; id: string } | { name: "canon"; id: string } | { name: "board" } | { name: "list" } | { name: "rules" } | { name: "signals" } | { name: "team" } | { name: "setup"; tab: SetupTab } | { name: "teamSession"; id: string } | { name: "house" } | { name: "group"; key: string } | { name: "doc"; id: string; file: string };
 
 export function parse(full: string): Route {
   const [bare, search = ""] = full.split("?");
@@ -38,7 +38,9 @@ export function parse(full: string): Route {
   const m = path.match(/^\/case\/([^/]+)/);
   if (m) return { name: "case", id: decodeURIComponent(m[1]), ...(group ? { group } : {}) };
   if (path.startsWith("/board") || path.startsWith("/workshop")) return { name: "board" };
-  if (path === "/lists" || path.startsWith("/lists/")) return { name: "lists" };     // before "/list", which it starts with
+  if (path === "/lists" || path.startsWith("/lists/")) return { name: "setup", tab: "lists" };     // the value lists live in Setup now; before "/list", which it starts with
+  const su = path.match(/^\/setup(?:\/([a-z]+))?/);
+  if (su) return { name: "setup", tab: (SETUP_TABS as string[]).includes(su[1] ?? "") ? su[1] as SetupTab : "plugins" };
   if (path.startsWith("/list")) return { name: "list" };
   if (path.startsWith("/rules")) return { name: "rules" };
   if (path.startsWith("/signals")) return { name: "signals" };
@@ -167,7 +169,7 @@ export function App() {
 
   const here = me.data.places?.find((p) => p.current)?.name ?? config.data.product;
   const inWorkspace = route.name === "group" || route.name === "case" || route.name === "board" || route.name === "list";
-  const crumb = route.name === "home" ? w.home : route.name === "rules" ? w.rules : route.name === "signals" ? w.flagged : route.name === "team" ? w.team : route.name === "lists" ? w.lists
+  const crumb = route.name === "home" ? w.home : route.name === "rules" ? w.rules : route.name === "signals" ? w.flagged : route.name === "team" ? w.team : route.name === "setup" ? w.setup
     : route.name === "house" ? w.house : here;
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
@@ -206,12 +208,12 @@ export function App() {
             <Table config={config.data} go={go} w={w} views={views} />
           ) : route.name === "rules" ? (
             <Rules config={config.data} w={w} lang={lang} />
-          ) : route.name === "lists" ? (
-            <Lists config={config.data} w={w} />
           ) : route.name === "house" ? (
             <HouseScreen config={config.data} go={go} w={w} />
           ) : route.name === "signals" ? (
             <Signals config={config.data} go={go} w={w} lang={lang} />
+          ) : route.name === "setup" ? (
+            <Setup me={me.data} tab={route.tab} go={go} w={w} />
           ) : route.name === "team" ? (
             <Team config={config.data} me={me.data} go={go} w={w} />
           ) : route.name === "teamSession" ? (
