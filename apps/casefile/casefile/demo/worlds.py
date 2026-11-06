@@ -748,7 +748,7 @@ def build_quotes(root: Path) -> Path:
 
     # waits for the customer's answers: the AI filled what the mail said and drafted the question for the rest
     c = "HR-2026-0007-hausrat-tuebingen"
-    _case(root, "10-anfrage", c, {"label": "HR", "number": "2026-0007", "title": "Hausrat, Wohnung in Tübingen", "reported_by": "Familie Neumann", "customer": "Familie Neumann",
+    _case(root, "10-anfrage", c, {"label": "HR", "number": "2026-0007", "external_id": "AN-2026-00007", "title": "Hausrat, Wohnung in Tübingen", "reported_by": "Familie Neumann", "customer": "Familie Neumann",
                                   "created": _stamp(0)[:10], "subtitle": "Umzug zum 1. Dezember, etwa 85 m²",
                                   "i18n": {"en": {"title": "Contents cover, flat in Tübingen", "subtitle": "Moving on 1 December, about 85 m²"}}},
           {"anfrage.md": "# Anfrage\n\nFiktiv. Familie Neumann zieht in eine Wohnung in Tübingen und fragt nach einer Hausratversicherung.\n",
@@ -766,7 +766,7 @@ def build_quotes(root: Path) -> Path:
     # computed by the core from the questionnaire, waits for approval
     store, config = FsStore(root), DomainConfig.load(cfg, root)
     c = "KFZ-2026-0005-tiguan"
-    _case(root, "10-anfrage", c, {"label": "KFZ", "number": "2026-0005", "title": "Tiguan, Sohn fährt mit", "reported_by": "Familie Roth", "customer": "Familie Roth",
+    _case(root, "10-anfrage", c, {"label": "KFZ", "number": "2026-0005", "external_id": "AN-2026-00005", "title": "Tiguan, Sohn fährt mit", "reported_by": "Familie Roth", "customer": "Familie Roth",
                                   "created": _stamp(4)[:10], "subtitle": "VW Tiguan, Haftpflicht und Vollkasko, Fahrer ab 19",
                                   "i18n": {"en": {"title": "Tiguan, son also drives", "subtitle": "VW Tiguan, liability and comprehensive, drivers from 19"}}},
           {"anfrage.md": "# Anfrage\n\nFiktiv. Familie Roth möchte ihren Tiguan versichern; der Sohn (19) fährt mit.\n",
@@ -787,7 +787,7 @@ def build_quotes(root: Path) -> Path:
 
     # went out today
     c = "KFZ-2026-0003-mazda-2"
-    _case(root, "50-versendet", c, {"label": "KFZ", "number": "2026-0003", "title": "Mazda 2, nur Haftpflicht", "reported_by": "Marco Seidel", "customer": "Marco Seidel",
+    _case(root, "50-versendet", c, {"label": "KFZ", "number": "2026-0003", "external_id": "AN-2026-00003", "title": "Mazda 2, nur Haftpflicht", "reported_by": "Marco Seidel", "customer": "Marco Seidel",
                                     "created": _stamp(2)[:10], "i18n": {"en": {"title": "Mazda 2, liability only"}}},
           {"anfrage.md": "# Anfrage\n\nFiktiv. Mazda 2, nur Haftpflicht.\n", "fragebogen.json": json.dumps(_form("KFZ", QUOTE_KFZ_MAZDA, QUOTE_WORDS), ensure_ascii=False, indent=2),
            "angebot.md": "# Angebot\n\nKfz-Haftpflicht, 412,60 € im Jahr.\n", "anschreiben.md": "Sehr geehrter Herr Seidel,\n\nanbei Ihr Angebot für den Mazda 2.\n"},

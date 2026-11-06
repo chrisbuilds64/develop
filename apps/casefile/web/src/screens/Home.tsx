@@ -1,7 +1,7 @@
 // Home (design hand-back, 2026-11-05; across workspaces 2026-11-06): what needs you in every workspace, grouped the way a
 // clerk reads a morning — urgent first, then what is ready to confirm, then what waits for something; each row carries its
 // workspace's colour. Beside it what the AI is doing right now and what you sealed today. From the core: /api/home (in a
-// shell each workspace answers at its own address), /api/me/rhythm.
+// shell each workspace answers at its own address); today's seals come with each part.
 import { useEffect } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { openKeys } from "../components/Keys";
@@ -49,7 +49,6 @@ export function Home({ config, me, go, open, w }: { config: ConfigView; me: MeOu
   // inside a shell, every other workspace answers for itself at its own address
   const peers = (me.shell ? (me.places ?? []).filter((p) => !p.current && p.url) : []);
   const others = useQueries({ queries: peers.map((p) => ({ queryKey: ["home-at", p.url, lang], queryFn: () => api.homeAt(p.url), refetchInterval: 25_000 })) });
-  const rhythm = useQuery({ queryKey: ["rhythm"], queryFn: api.rhythm });
   const parts = [...(home.data ?? []), ...others.flatMap((q) => q.data ?? [])];
 
   // the action without the case's own title, which the row already shows ("Approve: Hail damage" → "Approve")
@@ -68,6 +67,7 @@ export function Home({ config, me, go, open, w }: { config: ConfigView; me: MeOu
   const blocked = mine.filter(({ t }) => t.turn.kind !== "date" && t.turn.blocked_by.length > 0).map(item).sort(byAge);
   const ready = mine.filter(({ t }) => t.turn.kind !== "date" && t.turn.blocked_by.length === 0).map(item).sort(byAge);
   const working: Item[] = parts.flatMap((part) => part.working.map((c) => ({ card: c, place: part.place, group: "claude", since: c.since, action: cap(c.turn?.reason || c.stage_word) })));
+  const sealed = parts.flatMap((part) => (part.seals ?? []).map((x) => ({ ...x, place: part.place }))).sort((a, b) => a.at.localeCompare(b.at));   // today, across workspaces
   const next = [...urgent, ...ready, ...blocked][0];
   const n = mine.length;
   const openNext = () => next && open(next.place, `/case/${encodeURIComponent(next.card.id)}?g=you`);
@@ -122,11 +122,11 @@ export function Home({ config, me, go, open, w }: { config: ConfigView; me: MeOu
           )}
           <div className="card">
             <div className="card-k">{w.doneToday}</div>
-            {(rhythm.data?.today_seals ?? []).length === 0 ? <p className="card-none">{w.doneNone}</p> : (rhythm.data?.today_seals ?? []).map((s) => (
-              <button key={s.case + s.at} type="button" className="sealrow" data-help-skip="explained by cf.daydone" onClick={() => go(`/case/${encodeURIComponent(s.case)}`)}>
+            {sealed.length === 0 ? <p className="card-none">{w.doneNone}</p> : sealed.map((x) => (
+              <button key={x.place.id + x.case + x.at} type="button" className="sealrow" data-help-skip="explained by cf.daydone" title={x.place.name} onClick={() => open(x.place, `/case/${encodeURIComponent(x.case)}`)}>
                 <span className="seal-i"><Seal /></span>
-                <span className="seal-t">{s.title}</span>
-                <span className="seal-at">{s.at.slice(11, 16)}</span>
+                <span className="seal-t">{x.title}</span>
+                <span className="seal-at">{x.at.slice(11, 16)}</span>
               </button>
             ))}
           </div>

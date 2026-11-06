@@ -1412,6 +1412,11 @@ export interface components {
             turns: components["schemas"]["TurnOut"][];
             /** Working */
             working: components["schemas"]["CaseCard"][];
+            /**
+             * Seals
+             * @default []
+             */
+            seals: components["schemas"]["SealOut"][];
         };
         /**
          * InterviewOut

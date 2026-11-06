@@ -201,13 +201,6 @@ class TurnOut(BaseModel):
     turn: Turn
 
 
-class HomePlace(BaseModel):
-    """Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning."""
-    place: PlaceOut
-    turns: list[TurnOut]                                    # what waits for the person there, ranked by the core
-    working: list[views.CaseCard]                           # what the AI is doing there right now
-
-
 class GroupOut(BaseModel):
     key: str
     word: str
@@ -539,6 +532,14 @@ class RhythmOut(BaseModel):
     today_seals: list[SealOut] = []
     week_steps: int = 0
     week_seals: int = 0
+
+
+class HomePlace(BaseModel):
+    """Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning."""
+    place: PlaceOut
+    turns: list[TurnOut]                                    # what waits for the person there, ranked by the core
+    working: list[views.CaseCard]                           # what the AI is doing there right now
+    seals: list[SealOut] = []                               # what the person sealed there today
 
 
 class NewCaseOut(BaseModel):
@@ -1171,26 +1172,32 @@ def create_app(settings: Settings) -> FastAPI:
                 try:
                     if other is not None:
                         turns, working = home_part(other.store, other.config, w.person, lang, True)
+                        seals = rhythm_of(other.store, other.config, w.person, lang).today_seals
                     else:
                         turns, working = home_part(FsStore(w.template), cfg, w.person, lang, False)
+                        seals = []                       # a world nobody opened has sealed nothing today
                 except Exception:                        # noqa: BLE001 — one broken world never empties Home
                     continue
-                out.append(HomePlace(place=pl, turns=turns, working=working))
+                out.append(HomePlace(place=pl, turns=turns, working=working, seals=seals))
             return out
         here = next((p for p in me.places if p.current), me.places[0] if me.places else place(c.world, c.config, c.lang, True))
         turns, working = home_part(c.store, c.config, who, c.lang, True)
-        return [HomePlace(place=here, turns=turns, working=working)]
+        return [HomePlace(place=here, turns=turns, working=working, seals=rhythm_of(c.store, c.config, who, c.lang).today_seals)]
 
     @app.get("/api/me/rhythm", response_model=RhythmOut)
     def my_rhythm(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        seal_actions = {a.id for st in c.config.stages for a in st.actions if a.seal}
+        return rhythm_of(c.store, c.config, who, c.lang)
+
+    def rhythm_of(store: FsStore, config: DomainConfig, who: str, lang: str) -> RhythmOut:
+        """What this person moved in one tree, today and the last seven days, from the step journals."""
+        seal_actions = {a.id for st in config.stages for a in st.actions if a.seal}
         now = dt.datetime.now().astimezone()
         today, week_start = now.date().isoformat(), (now - dt.timedelta(days=7)).isoformat()
         titles: dict[str, tuple[str, str]] = {}
         out = RhythmOut()
-        for name in c.store.journals():
+        for name in store.journals():
             try:
-                j = c.store.read_json(f"_steps/{name}")
+                j = store.read_json(f"_steps/{name}")
             except (OSError, ValueError):
                 continue
             if j.get("by") != who or j.get("status") != "done" or str(j.get("created", "")) < week_start:
@@ -1204,12 +1211,12 @@ def create_app(settings: Settings) -> FastAPI:
                     cid = str(j.get("case", ""))
                     if cid not in titles:
                         try:
-                            k = reading.load(c.store, c.config, cid)
-                            titles[cid] = (str(k.meta.get("title") or cid), c.config.word("labels", k.label, c.lang, k.label))
+                            k = reading.load(store, config, cid)
+                            titles[cid] = (str(views.localized(k.meta, lang).get("title") or cid), config.word("labels", k.label, lang, k.label))
                         except (KeyError, StoreError):
                             titles[cid] = (cid, "")
                     out.today_seals.append(SealOut(case=cid, title=titles[cid][0], label=titles[cid][1],
-                                                   action=c.config.word("actions", str(j.get("action")), c.lang, str(j.get("action"))), at=str(j.get("created", ""))))
+                                                   action=config.word("actions", str(j.get("action")), lang, str(j.get("action"))), at=str(j.get("created", ""))))
         return out
 
     @app.get("/api/cases/{case_id}", response_model=views.CaseView)
@@ -1558,7 +1565,7 @@ def create_app(settings: Settings) -> FastAPI:
                 other = _new_session(name)
                 mapping[name] = other.session
             out[key] = {"label": other.config.name, "root": str(other.store.root), "config": str(settings.worlds[name].config_dir),
-                        "url": "", "external_prefix": "SN-" if name == "claims" else ""}
+                        "url": "", "external_prefix": {"claims": "SN-", "quotes": "AN-"}.get(name, "")}
         c.store.write_json("targets.json", out)
         _set_worlds(response, mapping)
 

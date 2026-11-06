@@ -278,3 +278,18 @@ def test_home_gathers_what_waits_in_every_world(demo):
     claims = parts[0]
     assert claims["place"]["current"] and claims["turns"] and all("case" in t and "turn" in t for t in claims["turns"])
     assert len({t["case"]["id"] for t in claims["turns"]}) == a.get("/api/me").json()["places"][0]["count"]
+
+
+def test_home_brings_todays_seals_from_every_world_and_quotes_have_their_own_numbers(tmp_path):
+    from casefile.demo.worlds import build_quotes
+    build_claims(tmp_path / "w" / "claims")
+    build_quotes(tmp_path / "w" / "quotes")
+    settings = Settings(secret="t", demo=True, samples_dir=HERE / "samples", replies_dir=None, sessions_dir=tmp_path / "sessions",
+                        worlds={"claims": World(config_dir=CONFIG / "claims-demo", template=tmp_path / "w" / "claims", person="du", lang="de"),
+                                "quotes": World(config_dir=CONFIG / "angebot", template=tmp_path / "w" / "quotes", person="du", lang="de")})
+    a = TestClient(create_app(settings))
+    a.get("/api/me")
+    parts = {p["place"]["id"]: p for p in a.get("/api/home").json()}
+    assert all("seals" in p for p in parts.values())
+    ids = {t["case"]["external_id"] for t in parts["quotes"]["turns"]}
+    assert ids and all(i.startswith("AN-") for i in ids)

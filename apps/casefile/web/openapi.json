@@ -2965,6 +2965,14 @@
             },
             "type": "array",
             "title": "Working"
+          },
+          "seals": {
+            "items": {
+              "$ref": "#/components/schemas/SealOut"
+            },
+            "type": "array",
+            "title": "Seals",
+            "default": []
           }
         },
         "type": "object",
