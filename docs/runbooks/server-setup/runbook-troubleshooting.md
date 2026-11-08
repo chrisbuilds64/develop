@@ -1,5 +1,7 @@
 # Runbook: Troubleshooting (Der Burgwächter-Leitfaden)
 
+> **2026-11-08:** the item API (`services/backend`) and its playbook `infra/ansible/docker-caddy.yml` were removed (tag `archive/2026-11-08-legacy`). The containers `prod-backend` and `prod-postgres` on rheinstein are stopped and removed, the volume `prod-postgres-data` is kept; Caddy runs there without a route. Rebuilding rheinstein from playbooks is open work. The steps below that name the backend, Postgres or `docker-caddy.yml` describe that removed stack.
+
 **Zweck:** Schnelle Diagnose wenn ein User nicht zugreifen kann.
 **Zielgruppe:** Admin (du), bei Anruf/Alert.
 **Reihenfolge:** Von oben nach unten durchgehen. Erster Treffer = wahrscheinliche Ursache.
@@ -269,7 +271,7 @@ Wenn nichts hilft:
 
 1. **Strato Cloud-Konsole:** KVM/VNC Zugang, auch wenn SSH geblockt ist
 2. **Server neustarten:** `sudo reboot` (letztes Mittel, Container starten automatisch via `restart: unless-stopped`)
-3. **Komplett-Rebuild:** Ansible-Playbooks neu ausfuehren (foundation.yml + docker-caddy.yml). Der Bauplan ist die Wahrheit.
+3. **Komplett-Rebuild:** Ansible-Playbooks neu ausfuehren (foundation.yml + docker.yml + oracle.yml). Der Bauplan ist die Wahrheit.
 
 ---
 

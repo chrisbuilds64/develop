@@ -1,5 +1,7 @@
 # ADR-006: Caddy as Reverse Proxy
 
+> **2026-11-08:** the item API (`services/backend`) and its playbook `infra/ansible/docker-caddy.yml` were removed (tag `archive/2026-11-08-legacy`). The containers `prod-backend` and `prod-postgres` on rheinstein are stopped and removed, the volume `prod-postgres-data` is kept; Caddy runs there without a route. Rebuilding rheinstein from playbooks is open work.
+
 **Status:** Accepted
 **Date:** 2026-07-19
 **Provenance:** First explicit record of a decision that production reality had already made. Caddy was running live on the production server before this document existed; the competing Traefik setup (archived `chrisbuilds64/sdlc`) never reached production. Formalized 2026-07-19 during repo consolidation.

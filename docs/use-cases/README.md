@@ -5,6 +5,8 @@
 **Owner:** Christian Moser
 **Provenance:** Migrated from the private control repo and translated to English, 2026-07-19.
 
+> **2026-11-08:** the use cases of the removed legacy (UC-BE-001 to 003, UC-FE-001 to 003: item API, RAG, auth, tweight, the Flutter PressRoom) live in tag `archive/2026-11-08-legacy`. The examples below still name them. This process is being reworked from the product (casefile, cockpit).
+
 ---
 
 ## 1. Use Case Types

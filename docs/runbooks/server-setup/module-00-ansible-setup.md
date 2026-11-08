@@ -1,5 +1,7 @@
 # Module 00: Ansible Setup (Der Bauplan-Tisch)
 
+> **2026-11-08:** the item API (`services/backend`) and its playbook `infra/ansible/docker-caddy.yml` were removed (tag `archive/2026-11-08-legacy`). The containers `prod-backend` and `prod-postgres` on rheinstein are stopped and removed, the volume `prod-postgres-data` is kept; Caddy runs there without a route. Rebuilding rheinstein from playbooks is open work. The steps below that name the backend, Postgres or `docker-caddy.yml` describe that removed stack.
+
 **Status:** Getestet auf macOS (2026-04-03)
 **Dauer:** ~5 Minuten
 **Voraussetzung:** Python 3, SSH-Zugang zum Server

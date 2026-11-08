@@ -1,83 +1,56 @@
 # chrisbuilds64/develop
 
-The development system of ChrisBuilds64 — built and run like the IT department of a company, in public.
+The development system of ChrisBuilds64, built in public.
 
-This repository is not a single application. It is one real development system: services, infrastructure, apps, and the process documents that govern how they are built. The governing principles come from a canon-based operating model (governance before capability, explicit architecture decisions, human gates); this repo is where that model meets running code.
+The product here is **casefile**, a case that runs itself, and the **cockpit**, the surface people work in. One core
+carries every application. What one application differs from another in — stages, deliverables, words, people —
+is configuration, not code.
 
-## Structure
+## What is where
 
-```
-develop/
-├── docs/
-│   ├── adr/              # Architecture Decision Records (one home for all)
-│   ├── requirements/     # REQ-000.. with lifecycle Draft → Approved
-│   ├── runbooks/         # Server setup + troubleshooting
-│   └── architecture/     # Design docs
-├── infra/
-│   └── ansible/          # Server provisioning, hardening, deploy (Caddy)
-├── services/
-│   ├── backend/          # FastAPI service monolith (PostgreSQL, Alembic)
-│   └── oracle/           # Oracle 26ai Free: Dev/Test/Prod PDBs, Liquibase
-├── apps/                 # Example applications (Flutter, web)
-│   ├── pressroom/        # Editorial pipeline desktop app
-│   ├── feldorakel/       # Small FastAPI + LLM web example — frozen 2026-09-19, see its README
-│   └── tweight/          # Mobile example (real device deploy)
-├── experiments/          # LangGraph multi-agent, agent specs
-└── shared/               # Shared components (as needed)
-```
+| Path | What it is |
+|---|---|
+| `apps/casefile/` | The core. A case is a folder, its stage folder is its status, one core writes on everyone's behalf. Also the web surface (`web/`) and one configuration per domain (`config/<domain>/`). |
+| `apps/cockpit/` | The surface over the core: one sign-in, workspaces, accounts with their own AI subscription, an agent panel beside every case. |
+| `apps/gatehouse/` | Standalone canon elicitation. Since 2026-10-25 Gatehouse runs as a casefile application (`config/gatehouse`, ADR-021); this app stays until that path has carried a real run. |
+| `apps/mailsort/` | Mail pre-sorting. Exploration, moves nothing yet. |
+| `services/oracle/` | Oracle Database Free: schema, migrations, seed data for the Oracle demo. |
+| `infra/pressroom/` | `pressroom-env`: development, test and production on one server, described in one file. |
+| `infra/ansible/` | Server provisioning and hardening. |
+| `sandbox/` | The whole system offline on one Mac, with fictional sample worlds. |
+| `tools/` | Guards the checks run: design values only go down, the core imports no adapter or web framework. |
+| `docs/adr/` | Architecture decisions, one home for all. |
+| `docs/runbooks/`, `docs/requirements/`, `docs/use-cases/` | Operations and the requirements chain. |
 
-**Environment rule:** every area runs the same three-instance structure — Development, Test, Production — via configuration (backend ENV, Oracle PDBs, Ansible inventories). See `docs/adr/`.
+## Run it
 
-## Backend (services/backend)
-
-**Stack:** Python 3.11 + FastAPI + PostgreSQL + Docker
-
-- **Item Manager Module** - Generic CRUD with JSONB payload, tags, soft-delete
-- **Search & Filter** - Full-text search (`?search=`) + tag filtering (`?tags=`)
-- **Authentication** - Bearer token auth with MockAuth adapter (Clerk-ready)
-- **Ownership** - Items scoped to authenticated user
-- **Clean Architecture** - API → Modules → Adapters → Infrastructure
-- **Logging** - structlog with JSON output
-- **Error Handling** - RFC 7807 Problem Details standard
-
-### Quick Start
+The quickest way is the sandbox: everything offline, fictional data, `reset` brings it back.
 
 ```bash
-git clone https://github.com/chrisbuilds64/develop.git
-cd develop
-
-docker-compose up -d
-
-# API runs at http://localhost:8000
-# Docs at http://localhost:8000/docs
+python3.12 sandbox/sandbox.py setup   # once, needs the network
+python3 sandbox/sandbox.py up         # http://127.0.0.1:8200
+python3 sandbox/sandbox.py check      # play every demo flow headless
 ```
 
-### API Endpoints
+Details in [sandbox/SANDBOX.md](sandbox/SANDBOX.md). Tests per application:
 
-**Authentication:** All endpoints require `Authorization: Bearer <token>` header.
-
-> **⚠️ Auth is a mock.** MockAuth is a development adapter: static tokens, no real identity verification, no security. It exists so the ownership model is Clerk-ready (v2). Any deployment running MockAuth must be treated as unprotected — do not put sensitive data behind it.
-
-**Test tokens (MockAuth):**
-- `test-chris` → user chris
-- `test-lars` → user lars
-- `test-lily` → user lily
-
-```
-POST   /api/v1/items              # Create item
-GET    /api/v1/items              # List items
-GET    /api/v1/items?search=foo   # Full-text search
-GET    /api/v1/items?tags=a,b     # Filter by tags
-GET    /api/v1/items/{id}         # Get item
-PUT    /api/v1/items/{id}         # Update item
-DELETE /api/v1/items/{id}         # Soft-delete item
+```bash
+cd apps/casefile && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" && .venv/bin/python -m pytest -q
 ```
 
-## Building in Public
+## How changes get in
 
-This is part of the [chrisbuilds64](https://github.com/chrisbuilds64) journey.
+No one pushes to `main`, the owner included. Every change is a pull request with green checks, merged by the product
+owner. Releases are tags (`YYYY.MM.N`) that travel through development, test and production. The whole way:
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
-Follow along:
+## Earlier work
+
+The FastAPI item service, the tweight and PressRoom Flutter apps, Feldorakel and the LangGraph experiments were
+removed on 2026-11-08. Their last state is tag `archive/2026-11-08-legacy`.
+
+## Building in public
+
 - [Substack](https://chrisbuilds64.substack.com)
 - [LinkedIn](https://linkedin.com/in/chrisbuilds64)
 - [TikTok](https://tiktok.com/@chrisbuilds64)

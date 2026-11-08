@@ -36,8 +36,8 @@ Draft → Review → Approved → In Progress → Completed
 | ID | Feature | Status | Created |
 |----|---------|--------|---------|
 | REQ-000 | Infrastructure Standards | Approved | 2026-01-20 |
-| REQ-001 | Authentication | In Progress | 2026-01-20 |
-| REQ-002 | tweight App (Flutter) | Draft | 2026-01-20 |
+
+REQ-001 (Authentication) and REQ-002 (tweight) belonged to the removed item API and the tweight app; they live in tag `archive/2026-11-08-legacy`.
 
 ## Important
 
