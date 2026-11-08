@@ -51,10 +51,18 @@ def install(settings: Settings, env: Env, dav_url: str) -> dict[str, str]:
     ws = d / "home" / "ChrisBuilds64"
     env.mount.mkdir(parents=True, exist_ok=True)
     ensure_davfs_secret(settings, env, dav_url)
+    spaces = {}                                         # ADR-027: a further team folder per space, mounted beside the stage's own
+    for sp in env.spaces:
+        sp.mount.mkdir(parents=True, exist_ok=True)
+        url = f"{s.dav_base}/{sp.folder}"
+        ensure_davfs_secret(settings, env, url)
+        spaces[mount_unit_name(sp.mount)] = _render("mount.mount", what=url, where=sp.mount, user=s.runner_user, label=f"{env.label} · {sp.label}")
+    cockpit_needs = " ".join([names["mount"], *spaces])
 
     units = {
         names["mount"]: _render("mount.mount", what=dav_url, where=env.mount, user=s.runner_user, label=env.label),
-        names["cockpit"]: _render("cockpit.service", env=env.name, label=env.label, dir=d, mount_unit=names["mount"], user=s.runner_user),
+        **spaces,
+        names["cockpit"]: _render("cockpit.service", env=env.name, label=env.label, dir=d, mount_unit=cockpit_needs, user=s.runner_user),
         names["runner"]: _render("runner.service", env=env.name, label=env.label, dir=d, home=d / "home", ws=ws,
                                  mount_unit=names["mount"], user=s.runner_user, data=env.mount / "flow",
                                  claude=s.claude_bin, codex=s.claude_bin.parent / "codex", env_file=s.runner_env_file,
@@ -77,10 +85,12 @@ def install(settings: Settings, env: Env, dav_url: str) -> dict[str, str]:
                run(["systemctl", "is-active", legacy], check=False, quiet=True).returncode == 0:
                 run(["systemctl", "disable", "--now", legacy], check=False)
                 log.info("legacy unit stopped and disabled: %s", legacy)
+    for unit in spaces:
+        run(["systemctl", "enable", "--now", unit])
     for key in ("mount", "cockpit", "runner"):
         run(["systemctl", "enable", "--now", names[key]])
         run(["systemctl", "restart", names[key]])
-    return names
+    return {**names, **{f"space:{u}": u for u in spaces}}
 
 
 def status(settings: Settings) -> list[dict]:

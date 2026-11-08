@@ -37,6 +37,10 @@ jobs:
           python -m venv /tmp/ck && /tmp/ck/bin/pip install -q --upgrade pip
           /tmp/ck/bin/pip install -q -e apps/casefile -e "apps/cockpit[dev]"
           cd apps/cockpit && /tmp/ck/bin/python -m pytest -q
+      - name: pressroom-env
+        run: |
+          python -m venv /tmp/pe && /tmp/pe/bin/pip install -q pytest
+          cd infra/pressroom && /tmp/pe/bin/python -m pytest -q tests
 
   guards:
     runs-on: ubuntu-latest

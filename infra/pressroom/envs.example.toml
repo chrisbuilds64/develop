@@ -39,3 +39,14 @@ port = 8201
 base_path = "/test"
 ref = "main"
 clone_from = "prod"
+
+# A further live workspace of a stage, in a team folder of its own (ADR-027) — e.g. the software changes beside the
+# content. pressroom-env creates the team folder, mounts it beside the stage's own, registers the application and the
+# workspace, and creates the stage folders its configuration names. Spaces are not cloned.
+# [[env.prod.space]]
+# id = "softwarehaus"
+# folder = "softwarehaus"
+# mount = "/srv/softwarehaus"
+# application = "softwareaenderung"
+# label = "Softwarehaus"
+# members = ["chris", "akhil"]

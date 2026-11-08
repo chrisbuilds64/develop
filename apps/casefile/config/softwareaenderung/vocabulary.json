@@ -1,0 +1,211 @@
+{
+  "$comment": "Every word the surface shows for a software change, in German and English.",
+  "de": {
+    "product": "Softwareänderung",
+    "labels": {
+      "SW": "Änderung"
+    },
+    "stations": {
+      "task": "Auftrag",
+      "build": "Umsetzung",
+      "checks": "Prüfung",
+      "approval": "Freigabe",
+      "release": "Release",
+      "entw": "ENTW",
+      "test": "TEST",
+      "prod": "PROD",
+      "closed": "Abgeschlossen"
+    },
+    "stages": {
+      "10-auftrag": "Auftrag beschrieben, wartet auf Bestätigung",
+      "20-umsetzung": "in Arbeit auf einem Branch",
+      "30-pruefung": "Pull Request offen, Prüfungen laufen",
+      "40-freigabe": "geprüft, wartet auf Merge",
+      "50-release": "gemergt, Release wird getaggt",
+      "60-entw": "in ENTW, wartet auf Abnahme",
+      "70-test": "in TEST, wartet auf Freigabe PROD",
+      "80-prod": "in PROD, Nachweis folgt",
+      "90-abgeschlossen": "in PROD, abgeschlossen"
+    },
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "Läuft gerade",
+      "others": "Bei anderen",
+      "date": "Termin",
+      "planned": "Geplant",
+      "out": "Abgeschlossen",
+      "ideas": "Neu",
+      "archive": "Archiv"
+    },
+    "actions": {
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten",
+      "reopen": "Zurückholen",
+      "remind": "Erinnern",
+      "take_back": "Zurücknehmen",
+      "undo": "Rückgängig",
+      "correct": "Korrektur eröffnen",
+      "accept_task": "Auftrag bestätigen",
+      "open_pr": "Pull Request eröffnet",
+      "checks_green": "Prüfungen grün",
+      "merge": "Mergen",
+      "send_back": "Zurück in die Umsetzung",
+      "deploy_entw": "Auf ENTW gebracht",
+      "approve_test": "ENTW abnehmen, für TEST freigeben",
+      "approve_prod": "TEST abnehmen, für PROD freigeben",
+      "close": "Abschließen"
+    },
+    "reasons": {
+      "running": "es läuft gerade",
+      "failed": "der letzte Lauf ist gescheitert",
+      "missing": "es fehlt noch etwas"
+    },
+    "texts": {
+      "done": "Erledigt.",
+      "deliver": "Abgelegt.",
+      "detected": "Von Hand verschoben",
+      "detected_text": "Die Akte lag in {stage}; der Verlauf kannte zuletzt {known}.",
+      "delivered_title": "Abgelegt: {files}",
+      "replay_moved": "Weiter.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert.",
+      "reminder": "Erinnerung",
+      "reminder_text": "Kannst du dir diesen Fall ansehen?",
+      "undone": "Rückgängig: {action}",
+      "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
+      "correction": "Korrektur: {title}"
+    },
+    "files": {
+      "auftrag.md": "Auftrag",
+      "pr.md": "Pull Request",
+      "pruefung.md": "Prüfung",
+      "release.md": "Release",
+      "test.md": "TEST",
+      "prod.md": "PROD"
+    },
+    "roles": {
+      "product_owner": "Product Owner",
+      "developer": "Entwicklung"
+    },
+    "words": {
+      "external_id": "Release"
+    },
+    "requires": {
+      "shape:image": "mindestens ein Foto",
+      "shape:pdf": "ein PDF",
+      "shape:video": "ein Video",
+      "answered": "eine Antwort",
+      "decided:": "deine Entscheide",
+      "primary": "das Hauptdokument"
+    }
+  },
+  "en": {
+    "product": "Software change",
+    "labels": {
+      "SW": "Change"
+    },
+    "stations": {
+      "task": "Task",
+      "build": "Build",
+      "checks": "Checks",
+      "approval": "Approval",
+      "release": "Release",
+      "entw": "ENTW",
+      "test": "TEST",
+      "prod": "PROD",
+      "closed": "Closed"
+    },
+    "stages": {
+      "10-auftrag": "task written, waiting for confirmation",
+      "20-umsetzung": "in progress on a branch",
+      "30-pruefung": "pull request open, checks running",
+      "40-freigabe": "checked, waiting for the merge",
+      "50-release": "merged, release being tagged",
+      "60-entw": "in ENTW, waiting for acceptance",
+      "70-test": "in TEST, waiting for PROD",
+      "80-prod": "in PROD, record pending",
+      "90-abgeschlossen": "in PROD, closed"
+    },
+    "groups": {
+      "you": "Your move",
+      "claude": "Running",
+      "others": "With others",
+      "date": "Dated",
+      "planned": "Planned",
+      "out": "Closed",
+      "ideas": "New",
+      "archive": "Archive"
+    },
+    "actions": {
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "File",
+      "see_failure": "See what went wrong",
+      "wait": "Wait",
+      "reopen": "Move back",
+      "remind": "Send a reminder",
+      "take_back": "Take it back",
+      "undo": "Undo",
+      "correct": "Open a correction",
+      "accept_task": "Confirm the task",
+      "open_pr": "Pull request opened",
+      "checks_green": "Checks green",
+      "merge": "Merge",
+      "send_back": "Back to the build",
+      "deploy_entw": "Deployed to ENTW",
+      "approve_test": "Accept ENTW, release to TEST",
+      "approve_prod": "Accept TEST, release to PROD",
+      "close": "Close"
+    },
+    "reasons": {
+      "running": "running",
+      "failed": "the last run failed",
+      "missing": "something is missing"
+    },
+    "texts": {
+      "done": "Done.",
+      "deliver": "Filed.",
+      "detected": "Moved by hand",
+      "detected_text": "The case was found in {stage}; the thread last knew {known}.",
+      "delivered_title": "Filed: {files}",
+      "replay_moved": "Moved on.",
+      "headline_default": "{label}: {title}",
+      "lock_default": "{label}; opens once {missing} is in the file.",
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}.",
+      "reminder": "Reminder",
+      "reminder_text": "Could you take a look at this case?",
+      "undone": "Undone: {action}",
+      "undone_text": "Taken back before the next step started.",
+      "correction": "Correction: {title}"
+    },
+    "files": {
+      "auftrag.md": "Task",
+      "pr.md": "Pull request",
+      "pruefung.md": "Checks",
+      "release.md": "Release",
+      "test.md": "TEST",
+      "prod.md": "PROD"
+    },
+    "roles": {
+      "product_owner": "Product Owner",
+      "developer": "Development"
+    },
+    "words": {
+      "external_id": "Release"
+    },
+    "requires": {
+      "shape:image": "at least one photo",
+      "shape:pdf": "a PDF",
+      "shape:video": "a video",
+      "answered": "an answer",
+      "decided:": "your decisions",
+      "primary": "the primary document"
+    }
+  }
+}

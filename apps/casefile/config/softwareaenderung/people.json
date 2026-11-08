@@ -1,0 +1,29 @@
+{
+  "$comment": "Default people of a software workspace; a workspace's own people.json wins. The product owner confirms tasks, merges and accepts each stage. Developers are people or agents; an agent's work is approved by a person (four eyes on the pull request).",
+  "people": [
+    {
+      "id": "chris",
+      "name": "Chris",
+      "kind": "human",
+      "roles": [
+        "product_owner"
+      ]
+    },
+    {
+      "id": "akhil",
+      "name": "Akhil",
+      "kind": "human",
+      "roles": [
+        "developer"
+      ]
+    },
+    {
+      "id": "axel",
+      "name": "Axel",
+      "kind": "agent",
+      "roles": [
+        "developer"
+      ]
+    }
+  ]
+}

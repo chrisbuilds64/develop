@@ -1,0 +1,139 @@
+"""A software change through the way of CONTRIBUTING.md (REQ-002): task confirmed by the product owner, built and
+checked by a developer, merged by the product owner (never by the author of the pull request), then ENTW, TEST and
+PROD, each accepted by the product owner. The developer here is an agent; every gate is a person."""
+
+import json
+from pathlib import Path
+
+from casefile.config import DomainConfig
+from casefile.domain import cases as reading
+from casefile.domain import step as stepping
+from casefile.domain.turn import turn as whose
+from casefile.models import StepRequest
+from casefile.store import FsStore
+
+CFG = Path(__file__).resolve().parents[1] / "config" / "softwareaenderung"
+STAGES = ("10-auftrag", "20-umsetzung", "30-pruefung", "40-freigabe", "50-release", "60-entw", "70-test", "80-prod", "90-abgeschlossen")
+CID = "SW-2026-001-split-the-api"
+
+
+def world(tmp_path: Path):
+    root = tmp_path / "flow"
+    for s in STAGES:
+        (root / s).mkdir(parents=True)
+    case = root / "10-auftrag" / CID
+    case.mkdir()
+    (case / "meta.json").write_text(json.dumps({"label": "SW", "number": "2026-001", "title": "Split the API", "configVersion": "1"}), encoding="utf-8")
+    (case / "review.md").write_text("", encoding="utf-8")
+    store = FsStore(root)
+    return root, store, DomainConfig.load(CFG, root)
+
+
+class Steps:
+    def __init__(self, store, config):
+        self.store, self.config, self.n = store, config, 0
+
+    def __call__(self, action, by, **payload):
+        self.n += 1
+        return stepping.step(self.store, self.config, CID, StepRequest(action=action, step_id=f"s{self.n}", payload=payload), by)
+
+    def deliver(self, root, name, by, text="x"):
+        (root / reading.load(self.store, self.config, CID).stage / CID / name).write_text(text, encoding="utf-8")
+        r = self("deliver", by, files=[name])
+        assert r.ok, r.reason
+        return r
+
+
+def stage(store, config):
+    return reading.load(store, config, CID).stage
+
+
+def test_the_whole_way_from_task_to_prod(tmp_path):
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "auftrag.md", "axel")
+    assert go("accept_task", "chris").ok
+    go.deliver(root, "pr.md", "axel", "https://example.org/pull/4")
+    assert go("open_pr", "axel").ok
+    go.deliver(root, "pruefung.md", "axel")
+    assert go("checks_green", "axel").ok
+    assert go("merge", "chris").ok
+    go.deliver(root, "release.md", "axel")
+    assert go("deploy_entw", "axel").ok
+    assert go("approve_test", "chris").ok
+    go.deliver(root, "test.md", "axel")
+    assert go("approve_prod", "chris").ok
+    go.deliver(root, "prod.md", "axel")
+    assert go("close", "axel").ok
+    assert stage(store, config) == "90-abgeschlossen"
+
+
+def test_a_task_moves_only_when_the_product_owner_confirms_it(tmp_path):
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    assert not go("accept_task", "chris").ok                       # no task written yet
+    go.deliver(root, "auftrag.md", "axel")
+    r = go("accept_task", "axel")                                  # the developer cannot confirm their own task
+    assert not r.ok and "product_owner" in r.reason
+    assert go("accept_task", "chris").ok
+
+
+def test_the_author_of_the_pull_request_cannot_merge_it(tmp_path):
+    root, store, config = world(tmp_path)
+    data = json.loads((CFG / "people.json").read_text(encoding="utf-8"))
+    for p in data["people"]:
+        if p["id"] == "chris":
+            p["roles"] = ["product_owner", "developer"]               # a product owner who also writes code
+    (root / "people.json").write_text(json.dumps(data), encoding="utf-8")
+    config = DomainConfig.load(CFG, root)
+    go = Steps(store, config)
+    go.deliver(root, "auftrag.md", "axel")
+    assert go("accept_task", "chris").ok
+    go.deliver(root, "pr.md", "chris")
+    assert go("open_pr", "chris").ok
+    go.deliver(root, "pruefung.md", "axel")
+    assert go("checks_green", "axel").ok
+    r = go("merge", "chris")
+    assert not r.ok and "four eyes" in r.reason
+    assert stage(store, config) == "40-freigabe"
+
+
+def test_the_merge_waits_for_the_recorded_checks_and_can_send_the_change_back(tmp_path):
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "auftrag.md", "axel")
+    go("accept_task", "chris")
+    go.deliver(root, "pr.md", "axel")
+    go("open_pr", "axel")
+    assert not go("checks_green", "axel").ok                       # no check run recorded
+    go.deliver(root, "pruefung.md", "axel")
+    go("checks_green", "axel")
+    assert not go("send_back", "chris").ok                         # a send-back says why
+    assert go("send_back", "chris", note="The tests describe the code, not the requirement.").ok
+    assert stage(store, config) == "20-umsetzung"
+
+
+def test_whose_move_names_the_agent_while_it_builds_and_the_owner_at_each_gate(tmp_path):
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "auftrag.md", "axel")
+    moves = whose(reading.load(store, config, CID), config)
+    assert moves and moves[0].actor == "role:product_owner"
+    go("accept_task", "chris")
+    moves = whose(reading.load(store, config, CID), config)
+    assert moves and moves[0].actor == "role:developer"
+    assert [p.id for p in config.persons_for("role:developer")] == ["akhil", "axel"]
+
+
+def test_both_languages_name_every_stage_action_and_file(tmp_path):
+    vocab = json.loads((CFG / "vocabulary.json").read_text(encoding="utf-8"))
+    stages = json.loads((CFG / "stages.json").read_text(encoding="utf-8"))["stages"]
+    files = [a["file"] for a in json.loads((CFG / "artifacts.json").read_text(encoding="utf-8"))["formats"]["SW"]["artifacts"]]
+    for lang in ("de", "en"):
+        v = vocab[lang]
+        for s in stages:
+            assert s["key"] in v["stations"] and s["folder"] in v["stages"]
+            for a in s.get("actions", []):
+                assert a["id"] in v["actions"]
+        for f in files:
+            assert f in v["files"]

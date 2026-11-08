@@ -1,0 +1,164 @@
+{
+  "$comment": "A change to our own software as a case (REQ-002, ADR-027). The way of a change from CONTRIBUTING.md, stage by stage: the product owner confirms the task, a developer (a person or an agent) builds it on a branch and records the pull request, the checks are recorded, the product owner merges (four eyes: never the author of the pull request), the release is a tag, and each stage (ENTW, TEST, PROD) is accepted by the product owner. Every record is a file in the case; nothing is claimed that is not linked.",
+  "name": "Software change",
+  "lang": "en",
+  "configVersion": "1",
+  "stages": [
+    {
+      "folder": "10-auftrag",
+      "key": "task",
+      "group": "you",
+      "turn": "role:product_owner",
+      "actions": [
+        {
+          "id": "accept_task",
+          "label": "accept_task",
+          "to": "20-umsetzung",
+          "requires": [
+            "auftrag.md"
+          ],
+          "entry_status": "approved"
+        }
+      ]
+    },
+    {
+      "folder": "20-umsetzung",
+      "key": "build",
+      "group": "you",
+      "turn": "role:developer",
+      "actions": [
+        {
+          "id": "open_pr",
+          "label": "open_pr",
+          "to": "30-pruefung",
+          "requires": [
+            "pr.md"
+          ],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "30-pruefung",
+      "key": "checks",
+      "group": "you",
+      "turn": "role:developer",
+      "actions": [
+        {
+          "id": "checks_green",
+          "label": "checks_green",
+          "to": "40-freigabe",
+          "requires": [
+            "pruefung.md"
+          ],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "40-freigabe",
+      "key": "approval",
+      "group": "you",
+      "turn": "role:product_owner",
+      "actions": [
+        {
+          "id": "merge",
+          "label": "merge",
+          "to": "50-release",
+          "requires": [
+            "pr.md",
+            "pruefung.md"
+          ],
+          "four_eyes": true,
+          "seal": true,
+          "entry_status": "approved"
+        },
+        {
+          "id": "send_back",
+          "label": "send_back",
+          "to": "20-umsetzung",
+          "payload": [
+            "note"
+          ],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "50-release",
+      "key": "release",
+      "group": "you",
+      "turn": "role:developer",
+      "actions": [
+        {
+          "id": "deploy_entw",
+          "label": "deploy_entw",
+          "to": "60-entw",
+          "requires": [
+            "release.md"
+          ],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "60-entw",
+      "key": "entw",
+      "group": "you",
+      "turn": "role:product_owner",
+      "actions": [
+        {
+          "id": "approve_test",
+          "label": "approve_test",
+          "to": "70-test",
+          "requires": [
+            "release.md"
+          ],
+          "seal": true,
+          "entry_status": "approved"
+        }
+      ]
+    },
+    {
+      "folder": "70-test",
+      "key": "test",
+      "group": "you",
+      "turn": "role:product_owner",
+      "actions": [
+        {
+          "id": "approve_prod",
+          "label": "approve_prod",
+          "to": "80-prod",
+          "requires": [
+            "test.md"
+          ],
+          "seal": true,
+          "entry_status": "approved"
+        }
+      ]
+    },
+    {
+      "folder": "80-prod",
+      "key": "prod",
+      "group": "you",
+      "turn": "role:developer",
+      "actions": [
+        {
+          "id": "close",
+          "label": "close",
+          "to": "90-abgeschlossen",
+          "requires": [
+            "prod.md"
+          ],
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "90-abgeschlossen",
+      "key": "closed",
+      "group": "out",
+      "turn": null
+    }
+  ]
+}
