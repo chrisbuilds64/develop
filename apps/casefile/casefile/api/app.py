@@ -1432,7 +1432,7 @@ def create_app(settings: Settings) -> FastAPI:
         human = bool(me and me.kind == "human")
         return ModuleHistory(id=module_id, in_force=_version(now, c.lang), draft=_version(d, c.lang), versions=[_version(v, c.lang) for v in rulebook.history(c.store, module_id)],
                              may_edit=human and "operator" in me.roles,
-                             may_approve=bool(d and human and set(me.roles) & {"operator", "approver"} and d.get("drafted_by") != me.name))
+                             may_approve=bool(d and human and set(me.roles) & {"operator", "approver"} and not ((d.get("drafted_by_id") == me.id) if d.get("drafted_by_id") else d.get("drafted_by") == me.name)))
 
     def _rulebook_refused(exc: Exception) -> JSONResponse:
         return JSONResponse(status_code=409, content={"ok": False, "reason": str(exc)})

@@ -104,3 +104,43 @@ def test_a_letter_only_ever_takes_the_original_text_and_a_reader_sees_their_lang
     assert m["B-01"]["text"].startswith("Dear") and m["B-01"]["title"] == "Greeting and case reference" and m["R-01"]["approved_by"] == "Management"
     c.post("/api/session/lang", json={"lang": "de"})
     assert {x["id"]: x for x in c.get("/api/rules").json()["modules"]}["B-01"]["text"].startswith("Sehr geehrte")
+
+
+def test_a_change_brought_into_force_after_a_case_started_that_same_day_does_not_reach_it(tmp_path):
+    """Review S3: the day alone let a version approved at 14:00 into a case created at 09:00 the same day."""
+    root, c = _clients(tmp_path)
+    c["du"].post("/api/rulebook/R-05/draft", json={"text": "Neue Fassung."})
+    c["innendienst"].post("/api/rulebook/R-05/approve")
+    store = FsStore(root)
+    v2 = rulebook.current(store)["R-05"]
+    since = v2["in_force_since"]
+    assert v2["version"] == "2" or int(v2["version"]) == 2
+    before = (dt.datetime.fromisoformat(since) - dt.timedelta(hours=1)).isoformat(timespec="seconds")
+    after = (dt.datetime.fromisoformat(since) + dt.timedelta(minutes=1)).isoformat(timespec="seconds")
+    assert int(rulebook.in_force_at(store, before)["R-05"]["version"]) == 1                  # the case began under v1
+    assert int(rulebook.in_force_at(store, after)["R-05"]["version"]) == 2
+
+
+def test_every_rulebook_entry_point_refuses_an_id_that_is_not_one(tmp_path):
+    """Review S5: only the draft checked the id; the others put it into a file pattern."""
+    root, c = _clients(tmp_path)
+    for path in ("/api/rulebook/R-*/approve", "/api/rulebook/R-*/retire", "/api/rulebook/R-*/reject"):
+        r = c["innendienst"].post(path, json={"note": "x", "reason": "x"})
+        assert r.status_code in (404, 409, 422) and not list((root / "_bausteine").rglob("*\\**")), path
+    assert c["du"].get("/api/rulebook/R-*").status_code == 404
+
+
+def test_four_eyes_goes_by_the_person_not_by_the_name(tmp_path):
+    """Review S6: a namesake could approve a draft as if they were somebody else, and a renamed person their own."""
+    root, c = _clients(tmp_path)
+    c["du"].post("/api/rulebook/R-05/draft", json={"text": "Neue Fassung."})
+    store = FsStore(root)
+    from casefile.config import DomainConfig
+    config = DomainConfig.load(CONFIG / "egutachten", root)
+    me = config.person("du")
+    me.name = "Umbenannt"                                                                      # the same person, another name
+    try:
+        rulebook.approve(store, config, "R-05", "du")
+        assert False, "the author approved their own draft"
+    except rulebook.RulebookError as exc:
+        assert "four eyes" in str(exc)

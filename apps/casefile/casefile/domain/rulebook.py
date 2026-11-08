@@ -24,7 +24,8 @@ FOLDER = "_bausteine"
 HISTORY = f"{FOLDER}/_fassungen"
 ID = re.compile(r"^[A-Z]{1,3}-\d{2,3}$")
 APPROVED, DRAFT, RETIRED, REJECTED = "freigegeben", "entwurf", "zurückgezogen", "verworfen"
-HEAD_ORDER = ("id", "kind", "title", "version", "status", "areas", "approved_by", "date", "drafted_by", "note", "source", "reason")
+HEAD_ORDER = ("id", "kind", "title", "version", "status", "areas", "approved_by", "date", "in_force_since", "drafted_by",
+              "drafted_by_id", "note", "source", "reason")
 
 
 class RulebookError(Exception):
@@ -75,8 +76,26 @@ def current(store: FsStore) -> dict[str, dict]:
     return out
 
 
+def _check_id(module_id: str) -> None:
+    """Every entry point takes the id into a file name or pattern, so every one checks it (review S5)."""
+    if not ID.match(module_id or ""):
+        raise RulebookError(f"'{module_id}' is not a module id (like R-08 or B-19)")
+
+
+def _moment(value) -> str:
+    """A date or a time, comparable as text: `2026-11-08`, `2026-11-08 14:00:05`. A bare date is the start of its day."""
+    return str(value or "").replace("T", " ")[:19]
+
+
+def _since(mod: dict) -> str:
+    """When a version came into force: to the second where the app recorded it, else its day (review S3)."""
+    return _moment(mod.get("in_force_since") or mod.get("date"))
+
+
 def history(store: FsStore, module_id: str) -> list[dict]:
     """Every version of one module, oldest first. A module never edited in the app has its version in force as its history."""
+    if not ID.match(module_id or ""):
+        return []
     d = store.root / HISTORY
     found = {}
     for p in d.glob(f"{module_id}.v*.md") if d.is_dir() else []:
@@ -116,6 +135,10 @@ def _today() -> str:
     return dt.date.today().isoformat()
 
 
+def _now() -> str:
+    return dt.datetime.now().isoformat(sep=" ", timespec="seconds")
+
+
 def _slug(title: str) -> str:
     s = title.lower().translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}))
     return re.sub(r"[^a-z0-9]+", "-", s).strip("-")[:40] or "baustein"
@@ -144,7 +167,7 @@ def save_draft(store: FsStore, config: DomainConfig, module_id: str, by: str, te
         version = int(open_["version"]) if open_ else _next_version(store, module_id)      # after a rejected draft too
         mod = {"id": module_id, "kind": kind.strip() or base.get("kind", ""), "title": title.strip() or base.get("title", ""),
                "version": version, "status": DRAFT, "areas": ", ".join(areas) if areas is not None else (base or {}).get("areas", ""),
-               "drafted_by": config.person(by).name, "date": _today(), "note": note.strip(), "source": (open_ or now or {}).get("source", ""), "body": text.strip()}
+               "drafted_by": config.person(by).name, "drafted_by_id": by, "date": _today(), "note": note.strip(), "source": (open_ or now or {}).get("source", ""), "body": text.strip()}
         store.write_atomic(f"{HISTORY}/{module_id}.v{version}.md", _render(mod))
         if now and not store.exists(f"{HISTORY}/{module_id}.v{now['version']}.md"):     # the version in force joins the history once
             store.write_atomic(f"{HISTORY}/{module_id}.v{now['version']}.md", _render({k: v for k, v in now.items() if not k.startswith("_")}))
@@ -155,14 +178,16 @@ def approve(store: FsStore, config: DomainConfig, module_id: str, by: str) -> di
     """The open draft comes into force. Four eyes: not by the person who wrote it."""
     if not _may(config, by, ("operator", "approver")):
         raise RulebookError("an operator or an approver brings a change into force")
+    _check_id(module_id)
     with store.lock(f"_rulebook-{module_id}"):
         d = draft_of(store, module_id)
         if d is None:
             raise RulebookError(f"{module_id} has no open draft")
         me = config.person(by)
-        if d.get("drafted_by") == me.name:
+        wrote = d.get("drafted_by_id") == me.id if d.get("drafted_by_id") else d.get("drafted_by") == me.name   # by id (review S6)
+        if wrote:
             raise RulebookError(f"four eyes: {me.name} wrote this draft; somebody else brings it into force")
-        mod = {**d, "status": APPROVED, "approved_by": me.name, "date": _today()}
+        mod = {**d, "status": APPROVED, "approved_by": me.name, "date": _today(), "in_force_since": _now()}
         _put_in_force(store, module_id, mod)
     return mod
 
@@ -173,6 +198,7 @@ def retire(store: FsStore, config: DomainConfig, module_id: str, by: str, note: 
         raise RulebookError("only the people who run this place change the rulebook")
     if not note.strip():
         raise RulebookError("retiring needs its reason")
+    _check_id(module_id)
     with store.lock(f"_rulebook-{module_id}"):
         now = current(store).get(module_id)
         if now is None:
@@ -184,7 +210,7 @@ def retire(store: FsStore, config: DomainConfig, module_id: str, by: str, note: 
         if not store.exists(f"{HISTORY}/{module_id}.v{now['version']}.md"):
             store.write_atomic(f"{HISTORY}/{module_id}.v{now['version']}.md", _render({k: v for k, v in now.items() if not k.startswith("_")}))
         mod = {k: v for k, v in now.items() if not k.startswith("_")}
-        mod.update(version=_next_version(store, module_id), status=RETIRED, approved_by=config.person(by).name, date=_today(), note=note.strip())
+        mod.update(version=_next_version(store, module_id), status=RETIRED, approved_by=config.person(by).name, date=_today(), in_force_since=_now(), note=note.strip())
         _put_in_force(store, module_id, mod)
     return mod
 
@@ -195,6 +221,7 @@ def reject(store: FsStore, config: DomainConfig, module_id: str, by: str, reason
         raise RulebookError("an operator or an approver decides on a proposed change")
     if not reason.strip():
         raise RulebookError("rejecting needs its reason")
+    _check_id(module_id)
     with store.lock(f"_rulebook-{module_id}"):
         d = draft_of(store, module_id)
         if d is None:
@@ -216,13 +243,15 @@ def in_force_at(store: FsStore, when: str | None, label: str | None = None) -> d
     retired version dated on or before that day; a module that did not exist then is absent. Without `when`, today's.
     Modules outside the case's areas are marked `_skip`, so compose passes over them."""
     out = {}
-    day = str(when or "")[:10]
+    day = _moment(when)                                           # the case's start, to the second where it has one (review S3);
+    if len(day) == 10:                                            # a bare date says nothing of the hour: the whole day counts, as before
+        day += " 23:59:59"
     for mid, now in current(store).items():
         mod = now
-        if day and str(now.get("date") or "")[:10] > day:
+        if day and _since(now) > day:
             recorded = (store.root / HISTORY).is_dir() and any((store.root / HISTORY).glob(f"{mid}.v*.md"))
             if recorded:                                          # edited in the app: the history knows what stood that day
-                earlier = [v for v in history(store, mid) if v.get("status") in (APPROVED, RETIRED) and str(v.get("date") or "")[:10] <= day]
+                earlier = [v for v in history(store, mid) if v.get("status") in (APPROVED, RETIRED) and _since(v) <= day]
                 if not earlier:
                     continue                                      # it came into force after the case started
                 mod = earlier[-1]
