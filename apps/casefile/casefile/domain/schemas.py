@@ -34,16 +34,21 @@ def add(store, config, by: str, key: str, word: dict, based_on: str, step_id: st
         raise SchemaError("Pick an existing kind to start from.")
     if key in formats:
         raise SchemaError(f"There is already a kind with the code '{key}'.")
+    # A tree's artifacts.json replaces the domain's whole (config.py), it is not laid over it. So a tree without its own
+    # file starts from everything it reads today, never from nothing — else the next load knows only the new kind.
+    # A tree file that cannot be read is refused, not written over.
+    path = store.root / "artifacts.json"
+    if path.is_file():
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise SchemaError("This workspace's list of documents cannot be read; nothing was changed.") from exc
     try:
         line = value_lists.put_entry(store, config, by, lid, key, word, None, None, "active", step_id)
     except value_lists.ListError as exc:
         raise SchemaError(str(exc)) from exc
     with store.lock("_lists"):
-        path = store.root / "artifacts.json"
-        try:
-            tree = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
-        except (OSError, ValueError):
-            tree = {}
+        tree = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else copy.deepcopy(config.artifacts)
         model = copy.deepcopy(formats[based_on])
         tree.setdefault("formats", {})[key] = model
         store.write_json("artifacts.json", tree)
