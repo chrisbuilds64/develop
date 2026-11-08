@@ -126,7 +126,7 @@ def test_every_rulebook_entry_point_refuses_an_id_that_is_not_one(tmp_path):
     root, c = _clients(tmp_path)
     for path in ("/api/rulebook/R-*/approve", "/api/rulebook/R-*/retire", "/api/rulebook/R-*/reject"):
         r = c["innendienst"].post(path, json={"note": "x", "reason": "x"})
-        assert r.status_code in (404, 409, 422) and not list((root / "_bausteine").rglob("*\\**")), path
+        assert r.status_code in (404, 409, 422) and not [p for p in (root / "_bausteine").rglob("*") if "*" in p.name], path
     assert c["du"].get("/api/rulebook/R-*").status_code == 404
 
 
