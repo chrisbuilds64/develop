@@ -293,3 +293,22 @@ def test_home_brings_todays_seals_from_every_world_and_quotes_have_their_own_num
     assert all("seals" in p for p in parts.values())
     ids = {t["case"]["external_id"] for t in parts["quotes"]["turns"]}
     assert ids and all(i.startswith("AN-") for i in ids)
+
+
+def test_a_client_without_cookies_cannot_make_ai_teams_without_limit(tmp_path):
+    """Review B2: every call without a team cookie made a new team directory, past every limit, and the cap then
+    swept real visitors' sandboxes. A new team counts against the limit for new sandboxes, like every other."""
+    build_claims(tmp_path / "w" / "claims")
+    settings = Settings(secret="t", demo=True, samples_dir=HERE / "samples", replies_dir=None, sessions_dir=tmp_path / "sessions",
+                        sessions_per_minute=4,
+                        worlds={"claims": World(config_dir=CONFIG / "claims-demo", template=tmp_path / "w" / "claims", person="du", lang="de")})
+    app = create_app(settings)
+    visitor = TestClient(app)
+    assert visitor.get("/api/team").status_code == 200                  # one sandbox, one team: two of the four
+    codes = [TestClient(app, cookies=visitor.cookies).post("/api/team/sessions", json={"agent": "quote"}).status_code
+             for _ in range(2)]
+    assert 200 in codes                                                 # a team cookie-less caller with a sandbox: within the limit
+    burst = [TestClient(app).post("/api/team/sessions", json={"agent": "quote"}).status_code for _ in range(6)]
+    assert 429 in burst
+    teams = [p for p in (tmp_path / "sessions").iterdir() if p.name.startswith("team-")]
+    assert len(teams) <= settings.sessions_per_minute

@@ -1056,7 +1056,10 @@ def create_app(settings: Settings) -> FastAPI:
             d = settings.sessions_dir / tid
             if tid.startswith("team-") and "/" not in tid and hmac.compare_digest(sig, _sign(settings.secret, tid)) and d.is_dir():
                 return DemoTeam(d)
+        if not limiter.allow("new:" + _client(request), settings.sessions_per_minute):     # review B2
+            raise HTTPException(429, "too many new sessions")
         t = DemoTeam.create(settings.sessions_dir)
+        _sweep()
         response.set_cookie(TEAM_COOKIE, f"{t.dir.name}.{_sign(settings.secret, t.dir.name)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
         return t
 
@@ -1085,7 +1088,7 @@ def create_app(settings: Settings) -> FastAPI:
         return t.view(c.lang if c.lang in ("en", "de") else "en")
 
     @app.post("/api/team/sessions")
-    async def team_start(request: Request, response: Response):
+    async def team_start(request: Request, response: Response, c: Ctx = Depends(ctx)):       # ctx carries the rate limit (review B2)
         t, body = _team(request, response), await request.json()
         return {"id": _team_do(lambda: t.start(str(body.get("agent", ""))))}
 
@@ -1562,6 +1565,9 @@ def create_app(settings: Settings) -> FastAPI:
                 continue
             other = _session_ctx(mapping[name]) if name in mapping else None
             if other is None:
+                # a sandbox made here counts against the same limit as every other new one (review B2)
+                if not limiter.allow("new:" + _client(request), settings.sessions_per_minute):
+                    raise HTTPException(429, "too many new sessions")
                 other = _new_session(name)
                 mapping[name] = other.session
             out[key] = {"label": other.config.name, "root": str(other.store.root), "config": str(settings.worlds[name].config_dir),
