@@ -1,6 +1,7 @@
 # ADR-025: Undo Until the Case Goes On, Then Corrections
 
-**Status:** Proposed (design hand-back, requests 1 and 2; for Chris to accept)
+**Status:** Accepted (Chris, 2026-11-08). Proposed in the design hand-back, requests 1 and 2. The points under
+*Open* stay open.
 **Date:** 2026-11-05
 
 ---

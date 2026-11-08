@@ -1,7 +1,7 @@
 # ADR-026: The Rulebook Edited in the App, as Versions
 
-**Status:** Proposed (design hand-back, request 9; for Chris to accept). Parts 1 to 4 are built on
-`casefile/design-backend`; part 5 is a proposal only.
+**Status:** Parts 1 to 4 accepted (Chris, 2026-11-08); part 5 deferred until after the DOAG conference (17–19.11.).
+Proposed in the design hand-back, request 9.
 **Date:** 2026-11-05
 
 ---
@@ -37,6 +37,15 @@ rulebook; what is missing is the history and the way a change comes into force.
    `_ablauf/stages.v<n>.json` with the same draft and four-eyes rules, `DomainConfig` loads the version a case names,
    and `turn()`/`step()` take the case's config instead of the one config. A version may only add or rename stages
    and actions; removing a stage that holds cases is refused. This touches every read path, so it waits for Chris.
+
+## Review amendments (2026-11-08)
+
+- **To the second.** A version records `in_force_since` (date and time) when it is approved or retired. A case with a
+  start time takes the versions in force at that moment; a case whose start is a bare date takes the whole day, as
+  before. Without this, a version approved at 14:00 reached a case created at 09:00 the same day.
+- **Four eyes by person.** A draft records `drafted_by_id`; approval compares ids, not display names. Older drafts
+  without the id fall back to the name.
+- **Every entry point checks the id** (`R-08`, `B-19`) before it reaches a file name or pattern.
 
 ## Alternatives
 
