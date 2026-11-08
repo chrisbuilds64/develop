@@ -26,16 +26,17 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: apps/*/pyproject.toml
-      - name: Install casefile and cockpit
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e "apps/casefile[dev]" -e "apps/cockpit[dev]"
+      # One environment per application, as on every machine and server: their test pins differ (httpx).
       - name: casefile
-        working-directory: apps/casefile
-        run: python -m pytest -q
+        run: |
+          python -m venv /tmp/cf && /tmp/cf/bin/pip install -q --upgrade pip
+          /tmp/cf/bin/pip install -q -e "apps/casefile[dev]"
+          cd apps/casefile && /tmp/cf/bin/python -m pytest -q
       - name: cockpit
-        working-directory: apps/cockpit
-        run: python -m pytest -q
+        run: |
+          python -m venv /tmp/ck && /tmp/ck/bin/pip install -q --upgrade pip
+          /tmp/ck/bin/pip install -q -e apps/casefile -e "apps/cockpit[dev]"
+          cd apps/cockpit && /tmp/ck/bin/python -m pytest -q
 
   guards:
     runs-on: ubuntu-latest
