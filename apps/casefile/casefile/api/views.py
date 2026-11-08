@@ -259,6 +259,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
              for s in case.slots]
     agent = config.agent
     back = stepping.reopen_target(config, case) or ""
+    if back and not stepping.may_reopen(config, viewer, back):
+        back = ""                                          # offered only to whom it is allowed (review S4)
     held = [p.name for p in stepping.holders(config, case, viewer)] if viewer else []
     pull = stepping.take_back_target(config, case, viewer) or ""
     undo = stepping.undoable(store, config, case, viewer) if store is not None else None

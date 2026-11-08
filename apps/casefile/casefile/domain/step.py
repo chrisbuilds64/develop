@@ -300,9 +300,22 @@ def _correct(store: FsStore, config: DomainConfig, j: Journal, case, person, req
     return _result(j)
 
 
+def may_reopen(config: DomainConfig, person_id: str | None, stage_id: str) -> bool:
+    """A closed case goes back only by a person who may act in the stage it returns to, or by an operator (review S4):
+    reopening undoes a closure, so it is not open to everyone the application knows."""
+    person = config.person(person_id) if person_id else None
+    if person is None or person.kind != "human":
+        return False
+    if config.may_act(person.id, "role:operator"):
+        return True
+    st = config.stage(stage_id)
+    return bool(st is not None and st.turn and config.may_act(person.id, st.turn))
+
+
 def _reopen(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
-    """Any person of the application (not an agent) may take a closed case back; it returns to the stage it left,
-    or to `payload.to` when that is an open stage. The stage's turn then says whose move it is."""
+    """A person (not an agent) who may act in the stage the case returns to, or an operator, takes a closed case back;
+    it returns to the stage it left, or to `payload.to` when that is an open stage. The stage's turn then says whose
+    move it is."""
     if person.kind != "human":
         return _refuse(store, j, f"{person.name} may not reopen a case; a person does that")
     target = reopen_target(config, case)
@@ -316,6 +329,8 @@ def _reopen(store: FsStore, config: DomainConfig, j: Journal, case, person, req:
         target = asked
     if target not in store.stages():
         return _refuse(store, j, f"stage '{target}' does not exist")
+    if not may_reopen(config, person.id, target):
+        return _refuse(store, j, f"{person.name} may not move this case back to {target}; it is not their stage")
     j.to = target
     _write_journal(store, j)
     return _complete(store, config, j)

@@ -315,3 +315,22 @@ def test_the_menu_knows_its_workspaces_and_each_card_who_it_is_from(tmp_path):
     assert me["places"][0]["color"].startswith("#")                                           # theme.app
     cards = [c for g in client.get("/api/cases").json() for c in g["cases"]]
     assert any(c["party"] == "Familie Beispiel" for c in cards)                               # meta.reported_by, before the address
+
+
+
+def test_only_a_person_of_the_returning_stage_or_an_operator_moves_a_closed_case_back(tmp_path):
+    """Review S4: reopening undoes a closure, so not everyone the application knows may do it."""
+    from casefile.api import views
+    root = build_claims(tmp_path / "claims")
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    cid = "KFZ-2026-0790-parkrempler"
+    target = stepping.reopen_target(config, cases.load(store, config, cid))
+    turn = config.stage(target).turn
+    outsider = next(p for p in config.people if p.kind == "human" and not config.may_act(p.id, "role:operator")
+                    and not config.may_act(p.id, turn))
+    assert views.view(config, cases.load(store, config, cid), outsider.id, "de", lambda c, n: "").reopen_to == ""
+    no = stepping.step(store, config, cid, StepRequest(action="reopen", step_id="back-x"), by=outsider.id)
+    assert not no.ok and "not their stage" in no.reason
+    assert views.view(config, cases.load(store, config, cid), "du", "de", lambda c, n: "").reopen_to == target
+    yes = stepping.step(store, config, cid, StepRequest(action="reopen", step_id="back-y"), by="du")   # the operator
+    assert yes.ok and yes.to == target
