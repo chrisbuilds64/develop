@@ -17,8 +17,24 @@ export const ViewCases = () => <svg {...base}><path d="M4 5h16v14H4zM4 10h16M9 1
 export const ViewBoard = () => <svg {...base}><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z" /></svg>;
 export const ViewList = () => <svg {...base}><path d="M4 6h16M4 12h16M4 18h16" /></svg>;
 export const Globe = () => <svg {...base}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>;
+export const RulebookIcon = () => <svg {...base}><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" /><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" /><path d="M9 8h6M9 11.5h4" /></svg>;
 export const Book = () => <svg {...base}><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z" /></svg>;
 export const Spark = () => <svg {...base}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M6.3 17.7l2.8-2.8M14.9 9.1l2.8-2.8" /></svg>;
 export const Check = () => <svg {...base}><path d="M5 12.5l4.5 4.5L19 7" /></svg>;
 export const Pen = () => <svg {...base}><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>;
 export const Cross = () => <svg {...base}><path d="M7 7l10 10M17 7L7 17" /></svg>;
+// the rail and Home (design hand-back)
+export const SearchIcon = () => <svg {...base}><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></svg>;
+export const HomeIcon = () => <svg {...base}><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5" /></svg>;
+export const Pulse = () => <svg {...base}><path d="M3 12h4l2.5-6 5 12L17 12h4" /></svg>;
+export const Updown = () => <svg {...base}><path d="M8 9l4-4 4 4M8 15l4 4 4-4" /></svg>;
+export const Play = () => <svg {...base}><circle cx="12" cy="12" r="9" /><path d="M10 8.5l5 3.5-5 3.5z" /></svg>;
+export const Seal = () => <svg {...base}><circle cx="12" cy="9" r="5.5" /><path d="M8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5" /></svg>;
+export const Contrast = () => <svg {...base}><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none" /></svg>;
+export const Speaker = ({ on }: { on: boolean }) => <svg {...base}><path d="M4 9v6h4l5 4V5L8 9z" />{on ? <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /> : <path d="M17 9l5 6M22 9l-5 6" />}</svg>;
+const small = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+export const DocIcon = () => <svg {...small}><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4M9 12h6M9 16h6" /></svg>;
+export const PenIcon = () => <svg {...small}><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>;
+export const PhotoIcon = () => <svg {...small}><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M21 16l-5-5-8 8" /></svg>;
+export const TeamIcon = () => <svg {...base}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .7 3.2 2.4 3.6 5.2" /></svg>;
+export const SetupIcon = () => <svg {...base}><circle cx="12" cy="12" r="3" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" /></svg>;

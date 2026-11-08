@@ -1,5 +1,6 @@
 """The demo: both worlds build, the invoice triggers the reconciliation, the replay plays it, the approval needs an amount, the sample lands."""
 
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -118,3 +119,218 @@ def test_the_e_report_path_draft_precheck_approve_letter(tmp_path):
     (root / "60-versendet" / cid3 / "gutachten.v2.md").write_text("# Nachtrag\n", encoding="utf-8")
     r = stepping.step(store, config, cid3, StepRequest(action="deliver", step_id="g3", payload={"files": ["gutachten.v2.md"]}), "lenz")
     assert r.ok and r.run and "vorpruefung" in r.run
+
+
+def test_every_entry_says_whether_a_person_or_the_ai_made_it(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    assert client.post("/api/session", json={"person": "du"}).status_code == 200
+    actors = {}
+    for group in client.get("/api/cases").json():
+        for card in group["cases"]:
+            for e in client.get(f"/api/cases/{card['id']}").json()["entries"]:
+                actors.setdefault(e["actor"], set()).add(e["author"])
+    assert "KI" in actors.get("ai", set()), actors          # the agent of people.json
+    assert actors.get("person") and not (actors["person"] & actors.get("ai", set()))
+    assert "**Actor:**" not in "".join(p.read_text(encoding="utf-8") for p in root.rglob("review.md"))   # derived, never written
+
+
+def test_a_closed_case_moves_back_to_where_it_left_the_work(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    assert client.post("/api/session", json={"person": "du"}).status_code == 200
+    cid = "KFZ-2026-0790-parkrempler"
+    v = client.get(f"/api/cases/{cid}").json()
+    assert v["stage"] == "60-abgeschlossen" and v["reopen_to"] == "40-regulierung" and v["reopen_word"]
+    r = client.post(f"/api/cases/{cid}/steps", json={"action": "reopen", "step_id": "back-1", "payload": {"text": "Rechnung fehlte"}}).json()
+    assert r["ok"] and r["from"] == "60-abgeschlossen" and r["to"] == "40-regulierung", r
+    v = client.get(f"/api/cases/{cid}").json()
+    assert v["stage"] == "40-regulierung" and v["reopen_to"] == "" and v["entries"][-1]["text"] == "Rechnung fehlte"
+    again = client.post(f"/api/cases/{cid}/steps", json={"action": "reopen", "step_id": "back-1"}).json()
+    assert again["replayed"] and again["to"] == "40-regulierung"                          # the same step twice is one step
+    no = client.post(f"/api/cases/{cid}/steps", json={"action": "reopen", "step_id": "back-2"}).json()
+    assert not no["ok"] and "not closed" in no["reason"]                                    # it is in the work again
+    other = "HR-2026-0388-leitungswasser-kueche"
+    bad = client.post(f"/api/cases/{other}/steps", json={"action": "reopen", "step_id": "back-3", "payload": {"to": "60-abgeschlossen"}}).json()
+    assert not bad["ok"] and "not an open stage" in bad["reason"]
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    ai = stepping.step(store, config, other, StepRequest(action="reopen", step_id="back-4"), by="ki")
+    assert not ai.ok and "a person does that" in ai.reason                                  # the AI never reopens
+
+
+def test_read_and_unread_are_per_person_like_mail(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    du, berger = TestClient(app), TestClient(app)
+    assert du.post("/api/session", json={"person": "du"}).status_code == 200
+    assert berger.post("/api/session", json={"person": "gutachter"}).status_code == 200
+
+    def unread(client, cid):
+        return next(c["unread"] for g in client.get("/api/cases").json() for c in g["cases"] if c["id"] == cid)
+
+    cid = "HR-2026-0417-wasserschaden-badezimmer"
+    assert unread(du, cid) and unread(berger, cid)                                        # never opened: new to both
+    assert du.post(f"/api/cases/{cid}/seen", json={}).json() == {"case": cid, "unread": False}
+    assert not unread(du, cid) and unread(berger, cid)                                    # per person
+    assert not du.get(f"/api/cases/{cid}").json()["unread"]
+    du.post(f"/api/cases/{cid}/entries", json={"kind": "note", "step_id": "n1", "text": "Fotos angefragt"})
+    assert not unread(du, cid)                                                            # my own note is nothing new to me
+    berger.post(f"/api/cases/{cid}/entries", json={"kind": "note", "step_id": "n2", "text": "Termin steht"})
+    assert unread(du, cid)                                                                # somebody else wrote since
+    du.post(f"/api/cases/{cid}/seen", json={})
+    assert du.post(f"/api/cases/{cid}/seen", json={"unread": True}).json()["unread"] is True   # mark as unread again
+    assert unread(du, cid)
+    closed = "KFZ-2026-0790-parkrempler"
+    assert not unread(du, closed)                                                         # a closed case has nothing new
+    assert du.post("/api/cases/nothing/seen", json={}).status_code == 404
+    assert (root / "_seen" / "du.json").is_file() and not any(p.name == "_seen" for p in root.iterdir() if p.name[:2].isdigit())
+
+
+def test_a_case_somebody_else_holds_can_be_reminded_or_taken_back(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    du, berger = TestClient(app), TestClient(app)
+    du.post("/api/session", json={"person": "du"})
+    berger.post("/api/session", json={"person": "gutachter"})
+    cid = "WG-2026-0425-glasbruch-wintergarten"
+    v = du.get(f"/api/cases/{cid}").json()
+    assert v["held_by"] == ["Gutachter Berger"] and v["take_back_to"] == "10-meldung" and v["take_back_word"]
+    assert berger.get(f"/api/cases/{cid}").json()["held_by"] == []                       # it is his own move
+    berger.post(f"/api/cases/{cid}/seen", json={})
+    r = du.post(f"/api/cases/{cid}/steps", json={"action": "remind", "step_id": "r1"}).json()
+    assert r["ok"] and r["entry"], r
+    last = du.get(f"/api/cases/{cid}").json()["entries"][-1]
+    assert last["for"] == "Gutachter Berger" and last["status"] == "info" and last["text"]
+    turns = berger.get(f"/api/cases/{cid}").json()["turns"]
+    assert [t["action"] for t in turns].count("answer") == 0                              # a nudge, not a new task
+    assert next(c["unread"] for g in berger.get("/api/cases").json() for c in g["cases"] if c["id"] == cid)   # but new to him
+    no = berger.post(f"/api/cases/{cid}/steps", json={"action": "remind", "step_id": "r2"}).json()
+    assert not no["ok"] and "nobody else" in no["reason"]
+    assert not berger.post(f"/api/cases/{cid}/steps", json={"action": "take_back", "step_id": "t0"}).json()["ok"]
+    r = du.post(f"/api/cases/{cid}/steps", json={"action": "take_back", "step_id": "t1"}).json()
+    assert r["ok"] and r["from"] == "20-besichtigung" and r["to"] == "10-meldung", r
+    v = du.get(f"/api/cases/{cid}").json()
+    assert v["held_by"] == [] and v["take_back_to"] == "" and any(t["actor"] == "du" or t["actor"].startswith("role:") for t in v["my_turns"])
+    nohist = du.get("/api/cases/KFZ-2026-0811-auffahrunfall-a3").json()
+    assert nohist["take_back_to"] == "10-meldung"                                       # no move on record: the stage before
+
+
+def test_undo_until_the_case_goes_on_then_only_a_correction(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    du, reg = TestClient(app), TestClient(app)
+    du.post("/api/session", json={"person": "du"})
+    reg.post("/api/session", json={"person": "regulierung"})
+    cid = "WG-2026-0402-hagelschaden-reihenhaus"
+    ok = du.post(f"/api/cases/{cid}/steps", json={"action": "approve_settlement", "step_id": "a1", "payload": {"amount": "4.200 €"}}).json()
+    assert ok["ok"] and ok["to"] == "40-regulierung", ok
+    v = du.get(f"/api/cases/{cid}").json()
+    assert v["undo_step"] == "a1" and v["undo_word"] and reg.get(f"/api/cases/{cid}").json()["undo_step"] == ""   # only the one who did it
+    assert not reg.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u0"}).json()["ok"]
+    u = du.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u1"}).json()
+    assert u["ok"] and u["from"] == "40-regulierung" and u["to"] == "30-pruefung", u
+    v = du.get(f"/api/cases/{cid}").json()
+    decision, undone = v["entries"][-2], v["entries"][-1]
+    assert undone["status"] == "undone" and undone["corrects"] == decision["id"] and decision["corrected_by"] == [undone["id"]]
+    assert v["stage"] == "30-pruefung" and v["undo_step"] == ""                            # an undo is not undone again
+    assert json.loads((root / "_steps" / "a1.json").read_text())["status"] == "undone"   # and no longer counts as done
+    assert du.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u1"}).json()["replayed"]
+
+    # approve again; this time the settlement desk goes on, so the decision is sealed
+    du.post(f"/api/cases/{cid}/steps", json={"action": "approve_settlement", "step_id": "a2", "payload": {"amount": "4.200 €"}})
+    reg.post(f"/api/cases/{cid}/entries", json={"kind": "note", "step_id": "n1", "text": "Zahlung vorbereitet"})
+    assert du.get(f"/api/cases/{cid}").json()["undo_step"] == ""
+    late = du.post(f"/api/cases/{cid}/steps", json={"action": "undo", "step_id": "u2"}).json()
+    assert not late["ok"] and "gone on" in late["reason"]
+    sealed = next(e for e in du.get(f"/api/cases/{cid}").json()["entries"] if e.get("step") == "a2")
+    assert not du.post(f"/api/cases/{cid}/steps", json={"action": "correct", "step_id": "c0", "payload": {"corrects": sealed["id"]}}).json()["ok"]   # a reason is required
+    c = du.post(f"/api/cases/{cid}/steps", json={"action": "correct", "step_id": "c1",
+                                                 "payload": {"corrects": sealed["id"], "text": "Selbstbehalt nicht abgezogen", "amount": "3.700 €"}}).json()
+    assert c["ok"], c
+    v = du.get(f"/api/cases/{cid}").json()
+    corr = v["entries"][-1]
+    assert corr["status"] == "correction" and corr["amount"] == "3.700 €" and corr["corrects"] == sealed["id"] and v["stage"] == "40-regulierung"
+    assert next(e for e in v["entries"] if e["id"] == sealed["id"])["amount"] == "4.200 €"   # the original stands
+    assert not du.post(f"/api/cases/{cid}/steps", json={"action": "correct", "step_id": "c2", "payload": {"corrects": undone["id"], "text": "x"}}).json()["ok"]
+    assert "**Corrects:** " + sealed["id"] in next(root.rglob(f"{cid}/review.md")).read_text(encoding="utf-8")
+
+
+def test_an_undo_left_half_way_is_completed_on_the_next_start(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    cid = "WG-2026-0402-hagelschaden-reihenhaus"
+    assert stepping.step(store, config, cid, StepRequest(action="approve_settlement", step_id="a1", payload={"amount": "1 €"}), by="du").ok
+    store.write_json("_steps/u9.json", {"step_id": "u9", "case": cid, "action": "undo", "by": "du", "status": "intent", "from": "40-regulierung",
+                                        "to": "30-pruefung", "payload": {"step": "a1"}, "created": "2026-11-05T10:00:00+01:00"})
+    done = stepping.recover(store, config)
+    assert [r.ok for r in done] == [True] and store.find(cid) == "30-pruefung"
+    assert store.read_json("_steps/a1.json")["status"] == "undone"
+
+
+def test_content_follows_the_viewers_language_and_the_original_stays(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    client.post("/api/session", json={"person": "du"})
+    client.post("/api/session/lang", json={"lang": "en"})
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    cid = "WG-2026-0425-glasbruch-wintergarten"
+
+    # a helper's titles and facts in several languages: the viewer's wins, the original stays on record
+    meta = store.case_json(cid, "meta.json")
+    store.write_json(f"{store.find(cid)}/{cid}/meta.json", {**meta, "lang": "de", "i18n": {"en": {"title": "Conservatory glass cracked"}}})
+    card = next(c for g in client.get("/api/cases").json() for c in g["cases"] if c["id"] == cid)
+    v = client.get(f"/api/cases/{cid}").json()
+    assert card["title"] == v["title"] == "Conservatory glass cracked" and v["meta"]["lang"] == "de"
+    assert store.case_json(cid, "meta.json")["title"] == meta["title"]                  # nothing overwritten
+
+    # every order says the language the helper writes in
+    r = client.post(f"/api/cases/{cid}/runs", json={"skill": "ask", "note": "Status?", "request_id": "q1"}).json()
+    assert store.read_json(f"_runs/{r['run']}.json")["lang"] == "en"
+
+    # "Show translation": ordered once, written beside the original, then answered at once
+    t = client.post(f"/api/cases/{cid}/translate", json={"file": "meldung.md", "request_id": "t1"}).json()
+    assert t == {"original": "meldung.md", "lang": "en", "name": "meldung.en.md", "ready": False, "run": t["run"]} and t["run"]
+    order = store.read_json(f"_runs/{t['run']}.json")
+    assert order["background"] and order["file"] == "meldung.md" and order["out"] == "meldung.en.md"
+    entries_before = len(client.get(f"/api/cases/{cid}").json()["entries"])
+    assert play(store, config, t["run"] + ".json", HERE / "replies", wait=False)
+    v = client.get(f"/api/cases/{cid}").json()
+    assert v["translations"] == {"meldung.md": {"en": "meldung.en.md"}} and len(v["entries"]) == entries_before   # no thread noise
+    assert "meldung.md" in store.case_text(cid, "meldung.en.md") and store.case_text(cid, "meldung.md").startswith("# Schadenmeldung")
+    again = client.post(f"/api/cases/{cid}/translate", json={"file": "meldung.md", "request_id": "t2"}).json()
+    assert again["ready"] and again["run"] is None
+    assert client.post(f"/api/cases/{cid}/translate", json={"file": "meta.json", "request_id": "t3"}).status_code == 404
+    assert client.post(f"/api/cases/{cid}/translate", json={"file": "meldung.md", "lang": "english", "request_id": "t4"}).status_code == 422
+
+
+def test_the_menu_knows_its_workspaces_and_each_card_who_it_is_from(tmp_path):
+    root = build_claims(tmp_path / "claims")
+    app = create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, replies_dir=None))
+    client = TestClient(app)
+    me = client.post("/api/session", json={"person": "du"}).json()
+    assert [(p["current"], bool(p["name"])) for p in me["places"]] == [(True, True)]          # one pipeline: this workspace only
+    assert me["places"][0]["color"].startswith("#")                                           # theme.app
+    cards = [c for g in client.get("/api/cases").json() for c in g["cases"]]
+    assert any(c["party"] == "Familie Beispiel" for c in cards)                               # meta.reported_by, before the address
+
+
+
+def test_only_a_person_of_the_returning_stage_or_an_operator_moves_a_closed_case_back(tmp_path):
+    """Review S4: reopening undoes a closure, so not everyone the application knows may do it."""
+    from casefile.api import views
+    root = build_claims(tmp_path / "claims")
+    store, config = FsStore(root), DomainConfig.load(CONFIG / "claims-demo", root)
+    cid = "KFZ-2026-0790-parkrempler"
+    target = stepping.reopen_target(config, cases.load(store, config, cid))
+    turn = config.stage(target).turn
+    outsider = next(p for p in config.people if p.kind == "human" and not config.may_act(p.id, "role:operator")
+                    and not config.may_act(p.id, turn))
+    assert views.view(config, cases.load(store, config, cid), outsider.id, "de", lambda c, n: "").reopen_to == ""
+    no = stepping.step(store, config, cid, StepRequest(action="reopen", step_id="back-x"), by=outsider.id)
+    assert not no.ok and "not their stage" in no.reason
+    assert views.view(config, cases.load(store, config, cid), "du", "de", lambda c, n: "").reopen_to == target
+    yes = stepping.step(store, config, cid, StepRequest(action="reopen", step_id="back-y"), by="du")   # the operator
+    assert yes.ok and yes.to == target

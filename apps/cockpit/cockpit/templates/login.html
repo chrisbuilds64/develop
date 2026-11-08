@@ -2,6 +2,7 @@
 <html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="/static/mark.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }} · {{ t('app.login') }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,11 +13,7 @@
 <main class="login">
   <div class="login-card">
     <div class="login-mark">
-      <svg viewBox="0 0 60 60" width="44" height="44" aria-hidden="true">
-        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#4caf50"/></linearGradient></defs>
-        <circle cx="30" cy="30" r="26" fill="none" stroke="url(#lg)" stroke-width="2.4"/>
-        <path d="M18 31 l8 8 l16 -18" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <img src="/static/mark.svg" width="44" height="44" alt="">
     </div>
     <h1>{{ config.name }}{% if config.environment and config.environment != 'prod' %} <span class="env env-{{ config.environment }}">{{ config.environment|upper }}</span>{% endif %}</h1>
     <p class="tag">{{ t('app.tagline') }}</p>

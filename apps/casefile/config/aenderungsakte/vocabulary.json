@@ -47,7 +47,12 @@
       "see_failure": "Nachsehen, was schiefging",
       "wait": "Warten",
       "record_exception": "Als Ausnahme festhalten",
-      "order_rework": "Umstellung beauftragen"
+      "order_rework": "Umstellung beauftragen",
+      "reopen": "Zurückholen",
+      "remind": "Erinnern",
+      "take_back": "Zurücknehmen",
+      "undo": "Rückgängig",
+      "correct": "Korrektur eröffnen"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -63,7 +68,12 @@
       "replay_moved": "Weiter.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
-      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert.",
+      "reminder": "Erinnerung",
+      "reminder_text": "Kannst du dir diesen Fall ansehen?",
+      "undone": "Rückgängig: {action}",
+      "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
+      "correction": "Korrektur: {title}"
     },
     "files": {
       "aenderung.md": "Änderung",
@@ -141,7 +151,12 @@
       "see_failure": "See what went wrong",
       "wait": "Wait",
       "record_exception": "Record as an exception",
-      "order_rework": "Order the rework"
+      "order_rework": "Order the rework",
+      "reopen": "Move back",
+      "remind": "Send a reminder",
+      "take_back": "Take it back",
+      "undo": "Undo",
+      "correct": "Open a correction"
     },
     "reasons": {
       "running": "running",
@@ -157,7 +172,12 @@
       "replay_moved": "Moved on.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; opens once {missing} is in the file.",
-      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}.",
+      "reminder": "Reminder",
+      "reminder_text": "Could you take a look at this case?",
+      "undone": "Undone: {action}",
+      "undone_text": "Taken back before the next step started.",
+      "correction": "Correction: {title}"
     },
     "files": {
       "aenderung.md": "Change",

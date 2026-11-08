@@ -1,30 +1,31 @@
-// The bar over every page: where you are (the way back to the cockpit, the workspace's whole name, the stage) and the
-// support beside the work — help for this page, the application's videos, the demonstrations, putting a sample workspace
-// back, and the person's agents. On a phone the support folds into one button and opens as a sheet.
-import { useEffect, useRef, useState } from "react";
+// The bar over the page (design hand-back, 2026-11-05): where you are on the left; on the right the support beside the
+// work — Guides (the application's videos), help for this page when the cockpit's panel is there, the demo's flows,
+// Ask AI where a case is open, and light or dark. The person's agents dock here as before. Reset and the person's own
+// settings moved to the person menu at the bottom of the rail.
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BASE, type ConfigView, type MeOut } from "../api";
 import { VideoStage, type Video } from "./Explain";
-import { Swap } from "./Icons";
+import { MenuIcon, Play, Contrast } from "./Icons";
+import { openKeys } from "./Keys";
 import type { words } from "../words";
 
 type Panel = { dock: (host: HTMLElement) => void; help: () => void };
 const panel = () => (window as unknown as { agentPanel?: Panel }).agentPanel;
 
-export function TopBar({ config, me, w, onSwap, onFresh }: { config: ConfigView; me: MeOut; w: ReturnType<typeof words>; onSwap: () => void; onFresh: () => void }) {
+export function TopBar({ config, w, crumb, canAsk, dark, onTheme, onMenu, views }: { config: ConfigView; me: MeOut; w: ReturnType<typeof words>; crumb: string; canAsk: boolean;
+  dark: boolean; onTheme: () => void; onMenu: () => void; views?: ReactNode }) {
   const stage = document.querySelector<HTMLMetaElement>('meta[name="cf-stage"]')?.content ?? "";
-  const theme = config.theme as { demo?: boolean; resettable?: boolean };
+  const theme = config.theme as { demo?: boolean };
   const videos = ((config as unknown as { videos?: Video[] }).videos ?? []);
   const flows = useQuery({ queryKey: ["flows"], queryFn: () => fetch(BASE + "/api/demo/ablaeufe", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { flows: [] })), enabled: !!theme.demo, staleTime: Infinity });
   const hasFlows = (flows.data?.flows?.length ?? 0) > 0;
   const [hasPanel, setHasPanel] = useState(!!panel());
-  const [sheet, setSheet] = useState(false);
   const [videoList, setVideoList] = useState(false);
   const [playing, setPlaying] = useState<Video | null>(null);
-  const [resetting, setResetting] = useState(false);
   const agents = useRef<HTMLSpanElement>(null);
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
 
-  // the cockpit's panel script may arrive before or after this bar; whichever comes second docks the agents here
   useEffect(() => {
     const dock = () => { const p = panel(); if (p && agents.current) { p.dock(agents.current); setHasPanel(true); } };
     dock();
@@ -32,50 +33,53 @@ export function TopBar({ config, me, w, onSwap, onFresh }: { config: ConfigView;
     return () => window.removeEventListener("agent-panel:ready", dock);
   }, []);
   useEffect(() => { document.body.classList.add("has-bar"); return () => document.body.classList.remove("has-bar"); }, []);
-
-  const reset = async () => {
-    setSheet(false);
-    if (!theme.resettable) { onFresh(); return; }                 // the public demo: a fresh sandbox
-    if (!window.confirm(w.resetConfirm)) return;
-    setResetting(true);
-    const r = await fetch(BASE + "/api/demo/reset", { method: "POST", credentials: "same-origin" });
-    if (r.ok) window.location.href = BASE + "/"; else { setResetting(false); window.alert(`${w.resetFailed} (${r.status})`); }
-  };
-  const video = () => { setSheet(false); if (videos.length === 1) setPlaying(videos[0]); else setVideoList(!videoList); };
-  const items = (
-    <>
-      {hasPanel && <button type="button" className="bar-btn" onClick={() => { setSheet(false); panel()?.help(); }} title={w.helpHint}><span className="i">?</span><span>{w.help}</span></button>}
-      {videos.length > 0 && <button type="button" className="bar-btn" onClick={video}><span className="i">▶</span><span>{videos.length === 1 ? w.video : w.videos(videos.length)}</span></button>}
-      {hasFlows && <button type="button" className="bar-btn" onClick={() => { setSheet(false); window.dispatchEvent(new CustomEvent("cf:director")); }} title="Shift+Alt+D"><span className="i">▷</span><span>{w.flows}</span></button>}
-      {theme.demo && <button type="button" className="bar-btn" disabled={resetting} onClick={reset}><span className="i">↺</span><span>{resetting ? "…" : w.resetData}</span></button>}
-    </>
-  );
+  const flowList = ((flows.data?.flows ?? []) as { id: string; title: string; summary?: string }[]);
+  const guides = () => setVideoList(!videoList);
+  const close = () => setVideoList(false);
+  const ask = () => document.querySelector<HTMLInputElement>(".i-ask input, .ask input, .ask textarea")?.focus();
 
   return (
-    <header className="topbar" data-help="cf.topbar">
-      {me.shell ? <a className="bar-back" data-help="cf.back" href={me.shell} title={w.backToShell}><span aria-hidden="true">←</span><span className="wide-only">{w.backToShell}</span></a> : null}
-      <span className="bar-name" title={config.product}>
-        <svg width="20" height="17" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
-        <span className="t">{config.product}</span>
-        {stage && <span className={`bar-stage ${stage}`}>{stage.toUpperCase()}</span>}
-      </span>
-      <span className="bar-support" data-help="cf.support">
-        <span className="bar-items">{items}</span>
-        {(hasPanel || videos.length > 0 || hasFlows || theme.demo) && (
-          <button type="button" className="bar-btn bar-more" onClick={() => setSheet(!sheet)} aria-expanded={sheet}><span className="i">?</span><span>{w.support}</span></button>
-        )}
-        <button type="button" className="bar-btn bar-swap wide-only" onClick={onSwap} aria-label={w.switchHand} title={w.switchHand}><Swap /></button>
+    <header className="cf-bar" data-help="cf.topbar">
+      <button type="button" className="bar-menu" data-help-skip="opens the rail on a phone" aria-label={w.menu} onClick={onMenu}><MenuIcon /></button>
+      <span className="bar-crumb">{crumb}{stage && <span className={`bar-stage ${stage}`}>{stage.toUpperCase()}</span>}</span>
+      {views}
+      <span className="bar-right" data-help="cf.support">
+        <button type="button" className="btn" data-help="cf.guides" onClick={guides} aria-expanded={videoList}><Play /><span>{w.guides}</span></button>
+        {canAsk && <button type="button" className="btn ai" data-help="cf.ask" onClick={ask}>✦ <span>{w.askAi}</span> <span className="kbd">{mac ? "⌘J" : "Ctrl J"}</span></button>}
+        <button type="button" className="theme" data-help-skip="explained by cf.theme" aria-label={w.theme} title={dark ? w.light : w.dark} onClick={onTheme}><Contrast /></button>
         <span ref={agents} className="bar-agents" />
       </span>
-      {videoList && videos.length > 1 && (
-        <div className="bar-pop" role="menu">
-          {videos.map((v) => <button key={v.key} type="button" onClick={() => { setVideoList(false); setPlaying(v); }}>▶ {v.title}</button>)}
-        </div>
-      )}
-      {sheet && (
+      {videoList && (
         <>
-          <button type="button" className="bar-scrim" aria-label="×" onClick={() => setSheet(false)} />
-          <div className="bar-sheet" role="menu" aria-label={w.support}>{items}</div>
+          <button type="button" className="pop-scrim" aria-label={w.close} onClick={close} />
+          <div className="cf-bar-pop gd" role="menu">
+            {hasFlows && (
+              <>
+                <div className="gd-h"><b>{w.gdTours}</b><span>{w.gdToursLead}</span></div>
+                {flowList.map((f) => (
+                  <button key={f.id} type="button" className="gd-tour" onClick={() => { close(); window.dispatchEvent(new CustomEvent("cf:director")); }}>
+                    <span className="gd-play"><Play /></span><span><b>{f.title}</b>{f.summary && <small>{f.summary}</small>}</span>
+                  </button>
+                ))}
+                <hr />
+              </>
+            )}
+            {videos.length > 0 && (
+              <>
+                <div className="gd-h"><b>{w.gdVideos}</b><span>{w.gdVideosLead(videos.length)}</span></div>
+                <div className="gd-vids">
+                  {videos.map((v, i) => (
+                    <button key={v.key} type="button" className="gd-v" onClick={() => { close(); setPlaying(v); }}>
+                      <span className="gd-n">{i + 1}</span><span className="gd-vt">{v.title}</span><span className="gd-vd">{v.seconds ? `${v.seconds} s` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+                <hr />
+              </>
+            )}
+            {hasPanel && <button type="button" className="gd-row" onClick={() => { close(); panel()?.help(); }}><span className="gd-ic">?</span>{w.help}</button>}
+            <button type="button" className="gd-row" onClick={() => { close(); openKeys(); }}><span className="gd-ic kb" aria-hidden="true" />{w.keysTitle}<span className="kbd">?</span></button>
+          </div>
         </>
       )}
       {playing && <VideoStage video={playing} onClose={() => setPlaying(null)} />}

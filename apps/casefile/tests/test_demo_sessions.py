@@ -197,3 +197,118 @@ def test_inside_the_cockpit_the_shells_language_holds_until_the_viewer_picks_one
     inside.post("/api/session/lang", json={"lang": "de"})
     assert inside.get("/api/me").json()["lang"] == "de"
     assert client(None).get("/api/me").json()["lang"] == "de"
+
+
+def test_the_visitor_keeps_an_ai_team_of_their_own_across_worlds(demo):
+    """The demo has no cockpit, so the visitor's helpers and sessions live beside the sandboxes; answers are prepared."""
+    app, _ = demo
+    a, b = TestClient(app), TestClient(app)
+    assert a.get("/api/me").json()["team"] == "demo"
+    a.post("/api/session/lang", json={"lang": "en"})
+    v = a.get("/api/team").json()
+    assert [x["label"] for x in v["agents"]] == ["Mail reader", "Quote calculator", "Assessment checker"]
+    assert [s["note"] for s in v["sessions"]] == ["Quote priced", "Settlement checked", "Two mails sorted"]
+    assert a.post("/api/team", json={"what": "hire", "template": "mail"}).status_code == 400
+    v = a.post("/api/team", json={"what": "hire", "template": "letter", "model": "fast"}).json()
+    assert v["agents"][-1]["label"] == "Letter writer" and v["agents"][-1]["model"] == "fast"
+    sid = a.post("/api/team/sessions", json={"agent": "quote"}).json()["id"]
+    s = a.get(f"/api/team/sessions/{sid}").json()
+    assert s["status"] == "open" and s["turns"] == [] and s["suggestions"]
+    s = a.post(f"/api/team/sessions/{sid}/say", json={"text": "How was the Tiguan price made?"}).json()
+    assert "1,322.57 €" in s["turns"][-1]["text"] and s["topic"] == "How was the Tiguan price made?"
+    assert a.post(f"/api/team/sessions/{sid}/end", json={"note": ""}).status_code == 400
+    s = a.post(f"/api/team/sessions/{sid}/end", json={"note": "Explained the price"}).json()
+    assert s["status"] == "closed"
+    a.post("/api/demo/session", json={"world": "pressroom"})
+    assert a.get("/api/team").json()["sessions"][0]["note"] == "Explained the price"       # the same team in another world
+    assert len(b.get("/api/team").json()["sessions"]) == 3                                 # another visitor has their own
+
+
+def test_setup_shows_what_the_workspace_is_built_from_in_the_readers_language(demo):
+    """Plugins (the demo's copy of the cockpit's), sources (connectors), roles with who holds them, kinds of case and their documents."""
+    app, _ = demo
+    a = TestClient(app)
+    a.get("/api/me")
+    a.post("/api/session/lang", json={"lang": "en"})
+    s = a.get("/api/setup").json()
+    assert ("Canon", "0.2.0") in [(p["name"], p["side"]) for p in s["plugins"]]
+    src = {x["id"]: x for x in s["sources"]}
+    assert src["bestand"]["name"] == "Policy system" and src["zahlung"]["side"] == "outgoing"
+    roles = {x["id"]: x["side"] for x in s["roles"]}
+    assert roles["approver"] == "You" and roles["assessor"] == "Assessor Berger"
+    motor = next(x for x in s["schemas"] if x["id"] == "KFZ")
+    assert motor["name"] == "Motor" and "Photos" in motor["items"] and not any(i.endswith((".json", ".md", ".jpg")) for i in motor["items"])
+    assert a.get("/api/me").json()["name"] == "You"
+    a.post("/api/session/lang", json={"lang": "de"})
+    s = a.get("/api/setup").json()
+    assert {x["id"]: x["name"] for x in s["sources"]}["bestand"] == "Bestandssystem"
+    assert {x["id"]: x["side"] for x in s["roles"]}["approver"] == "Du"
+
+
+def test_an_operator_adds_a_kind_of_case_that_starts_from_an_existing_one(demo):
+    """Add a schema: a new entry in the list of kinds and a copy of the model's documents; the next case of that kind uses them."""
+    app, _ = demo
+    a = TestClient(app)
+    a.get("/api/me")
+    a.post("/api/session/lang", json={"lang": "en"})
+    assert a.get("/api/setup").json()["may_add"]
+    r = a.post("/api/setup/schemas", json={"key": "KFZ", "word": {"de": "X", "en": "X"}, "based_on": "KFZ", "step_id": "s-1"})
+    assert r.status_code >= 400 and "already" in r.json()["reason"]
+    r = a.post("/api/setup/schemas", json={"key": "fr", "word": {"de": "Fahrrad", "en": "Bicycle"}, "based_on": "KFZ", "step_id": "s-2"})
+    assert r.status_code == 200, r.text
+    s = r.json()
+    bike = next(x for x in s["schemas"] if x["id"] == "FR")
+    motor = next(x for x in s["schemas"] if x["id"] == "KFZ")
+    assert bike["name"] == "Bicycle" and bike["items"] == motor["items"]
+    kinds = next(l for l in a.get("/api/lists").json()["lists"] if l["field"] == "label")
+    assert "FR" in [e["key"] for e in kinds["entries"]]
+    # the next request reads the tree again: the new kind stays
+    assert any(x["id"] == "FR" for x in TestClient(app, cookies=a.cookies).get("/api/setup").json()["schemas"])
+    made = a.post("/api/cases", json={"title": "Stolen e-bike", "values": {"label": "FR"}, "step_id": "c-1"})
+    assert made.status_code == 200 and made.json()["id"].startswith("FR-"), made.text
+
+
+def test_home_gathers_what_waits_in_every_world(demo):
+    """Home in the demo: every world, the one open now from the sandbox, the others as they start; each with its place."""
+    app, _ = demo
+    a = TestClient(app)
+    a.get("/api/me")
+    parts = a.get("/api/home").json()
+    assert [p["place"]["id"] for p in parts] == ["claims", "pressroom"]
+    claims = parts[0]
+    assert claims["place"]["current"] and claims["turns"] and all("case" in t and "turn" in t for t in claims["turns"])
+    assert len({t["case"]["id"] for t in claims["turns"]}) == a.get("/api/me").json()["places"][0]["count"]
+
+
+def test_home_brings_todays_seals_from_every_world_and_quotes_have_their_own_numbers(tmp_path):
+    from casefile.demo.worlds import build_quotes
+    build_claims(tmp_path / "w" / "claims")
+    build_quotes(tmp_path / "w" / "quotes")
+    settings = Settings(secret="t", demo=True, samples_dir=HERE / "samples", replies_dir=None, sessions_dir=tmp_path / "sessions",
+                        worlds={"claims": World(config_dir=CONFIG / "claims-demo", template=tmp_path / "w" / "claims", person="du", lang="de"),
+                                "quotes": World(config_dir=CONFIG / "angebot", template=tmp_path / "w" / "quotes", person="du", lang="de")})
+    a = TestClient(create_app(settings))
+    a.get("/api/me")
+    parts = {p["place"]["id"]: p for p in a.get("/api/home").json()}
+    assert all("seals" in p for p in parts.values())
+    ids = {t["case"]["external_id"] for t in parts["quotes"]["turns"]}
+    assert ids and all(i.startswith("AN-") for i in ids)
+
+
+def test_a_client_without_cookies_cannot_make_ai_teams_without_limit(tmp_path):
+    """Review B2: every call without a team cookie made a new team directory, past every limit, and the cap then
+    swept real visitors' sandboxes. A new team counts against the limit for new sandboxes, like every other."""
+    build_claims(tmp_path / "w" / "claims")
+    settings = Settings(secret="t", demo=True, samples_dir=HERE / "samples", replies_dir=None, sessions_dir=tmp_path / "sessions",
+                        sessions_per_minute=4,
+                        worlds={"claims": World(config_dir=CONFIG / "claims-demo", template=tmp_path / "w" / "claims", person="du", lang="de")})
+    app = create_app(settings)
+    visitor = TestClient(app)
+    assert visitor.get("/api/team").status_code == 200                  # one sandbox, one team: two of the four
+    codes = [TestClient(app, cookies=visitor.cookies).post("/api/team/sessions", json={"agent": "quote"}).status_code
+             for _ in range(2)]
+    assert 200 in codes                                                 # a team cookie-less caller with a sandbox: within the limit
+    burst = [TestClient(app).post("/api/team/sessions", json={"agent": "quote"}).status_code for _ in range(6)]
+    assert 429 in burst
+    teams = [p for p in (tmp_path / "sessions").iterdir() if p.name.startswith("team-")]
+    assert len(teams) <= settings.sessions_per_minute

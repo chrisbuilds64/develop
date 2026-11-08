@@ -28,7 +28,7 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Literal
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -38,6 +38,8 @@ from pydantic import BaseModel, Field
 from .. import __version__
 from ..config import DomainConfig
 from ..domain import assets, cases as reading, step as stepping
+from ..domain import runs as runs_
+from ..domain import seen as reads
 from ..domain import turn as whose
 from ..models import Case, StepRequest, StepResult, Turn
 from ..store import FsStore, StoreError
@@ -55,6 +57,7 @@ class World:
     template: Path                               # a built pipeline root to copy per visitor
     person: str                                  # the visitor's identity in this world
     lang: str | None = None
+    targets: dict[str, str] = field(default_factory=dict)   # hand-off target → world: the inbox opens cases in the visitor's other sandboxes
 
 
 @dataclass
@@ -68,6 +71,8 @@ class Settings:
     label: str | None = None                     # what the surface calls this workspace, when it differs from the domain's product name
     stage: str | None = None                     # "entw", "test": a stripe and a badge on every page of the surface; nothing for production
     shell: str | None = None                     # where the shell that mounted this app lives ("/entw/"): the menu offers the way back
+    peers: Callable[[Request | None], list[dict]] | None = None   # inside a shell: every workspace this person may open ({id, name, url, color, icon, current})
+    plugins: list[dict] | None = None             # inside a shell: the shell's plugins ({id, name, version, text}); without one, the demo's copy
     secret: str = field(default_factory=lambda: secrets.token_hex(16))
     web_dist: Path | None = None                 # the built surface, served at /
     max_upload_mb: int = 10
@@ -85,6 +90,18 @@ class Settings:
     sessions_per_minute: int = 60                # new sandboxes per IP and minute
 
 
+def in_lang(head: dict, body: str, lang: str) -> tuple[dict, str]:
+    """A rule, template or hint in the viewer's language (request 8): header keys `title_en`, `source_en` … win over
+    `title`, `source`; a body after a line `<!-- en -->` wins over the original before it. Without them, the original."""
+    out = {**head}
+    for k, v in head.items():
+        if k.endswith(f"_{lang}") and v:
+            out[k[: -len(lang) - 1]] = v
+    parts = re.split(r"\n?<!--\s*([a-z]{2})\s*-->\n?", body or "")
+    original, versions = parts[0], dict(zip(parts[1::2], parts[2::2]))
+    return out, (versions.get(lang) or original).strip()
+
+
 class SessionIn(BaseModel):
     person: str
 
@@ -98,6 +115,15 @@ class DemoSessionIn(BaseModel):
     fresh: bool = False                                     # a new sandbox for that world (start over)
 
 
+class SeenIn(BaseModel):
+    unread: bool = False                         # false: the viewer has read the case now; true: mark it as new again
+
+
+class SeenOut(BaseModel):
+    case: str
+    unread: bool
+
+
 class EntryIn(BaseModel):
     kind: str = "note"                           # note | answer | done
     step_id: str
@@ -107,6 +133,20 @@ class EntryIn(BaseModel):
     title: str | None = None
 
     model_config = {"populate_by_name": True}
+
+
+class TranslateIn(BaseModel):
+    file: str                                    # the original in the case: mail.md, meldung.md …
+    lang: str | None = None                      # the language wanted; the viewer's when empty
+    request_id: str
+
+
+class TranslateOut(BaseModel):
+    original: str
+    lang: str
+    name: str                                    # the translation's file beside the original
+    ready: bool                                  # true: it is there; false: a helper is writing it
+    run: str | None = None
 
 
 class RunIn(BaseModel):
@@ -127,6 +167,17 @@ class OnsiteIn(BaseModel):
     hints: dict[str, dict] = {}
 
 
+class PlaceOut(BaseModel):
+    """A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one."""
+    id: str
+    name: str
+    color: str = ""
+    icon: str = ""
+    current: bool = False
+    url: str = ""                                           # inside a shell: where this workspace lives; empty for this one and for demo worlds
+    count: int = 0                                          # cases waiting for this person there (the demo knows it for every world)
+
+
 class MeOut(BaseModel):
     person: str | None
     name: str | None
@@ -139,6 +190,10 @@ class MeOut(BaseModel):
     open_identity: bool = True                              # false: who you are was decided outside; no person picker
     identity: str | None = None                             # the outside identity, even when it matches nobody in people.json
     shell: str | None = None                                # the shell's URL, when this app runs inside one
+    places: list[PlaceOut] = []                             # this workspace and, in the demo, the other worlds
+    waiting_rules: int = 0                                  # rule changes this person may accept, waiting (the dot on Rulebook)
+    waiting_signals: int = 0                                # hints still to check (the dot on Flagged)
+    team: str | None = None                                 # where the AI team lives: "cockpit" (the shell's, the person's own), "demo" (the visitor's), none
 
 
 class TurnOut(BaseModel):
@@ -199,6 +254,53 @@ class RuleModule(BaseModel):
     approved_by: str
     date: str
     text: str
+    areas: list[str] = []                        # the labels it applies to; empty = all (ADR-026)
+    draft: int | None = None                     # the version of an open draft, waiting for a second person
+    versions: int = 1                            # how many versions its history holds
+    in_force: bool = True                        # false: only proposed so far, nothing of it holds yet
+    use: str = ""                                # a letter template: where it is used ("every letter")
+    source: str = ""                             # where it came from ("from a talk with …"), as the proposal says
+    draft_text: str = ""                         # the open draft, for the person who decides on it
+    draft_title: str = ""
+    draft_areas: list[str] = []
+    draft_by: str = ""
+    draft_date: str = ""
+    draft_note: str = ""
+
+
+class ModuleVersion(BaseModel):
+    version: int
+    status: str
+    title: str
+    text: str
+    areas: list[str] = []
+    date: str = ""
+    approved_by: str = ""
+    drafted_by: str = ""
+    note: str = ""
+    source: str = ""
+    reason: str = ""                             # why it was rejected or retired
+
+
+class ModuleHistory(BaseModel):
+    id: str
+    in_force: ModuleVersion | None = None
+    draft: ModuleVersion | None = None
+    versions: list[ModuleVersion]
+    may_edit: bool = False                       # the viewer writes drafts and retires
+    may_approve: bool = False                    # the viewer may bring the open draft into force (not its author)
+
+
+class DraftIn(BaseModel):
+    text: str
+    title: str = ""
+    kind: str = ""                               # a new module: Regel, Baustein …
+    areas: list[str] | None = None               # None keeps the areas it had
+    note: str = ""                               # what changed, for the history
+
+
+class RetireIn(BaseModel):
+    note: str
 
 
 class RuleConnector(BaseModel):
@@ -210,11 +312,40 @@ class RuleConnector(BaseModel):
     note: str = ""
 
 
+class SetupItem(BaseModel):
+    id: str
+    name: str
+    side: str = ""                                          # the short word on the right: a version, a direction, who holds it, how many
+    text: str = ""                                          # what opens below: what it is, what it carries
+    items: list[str] = []                                   # the parts, where it has some (a schema's documents)
+
+
+class SetupOut(BaseModel):
+    """Setup (design hand-back, 2026-11-06): what this workspace is built from, read from its configuration."""
+    plugins: list[SetupItem]
+    sources: list[SetupItem]
+    roles: list[SetupItem]
+    schemas: list[SetupItem]
+    may_add: bool = False                                   # the viewer runs the place (operator): may add a kind of case
+
+
+class SchemaIn(BaseModel):
+    key: str                                                # the code that starts every case number of this kind
+    word: dict[str, str] = Field(default_factory=dict)      # its name per language
+    based_on: str                                           # the kind it copies its documents from
+    step_id: str
+
+
 class SignalCase(BaseModel):
     id: str
     title: str
     external_id: str = ""
     stage_word: str = ""
+    color: str = ""                              # its label's colour (the value list `label`), for the chip
+
+
+class SignalStatusIn(BaseModel):
+    status: Literal["offen", "in_pruefung", "erledigt"]
 
 
 class SignalOut(BaseModel):
@@ -226,6 +357,8 @@ class SignalOut(BaseModel):
     date: str
     cases: list[SignalCase]
     text: str
+    decided_by: str = ""                         # who last moved it (looking into it, done, back to open)
+    decided_at: str = ""
 
 
 class MatrixRow(BaseModel):
@@ -242,6 +375,17 @@ class MatrixRow(BaseModel):
     approval: str = "human"
 
 
+class RuleArea(BaseModel):
+    """An area a rule can apply to: a case label with its word and colour (the value list `label`)."""
+    key: str
+    word: str
+    color: str = ""
+
+
+class RejectIn(BaseModel):
+    reason: str
+
+
 class RulesOut(BaseModel):
     """The rulebook: stages and gates, what each helper does and never does, the approved modules and rules with versions, the connectors."""
     stages: list[RuleStage]
@@ -249,6 +393,10 @@ class RulesOut(BaseModel):
     modules: list[RuleModule]
     connectors: list[RuleConnector] = []
     matrix: list[MatrixRow] = []
+    may_edit: bool = False                       # the viewer may change rules and modules (an operator)
+    may_decide: bool = False                     # the viewer may accept or reject a proposed change (an operator or approver)
+    areas: list[RuleArea] = []                   # the areas rules can apply to; a rule without areas holds for the whole office
+    me: str = ""                                 # the viewer's name, so the surface can say "you wrote this" (four eyes)
 
 
 class AnswerIn(BaseModel):
@@ -384,6 +532,14 @@ class RhythmOut(BaseModel):
     today_seals: list[SealOut] = []
     week_steps: int = 0
     week_seals: int = 0
+
+
+class HomePlace(BaseModel):
+    """Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning."""
+    place: PlaceOut
+    turns: list[TurnOut]                                    # what waits for the person there, ranked by the core
+    working: list[views.CaseCard]                           # what the AI is doing there right now
+    seals: list[SealOut] = []                               # what the person sealed there today
 
 
 class NewCaseOut(BaseModel):
@@ -631,12 +787,66 @@ def create_app(settings: Settings) -> FastAPI:
         v = c.config.vocabulary.get(c.lang) or c.config.vocabulary.get("en") or {}
         return str(v.get("product") or c.config.name)
 
+    def place(world: str | None, cfg: DomainConfig, lang: str, current: bool) -> PlaceOut:
+        v = cfg.vocabulary.get(lang) or cfg.vocabulary.get("en") or {}
+        mark = cfg.theme.get("app") if isinstance(cfg.theme.get("app"), dict) else {}
+        name = (settings.label if current and settings.label else None) or str(v.get("workspace") or v.get("product") or cfg.name)
+        return PlaceOut(id=world or "here", name=name, color=str(mark.get("color") or ""), icon=str(mark.get("icon") or ""), current=current)
+
+    template_counts: dict[str, int] = {}
+
+    def turns_count(store: FsStore, config: DomainConfig, person: str | None, lang: str) -> int:
+        if not person:
+            return 0
+        try:
+            return len({case.id for case, _ in whose.turns_for(person, reading.load_all(store, config), config, lang)})
+        except Exception:                    # noqa: BLE001 — a count in the rail never breaks the rail
+            return 0
+
+    def world_count(request: Request | None, name: str, lang: str) -> int:
+        """In the demo: what waits for the visitor in a world, from their sandbox there, or from the world as it starts."""
+        w = settings.worlds[name]
+        sid = _read_worlds(request).get(name) if request is not None else None
+        other = _session_ctx(sid) if sid else None
+        if other is not None:
+            return turns_count(other.store, other.config, w.person, lang)
+        if name not in template_counts:
+            template_counts[name] = turns_count(FsStore(w.template), world_configs[name], w.person, lang)
+        return template_counts[name]
+
+    def waiting(c: Ctx, person_id: str | None) -> tuple[int, int]:
+        from ..domain import rulebook
+        me = c.config.person(person_id) if person_id else None
+        rules = 0
+        if me and me.kind == "human" and set(me.roles) & {"operator", "approver"}:
+            drafts = [rulebook.draft_of(c.store, mid) for mid in rulebook.current(c.store)] + list(rulebook.proposed(c.store).values())
+            rules = sum(1 for d in drafts if d and d.get("drafted_by") != me.name)
+        folder = c.store.root / "_signale"
+        signals = sum(1 for f in folder.glob("*.md") if not re.search(r"^status:\s*(in_pruefung|erledigt)\s*$", f.read_text(encoding="utf-8"), re.M)) if folder.is_dir() else 0
+        return rules, signals
+
     def me_out(c: Ctx, person_id: str | None, request: Request | None = None) -> MeOut:
         p = c.config.person(person_id) if person_id else None
+        places = [place(name, world_configs[name], c.lang, name == c.world) for name in settings.worlds] if settings.worlds else [place(c.world, c.config, c.lang, True)]
+        for pl in places:
+            if settings.worlds and pl.id in settings.worlds:
+                pl.count = turns_count(c.store, c.config, person_id, c.lang) if pl.current else world_count(request, pl.id, c.lang)
+            elif pl.current:
+                pl.count = turns_count(c.store, c.config, person_id, c.lang)
+        wr, ws = waiting(c, person_id)
+        if settings.peers is not None:
+            # inside the cockpit: the person's other workspaces sit beside this one in the rail, in the cockpit's order
+            peers = settings.peers(request)
+            mine = places[0].model_copy(update={"id": next((str(p["id"]) for p in peers if p.get("current")), places[0].id)})
+            places = [mine if p.get("current") else PlaceOut(id=str(p["id"]), name=str(p.get("name") or p["id"]), color=str(p.get("color") or ""),
+                                                             icon=str(p.get("icon") or ""), url=str(p.get("url") or "")) for p in peers]
+            if not any(p.current for p in places):
+                places.insert(0, mine)
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
-        return MeOut(person=p.id if p else None, name=p.name if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
+        return MeOut(person=p.id if p else None, name=p.name_in(c.lang) if p else None, roles=p.roles if p else [], lang=c.lang, product=product(c),
                      demo=settings.demo, world=c.world, worlds=list(settings.worlds),
-                     open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell)
+                     open_identity=settings.open_identity and settings.identity is None, identity=outside, shell=settings.shell, places=places,
+                     waiting_rules=wr, waiting_signals=ws, team="cockpit" if settings.shell else ("demo" if settings.worlds else None))
 
     # ------------------------------------------------------------ audit, one line per request
     @app.middleware("http")
@@ -740,6 +950,164 @@ def create_app(settings: Settings) -> FastAPI:
     def me(request: Request, c: Ctx = Depends(ctx)):
         return me_out(c, getattr(request.state, "fresh_person", None) or _who(request, c.config), request)
 
+    def connectors_of(c: Ctx) -> list[RuleConnector]:
+        """The workspace's connectors, in the reader's language: a field's English twin (`<field>_en`) where there is one."""
+        for place in (c.store.root / "connectors.json", c.config.dir / "connectors.json" if c.config.dir else None):
+            if place and place.is_file():
+                try:
+                    raw = json.loads(place.read_text(encoding="utf-8")).get("connectors", [])
+                    return [RuleConnector(**{k: str(item.get(f"{k}_{c.lang}") or item.get(k) or "") for k in RuleConnector.model_fields if k in item or f"{k}_{c.lang}" in item})
+                            for item in raw if isinstance(item, dict) and item.get("id")]
+                except (OSError, ValueError, TypeError):
+                    return []
+        return []
+
+    @app.get("/api/setup", response_model=SetupOut)
+    def get_setup(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        lang = c.lang
+        de = lang == "de"
+        # plugins: the shell's, or the demo's copy of them
+        plugins: list[SetupItem] = []
+        if settings.plugins is not None:
+            plugins = [SetupItem(id=str(p.get("id")), name=str(p.get("name") or p.get("id")), side=str(p.get("version") or ""), text=str(p.get("text") or p.get("description") or ""))
+                       for p in settings.plugins]
+        else:
+            f = Path(__file__).resolve().parent.parent / "demo" / "plugins.json"
+            try:
+                for p in json.loads(f.read_text(encoding="utf-8")).get("plugins", []):
+                    t = p.get("text") or {}
+                    plugins.append(SetupItem(id=p["id"], name=p["name"], side=p.get("version", ""), text=t.get(lang) or t.get("en", "") if isinstance(t, dict) else str(t)))
+            except (OSError, ValueError, KeyError):
+                plugins = []
+        # sources: where new cases come from, the mailbox first, then the connectors
+        sources: list[SetupItem] = []
+        mb = c.config.theme.get("mailbox") if isinstance(c.config.theme.get("mailbox"), dict) else None
+        if mb:
+            sources.append(SetupItem(id="mailbox", name="Postfach" if de else "Mail inbox", side="Verbunden" if de else "Connected",
+                                     text="Neue Mails werden gelesen, sobald sie ankommen, und als Fall angelegt." if de else "New mail is read as soon as it arrives and opened as a case."))
+        if c.config.theme.get("mail_drop"):
+            sources.append(SetupItem(id="drop", name="Mail-Ablage (.eml)" if de else "File drop (.eml)", side="Verbunden" if de else "Connected",
+                                     text="Eine Mail, von Hand hereingezogen, nimmt denselben Weg wie aus dem Postfach." if de else "A mail dropped in by hand takes the same way in as one from the inbox."))
+        for k in connectors_of(c):
+            sources.append(SetupItem(id=k.id, name=k.name, side=k.direction, text=" · ".join(x for x in (k.carries, k.standard) if x) + (f"\n{k.note}" if k.note else "")))
+        # roles: the words, and who holds each in this workspace
+        words = (c.config.vocabulary.get(lang) or c.config.vocabulary.get("en") or {}).get("roles") or {}
+        people = [p for p in c.config.people if p.kind == "human"]
+        seen_roles = list(words) + [r for p in people for r in p.roles if r not in words]
+        roles = []
+        for r in dict.fromkeys(seen_roles):
+            holders = [p.name_in(lang) for p in people if r in p.roles]
+            w_ = str(words.get(r) or r)
+            roles.append(SetupItem(id=r, name=w_[:1].upper() + w_[1:], side=", ".join(holders) or ("niemand" if de else "nobody"),
+                                   text=(f"In diesem Arbeitsbereich: {', '.join(holders)}." if holders else "Diese Rolle hat hier niemand.") if de
+                                   else (f"In this workspace: {', '.join(holders)}." if holders else "Nobody holds this role here.")))
+        # schemas: per kind of case, the documents it collects
+        schemas = []
+        arts = c.config.artifacts or {}
+        files = (c.config.vocabulary.get(lang) or {}).get("files") or {}
+        kinds = {e.key: e.word for l in views.config_view(c.config, lang).lists for e in l.entries}
+        def doc(a: dict) -> str:
+            """A document as the reader calls it; numbered photos are one entry; a file without a word is a working file, not shown."""
+            f = str(a.get("file", ""))
+            if f.endswith(".json") or f == "review.md":            # the record and the thread are the case itself, not something it collects
+                return ""
+            if re.match(r"fotos?-\d+\.", f):
+                return "Fotos" if de else "Photos"
+            return str(files.get(f) or "")
+        def docs_of(items) -> list[str]:
+            return [d for d in (doc(a) for a in items if isinstance(a, dict)) if d]
+        common = docs_of(arts.get("common", []))
+        for key, fmt in (arts.get("formats") or {}).items():
+            if not isinstance(fmt, dict):
+                continue
+            docs = list(dict.fromkeys(common + docs_of(fmt.get("artifacts", []))))
+            n = len(docs)
+            schemas.append(SetupItem(id=key, name=str(kinds.get(key) or key), side=(f"{n} Dokumente" if de else f"{n} documents"), items=docs,
+                                     text="Was ein Fall dieser Art sammelt. Die KI füllt es aus, ein Mensch prüft es." if de else "What a case of this kind collects. The AI fills it in; a person checks it."))
+        me = c.config.person(who) if who else None
+        from ..domain import schemas as kinds
+        may_add = bool(me and me.kind == "human" and "operator" in me.roles and kinds.label_list(c.config) and schemas)
+        return SetupOut(plugins=plugins, sources=sources, roles=roles, schemas=schemas, may_add=may_add)
+
+    @app.post("/api/setup/schemas", response_model=SetupOut)
+    def post_schema(body: SchemaIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A new kind of case, copied from an existing one: a list entry and a format (domain/schemas.py)."""
+        from ..domain import schemas as kinds
+        if (refused := _lists_refused(c, who)) is not None:
+            return refused
+        if not stepping.STEP_ID.match(body.step_id):
+            return _refuse(Exception("step id must be 1–80 letters, digits, '-' or '_'"))
+        try:
+            kinds.add(c.store, c.config, who, body.key, body.word, body.based_on, body.step_id)
+        except kinds.SchemaError as exc:
+            return _refuse(exc)
+        return get_setup(c, who)
+
+    # ------------------------------------------------------------ the AI team (demo only; inside the cockpit the surface asks the shell)
+    from ..domain.team import DemoTeam, TeamError
+    TEAM_COOKIE = "cf_team"
+
+    def _team(request: Request, response: Response) -> DemoTeam:
+        if not settings.worlds:
+            raise HTTPException(404, "The AI team lives in the cockpit here.")
+        raw = request.cookies.get(TEAM_COOKIE, "")
+        if "." in raw:
+            tid, sig = raw.rsplit(".", 1)
+            d = settings.sessions_dir / tid
+            if tid.startswith("team-") and "/" not in tid and hmac.compare_digest(sig, _sign(settings.secret, tid)) and d.is_dir():
+                return DemoTeam(d)
+        if not limiter.allow("new:" + _client(request), settings.sessions_per_minute):     # review B2
+            raise HTTPException(429, "too many new sessions")
+        t = DemoTeam.create(settings.sessions_dir)
+        _sweep()
+        response.set_cookie(TEAM_COOKIE, f"{t.dir.name}.{_sign(settings.secret, t.dir.name)}", httponly=True, samesite="lax", max_age=settings.session_hours * 3600)
+        return t
+
+    def _team_do(fn):
+        try:
+            return fn()
+        except TeamError as exc:
+            raise HTTPException(400, str(exc))
+
+    @app.get("/api/team")
+    def team_view(request: Request, response: Response, c: Ctx = Depends(ctx)):
+        return _team(request, response).view(c.lang if c.lang in ("en", "de") else "en")
+
+    @app.post("/api/team")
+    async def team_change(request: Request, response: Response, c: Ctx = Depends(ctx)):
+        t, body = _team(request, response), await request.json()
+        what = str(body.get("what", ""))
+        if what == "hire":
+            _team_do(lambda: t.hire(str(body.get("template", "")), str(body.get("model", ""))))
+        elif what == "dismiss":
+            _team_do(lambda: t.dismiss(str(body.get("agent", ""))))
+        elif what == "logs_dir":
+            _team_do(lambda: t.set_logs(str(body.get("logs_dir", ""))))
+        else:
+            raise HTTPException(400, f"'{what}' is not a change")
+        return t.view(c.lang if c.lang in ("en", "de") else "en")
+
+    @app.post("/api/team/sessions")
+    async def team_start(request: Request, response: Response, c: Ctx = Depends(ctx)):       # ctx carries the rate limit (review B2)
+        t, body = _team(request, response), await request.json()
+        return {"id": _team_do(lambda: t.start(str(body.get("agent", ""))))}
+
+    @app.get("/api/team/sessions/{sid}")
+    def team_session(sid: str, request: Request, response: Response, c: Ctx = Depends(ctx)):
+        t = _team(request, response)
+        return _team_do(lambda: t.session(sid, c.lang if c.lang in ("en", "de") else "en"))
+
+    @app.post("/api/team/sessions/{sid}/{what}")
+    async def team_act(sid: str, what: str, request: Request, response: Response, c: Ctx = Depends(ctx)):
+        t, body = _team(request, response), await request.json()
+        if what == "say":
+            _team_do(lambda: t.say(sid, str(body.get("text", ""))))
+        elif what == "end":
+            _team_do(lambda: t.end(sid, str(body.get("note", ""))))
+        else:
+            raise HTTPException(404, f"'{what}' is not an action")
+        return t.session(sid, c.lang if c.lang in ("en", "de") else "en")
+
     # ------------------------------------------------------------ reading
     @app.get("/api/config", response_model=views.ConfigView)
     def get_config(c: Ctx = Depends(ctx)):
@@ -751,12 +1119,14 @@ def create_app(settings: Settings) -> FastAPI:
     def my_turns(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         stepping.detect(c.store, c.config)
         all_cases = reading.load_all(c.store, c.config)
-        return [TurnOut(case=views.card(c.config, case, who, c.lang), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
+        seen = reads.load(c.store, who)
+        return [TurnOut(case=views.card(c.config, case, who, c.lang, seen), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
 
     @app.get("/api/cases", response_model=list[GroupOut])
     def list_cases(group: str | None = None, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         stepping.detect(c.store, c.config)
-        cards = [views.card(c.config, case, who, c.lang) for case in reading.load_all(c.store, c.config)]
+        seen = reads.load(c.store, who)
+        cards = [views.card(c.config, case, who, c.lang, seen) for case in reading.load_all(c.store, c.config)]
         order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
         out = []
         for g in order:
@@ -773,16 +1143,64 @@ def create_app(settings: Settings) -> FastAPI:
     def file_url(case: Case, name: str) -> str:
         return f"/api/cases/{case.id}/files/{name}"
 
+    def home_part(store: FsStore, config: DomainConfig, person: str, lang: str, live: bool) -> tuple[list[TurnOut], list[views.CaseCard]]:
+        """What waits for the person in one tree, and what the AI is doing there. `live`: the tree may be stepped on (a
+        sandbox or the workspace itself); a world's template is only read."""
+        if live:
+            stepping.detect(store, config)
+        cases = reading.load_all(store, config)
+        seen = reads.load(store, person)
+        turns = [TurnOut(case=views.card(config, case, person, lang, seen), turn=t) for case, t in whose.turns_for(person, cases, config, lang)]
+        working = sorted((x for x in (views.card(config, case, person, lang, seen) for case in cases) if x.group == "claude"), key=lambda x: x.since)
+        return turns, working
+
+    @app.get("/api/home", response_model=list[HomePlace])
+    def home(request: Request, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Home: in the demo every world the visitor has (their sandbox there, or the world as it starts); in a shell or a
+        single tree this workspace only; the surface asks the other workspaces of the shell itself, each at its own address."""
+        me = me_out(c, who, request)
+        out: list[HomePlace] = []
+        if settings.worlds:
+            mapping = _read_worlds(request)
+            if c.world and c.session:
+                mapping[c.world] = c.session
+            for pl in me.places:
+                name = pl.id
+                w = settings.worlds.get(name)
+                if w is None:
+                    continue
+                cfg = world_configs[name]
+                lang = c.lang if c.lang in cfg.vocabulary else cfg.lang
+                other = c if name == c.world else (_session_ctx(mapping[name]) if name in mapping else None)
+                try:
+                    if other is not None:
+                        turns, working = home_part(other.store, other.config, w.person, lang, True)
+                        seals = rhythm_of(other.store, other.config, w.person, lang).today_seals
+                    else:
+                        turns, working = home_part(FsStore(w.template), cfg, w.person, lang, False)
+                        seals = []                       # a world nobody opened has sealed nothing today
+                except Exception:                        # noqa: BLE001 — one broken world never empties Home
+                    continue
+                out.append(HomePlace(place=pl, turns=turns, working=working, seals=seals))
+            return out
+        here = next((p for p in me.places if p.current), me.places[0] if me.places else place(c.world, c.config, c.lang, True))
+        turns, working = home_part(c.store, c.config, who, c.lang, True)
+        return [HomePlace(place=here, turns=turns, working=working, seals=rhythm_of(c.store, c.config, who, c.lang).today_seals)]
+
     @app.get("/api/me/rhythm", response_model=RhythmOut)
     def my_rhythm(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        seal_actions = {a.id for st in c.config.stages for a in st.actions if a.seal}
+        return rhythm_of(c.store, c.config, who, c.lang)
+
+    def rhythm_of(store: FsStore, config: DomainConfig, who: str, lang: str) -> RhythmOut:
+        """What this person moved in one tree, today and the last seven days, from the step journals."""
+        seal_actions = {a.id for st in config.stages for a in st.actions if a.seal}
         now = dt.datetime.now().astimezone()
         today, week_start = now.date().isoformat(), (now - dt.timedelta(days=7)).isoformat()
         titles: dict[str, tuple[str, str]] = {}
         out = RhythmOut()
-        for name in c.store.journals():
+        for name in store.journals():
             try:
-                j = c.store.read_json(f"_steps/{name}")
+                j = store.read_json(f"_steps/{name}")
             except (OSError, ValueError):
                 continue
             if j.get("by") != who or j.get("status") != "done" or str(j.get("created", "")) < week_start:
@@ -796,12 +1214,12 @@ def create_app(settings: Settings) -> FastAPI:
                     cid = str(j.get("case", ""))
                     if cid not in titles:
                         try:
-                            k = reading.load(c.store, c.config, cid)
-                            titles[cid] = (str(k.meta.get("title") or cid), c.config.word("labels", k.label, c.lang, k.label))
+                            k = reading.load(store, config, cid)
+                            titles[cid] = (str(views.localized(k.meta, lang).get("title") or cid), config.word("labels", k.label, lang, k.label))
                         except (KeyError, StoreError):
                             titles[cid] = (cid, "")
                     out.today_seals.append(SealOut(case=cid, title=titles[cid][0], label=titles[cid][1],
-                                                   action=c.config.word("actions", str(j.get("action")), c.lang, str(j.get("action"))), at=str(j.get("created", ""))))
+                                                   action=config.word("actions", str(j.get("action")), lang, str(j.get("action"))), at=str(j.get("created", ""))))
         return out
 
     @app.get("/api/cases/{case_id}", response_model=views.CaseView)
@@ -810,7 +1228,7 @@ def create_app(settings: Settings) -> FastAPI:
             case = reading.load(c.store, c.config, case_id)
         except (KeyError, StoreError) as exc:
             raise HTTPException(404, str(exc) or case_id)
-        return views.view(c.config, case, who, c.lang, file_url)
+        return views.view(c.config, case, who, c.lang, file_url, reads.load(c.store, who), c.store)
 
     @app.get("/api/cases/{case_id}/files/{name}")
     def get_file(case_id: str, name: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -848,10 +1266,17 @@ def create_app(settings: Settings) -> FastAPI:
         known = {x.get("file") for x in c.config.videos} | {x.get("poster") for x in c.config.videos}
         if name not in known or "/" in name or name.startswith(".") or not c.config.dir:
             raise HTTPException(404, name)
-        p = c.config.dir / "videos" / name
+        p = (c.config.videos_dir or c.config.dir / "videos") / name
         if not p.is_file():
             raise HTTPException(404, name)
         return FileResponse(p)
+
+    def _signal_file(c: Ctx, signal_id: str) -> Path | None:
+        folder = c.store.root / "_signale"
+        for f in sorted(folder.glob("*.md")) if folder.is_dir() else []:
+            if f.stem == signal_id or re.search(rf"^id:\s*{re.escape(signal_id)}\s*$", f.read_text(encoding="utf-8").split("---", 2)[1] if f.read_text(encoding="utf-8").startswith("---") else "", re.M):
+                return f
+        return None
 
     @app.get("/api/signals", response_model=list[SignalOut])
     def get_signals(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -859,8 +1284,15 @@ def create_app(settings: Settings) -> FastAPI:
         folder = c.store.root / "_signale"
         if not folder.is_dir():
             return []
-        titles = {case.id: (str(case.meta.get("title") or case.id), str(case.meta.get("external_id") or ""), c.config.word("stages", case.stage, c.lang, case.stage))
-                  for case in reading.load_all(c.store, c.config)}
+        cases_by_id = {case.id: case for case in reading.load_all(c.store, c.config)}
+
+        def sig_case(i: str) -> SignalCase:
+            case = cases_by_id.get(i)
+            if case is None:
+                return SignalCase(id=i, title=i)
+            e = value_lists.entry(c.config.lists, "label", case.label) or {}
+            return SignalCase(id=i, title=str(views.localized(case.meta, c.lang).get("title") or case.meta.get("title") or i), external_id=str(case.meta.get("external_id") or ""),
+                              stage_word=c.config.word("stages", case.stage, c.lang, case.stage), color=str(e.get("color") or ""))
         out = []
         for f in sorted(folder.glob("*.md"), reverse=True):
             text = f.read_text(encoding="utf-8")
@@ -874,10 +1306,32 @@ def create_app(settings: Settings) -> FastAPI:
                             head[k.strip()] = v.strip()
                     body = parts[2]
             ids = [x.strip() for x in head.get("cases", "").split(",") if x.strip()]
-            out.append(SignalOut(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), status=head.get("status", "offen"), date=head.get("date", ""),
-                                 cases=[SignalCase(id=i, title=titles.get(i, (i, "", ""))[0], external_id=titles.get(i, (i, "", ""))[1], stage_word=titles.get(i, (i, "", ""))[2]) for i in ids],
-                                 text=body.strip()))
+            shown, body = in_lang(head, body, c.lang)
+            out.append(SignalOut(id=head.get("id", f.stem), kind=head.get("kind", ""), title=shown.get("title", f.stem), status=head.get("status", "offen"), date=head.get("date", ""),
+                                 cases=[sig_case(i) for i in ids], text=body.strip(), decided_by=head.get("decided_by", ""), decided_at=head.get("decided_at", "")))
         return out
+
+    @app.post("/api/signals/{signal_id}/status", response_model=SignalOut)
+    def post_signal_status(signal_id: str, body: SignalStatusIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A person moves a hint: looking into it, done (nothing to do, or handled), or back to open. The hint itself is never
+        changed or deleted; only its status, with who and when, in its header."""
+        me = c.config.person(who)
+        if not me or me.kind != "human":
+            raise HTTPException(403, "a person decides what follows from a hint")
+        f = _signal_file(c, signal_id)
+        if f is None:
+            raise HTTPException(404, signal_id)
+        rel = str(f.relative_to(c.store.root))
+        with c.store.lock(f"_signal-{signal_id}"):
+            text = f.read_text(encoding="utf-8")
+            parts = text.split("---", 2)
+            if not text.startswith("---") or len(parts) < 3:
+                raise HTTPException(409, "this hint has no header to keep its status in")
+            lines = [l for l in parts[1].strip("\n").splitlines() if not re.match(r"^(status|decided_by|decided_at):", l)]
+            stamp = dt.datetime.now().astimezone().isoformat(timespec="minutes")
+            lines += [f"status: {body.status}", f"decided_by: {me.name}", f"decided_at: {stamp}"]
+            c.store.write_atomic(rel, "---\n" + "\n".join(lines) + "\n---" + parts[2])
+        return next(s for s in get_signals(c, who) if s.id == signal_id)
 
     @app.get("/api/canon")
     def get_canon(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -897,7 +1351,7 @@ def create_app(settings: Settings) -> FastAPI:
         return {"file": file, "html": render(text, "md" if file.endswith(".md") else "plain")}
 
     @app.get("/api/rules", response_model=RulesOut)
-    def get_rules(c: Ctx = Depends(ctx)):
+    def get_rules(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         """The rulebook of this world: read from the configuration and from `_bausteine/` at the pipeline root."""
         lang = c.lang
 
@@ -924,30 +1378,24 @@ def create_app(settings: Settings) -> FastAPI:
         skills = [RuleSkill(name=name, does=str(spec.get("does", "")), never=str(spec.get("never", "")), rules=list(spec.get("rules", [])),
                             orderable_by=[c.config.word("roles", r, lang, r) for r in spec.get("orderable_by", default.get("orderable_by", []))])
                   for name, spec in policy.get("skills", {}).items() if not name.startswith("$")]
+        from ..domain import rulebook
         modules = []
-        folder = c.store.root / "_bausteine"
-        if folder.is_dir():
-            for f in sorted(folder.glob("*.md")):
-                text = f.read_text(encoding="utf-8")
-                head, body = {}, text
-                if text.startswith("---"):
-                    parts = text.split("---", 2)
-                    if len(parts) == 3:
-                        for line in parts[1].splitlines():
-                            if ":" in line:
-                                k, v = line.split(":", 1)
-                                head[k.strip()] = v.strip()
-                        body = parts[2]
-                modules.append(RuleModule(id=head.get("id", f.stem), kind=head.get("kind", ""), title=head.get("title", f.stem), version=int(head.get("version", "1") or 1),
-                                          status=head.get("status", ""), approved_by=head.get("approved_by", ""), date=head.get("date", ""), text=body.strip()))
-        connectors = []
-        for place in (c.store.root / "connectors.json", c.config.dir / "connectors.json" if c.config.dir else None):
-            if place and place.is_file():
-                try:
-                    connectors = [RuleConnector(**{k: str(v) for k, v in item.items() if not k.startswith("$")}) for item in json.loads(place.read_text(encoding="utf-8")).get("connectors", [])]
-                except (OSError, ValueError, TypeError):
-                    connectors = []
-                break
+
+        def module_out(mid: str, m: dict, d: dict | None, in_force: bool) -> RuleModule:
+            m = in_lang(m, m.get("body", ""), c.lang)[0]
+            if d is not None:
+                d = in_lang(d, d.get("body", ""), c.lang)[0]
+            return RuleModule(id=mid, kind=m.get("kind", ""), title=m.get("title", mid), version=int(m.get("version") or 1),
+                              status=m.get("status", ""), approved_by=m.get("approved_by", ""), date=m.get("date", ""), text=m.get("body", ""),
+                              areas=rulebook.areas_of(m), draft=int(d["version"]) if d else None, versions=len(rulebook.history(c.store, mid)),
+                              in_force=in_force, use=m.get("use", ""), source=(d or m).get("source", "") or m.get("source", ""),
+                              draft_text=(d or {}).get("body", ""), draft_title=(d or {}).get("title", ""), draft_areas=rulebook.areas_of(d) if d else [],
+                              draft_by=(d or {}).get("drafted_by", ""), draft_date=(d or {}).get("date", ""), draft_note=(d or {}).get("note", ""))
+        for mid, m in rulebook.current(c.store).items():
+            modules.append(module_out(mid, m, rulebook.draft_of(c.store, mid), True))
+        for mid, d in rulebook.proposed(c.store).items():
+            modules.append(module_out(mid, d, d, False))
+        connectors = connectors_of(c)
         from ..domain import handoff
         tg = handoff.targets(c.store)
         loc = lambda d, k: (d.get(k) or {}).get(lang) or (d.get(k) or {}).get("en") or "" if isinstance(d.get(k), dict) else str(d.get(k) or "")
@@ -956,7 +1404,85 @@ def create_app(settings: Settings) -> FastAPI:
                             target_word=str((tg.get(r.get("target", "")) or {}).get("label", "")), approval=str(r.get("approval", "human")),
                             connected=handoff.connected(c.store, r))
                   for r in handoff.matrix(c.store, c.config)]
-        return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix)
+        me = c.config.person(who)
+        human = bool(me and me.kind == "human")
+        label = value_lists.for_field(c.config.lists, "label") or {}
+        areas = [RuleArea(key=str(e.get("key")), word=value_lists.in_lang(e.get("word"), lang, c.config.word("labels", str(e.get("key")), lang, str(e.get("key")))),
+                          color=str(e.get("color") or "")) for e in value_lists.offered(label)] if label else \
+                [RuleArea(key=k, word=c.config.word("labels", k, lang, k)) for k in ((c.config.vocabulary.get(lang) or {}).get("labels") or {})]
+        return RulesOut(stages=stages, skills=skills, modules=modules, connectors=connectors, matrix=matrix,
+                        may_edit=human and "operator" in me.roles, may_decide=human and bool(set(me.roles) & {"operator", "approver"}),
+                        areas=areas, me=me.name if me else "")
+
+    # ------------------------------------------------------------ the rulebook, edited as versions (request 9, ADR-026)
+    def _version(m: dict | None, lang: str = "") -> ModuleVersion | None:
+        from ..domain import rulebook
+        if not m:
+            return None
+        if lang:
+            m = in_lang(m, m.get("body", ""), lang)[0]
+        return ModuleVersion(version=int(m.get("version") or 0), status=m.get("status", ""), title=m.get("title", ""), text=m.get("body", ""),
+                             areas=rulebook.areas_of(m), date=m.get("date", ""), approved_by=m.get("approved_by", ""),
+                             drafted_by=m.get("drafted_by", ""), note=m.get("note", ""), source=m.get("source", ""), reason=m.get("reason", ""))
+
+    def _history(c: Ctx, who: str, module_id: str) -> ModuleHistory:
+        from ..domain import rulebook
+        now, d = rulebook.current(c.store).get(module_id), rulebook.draft_of(c.store, module_id)
+        me = c.config.person(who)
+        human = bool(me and me.kind == "human")
+        return ModuleHistory(id=module_id, in_force=_version(now, c.lang), draft=_version(d, c.lang), versions=[_version(v, c.lang) for v in rulebook.history(c.store, module_id)],
+                             may_edit=human and "operator" in me.roles,
+                             may_approve=bool(d and human and set(me.roles) & {"operator", "approver"} and not ((d.get("drafted_by_id") == me.id) if d.get("drafted_by_id") else d.get("drafted_by") == me.name)))
+
+    def _rulebook_refused(exc: Exception) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"ok": False, "reason": str(exc)})
+
+    @app.get("/api/rulebook/{module_id}", response_model=ModuleHistory)
+    def get_module(module_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        h = _history(c, who, module_id)
+        if not h.versions:
+            raise HTTPException(404, module_id)
+        return h
+
+    @app.post("/api/rulebook/{module_id}/draft", response_model=ModuleHistory)
+    def post_module_draft(module_id: str, body: DraftIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A change as a draft: a new version, or the open draft written over. A new id starts a new module."""
+        from ..domain import rulebook
+        try:
+            rulebook.save_draft(c.store, c.config, module_id, who, body.text, body.title, body.kind, body.areas, body.note)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
+
+    @app.post("/api/rulebook/{module_id}/approve", response_model=ModuleHistory)
+    def post_module_approve(module_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The open draft comes into force; four eyes. Cases that started before keep the version they started with."""
+        from ..domain import rulebook
+        try:
+            rulebook.approve(c.store, c.config, module_id, who)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
+
+    @app.post("/api/rulebook/{module_id}/reject", response_model=ModuleHistory)
+    def post_module_reject(module_id: str, body: RejectIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """A proposed change not taken: it stays on record as rejected, with the reason. What was in force stays in force."""
+        from ..domain import rulebook
+        try:
+            rulebook.reject(c.store, c.config, module_id, who, body.reason)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
+
+    @app.post("/api/rulebook/{module_id}/retire", response_model=ModuleHistory)
+    def post_module_retire(module_id: str, body: RetireIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Out of force, as a version of its own with the reason. Nothing is deleted."""
+        from ..domain import rulebook
+        try:
+            rulebook.retire(c.store, c.config, module_id, who, body.note)
+        except rulebook.RulebookError as exc:
+            return _rulebook_refused(exc)
+        return _history(c, who, module_id)
 
     # ------------------------------------------------------------ value lists (SYS-105): read by all, changed by the operators
     from ..domain import lists as value_lists
@@ -1007,21 +1533,52 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.get("/api/stages", response_model=list[StageOut])
     def stages(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        out = []
+        out, seen = [], reads.load(c.store, who)
         for folder in c.store.stages():
             st = c.config.stage(folder)
-            cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang) for cid in c.store.cases(folder)]
+            cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang, seen) for cid in c.store.cases(folder)]
             out.append(StageOut(folder=folder, key=st.key if st else "", word=c.config.word("stages", folder, c.lang, folder),
                                 station=c.config.word("stations", st.key, c.lang, "") if st and st.key else "", cases=cards))
         return out
 
     # ------------------------------------------------------------ writing: every write is a step
+    def _step(c: Ctx, case_id: str, req: StepRequest, who: str) -> StepResult:
+        """Every step from the surface carries the viewer's language, so a helper it orders writes in it (request 8)."""
+        if "_lang" not in req.payload:
+            req = req.model_copy(update={"payload": {**req.payload, "_lang": c.lang}})
+        return stepping.step(c.store, c.config, case_id, req, who)
+
     def _answer(result: StepResult) -> JSONResponse:
         return JSONResponse(status_code=200 if result.ok else 409, content=result.model_dump(by_alias=True))
 
+    def _connect(request: Request, response: Response, c: Ctx) -> None:
+        """In the public demo, a world that hands cases on (the inbox) is connected to the visitor's own sandboxes of the
+        worlds it names, made on the spot when missing: `targets.json` in its sandbox, as the cockpit writes it for real."""
+        if not settings.worlds or not c.world or not settings.worlds[c.world].targets:
+            return
+        mapping = _read_worlds(request)
+        if c.session:
+            mapping[c.world] = c.session
+        out = {}
+        for key, name in settings.worlds[c.world].targets.items():
+            if name not in settings.worlds:
+                continue
+            other = _session_ctx(mapping[name]) if name in mapping else None
+            if other is None:
+                # a sandbox made here counts against the same limit as every other new one (review B2)
+                if not limiter.allow("new:" + _client(request), settings.sessions_per_minute):
+                    raise HTTPException(429, "too many new sessions")
+                other = _new_session(name)
+                mapping[name] = other.session
+            out[key] = {"label": other.config.name, "root": str(other.store.root), "config": str(settings.worlds[name].config_dir),
+                        "url": "", "external_prefix": {"claims": "SN-", "quotes": "AN-"}.get(name, "")}
+        c.store.write_json("targets.json", out)
+        _set_worlds(response, mapping)
+
     @app.post("/api/cases/{case_id}/steps", response_model=StepResult)
     def post_step(case_id: str, body: StepRequest, request: Request, response: Response, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        result = stepping.step(c.store, c.config, case_id, body, who)
+        _connect(request, response, c)
+        result = _step(c, case_id, body, who)
         if result.ok and not result.replayed:
             action = next((a for st in c.config.stages for a in st.actions if a.id == body.action and a.handover), None)
             if action:
@@ -1032,16 +1589,54 @@ def create_app(settings: Settings) -> FastAPI:
                 answer.headers.append(k, v)
         return answer
 
+    @app.post("/api/cases/{case_id}/seen", response_model=SeenOut)
+    def post_seen(case_id: str, body: SeenIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Read or unread for the viewer alone (domain/seen.py). The surface sends it when a case is opened, and from
+        "Mark as unread". Not a step: nothing in the case changes."""
+        try:
+            case = reading.load(c.store, c.config, case_id)
+        except (KeyError, StoreError) as exc:
+            raise HTTPException(404, str(exc) or case_id)
+        try:
+            return SeenOut(case=case_id, unread=reads.mark(c.store, c.config, case, who, body.unread))
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+
     @app.post("/api/cases/{case_id}/entries", response_model=StepResult)
     def post_entry(case_id: str, body: EntryIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         if body.kind not in ("note", "answer", "done"):
             raise HTTPException(422, "kind must be note, answer or done")
         payload = {"text": body.text, "resolves": body.resolves or "", "for": body.for_ or "", "title": body.title or ""}
-        return _answer(stepping.step(c.store, c.config, case_id, StepRequest(action=body.kind, step_id=body.step_id, payload=payload), who))
+        return _answer(_step(c, case_id, StepRequest(action=body.kind, step_id=body.step_id, payload=payload), who))
+
+    @app.post("/api/cases/{case_id}/translate", response_model=TranslateOut)
+    def post_translate(case_id: str, body: TranslateIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """"Show translation": the helper `translate` writes `<stem>.<lang>.md` beside the original, which stays as it
+        came. Once there, the same request answers at once. A background order: no thread entry, nobody's move."""
+        try:
+            case = reading.load(c.store, c.config, case_id)
+        except (KeyError, StoreError) as exc:
+            raise HTTPException(404, str(exc) or case_id)
+        lang = (body.lang or c.lang or "").lower()
+        if not re.fullmatch(r"[a-z]{2}", lang):
+            raise HTTPException(422, "lang must be two letters")
+        stem, dot, ext = body.file.rpartition(".")
+        if body.file not in case.files or "/" in body.file or f".{ext}" not in views.TRANSLATABLE or views.LANG_FILE.match(body.file):
+            raise HTTPException(404, f"no text file '{body.file}' in this case")
+        out = f"{stem}.{lang}.md"
+        if out in case.files:
+            return TranslateOut(original=body.file, lang=lang, name=out, ready=True)
+        person = c.config.person(who)
+        refusal = runs_.may_order(c.config, "translate", person) if person else "not a person of this application"
+        if refusal:
+            raise HTTPException(409, refusal)
+        run = runs_.order(c.store, c.config, case_id, case.stage, "translate", who, f"{body.file} → {lang}", request_id=body.request_id,
+                          background=True, lang=lang, extra={"file": body.file, "out": out})
+        return TranslateOut(original=body.file, lang=lang, name=out, ready=False, run=run)
 
     @app.post("/api/cases/{case_id}/runs", response_model=StepResult)
     def post_run(case_id: str, body: RunIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        return _answer(stepping.step(c.store, c.config, case_id, StepRequest(action="ask", step_id=body.request_id, payload={"skill": body.skill, "text": body.note}), who))
+        return _answer(_step(c, case_id, StepRequest(action="ask", step_id=body.request_id, payload={"skill": body.skill, "text": body.note}), who))
 
     @app.post("/api/cases/{case_id}/assets", response_model=AssetOut)
     async def post_asset(case_id: str, slot: str = Form(...), step_id: str = Form(...), file: UploadFile = File(...), c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1050,12 +1645,12 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(413, f"larger than {settings.max_upload_mb} MB")
         prior = stepping.read_journal(c.store, step_id)
         if prior is not None:
-            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=step_id), who))
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=step_id), who))
         try:
             name = assets.put(c.store, c.config, case_id, slot, data, file.filename or "")
         except StoreError as exc:
             raise HTTPException(409, str(exc))
-        return AssetOut(name=name, slot=slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=step_id, payload={"files": [name], "title": ""}), who))
+        return AssetOut(name=name, slot=slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=step_id, payload={"files": [name], "title": ""}), who))
 
     @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
     def post_sample(case_id: str, body: SampleIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1066,12 +1661,12 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(404, "no sample for that slot")
         prior = stepping.read_journal(c.store, body.step_id)
         if prior is not None:
-            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
         try:
             name = assets.put(c.store, c.config, case_id, body.slot, samples_dir / source, source)
         except StoreError as exc:
             raise HTTPException(409, str(exc))
-        return AssetOut(name=name, slot=body.slot, step=stepping.step(c.store, c.config, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
+        return AssetOut(name=name, slot=body.slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
 
     @app.put("/api/cases/{case_id}/vorort")
     def put_onsite(case_id: str, body: OnsiteIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1346,9 +1941,14 @@ def app_from_env() -> FastAPI:
         worlds_dir = Path(os.environ["CASEFILE_DEMO_WORLDS"]).expanduser()
         return create_app(Settings(secret=secret, web_dist=web, demo=True, samples_dir=here / "casefile" / "demo" / "samples",
                                    replies_dir=here / "casefile" / "demo" / "replies",
-                                   worlds={"claims": World(config_dir=here / "config" / "claims-demo", template=worlds_dir / "claims", person="du", lang="de"),
-                                           "pressroom": World(config_dir=here / "config" / "pressroom", template=worlds_dir / "pressroom", person="chris", lang="en"),
-                                           "egutachten": World(config_dir=here / "config" / "egutachten", template=worlds_dir / "egutachten", person="du", lang="de")},
+                                   worlds={name: w for name, w in {         # in the design's order; a world not built yet is left out
+                                       "inbox": World(config_dir=here / "config" / "posteingang", template=worlds_dir / "inbox", person="du", lang="de",
+                                                      targets={"schadenakte": "claims", "angebot": "quotes", "pressroom": "pressroom"}),
+                                       "quotes": World(config_dir=here / "config" / "angebot", template=worlds_dir / "quotes", person="du", lang="de"),
+                                       "claims": World(config_dir=here / "config" / "claims-demo", template=worlds_dir / "claims", person="du", lang="de"),
+                                       "egutachten": World(config_dir=here / "config" / "egutachten", template=worlds_dir / "egutachten", person="du", lang="de"),
+                                       "pressroom": World(config_dir=here / "config" / "pressroom", template=worlds_dir / "pressroom", person="chris", lang="en"),
+                                   }.items() if w.template.is_dir()},
                                    default_world=os.environ.get("CASEFILE_DEFAULT_WORLD", "claims"),
                                    sessions_dir=Path(os.environ.get("CASEFILE_SESSIONS") or worlds_dir / "sessions"),
                                    open_identity=True))

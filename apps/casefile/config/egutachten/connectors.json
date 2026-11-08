@@ -7,7 +7,12 @@
       "standard": "GDV Schadennetz · Kfz-Schadenservice",
       "carries": "Gutachtenauftrag, Gutachten (eGutachten), Nachtrag, Rückfragen, Honorarrechnung, Restwertanfragen",
       "direction": "beide Richtungen",
-      "note": "Der GDV-Datensatz läuft seit 1999 produktiv; über 110 Versicherer und 100 Dienstleister sind angeschlossen."
+      "note": "Der GDV-Datensatz läuft seit 1999 produktiv; über 110 Versicherer und 100 Dienstleister sind angeschlossen.",
+      "name_en": "Insurers",
+      "standard_en": "GDV Schadennetz · Kfz-Schadenservice",
+      "carries_en": "Assessment order, assessment (e-assessment), supplement, questions, fee invoice, residual value requests",
+      "direction_en": "both ways",
+      "note_en": "The GDV data set has been in production since 1999; more than 110 insurers and 100 service providers are connected."
     },
     {
       "id": "vermittler",
@@ -15,7 +20,12 @@
       "standard": "BiPRO 430.5 (Schadenstatus) · BiPRO 503 (Schadenservice)",
       "carries": "Schadenstatus, Dokumente zum Schaden",
       "direction": "ausgehend",
-      "note": "Eine eigene BiPRO-Norm Kfz-Schaden ist in der Normierung (RNext)."
+      "note": "Eine eigene BiPRO-Norm Kfz-Schaden ist in der Normierung (RNext).",
+      "name_en": "Brokers and agents",
+      "standard_en": "BiPRO 430.5 (claim status) · BiPRO 503 (claim service)",
+      "carries_en": "Claim status, documents on the claim",
+      "direction_en": "outgoing",
+      "note_en": "A BiPRO standard of its own for motor claims is being drafted (RNext)."
     },
     {
       "id": "kalkulation",
@@ -23,21 +33,34 @@
       "standard": "DAT SilverDAT calculateEXP · Audatex Qapter",
       "carries": "Fahrzeugidentifikation (VIN), Ersatzteile, Arbeitswerte, Lackierung, Reparaturdauer",
       "direction": "beide Richtungen",
-      "note": "Die Kalkulation bleibt im Werkzeug des Gutachters; die Akte trägt das Ergebnis als Anlage."
+      "note": "Die Kalkulation bleibt im Werkzeug des Gutachters; die Akte trägt das Ergebnis als Anlage.",
+      "name_en": "Calculation",
+      "standard_en": "DAT SilverDAT calculateEXP · Audatex Qapter",
+      "carries_en": "Vehicle identification (VIN), spare parts, labour, paint, repair time",
+      "direction_en": "both ways",
+      "note_en": "The calculation stays in the assessor's tool; the file carries the result as an attachment."
     },
     {
       "id": "bewertung",
       "name": "Fahrzeugbewertung",
       "standard": "DAT · Schwacke",
       "carries": "Wiederbeschaffungswert, Ausstattung, Marktpreise",
-      "direction": "eingehend"
+      "direction": "eingehend",
+      "name_en": "Vehicle valuation",
+      "standard_en": "DAT · Schwacke",
+      "carries_en": "Replacement value, equipment, market prices",
+      "direction_en": "incoming"
     },
     {
       "id": "restwert",
       "name": "Restwertbörse",
       "standard": "Restwertbörse (Marktplatz)",
       "carries": "drei Restwertangebote vom regionalen Markt bei Totalschaden",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "Residual value exchange",
+      "standard_en": "Residual value exchange (marketplace)",
+      "carries_en": "Three residual value offers from the regional market for a total loss",
+      "direction_en": "both ways"
     },
     {
       "id": "his",
@@ -45,28 +68,46 @@
       "standard": "HIS (Hinweis- und Informationssystem der Versicherer)",
       "carries": "Hinweise zu Vorschäden, kommen mit dem Auftrag des Versicherers",
       "direction": "eingehend",
-      "note": "Die Abfrage macht der Versicherer, nicht der Gutachter."
+      "note": "Die Abfrage macht der Versicherer, nicht der Gutachter.",
+      "name_en": "Previous damage hints",
+      "standard_en": "HIS (insurers' hint and information system)",
+      "carries_en": "Hints on previous damage, come with the insurer's order",
+      "direction_en": "incoming",
+      "note_en": "The insurer runs the query, not the assessor."
     },
     {
       "id": "disposition",
       "name": "Disposition",
       "standard": "eigenes System",
       "carries": "Termine, Touren, Besichtigungsart (vor Ort, Werkstatt, remote)",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "Scheduling",
+      "standard_en": "own system",
+      "carries_en": "Appointments, routes, kind of inspection (on site, workshop, remote)",
+      "direction_en": "both ways"
     },
     {
       "id": "dokumente",
       "name": "Dokumente",
       "standard": "Dateiablage der Akte",
       "carries": "Fotos, Gutachten in Fassungen, Anschreiben, Belege",
-      "direction": "beide Richtungen"
+      "direction": "beide Richtungen",
+      "name_en": "Documents",
+      "standard_en": "The file's document storage",
+      "carries_en": "Photos, assessment in versions, cover letters, receipts",
+      "direction_en": "both ways"
     },
     {
       "id": "postausgang",
       "name": "Postausgang",
       "standard": "E-Mail · GDV Schadennetz",
       "carries": "Versand des freigegebenen Gutachtens, nur nach Freigabe",
-      "direction": "ausgehend"
+      "direction": "ausgehend",
+      "name_en": "Outgoing mail",
+      "standard_en": "E-mail · GDV Schadennetz",
+      "carries_en": "Sending the approved assessment, only after approval",
+      "direction_en": "outgoing"
     }
-  ]
+  ],
+  "$comment_en": "Every field has an English twin (<field>_en) for the English surface; the German stays the original."
 }

@@ -122,6 +122,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Setup */
+        get: operations["get_setup_api_setup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/setup/schemas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Schema
+         * @description A new kind of case, copied from an existing one: a list entry and a format (domain/schemas.py).
+         */
+        post: operations["post_schema_api_setup_schemas_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Team View */
+        get: operations["team_view_api_team_get"];
+        put?: never;
+        /** Team Change */
+        post: operations["team_change_api_team_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Team Start */
+        post: operations["team_start_api_team_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/sessions/{sid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Team Session */
+        get: operations["team_session_api_team_sessions__sid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/sessions/{sid}/{what}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Team Act */
+        post: operations["team_act_api_team_sessions__sid___what__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/config": {
         parameters: {
             query?: never;
@@ -171,6 +277,27 @@ export interface paths {
          * @description A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the meta carries).
          */
         post: operations["post_case_api_cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home
+         * @description Home: in the demo every world the visitor has (their sandbox there, or the world as it starts); in a shell or a
+         *     single tree this workspace only; the surface asks the other workspaces of the shell itself, each at its own address.
+         */
+        get: operations["home_api_home_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -288,6 +415,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/signals/{signal_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Signal Status
+         * @description A person moves a hint: looking into it, done (nothing to do, or handled), or back to open. The hint itself is never
+         *     changed or deleted; only its status, with who and when, in its header.
+         */
+        post: operations["post_signal_status_api_signals__signal_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/canon": {
         parameters: {
             query?: never;
@@ -342,6 +490,103 @@ export interface paths {
         get: operations["get_rules_api_rules_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Module */
+        get: operations["get_module_api_rulebook__module_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Draft
+         * @description A change as a draft: a new version, or the open draft written over. A new id starts a new module.
+         */
+        post: operations["post_module_draft_api_rulebook__module_id__draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Approve
+         * @description The open draft comes into force; four eyes. Cases that started before keep the version they started with.
+         */
+        post: operations["post_module_approve_api_rulebook__module_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Reject
+         * @description A proposed change not taken: it stays on record as rejected, with the reason. What was in force stays in force.
+         */
+        post: operations["post_module_reject_api_rulebook__module_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rulebook/{module_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Module Retire
+         * @description Out of force, as a version of its own with the reason. Nothing is deleted.
+         */
+        post: operations["post_module_retire_api_rulebook__module_id__retire_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -423,6 +668,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Seen
+         * @description Read or unread for the viewer alone (domain/seen.py). The surface sends it when a case is opened, and from
+         *     "Mark as unread". Not a step: nothing in the case changes.
+         */
+        post: operations["post_seen_api_cases__case_id__seen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/entries": {
         parameters: {
             query?: never;
@@ -434,6 +700,27 @@ export interface paths {
         put?: never;
         /** Post Entry */
         post: operations["post_entry_api_cases__case_id__entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/translate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Translate
+         * @description "Show translation": the helper `translate` writes `<stem>.<lang>.md` beside the original, which stays as it
+         *     came. Once there, the same request answers at once. A background order: no thread entry, nobody's move.
+         */
+        post: operations["post_translate_api_cases__case_id__translate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -774,6 +1061,16 @@ export interface components {
              * @default
              */
             tint: string;
+            /**
+             * Party
+             * @default
+             */
+            party: string;
+            /**
+             * Unread
+             * @default false
+             */
+            unread: boolean;
         };
         /** CaseView */
         CaseView: {
@@ -830,6 +1127,16 @@ export interface components {
              * @default
              */
             tint: string;
+            /**
+             * Party
+             * @default
+             */
+            party: string;
+            /**
+             * Unread
+             * @default false
+             */
+            unread: boolean;
             /** Meta */
             meta?: {
                 [key: string]: unknown;
@@ -852,6 +1159,44 @@ export interface components {
              * @default Claude
              */
             agent: string;
+            /**
+             * Reopen To
+             * @default
+             */
+            reopen_to: string;
+            /**
+             * Reopen Word
+             * @default
+             */
+            reopen_word: string;
+            /** Held By */
+            held_by?: string[];
+            /**
+             * Take Back To
+             * @default
+             */
+            take_back_to: string;
+            /**
+             * Take Back Word
+             * @default
+             */
+            take_back_word: string;
+            /**
+             * Undo Step
+             * @default
+             */
+            undo_step: string;
+            /**
+             * Undo Word
+             * @default
+             */
+            undo_word: string;
+            /** Translations */
+            translations?: {
+                [key: string]: {
+                    [key: string]: string;
+                };
+            };
             /** Data */
             data?: {
                 [key: string]: unknown;
@@ -921,6 +1266,28 @@ export interface components {
              */
             fresh: boolean;
         };
+        /** DraftIn */
+        DraftIn: {
+            /** Text */
+            text: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Kind
+             * @default
+             */
+            kind: string;
+            /** Areas */
+            areas?: string[] | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /**
          * Entry
          * @description One item of the thread (review.md): `## REV-NNN — title`, a head line, text.
@@ -964,11 +1331,17 @@ export interface components {
             amount?: string | null;
             /** Files */
             files?: string[];
+            /** Corrects */
+            corrects?: string | null;
             /**
              * Text
              * @default
              */
             text: string;
+            /** Corrected By */
+            corrected_by?: string[];
+            /** Actor */
+            actor?: ("person" | "ai" | "system") | null;
         };
         /** EntryIn */
         EntryIn: {
@@ -1028,6 +1401,22 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HomePlace
+         * @description Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning.
+         */
+        HomePlace: {
+            place: components["schemas"]["PlaceOut"];
+            /** Turns */
+            turns: components["schemas"]["TurnOut"][];
+            /** Working */
+            working: components["schemas"]["CaseCard"][];
+            /**
+             * Seals
+             * @default []
+             */
+            seals: components["schemas"]["SealOut"][];
         };
         /**
          * InterviewOut
@@ -1268,6 +1657,88 @@ export interface components {
             identity?: string | null;
             /** Shell */
             shell?: string | null;
+            /**
+             * Places
+             * @default []
+             */
+            places: components["schemas"]["PlaceOut"][];
+            /**
+             * Waiting Rules
+             * @default 0
+             */
+            waiting_rules: number;
+            /**
+             * Waiting Signals
+             * @default 0
+             */
+            waiting_signals: number;
+            /** Team */
+            team?: string | null;
+        };
+        /** ModuleHistory */
+        ModuleHistory: {
+            /** Id */
+            id: string;
+            in_force?: components["schemas"]["ModuleVersion"] | null;
+            draft?: components["schemas"]["ModuleVersion"] | null;
+            /** Versions */
+            versions: components["schemas"]["ModuleVersion"][];
+            /**
+             * May Edit
+             * @default false
+             */
+            may_edit: boolean;
+            /**
+             * May Approve
+             * @default false
+             */
+            may_approve: boolean;
+        };
+        /** ModuleVersion */
+        ModuleVersion: {
+            /** Version */
+            version: number;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /** Text */
+            text: string;
+            /**
+             * Areas
+             * @default []
+             */
+            areas: string[];
+            /**
+             * Date
+             * @default
+             */
+            date: string;
+            /**
+             * Approved By
+             * @default
+             */
+            approved_by: string;
+            /**
+             * Drafted By
+             * @default
+             */
+            drafted_by: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
         };
         /** NewCaseIn */
         NewCaseIn: {
@@ -1399,6 +1870,46 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /**
+         * PlaceOut
+         * @description A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one.
+         */
+        PlaceOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
+            /**
+             * Icon
+             * @default
+             */
+            icon: string;
+            /**
+             * Current
+             * @default false
+             */
+            current: boolean;
+            /**
+             * Url
+             * @default
+             */
+            url: string;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+        };
+        /** RejectIn */
+        RejectIn: {
+            /** Reason */
+            reason: string;
+        };
         /** RespondentOut */
         RespondentOut: {
             /** Id */
@@ -1416,6 +1927,11 @@ export interface components {
              * @default false
              */
             me: boolean;
+        };
+        /** RetireIn */
+        RetireIn: {
+            /** Note */
+            note: string;
         };
         /**
          * RhythmOut
@@ -1465,6 +1981,21 @@ export interface components {
              * @default []
              */
             requires: string[];
+        };
+        /**
+         * RuleArea
+         * @description An area a rule can apply to: a case label with its word and colour (the value list `label`).
+         */
+        RuleArea: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
         };
         /** RuleAuto */
         RuleAuto: {
@@ -1518,6 +2049,63 @@ export interface components {
             date: string;
             /** Text */
             text: string;
+            /**
+             * Areas
+             * @default []
+             */
+            areas: string[];
+            /** Draft */
+            draft?: number | null;
+            /**
+             * Versions
+             * @default 1
+             */
+            versions: number;
+            /**
+             * In Force
+             * @default true
+             */
+            in_force: boolean;
+            /**
+             * Use
+             * @default
+             */
+            use: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /**
+             * Draft Text
+             * @default
+             */
+            draft_text: string;
+            /**
+             * Draft Title
+             * @default
+             */
+            draft_title: string;
+            /**
+             * Draft Areas
+             * @default []
+             */
+            draft_areas: string[];
+            /**
+             * Draft By
+             * @default
+             */
+            draft_by: string;
+            /**
+             * Draft Date
+             * @default
+             */
+            draft_date: string;
+            /**
+             * Draft Note
+             * @default
+             */
+            draft_note: string;
         };
         /** RuleSkill */
         RuleSkill: {
@@ -1580,6 +2168,26 @@ export interface components {
              * @default []
              */
             matrix: components["schemas"]["MatrixRow"][];
+            /**
+             * May Edit
+             * @default false
+             */
+            may_edit: boolean;
+            /**
+             * May Decide
+             * @default false
+             */
+            may_decide: boolean;
+            /**
+             * Areas
+             * @default []
+             */
+            areas: components["schemas"]["RuleArea"][];
+            /**
+             * Me
+             * @default
+             */
+            me: string;
         };
         /** Run */
         Run: {
@@ -1622,6 +2230,12 @@ export interface components {
             turns?: number | null;
             /** Duration S */
             duration_s?: number | null;
+            /** Lang */
+            lang?: string | null;
+            /** File */
+            file?: string | null;
+            /** Out */
+            out?: string | null;
             /**
              * Background
              * @default false
@@ -1652,6 +2266,19 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** SchemaIn */
+        SchemaIn: {
+            /** Key */
+            key: string;
+            /** Word */
+            word?: {
+                [key: string]: string;
+            };
+            /** Based On */
+            based_on: string;
+            /** Step Id */
+            step_id: string;
+        };
         /** SealOut */
         SealOut: {
             /** Case */
@@ -1665,10 +2292,66 @@ export interface components {
             /** At */
             at: string;
         };
+        /** SeenIn */
+        SeenIn: {
+            /**
+             * Unread
+             * @default false
+             */
+            unread: boolean;
+        };
+        /** SeenOut */
+        SeenOut: {
+            /** Case */
+            case: string;
+            /** Unread */
+            unread: boolean;
+        };
         /** SessionIn */
         SessionIn: {
             /** Person */
             person: string;
+        };
+        /** SetupItem */
+        SetupItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Side
+             * @default
+             */
+            side: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Items
+             * @default []
+             */
+            items: string[];
+        };
+        /**
+         * SetupOut
+         * @description Setup (design hand-back, 2026-11-06): what this workspace is built from, read from its configuration.
+         */
+        SetupOut: {
+            /** Plugins */
+            plugins: components["schemas"]["SetupItem"][];
+            /** Sources */
+            sources: components["schemas"]["SetupItem"][];
+            /** Roles */
+            roles: components["schemas"]["SetupItem"][];
+            /** Schemas */
+            schemas: components["schemas"]["SetupItem"][];
+            /**
+             * May Add
+             * @default false
+             */
+            may_add: boolean;
         };
         /** SignalCase */
         SignalCase: {
@@ -1686,6 +2369,11 @@ export interface components {
              * @default
              */
             stage_word: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
         };
         /**
          * SignalOut
@@ -1706,6 +2394,24 @@ export interface components {
             cases: components["schemas"]["SignalCase"][];
             /** Text */
             text: string;
+            /**
+             * Decided By
+             * @default
+             */
+            decided_by: string;
+            /**
+             * Decided At
+             * @default
+             */
+            decided_at: string;
+        };
+        /** SignalStatusIn */
+        SignalStatusIn: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "offen" | "in_pruefung" | "erledigt";
         };
         /** SlotView */
         SlotView: {
@@ -1792,6 +2498,28 @@ export interface components {
              * @default false
              */
             replayed: boolean;
+        };
+        /** TranslateIn */
+        TranslateIn: {
+            /** File */
+            file: string;
+            /** Lang */
+            lang?: string | null;
+            /** Request Id */
+            request_id: string;
+        };
+        /** TranslateOut */
+        TranslateOut: {
+            /** Original */
+            original: string;
+            /** Lang */
+            lang: string;
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+            /** Run */
+            run?: string | null;
         };
         /**
          * Turn
@@ -2062,6 +2790,182 @@ export interface operations {
             };
         };
     };
+    get_setup_api_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupOut"];
+                };
+            };
+        };
+    };
+    post_schema_api_setup_schemas_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    team_view_api_team_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    team_change_api_team_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    team_start_api_team_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    team_session_api_team_sessions__sid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    team_act_api_team_sessions__sid___what__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                what: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_config_api_config_get: {
         parameters: {
             query?: never;
@@ -2162,6 +3066,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    home_api_home_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomePlace"][];
                 };
             };
         };
@@ -2332,6 +3256,41 @@ export interface operations {
             };
         };
     };
+    post_signal_status_api_signals__signal_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                signal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignalStatusIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_canon_api_canon_get: {
         parameters: {
             query?: never;
@@ -2399,6 +3358,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RulesOut"];
+                };
+            };
+        };
+    };
+    get_module_api_rulebook__module_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_draft_api_rulebook__module_id__draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_approve_api_rulebook__module_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_reject_api_rulebook__module_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_module_retire_api_rulebook__module_id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetireIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2546,6 +3672,41 @@ export interface operations {
             };
         };
     };
+    post_seen_api_cases__case_id__seen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     post_entry_api_cases__case_id__entries_post: {
         parameters: {
             query?: never;
@@ -2568,6 +3729,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StepResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_translate_api_cases__case_id__translate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranslateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslateOut"];
                 };
             };
             /** @description Validation Error */

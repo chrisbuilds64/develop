@@ -1,5 +1,6 @@
 {
   "name": "Gatehouse",
+  "app": {"icon": "gate", "color": "#ef4444"},
   "lang": "de",
   "accent": "your-move",
   "$comment": "Same tokens as the other worlds. `interview` names the files of the conversation's helpers; `create` says how a new elicitation starts (who may, which label, what the meta carries).",

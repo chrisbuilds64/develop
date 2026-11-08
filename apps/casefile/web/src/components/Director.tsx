@@ -112,7 +112,7 @@ export function Director() {
         return "next";
       }
       case "press":
-        if (s.date !== undefined) await fill(await find(".desk input[type=date]"), new Date(Date.now() + s.date * 86_400_000).toISOString().slice(0, 10));
+        if (s.date !== undefined) await fill(await find(".c-field input[type=date], .desk input[type=date]"), new Date(Date.now() + s.date * 86_400_000).toISOString().slice(0, 10));
         if (s.amount !== undefined) await fill(await find(".foot label.money input"), s.amount);
         await aim(await find(`[data-action="${s.action}"]`));
         await sleep(900);
@@ -141,7 +141,7 @@ export function Director() {
         // a secondary move is a chip that opens the thread's field; the case's main move carries its own field on the desk
         const chip = document.querySelector<HTMLElement>(`.chips [data-action="${s.action}"]`);
         if (chip) await aim(chip);
-        const input = await find(chip ? ".thread form.ask input" : ".desk label.ask input");
+        const input = await find(chip ? ".thread form.ask input" : ".desk label.ask input, .card .c-field input:not([type=date])");   // the old desk, or the case card of the design hand-back
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
         await aim(input, false);
         input.focus();
@@ -151,7 +151,7 @@ export function Director() {
           await sleep(35);
         }
         await sleep(300);
-        await aim(await find(chip ? ".thread form.ask button.send" : `.foot [data-action="${s.action}"]`));
+        await aim(await find(chip ? ".thread form.ask button.send" : `.foot [data-action="${s.action}"], .card [data-action="${s.action}"]`));
         await sleep(900);
         return "next";
       }

@@ -30,6 +30,22 @@ function Listed({ v, list, lang }: { v: unknown; list: ListView; lang: string })
   return <>{known.map((e, i) => <span key={e!.key} className="meta-listed">{i > 0 && ", "}{e!.color && <Swatch color={e!.color} label={e!.word} />}{e!.word}{e!.word !== e!.key && <span className="mono hint">{e!.key}</span>}</span>)}</>;
 }
 
+/** The same table, in place: the Details tab of the case's side panel. */
+export function MetaList({ meta, words, lang, lists = [] }: { meta: Record<string, unknown>; words: Record<string, unknown>; lang: string; lists?: ListView[] }) {
+  const named = (words.meta ?? {}) as Record<string, string>;
+  const byField = new Map(lists.map((l) => [l.field, l]));
+  const keys = Object.keys(meta).filter((k) => !k.startsWith("$") && k !== "i18n");
+  const order = [...Object.keys(named).filter((k) => keys.includes(k)), ...keys.filter((k) => !(k in named)).sort()];
+  return (
+    <dl className="meta-list">
+      {order.map((k) => (
+        <div key={k} className="meta-row"><dt title={k}>{named[k] || byField.get(k)?.word || k}</dt>
+          <dd>{byField.has(k) && meta[k] !== "" && meta[k] != null ? <Listed v={meta[k]} list={byField.get(k)!} lang={lang} /> : <Value v={meta[k]} lang={lang} />}</dd></div>
+      ))}
+    </dl>
+  );
+}
+
 export function MetaSheet({ meta, words, lang, title, table, lists = [] }: { meta: Record<string, unknown>; words: Record<string, unknown>; lang: string; title: string; table: string; lists?: ListView[] }) {
   const [open, setOpen] = useState(false);
   const [raw, setRaw] = useState(false);

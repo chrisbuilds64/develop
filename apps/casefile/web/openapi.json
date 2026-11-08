@@ -193,6 +193,192 @@
         }
       }
     },
+    "/api/setup": {
+      "get": {
+        "summary": "Get Setup",
+        "operationId": "get_setup_api_setup_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/setup/schemas": {
+      "post": {
+        "summary": "Post Schema",
+        "description": "A new kind of case, copied from an existing one: a list entry and a format (domain/schemas.py).",
+        "operationId": "post_schema_api_setup_schemas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchemaIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/team": {
+      "get": {
+        "summary": "Team View",
+        "operationId": "team_view_api_team_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Team Change",
+        "operationId": "team_change_api_team_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/team/sessions": {
+      "post": {
+        "summary": "Team Start",
+        "operationId": "team_start_api_team_sessions_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/team/sessions/{sid}": {
+      "get": {
+        "summary": "Team Session",
+        "operationId": "team_session_api_team_sessions__sid__get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/team/sessions/{sid}/{what}": {
+      "post": {
+        "summary": "Team Act",
+        "operationId": "team_act_api_team_sessions__sid___what__post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "what",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "What"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/config": {
       "get": {
         "summary": "Get Config",
@@ -313,6 +499,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/home": {
+      "get": {
+        "summary": "Home",
+        "description": "Home: in the demo every world the visitor has (their sandbox there, or the world as it starts); in a shell or a\nsingle tree this workspace only; the surface asks the other workspaces of the shell itself, each at its own address.",
+        "operationId": "home_api_home_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HomePlace"
+                  },
+                  "type": "array",
+                  "title": "Response Home Api Home Get"
                 }
               }
             }
@@ -531,6 +740,56 @@
         }
       }
     },
+    "/api/signals/{signal_id}/status": {
+      "post": {
+        "summary": "Post Signal Status",
+        "description": "A person moves a hint: looking into it, done (nothing to do, or handled), or back to open. The hint itself is never\nchanged or deleted; only its status, with who and when, in its header.",
+        "operationId": "post_signal_status_api_signals__signal_id__status_post",
+        "parameters": [
+          {
+            "name": "signal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Signal Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignalStatusIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/canon": {
       "get": {
         "summary": "Get Canon",
@@ -598,6 +857,235 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RulesOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}": {
+      "get": {
+        "summary": "Get Module",
+        "operationId": "get_module_api_rulebook__module_id__get",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}/draft": {
+      "post": {
+        "summary": "Post Module Draft",
+        "description": "A change as a draft: a new version, or the open draft written over. A new id starts a new module.",
+        "operationId": "post_module_draft_api_rulebook__module_id__draft_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}/approve": {
+      "post": {
+        "summary": "Post Module Approve",
+        "description": "The open draft comes into force; four eyes. Cases that started before keep the version they started with.",
+        "operationId": "post_module_approve_api_rulebook__module_id__approve_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}/reject": {
+      "post": {
+        "summary": "Post Module Reject",
+        "description": "A proposed change not taken: it stays on record as rejected, with the reason. What was in force stays in force.",
+        "operationId": "post_module_reject_api_rulebook__module_id__reject_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rulebook/{module_id}/retire": {
+      "post": {
+        "summary": "Post Module Retire",
+        "description": "Out of force, as a version of its own with the reason. Nothing is deleted.",
+        "operationId": "post_module_retire_api_rulebook__module_id__retire_post",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetireIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -781,6 +1269,56 @@
         }
       }
     },
+    "/api/cases/{case_id}/seen": {
+      "post": {
+        "summary": "Post Seen",
+        "description": "Read or unread for the viewer alone (domain/seen.py). The surface sends it when a case is opened, and from\n\"Mark as unread\". Not a step: nothing in the case changes.",
+        "operationId": "post_seen_api_cases__case_id__seen_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeenIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}/entries": {
       "post": {
         "summary": "Post Entry",
@@ -813,6 +1351,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StepResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/translate": {
+      "post": {
+        "summary": "Post Translate",
+        "description": "\"Show translation\": the helper `translate` writes `<stem>.<lang>.md` beside the original, which stays as it\ncame. Once there, the same request answers at once. A background order: no thread entry, nobody's move.",
+        "operationId": "post_translate_api_cases__case_id__translate_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslateOut"
                 }
               }
             }
@@ -1614,6 +2202,16 @@
             "type": "string",
             "title": "Tint",
             "default": ""
+          },
+          "party": {
+            "type": "string",
+            "title": "Party",
+            "default": ""
+          },
+          "unread": {
+            "type": "boolean",
+            "title": "Unread",
+            "default": false
           }
         },
         "type": "object",
@@ -1718,6 +2316,16 @@
             "title": "Tint",
             "default": ""
           },
+          "party": {
+            "type": "string",
+            "title": "Party",
+            "default": ""
+          },
+          "unread": {
+            "type": "boolean",
+            "title": "Unread",
+            "default": false
+          },
           "meta": {
             "additionalProperties": true,
             "type": "object",
@@ -1783,6 +2391,53 @@
             "type": "string",
             "title": "Agent",
             "default": "Claude"
+          },
+          "reopen_to": {
+            "type": "string",
+            "title": "Reopen To",
+            "default": ""
+          },
+          "reopen_word": {
+            "type": "string",
+            "title": "Reopen Word",
+            "default": ""
+          },
+          "held_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Held By"
+          },
+          "take_back_to": {
+            "type": "string",
+            "title": "Take Back To",
+            "default": ""
+          },
+          "take_back_word": {
+            "type": "string",
+            "title": "Take Back Word",
+            "default": ""
+          },
+          "undo_step": {
+            "type": "string",
+            "title": "Undo Step",
+            "default": ""
+          },
+          "undo_word": {
+            "type": "string",
+            "title": "Undo Word",
+            "default": ""
+          },
+          "translations": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Translations"
           },
           "data": {
             "additionalProperties": true,
@@ -1950,6 +2605,48 @@
         "type": "object",
         "title": "DemoSessionIn"
       },
+      "DraftIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": ""
+          },
+          "areas": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Areas"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "DraftIn"
+      },
       "Entry": {
         "properties": {
           "id": {
@@ -2053,10 +2750,44 @@
             "type": "array",
             "title": "Files"
           },
+          "corrects": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrects"
+          },
           "text": {
             "type": "string",
             "title": "Text",
             "default": ""
+          },
+          "corrected_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Corrected By"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "person",
+                  "ai",
+                  "system"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
           }
         },
         "type": "object",
@@ -2215,6 +2946,43 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HomePlace": {
+        "properties": {
+          "place": {
+            "$ref": "#/components/schemas/PlaceOut"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TurnOut"
+            },
+            "type": "array",
+            "title": "Turns"
+          },
+          "working": {
+            "items": {
+              "$ref": "#/components/schemas/CaseCard"
+            },
+            "type": "array",
+            "title": "Working"
+          },
+          "seals": {
+            "items": {
+              "$ref": "#/components/schemas/SealOut"
+            },
+            "type": "array",
+            "title": "Seals",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "place",
+          "turns",
+          "working"
+        ],
+        "title": "HomePlace",
+        "description": "Home across workspaces (design hand-back, 2026-11-06): one workspace's part of the morning."
       },
       "InterviewOut": {
         "properties": {
@@ -2696,6 +3464,35 @@
               }
             ],
             "title": "Shell"
+          },
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceOut"
+            },
+            "type": "array",
+            "title": "Places",
+            "default": []
+          },
+          "waiting_rules": {
+            "type": "integer",
+            "title": "Waiting Rules",
+            "default": 0
+          },
+          "waiting_signals": {
+            "type": "integer",
+            "title": "Waiting Signals",
+            "default": 0
+          },
+          "team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team"
           }
         },
         "type": "object",
@@ -2710,6 +3507,123 @@
           "worlds"
         ],
         "title": "MeOut"
+      },
+      "ModuleHistory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "in_force": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModuleVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModuleVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ModuleVersion"
+            },
+            "type": "array",
+            "title": "Versions"
+          },
+          "may_edit": {
+            "type": "boolean",
+            "title": "May Edit",
+            "default": false
+          },
+          "may_approve": {
+            "type": "boolean",
+            "title": "May Approve",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "versions"
+        ],
+        "title": "ModuleHistory"
+      },
+      "ModuleVersion": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Areas",
+            "default": []
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "default": ""
+          },
+          "approved_by": {
+            "type": "string",
+            "title": "Approved By",
+            "default": ""
+          },
+          "drafted_by": {
+            "type": "string",
+            "title": "Drafted By",
+            "default": ""
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": ""
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "status",
+          "title",
+          "text"
+        ],
+        "title": "ModuleVersion"
       },
       "NewCaseIn": {
         "properties": {
@@ -2934,6 +3848,63 @@
         ],
         "title": "PersonView"
       },
+      "PlaceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon",
+            "default": ""
+          },
+          "current": {
+            "type": "boolean",
+            "title": "Current",
+            "default": false
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "default": ""
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "PlaceOut",
+        "description": "A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one."
+      },
+      "RejectIn": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "RejectIn"
+      },
       "RespondentOut": {
         "properties": {
           "id": {
@@ -2971,6 +3942,19 @@
           "done"
         ],
         "title": "RespondentOut"
+      },
+      "RetireIn": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "note"
+        ],
+        "title": "RetireIn"
       },
       "RhythmOut": {
         "properties": {
@@ -3037,6 +4021,30 @@
           "word"
         ],
         "title": "RuleAction"
+      },
+      "RuleArea": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word"
+        ],
+        "title": "RuleArea",
+        "description": "An area a rule can apply to: a case label with its word and colour (the value list `label`)."
       },
       "RuleAuto": {
         "properties": {
@@ -3127,6 +4135,78 @@
           "text": {
             "type": "string",
             "title": "Text"
+          },
+          "areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Areas",
+            "default": []
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft"
+          },
+          "versions": {
+            "type": "integer",
+            "title": "Versions",
+            "default": 1
+          },
+          "in_force": {
+            "type": "boolean",
+            "title": "In Force",
+            "default": true
+          },
+          "use": {
+            "type": "string",
+            "title": "Use",
+            "default": ""
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": ""
+          },
+          "draft_text": {
+            "type": "string",
+            "title": "Draft Text",
+            "default": ""
+          },
+          "draft_title": {
+            "type": "string",
+            "title": "Draft Title",
+            "default": ""
+          },
+          "draft_areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Draft Areas",
+            "default": []
+          },
+          "draft_by": {
+            "type": "string",
+            "title": "Draft By",
+            "default": ""
+          },
+          "draft_date": {
+            "type": "string",
+            "title": "Draft Date",
+            "default": ""
+          },
+          "draft_note": {
+            "type": "string",
+            "title": "Draft Note",
+            "default": ""
           }
         },
         "type": "object",
@@ -3263,6 +4343,29 @@
             "type": "array",
             "title": "Matrix",
             "default": []
+          },
+          "may_edit": {
+            "type": "boolean",
+            "title": "May Edit",
+            "default": false
+          },
+          "may_decide": {
+            "type": "boolean",
+            "title": "May Decide",
+            "default": false
+          },
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/RuleArea"
+            },
+            "type": "array",
+            "title": "Areas",
+            "default": []
+          },
+          "me": {
+            "type": "string",
+            "title": "Me",
+            "default": ""
           }
         },
         "type": "object",
@@ -3411,6 +4514,39 @@
             ],
             "title": "Duration S"
           },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "out": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Out"
+          },
           "background": {
             "type": "boolean",
             "title": "Background",
@@ -3479,6 +4615,36 @@
         ],
         "title": "SampleIn"
       },
+      "SchemaIn": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Word"
+          },
+          "based_on": {
+            "type": "string",
+            "title": "Based On"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "based_on",
+          "step_id"
+        ],
+        "title": "SchemaIn"
+      },
       "SealOut": {
         "properties": {
           "case": {
@@ -3512,6 +4678,35 @@
         ],
         "title": "SealOut"
       },
+      "SeenIn": {
+        "properties": {
+          "unread": {
+            "type": "boolean",
+            "title": "Unread",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SeenIn"
+      },
+      "SeenOut": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "unread": {
+            "type": "boolean",
+            "title": "Unread"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case",
+          "unread"
+        ],
+        "title": "SeenOut"
+      },
       "SessionIn": {
         "properties": {
           "person": {
@@ -3524,6 +4719,88 @@
           "person"
         ],
         "title": "SessionIn"
+      },
+      "SetupItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "side": {
+            "type": "string",
+            "title": "Side",
+            "default": ""
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "SetupItem"
+      },
+      "SetupOut": {
+        "properties": {
+          "plugins": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Plugins"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Roles"
+          },
+          "schemas": {
+            "items": {
+              "$ref": "#/components/schemas/SetupItem"
+            },
+            "type": "array",
+            "title": "Schemas"
+          },
+          "may_add": {
+            "type": "boolean",
+            "title": "May Add",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "plugins",
+          "sources",
+          "roles",
+          "schemas"
+        ],
+        "title": "SetupOut",
+        "description": "Setup (design hand-back, 2026-11-06): what this workspace is built from, read from its configuration."
       },
       "SignalCase": {
         "properties": {
@@ -3543,6 +4820,11 @@
           "stage_word": {
             "type": "string",
             "title": "Stage Word",
+            "default": ""
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
             "default": ""
           }
         },
@@ -3585,6 +4867,16 @@
           "text": {
             "type": "string",
             "title": "Text"
+          },
+          "decided_by": {
+            "type": "string",
+            "title": "Decided By",
+            "default": ""
+          },
+          "decided_at": {
+            "type": "string",
+            "title": "Decided At",
+            "default": ""
           }
         },
         "type": "object",
@@ -3599,6 +4891,24 @@
         ],
         "title": "SignalOut",
         "description": "A hint the pattern helper found across files: never a finding, always with its reasoning and the files it rests on."
+      },
+      "SignalStatusIn": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "offen",
+              "in_pruefung",
+              "erledigt"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SignalStatusIn"
       },
       "SlotView": {
         "properties": {
@@ -3819,6 +5129,74 @@
           "action"
         ],
         "title": "StepResult"
+      },
+      "TranslateIn": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "request_id"
+        ],
+        "title": "TranslateIn"
+      },
+      "TranslateOut": {
+        "properties": {
+          "original": {
+            "type": "string",
+            "title": "Original"
+          },
+          "lang": {
+            "type": "string",
+            "title": "Lang"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original",
+          "lang",
+          "name",
+          "ready"
+        ],
+        "title": "TranslateOut"
       },
       "Turn": {
         "properties": {

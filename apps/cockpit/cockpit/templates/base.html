@@ -2,6 +2,7 @@
 <html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="/static/mark.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% if config.environment and config.environment != 'prod' %}[{{ config.environment|upper }}] {% endif %}{{ config.name }}{% if config.name != t('app.title') %} · {{ t('app.title') }}{% endif %}</title>
 {% if export %}
@@ -15,9 +16,10 @@
 <script>
   // Theme, look and transparency are this browser's choice (the person menu sets them); restored before the first paint.
   try {
-    var d = document.documentElement, t = localStorage.getItem('cockpit-theme'), l = localStorage.getItem('cockpit-look'), g = localStorage.getItem('cockpit-glass');
-    if (t === 'light' || t === 'dark') d.dataset.theme = t;
-    if (l === 'glass') d.dataset.look = 'glass';
+    // light until the person picks otherwise; `shell-theme` is shared with Casefile and written only by a choice
+    var d = document.documentElement, t = localStorage.getItem('shell-theme'), l = localStorage.getItem('cockpit-look'), g = localStorage.getItem('cockpit-glass');
+    if (t !== 'auto') d.dataset.theme = t === 'dark' ? 'dark' : 'light';
+    // one look since the Casefile redesign: solid surfaces on a soft ambient ground; a stored 'glass' is no longer restored
     if (g) d.style.setProperty('--glass-t', Math.min(0.6, Math.max(0, Number(g) / 100)));
   } catch (e) {}
 </script>
@@ -31,8 +33,10 @@
 <button type="button" class="scrim" aria-label="{{ t('app.menu') }}" onclick="document.querySelector('.side').classList.remove('open');this.classList.remove('open')"></button>
 <nav class="side" aria-label="{{ t('app.menu') }}">
   <div class="menu-head">
-    <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-    <span class="brand-name tx">{{ config.name }}</span>
+    <a href="/" class="brand-link" data-help-skip="explained by shell.dashboard" aria-label="{{ t('app.dashboard') }}">
+      <img class="brand-mark" src="/static/mark.svg" width="26" height="26" alt="">
+      <span class="brand-name tx">{{ config.name }}</span>
+    </a>
     {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
     <button type="button" class="rail-toggle tx" data-help="shell.pin" onclick="cockpitRail()" aria-label="{{ t('app.pin') }}" title="{{ t('app.pin') }}">{{ glyph('pin', 17) }}</button>
   </div>
@@ -43,29 +47,28 @@
   {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
   {% set dots = ['#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#ef4444', '#14b8a6'] %}
   {% set appix = applications.keys()|list %}
-  <details class="nav-sec" data-key="ws" data-help="shell.workspaces" open>
-    <summary class="section"><span class="tx">{{ t('ws.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
-    {% for w in live %}
-    <div class="ws-item">
-      <a href="/w/{{ w.id }}/" class="nav-row ws-row" data-help-skip="explained by shell.workspaces" title="{{ w.label }} · {{ applications[w.application].label if w.application in applications else w.application }}">
-        <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
-        <span class="tx">{{ w.label }}</span>
-        {% if w.shared %}<span class="n tx" title="{{ t('ws.shared') }}">{{ glyph('users', 15) }}</span>{% endif %}
-      </a>
-    </div>
-    {% endfor %}
-    {% if samples %}
-    <details class="nav-group" data-key="samples">
-      <summary class="nav-row quiet" data-help="shell.samples"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('ws.samples') }}</span><span class="n tx">{{ samples|length }}</span></summary>
-      {% for w in samples %}
-      <a href="/w/{{ w.id }}/" class="nav-row ws-row quiet" data-help-skip="explained by shell.samples" title="{{ w.label }}">
-        <span class="ic"><span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span></span>
-        <span class="tx">{{ w.label }}</span>
-      </a>
-      {% endfor %}
-    </details>
+  {# an application marks itself through its theme (app.icon, app.color); without one, a dot in a colour by its place #}
+  {% macro app_mark(w, size) -%}
+    {%- set a = applications[w.application] if w.application in applications else none -%}
+    {%- set c = (a.color if a and a.color else (dots[appix.index(w.application) % dots|length] if a else '#94a3b8')) -%}
+    {%- if a and a.icon %}<span class="app-mark" style="--dot: {{ c }}">{{ glyph(a.icon, size) }}</span>{% else %}<span class="dot" style="--dot: {{ c }}"></span>{% endif -%}
+  {%- endmacro %}
+  {# The cockpit holds tools. Casefile is one of them, once; its workspaces (Schadenakte, PressRoom…) are switched inside Casefile. #}
+  {% set first_ws = (live + samples)|first %}
+  <details class="nav-sec" data-key="tools" data-help="shell.tools" open>
+    <summary class="section"><span class="tx">{{ t('app.tools') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
+    {% if first_ws %}
+    <a href="/w/{{ first_ws.id }}/" class="nav-row ws-row casefile-link{% if route.startswith('/w/') %} on{% endif %}" data-help="shell.casefile" title="Casefile">
+      <span class="ic"><span class="cf-mark" aria-hidden="true"></span></span><span class="tx">Casefile</span>
+    </a>
+    {% elif applications %}
+    <a href="/workspaces/new" class="nav-row ws-row" data-help="shell.casefile" title="Casefile"><span class="ic"><span class="cf-mark" aria-hidden="true"></span></span><span class="tx">Casefile</span></a>
     {% endif %}
-    {% if applications %}<a href="/workspaces/new" class="nav-row quiet add" data-help="shell.new-workspace" title="{{ t('ws.new_short') }}"><span class="ic">{{ glyph('plus', 18) }}</span><span class="tx">{{ t('ws.new_short') }}</span></a>{% endif %}
+    {% for m in nav_modules or [] %}{% set pl = plugins.get(m.plugin) %}
+    <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" data-help-skip="explained by shell.tools" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
+      <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
+    </a>
+    {% endfor %}
   </details>
 
   {% if user %}
@@ -84,16 +87,6 @@
   </details>
   {% endif %}
 
-  {% if nav_modules %}
-  <details class="nav-sec" data-key="workshop" data-help="shell.workshop" open>
-    <summary class="section"><span class="tx">{{ t('app.workshop') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
-    {% for m in nav_modules %}{% set pl = plugins.get(m.plugin) %}
-    <a href="/m/{{ m.id }}" class="nav-row{% if current == m.id %} on{% endif %}" data-help-skip="explained by shell.workshop" style="--m: {{ pl.accent if pl else '#3b82f6' }}" title="{{ t(m.id ~ '.title') }}">
-      <span class="ic">{{ glyph(pl.icon if pl else 'box', 18) }}</span><span class="tx">{{ t(m.id ~ '.title') }}</span>
-    </a>
-    {% endfor %}
-  </details>
-  {% endif %}
   {% if role.may_act('*') or role.may_act('setup.view') %}
   <a href="/setup" class="nav-row{% if route.startswith('/setup') %} on{% endif %}" data-help="shell.setup" title="{{ t('setup.title') }}"><span class="ic">{{ glyph('gear', 18) }}</span><span class="tx">{{ t('setup.title') }}</span></a>
   {% endif %}
@@ -118,6 +111,11 @@
   </div>
   {% endif %}
   <div class="version tx">{{ t('app.version') }} {{ version }}</div>
+<script>
+// Casefile opens where you left it: the last workspace you were in (Casefile notes it on this same origin).
+(function () { try { var u = localStorage.getItem('casefile-last'); var a = document.querySelector('a.casefile-link');
+  if (u && a && /^\/(?:[\w-]+\/)*w\/[\w-]+\/$/.test(u)) a.setAttribute('href', u); } catch (e) {} })();
+</script>
 </nav>
 {% if user %}
 <script src="/static/agent-panel.js?v={{ asset_v }}" defer></script>
@@ -129,15 +127,6 @@
         <button type="button" data-theme-set="dark">{{ t('me.dark') }}</button>
         <button type="button" data-theme-set="auto">{{ t('me.auto') }}</button>
       </div>
-      <div class="pop-label">{{ t('me.look') }}</div>
-      <div class="look-pick">
-        <button type="button" data-look-set="standard"><b>{{ t('me.standard') }}</b><span>{{ t('me.standard_hint') }}</span></button>
-        <button type="button" data-look-set="glass"><b>{{ t('me.glass') }}</b><span>{{ t('me.glass_hint') }}</span></button>
-      </div>
-      <label class="glass-range"><span>{{ t('me.transparency') }} <output id="glass-out"></output></span>
-        <input type="range" min="0" max="60" step="1" id="glass-t">
-        <small>{{ t('me.transparency_hint') }}</small>
-      </label>
       <div class="pop-label">{{ t('app.language') }}</div>
       <select onchange="location.href='/set?lang='+this.value" aria-label="{{ t('app.language') }}">
         {% for code, name in languages %}<option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>{% endfor %}
@@ -152,16 +141,6 @@
       <a href="/logout" class="pop-row">{{ glyph('out', 18) }}<span><b>{{ t('app.logout') }}</b></span></a>
 </div>
 <div class="topbar">
-  <details class="switch" data-help="shell.switch">
-    <summary class="pill" data-help-skip="explained by shell.switch">{% set here = none %}<span>{{ here.label if here else t('ws.title') }}</span>{{ glyph('updown', 15) }}</summary>
-    <div class="pop right">
-      <div class="pop-title">{{ t('ws.mine_all') }}</div>
-      {% for w in workspaces %}
-      <a href="/w/{{ w.id }}/" class="pop-row">{% if here and here.id == w.id %}{{ glyph('check-mark', 16) }}{% else %}<span class="dot" style="--dot: {{ dots[appix.index(w.application) % dots|length] if w.application in appix else '#94a3b8' }}"></span>{% endif %}<span>{{ w.label }}</span></a>
-      {% endfor %}
-      {% if applications %}<hr><a href="/workspaces/new" class="pop-row">{{ glyph('plus', 16) }}<span>{{ t('ws.new_short') }}</span></a>{% endif %}
-    </div>
-  </details>
   <details class="bell" data-help="shell.bell">
     <summary class="pill icon" data-help-skip="explained by shell.bell" aria-label="{{ t('note.title') }}">{{ glyph('bell', 17) }}{% if notes %}<span class="bell-dot">{{ notes|length }}</span>{% endif %}</summary>
     <div class="pop right">
@@ -200,13 +179,13 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { pops.forEach(function (p) { p.open = false; }); meShow(false); } });
     // design, look, transparency
     function mark() {
-      var th = read('cockpit-theme') || 'auto', lk = d.dataset.look === 'glass' ? 'glass' : 'standard';
+      var th = read('shell-theme') || 'light', lk = d.dataset.look === 'glass' ? 'glass' : 'standard';
       document.querySelectorAll('[data-theme-set]').forEach(function (x) { x.classList.toggle('on', x.dataset.themeSet === th); });
       document.querySelectorAll('[data-look-set]').forEach(function (x) { x.classList.toggle('on', x.dataset.lookSet === lk); });
       var r = document.getElementById('glass-t'); if (r) { r.closest('label').hidden = lk !== 'glass'; }
     }
     document.querySelectorAll('[data-theme-set]').forEach(function (x) { x.addEventListener('click', function () {
-      var v = x.dataset.themeSet; if (v === 'auto') delete d.dataset.theme; else d.dataset.theme = v; store('cockpit-theme', v); mark(); }); });
+      var v = x.dataset.themeSet; if (v === 'auto') delete d.dataset.theme; else d.dataset.theme = v; store('shell-theme', v); mark(); }); });
     document.querySelectorAll('[data-look-set]').forEach(function (x) { x.addEventListener('click', function () {
       if (x.dataset.lookSet === 'glass') d.dataset.look = 'glass'; else delete d.dataset.look; store('cockpit-look', x.dataset.lookSet); mark(); }); });
     var r = document.getElementById('glass-t'), o = document.getElementById('glass-out');

@@ -31,13 +31,28 @@ from pathlib import Path
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{1,47}$")
 MODES = ("live", "replay")
-CLEARED = ("_runs", "_steps", "_audit")        # a copy starts without the source's orders, journals and audit
+CLEARED = ("_runs", "_steps", "_audit", "_seen")   # a copy starts without the source's orders, journals, audit and read markers
 COMPONENTS = ("pipeline",)
 RETIRED = ("agents", "sessions")                 # ADR-019 components, skipped when an older registry still names them
 
 
 class WorkspaceError(Exception):
     """A sentence for the person, never a stack trace."""
+
+
+COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def _mark(config_dir: Path | None) -> dict:
+    """How an application marks itself in the shell: `app.icon` and `app.color` of its theme.json. An application is
+    only configuration, so its look comes from there and not from its id; anything unreadable is simply no mark."""
+    try:
+        app = json.loads((Path(config_dir) / "theme.json").read_text(encoding="utf-8")).get("app") or {}
+    except (OSError, ValueError, TypeError, AttributeError):
+        return {}
+    icon, color = app.get("icon"), app.get("color")
+    return {"icon": icon if isinstance(icon, str) and NAME.match(icon) else None,
+            "color": color if isinstance(color, str) and COLOR.match(color) else None}
 
 
 @dataclass(frozen=True)
@@ -47,6 +62,8 @@ class Application:
     config_dir: Path
     template: Path | None = None               # a built tree to copy for a new workspace; None = start empty
     mode: str = "live"                         # the mode a new workspace of this application gets
+    icon: str | None = None                    # the shell glyph that marks it, from the theme's `app.icon`
+    color: str | None = None                   # its colour, from the theme's `app.color`
 
 
 @dataclass(frozen=True)
@@ -129,8 +146,11 @@ class Workspaces:
                 raise WorkspaceError(f"application id '{aid}' — lower-case letters, digits, - and _")
             if not a.get("config_dir"):
                 raise WorkspaceError(f"application '{aid}': config_dir is missing")
-            self.applications[aid] = Application(id=aid, label=str(a.get("label", aid)), config_dir=self._abs(a["config_dir"]),
-                                                 template=self._abs(a.get("template")), mode=str(a.get("mode", "live")))
+            config_dir = self._abs(a["config_dir"])
+            mark = _mark(config_dir)
+            self.applications[aid] = Application(id=aid, label=str(a.get("label", aid)), config_dir=config_dir,
+                                                 template=self._abs(a.get("template")), mode=str(a.get("mode", "live")),
+                                                 icon=mark.get("icon"), color=mark.get("color"))
         self.defaults = self._components(raw.get("defaults") or {}, "defaults")
         seen = set()
         for w in raw.get("workspaces") or []:
@@ -296,14 +316,48 @@ def web_dist_default() -> Path | None:
     return d if d.is_dir() else None
 
 
-def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell: str | None = None):
+def peers_of(workspaces: "Workspaces", w: Workspace, identity, shell: str | None):
+    """Every workspace the person at the door may open, for the rail inside a workspace: the cockpit keeps one entry,
+    Casefile, and the switching between workspaces happens inside it. Read per request, so new ones show up at once."""
+    base = (shell or "/").rstrip("/")
+
+    def peers(request) -> list[dict]:
+        user = identity(request) if (identity is not None and request is not None) else None
+        out = []
+        for o in workspaces.items:
+            if o.id != w.id and not o.visible_to(user):
+                continue
+            a = workspaces.applications.get(o.application)
+            mark = _mark(a.config_dir) if a else {}
+            out.append({"id": o.id, "name": o.label, "url": f"{base}/w/{o.id}/", "color": mark.get("color") or "",
+                        "icon": mark.get("icon") or "", "current": o.id == w.id})
+        return out
+    return peers
+
+
+def shell_plugins() -> list[dict]:
+    """The plugins this cockpit carries, for the Setup page of a mounted application: id, name, version, the first sentence."""
+    out = []
+    for f in sorted((Path(__file__).resolve().parent / "plugins").glob("*/plugin.json")):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        text = str(d.get("description") or "")
+        out.append({"id": str(d.get("id") or f.parent.name), "name": str(d.get("name") or f.parent.name), "version": str(d.get("version") or ""),
+                    "text": (text.split(". ")[0].rstrip(".") + ".") if text else ""})
+    return out
+
+
+def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell: str | None = None,
+              peers=None):
     """The casefile app for one workspace: its tree, its application, the cockpit's identity, the stage it is in,
     and where the shell lives — the menu offers the way back."""
     import casefile
     from casefile.api.app import Settings, create_app
     pkg = Path(casefile.__file__).resolve().parent
     settings = Settings(
-        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell,
+        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers, plugins=shell_plugins(),
         open_identity=w.open_identity, identity=None if w.open_identity else identity,
         secret=secret, web_dist=web_dist, demo=(w.mode == "replay"), template=app.template if w.mode == "replay" else None,
         samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies",
@@ -326,4 +380,4 @@ def mount_all(shell, workspaces: Workspaces, identity, secret: str, web_dist: Pa
 
 def mount_one(shell, workspaces: Workspaces, w: Workspace, identity, secret: str, web_dist: Path | None, stage: str | None = None, shell_url: str | None = None) -> None:
     app = workspaces.applications[w.application]
-    shell.mount(f"/w/{w.id}", build_app(w, app, identity, secret, web_dist, stage, shell_url), name=f"ws-{w.id}")
+    shell.mount(f"/w/{w.id}", build_app(w, app, identity, secret, web_dist, stage, shell_url, peers_of(workspaces, w, identity, shell_url)), name=f"ws-{w.id}")

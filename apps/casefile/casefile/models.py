@@ -62,6 +62,10 @@ class Person(BaseModel):
     kind: Literal["human", "agent"] = "human"
     roles: list[str] = Field(default_factory=list)
     deputy: str | None = None                    # who stands in when this person is away
+    name_en: str | None = None                   # the name on the English surface, where it is a word more than a name ("Du" → "You")
+
+    def name_in(self, lang: str) -> str:
+        return (self.name_en or self.name) if lang == "en" else self.name
 
 
 # ----------------------------------------------------------------------------- the case as read
@@ -81,7 +85,10 @@ class Entry(BaseModel):
     to: str | None = None
     amount: str | None = None
     files: list[str] = Field(default_factory=list)   # deliverables this entry delivered
+    corrects: str | None = None                  # the decision entry this one undoes (status undone) or corrects (status correction), ADR-025
     text: str = ""
+    corrected_by: list[str] = Field(default_factory=list)   # later entries that undo or correct this one; derived when the surface reads the case
+    actor: Literal["person", "ai", "system"] | None = None   # who made this move, derived from the author when the surface reads it; never written to review.md
 
     model_config = {"populate_by_name": True}
 
@@ -127,6 +134,9 @@ class Run(BaseModel):
     model: str | None = None
     turns: int | None = None
     duration_s: float | None = None
+    lang: str | None = None                      # the language the helper writes in (the requester's)
+    file: str | None = None                      # translate: the original it reads
+    out: str | None = None                       # translate: the file it writes beside the original
     background: bool = False                     # a helper that works beside the people (a follow-up while someone answers): never anybody's move
 
 
@@ -205,7 +215,7 @@ class Journal(BaseModel):
     case: str
     action: str
     by: str
-    status: Literal["intent", "done", "refused"] = "intent"
+    status: Literal["intent", "done", "refused", "undone"] = "intent"   # undone: a later `undo` step took it back (ADR-025)
     from_: str | None = Field(default=None, alias="from")
     to: str | None = None
     entry: str | None = None

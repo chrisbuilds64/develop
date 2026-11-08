@@ -1,17 +1,20 @@
-// One case: head, the line, what is on the desk, what is missing, the conversation, and the one button in the thumb zone.
-import { useEffect, useRef, useState } from "react";
+// One case (design hand-back, 2026-11-05): a slim bar with the number and the place in the queue; the head (photo or
+// initials, title, who it is from, urgent); the line of stations; one card with what the core proposes and the one
+// button for it — the AI's reading of a mail with its facts and suggestion, or the plain sentence of the move — and, when
+// the case lies elsewhere or is closed, remind, take back or move back; what is on the desk; the keys. Beside it the
+// conversation, the documents and the details. Every action is a step of the core; Undo follows the core's undo_step.
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type ConfigView, type MeOut, type Turn } from "../api";
-import { Line } from "../components/Line";
-import { Frame } from "../components/Frames";
-import { Thread } from "../components/Thread";
-import { Cover } from "../components/Cover";
-import { Send } from "../components/Icons";
+import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type ConfigView, type MeOut, type Turn, type Entry } from "../api";
+import { Conversation } from "../components/Conversation";
+import { Send, Seal, DocIcon, PenIcon, PhotoIcon } from "../components/Icons";
 import { Reader, type Doc } from "../components/Reader";
+import { MetaList } from "../components/MetaSheet";
+import { casesOf, type Tab } from "./Queue";
 import { ago, dateWords, type words } from "../words";
-import { paper, thud } from "../moments";
-import { MailTriage } from "../components/MailTriage";
-import { MetaSheet } from "../components/MetaSheet";
+import { paper, thud, tick } from "../moments";
+
+type W = ReturnType<typeof words>;
 
 /** The documents on the desk, newest version each, the primary first — the order the reader walks. */
 export function docsOf(v: CaseView): Doc[] {
@@ -20,227 +23,344 @@ export function docsOf(v: CaseView): Doc[] {
   return ordered.map((s) => ({ word: s.word, shape: s.shape, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) }));
 }
 
-export function CaseScreen({ id, config, me, go, w }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: ReturnType<typeof words> }) {
+type Reading = { kind?: string; rule?: string; urgency?: string; summary?: string; fields?: Record<string, string>; labels?: Record<string, string>; reasons?: string[] };
+type Done = { case?: string; title?: string; url?: string; target_label?: string };
+
+function Stations({ stations, caseId }: { stations: { key: string; word: string; state: string }[]; caseId: string }) {
+  const cur = Math.max(0, stations.findIndex((s) => s.state === "current"));
+  const n = Math.max(1, stations.length - 1);
+  const prev = useRef<{ id: string; cur: number } | null>(null);
+  useEffect(() => {
+    const p = prev.current;
+    if (p && p.id === caseId && cur > p.cur) for (let i = 0; i < cur - p.cur; i++) tick(0.12 + i * 0.11);
+    prev.current = { id: caseId, cur };
+  }, [cur, caseId]);
+  return (
+    <div className="sline" role="img" aria-label={stations[cur]?.word} data-help="cf.stations">
+      <div className="strack"><i style={{ width: `${(cur / n) * 100}%` }} /></div>
+      <div className="sst">
+        {stations.map((s, i) => (
+          <span key={s.key} className={s.state === "done" ? "past" : s.state === "current" ? "now" : ""} style={{ left: `${(i / n) * 100}%` }}><b /><em>{s.word}</em></span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Missing({ slot, mine, busy, sample, w, onFile, onSample }: { slot: CaseView["slots"][number]; mine: boolean; busy: boolean; sample: boolean; w: W; onFile: (f: File) => void; onSample: () => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const accept = slot.shape.startsWith("image") ? "image/*" : slot.shape.startsWith("video") ? "video/*" : slot.shape === "pdf" ? "application/pdf" : undefined;
+  return (
+    <div className={`doc missing${mine ? " mine" : ""}${over ? " over" : ""}`} role="button" tabIndex={0} aria-label={`${slot.word} · ${w.dropHere}`}
+         onClick={() => !busy && input.current?.click()} onKeyDown={(e) => { if (e.key === "Enter") input.current?.click(); }}
+         onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+         onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}>
+      <span className="dn">{slot.word}</span>
+      <span className="dm">{over ? w.dropHere : slot.by_word ? w.delivers(slot.by_word) : w.missingDrop}</span>
+      {sample && <button type="button" className="d-sample" disabled={busy} onClick={(e) => { e.stopPropagation(); onSample(); }}>{w.useSample}</button>}
+      <input ref={input} type="file" accept={accept} hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
+    </div>
+  );
+}
+
+export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string; config: ConfigView; me: MeOut; go: (p: string) => void; w: W; tab?: Tab }) {
   const qc = useQueryClient();
   const lang = config.lang;
   const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false, refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
+  const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
+  const rules = useQuery({ queryKey: ["rules"], queryFn: api.rules, staleTime: 60_000 });
   const samples = ((config.theme as { samples?: string[] }).samples ?? []);
-  const extWord = ((config.words as { words?: Record<string, string> }).words?.external_id) ?? "";
   const [refused, setRefused] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ text: string; undo?: () => void; sealed?: boolean } | null>(null);
+  const [toast, setToast] = useState<{ text: string; undo?: boolean; sealed?: boolean } | null>(null);
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [note, setNote] = useState("");
   const [ask, setAsk] = useState("");
   const [pending, setPending] = useState<Turn | null>(null);
   const [reading, setReading] = useState<string | null>(null);
-  const [landed, setLanded] = useState<string | null>(null);         // the slot that just received a file: it lands visibly on the desk
+  const [side, setSide] = useState<"conv" | "docs" | "details">("conv");
   const askRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); };
+  const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); qc.invalidateQueries({ queryKey: ["rhythm"] }); };
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
   const stageWord = (f: string) => ((config.words as { stages?: Record<string, string> }).stages?.[f]) ?? f.replace(/^\d+-/, "");
+  const actionWord = (a: string) => ((config.words as { actions?: Record<string, string> }).actions?.[a]) ?? a;
   const roleWord = (actor: string) => actor.startsWith("role:") ? (((config.words as { roles?: Record<string, string> }).roles?.[actor.slice(5)]) ?? actor.slice(5)) : (config.people.find((p) => p.id === actor)?.name ?? actor);
-  const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown> }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r, p) => {
-    setRefused(null); refresh();
-    const gate = q.data?.my_turns.find((t) => t.action === p.action)?.seal && !r.replayed;
-    if (gate) { thud(); setToast({ text: `${q.data?.my_turns.find((t) => t.action === p.action)?.label ?? ""}${r.to ? ` · ${stageWord(r.to)}` : ""}`, sealed: true }); }
-    else if (r.to) setToast({ text: w.doneMoved(stageWord(r.to)) });
+
+  const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown>; label?: string }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r, p) => {
+    setRefused(null); refresh(); setAmount(""); setDate(""); setNote("");
+    if (p.action === "undo") { setToast({ text: w.undone }); return; }
+    if (p.action === "remind") { setToast({ text: w.reminded((q.data?.held_by ?? []).join(", ")) }); return; }
+    const t = q.data?.my_turns.find((x) => x.action === p.action);
+    if (t?.seal && !r.replayed) thud();
+    const text = `${p.label ?? t?.label ?? actionWord(p.action)}${r.to ? ` · ${stageWord(r.to)}` : ""}`;
+    setToast({ text, sealed: !!t?.seal, undo: !!r.to && !["take_back", "reopen", "correct"].includes(p.action) });
   }, onError: fail });
   const entry = useMutation({ mutationFn: (b: Parameters<typeof api.entry>[1]) => api.entry(id, b), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); setAsk(""); refresh(); }, onError: fail });
-  const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: (_r, p) => { setRefused(null); setLanded(p.slot); paper(); refresh(); }, onError: fail });
-  const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: (_r, slot) => { setRefused(null); setLanded(slot); paper(); refresh(); }, onError: fail });
-  useEffect(() => { if (!landed) return; const t = setTimeout(() => setLanded(null), 1600); return () => clearTimeout(t); }, [landed]);
-  const entryCount = q.data?.entries.length ?? 0;
-  useEffect(() => { const down = () => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }; down(); document.fonts?.ready.then(down); const t = setTimeout(down, 250); return () => clearTimeout(t); }, [entryCount, id]);
-  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t); }, [toast]);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); askRef.current?.focus(); } };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: () => { setRefused(null); paper(); refresh(); }, onError: fail });
+  const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: () => { setRefused(null); paper(); refresh(); }, onError: fail });
 
-  if (q.isLoading) return <main className="main"><p className="empty">…</p></main>;
-  if (!q.data) return <main className="main"><p className="empty">{q.error instanceof ApiError && q.error.status === 404 ? w.notHere : q.error ? w.unreachable : "…"}</p></main>;
+  const entryCount = q.data?.entries.length ?? 0;
+  useEffect(() => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }, [entryCount, id, side]);
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 7000); return () => clearTimeout(t); }, [toast]);
+  useEffect(() => { setReading(null); setPending(null); setRefused(null); }, [id]);
+
   const v = q.data;
+  const list = casesOf(groups.data, tab);
+  const at = list.findIndex((c) => c.id === id);
+  const neighbour = (d: number) => (at >= 0 ? list[at + d] : undefined);
   const busy = step.isPending || entry.isPending || run.isPending || upload.isPending || sampleIn.isPending;
-  const main: Turn | undefined = v.my_turns[0] ?? v.turns[0];
-  const mine = v.mine;
-  const actionTurns = v.my_turns.filter((t) => !["answer", "wait"].includes(t.action));
+  const actionTurns = (v?.my_turns ?? []).filter((t) => !["answer", "wait"].includes(t.action));
   const primaryTurn: Turn | undefined = actionTurns[0];
-  const secondary = actionTurns.slice(1);
   const asks = primaryTurn?.payload ?? [];
-  const needsAmount = asks.includes("amount");
-  const needsDate = asks.includes("date");
-  const needsUrl = asks.includes("url");
-  const needsNote = asks.includes("note");
+  const needsAmount = asks.includes("amount"), needsDate = asks.includes("date"), needsUrl = asks.includes("url"), needsNote = asks.includes("note");
   const blocked = primaryTurn?.blocked_by ?? [];
-  const blockedWord = (b: string) => {
-    const slot = v.slots.find((s) => s.file === b);
-    if (slot) return slot.word;
-    if (b.startsWith("shape:")) { const want = b.slice(6); const first = v.slots.find((s) => !s.present && s.shape.startsWith(want)); return first ? first.word : w.shape(want); }
-    return ((config.words as { files?: Record<string, string> }).files?.[b]) ?? b;          // a condition's word from the vocabulary, never its code
-  };
-  const framesAreTheMove = primaryTurn?.action === "deliver";
-  const canPress = primaryTurn && blocked.length === 0 && (!needsAmount || amount.trim()) && (!needsDate || date) && (!needsNote || note.trim()) && !busy;
-  const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
-  const talkSlot = v.slots.find((s) => s.shape === "interview");
-  const outcomeReady = v.slots.some((s) => s.shape === "data" && s.present);
-  // a draft decided line by line without a conversation before it (theme.interview.draft present on its own)
-  const draftHere = v.slots.some((s) => s.file === ((config.theme as { interview?: { draft?: string } }).interview?.draft) && s.present);
-  const byHelper = (s: { by: string; by_word: string }) => s.by === "claude" || (!!s.by_word && s.by_word === v.agent);
-  // a numbered series (fotos-1 … fotos-16) asks for its next place only, not for every empty one
-  const seriesOf = (f: string) => /^(.+)-\d+\.(\w+)$/.exec(f)?.slice(1).join(".");
-  const firstFree = new Set<string>();
-  const nextOfSeries = (s: { file: string; present: boolean }) => { const k = seriesOf(s.file); if (!k) return true; if (firstFree.has(k)) return false; firstFree.add(k); return true; };
-  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s) && (s.required || s.due_station === v.station || blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6)))))).filter(nextOfSeries)
-    .sort((a, b) => Number(blocked.includes(b.file)) - Number(blocked.includes(a.file)));
-  // who put a file on the desk, and when: the slot's own word, else the newest entry that names the file; else said so, not hidden
-  const originOf = (s: { by_word: string; versions: { name: string }[] }) => {
-    const names = new Set(s.versions.map((x) => x.name));
-    const e = [...v.entries].reverse().find((x) => (x.files ?? []).some((f) => names.has(f) || names.has(f.split("/").pop() ?? f)));
-    return { who: s.by_word || e?.author || "", when: e?.date ? dateWords(e.date, lang) : "" };
-  };
-  const tileMeta = (s: { by_word: string; versions: { name: string; version: number }[] }) => {
-    const newest = s.versions[s.versions.length - 1];
-    const o = originOf(s);
-    return <>{w.version(Math.max(1, newest.version))}{o.who ? ` · ${o.who}` : <> · <em>{w.originUnknown}</em></>}{o.when ? ` · ${o.when}` : ""}</>;
-  };
-  const headline = (v.my_turns[0] ?? v.turns[0])?.headline ?? "";
-  const onsiteHere = ((config.theme as { onsite?: { stages?: string[] } }).onsite?.stages ?? []).includes(v.stage);
-  const primary = v.primary ? v.slots.find((s) => s.file === v.primary) : undefined;
-  const docs = docsOf(v);
-  const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((v) => v.name === reading));
-  const stub = main
-    ? mine ? `${v.stage_word} · ${w.waitingForYou}`
-      : main.actor === "claude" ? `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
-      : `${v.stage_word} · ${w.waitingFor(roleWord(main.actor))}`
-    : `${v.stage_word}${v.date ? ` · ${dateWords(v.date, lang)}` : ""}`;
+  const special = primaryTurn && ["interview", "approve_canon", "deliver"].includes(primaryTurn.action);
+  const canPress = !!primaryTurn && blocked.length === 0 && (!needsAmount || !!amount.trim()) && (!needsDate || !!date) && (!needsNote || !!note.trim()) && !busy;
   const payload: Record<string, unknown> = {};
   if (needsAmount) payload.amount = amount.trim();
   if (needsDate) payload.date = date;
   if (needsUrl) payload.url = note.trim() || "https://example.invalid/";
   if (note.trim() && !needsUrl) payload.note = note.trim();
+  const press = () => {
+    if (!primaryTurn || !canPress) return;
+    if (primaryTurn.action === "interview") return go(`/case/${encodeURIComponent(id)}/gespraech`);
+    if (primaryTurn.action === "approve_canon") return go(`/case/${encodeURIComponent(id)}/ergebnis`);
+    step.mutate({ action: primaryTurn.action, payload, label: primaryTurn.label });
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") { e.preventDefault(); setSide("conv"); setTimeout(() => askRef.current?.focus(), 0); return; }
+      if (typing || e.metaKey || e.ctrlKey || e.altKey || reading) return;
+      if (e.key === "j" && neighbour(1)) go(`/case/${encodeURIComponent(neighbour(1)!.id)}?g=${tab}`);
+      else if (e.key === "k" && neighbour(-1)) go(`/case/${encodeURIComponent(neighbour(-1)!.id)}?g=${tab}`);
+      else if (e.key === "Escape") go("/");
+      else if (e.key === "Enter" && t.tagName !== "BUTTON" && t.tagName !== "A") { e.preventDefault(); press(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  if (q.isLoading) return <div className="ws-case"><main className="center" /></div>;
+  if (!v) return <div className="ws-case"><main className="center"><p className="c-empty">{q.error instanceof ApiError && q.error.status === 404 ? w.notHere : q.error ? w.unreachable : "…"}</p></main></div>;
+
+  const mine = v.mine;
+  const main: Turn | undefined = v.my_turns[0] ?? v.turns[0];
+  const docs = docsOf(v);
+  const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((x) => x.name === reading));
+  const openFile = (name: string) => { const d = docs.find((x) => x.versions.some((y) => y.name === name || name.endsWith(y.name))); if (d) setReading(d.versions[d.versions.length - 1].name); };
+  const data = ((v as unknown as { data?: Record<string, unknown> }).data ?? {});
+  const r = data["einordnung.json"] as Reading | undefined;
+  const done = data["aktion.json"] as Done | undefined;
+  const row = r ? rules.data?.matrix?.find((m) => m.id === r.rule) : undefined;
+  const blockedWord = (b: string) => {
+    const slot = v.slots.find((s) => s.file === b);
+    if (slot) return slot.word;
+    if (b.startsWith("shape:")) { const want = b.slice(6); const first = v.slots.find((s) => !s.present && s.shape.startsWith(want)); return first ? first.word : w.shape(want); }
+    return ((config.words as { files?: Record<string, string> }).files?.[b]) ?? b;
+  };
+  const byHelper = (s: { by: string; by_word: string }) => s.by === "claude" || (!!s.by_word && s.by_word === v.agent);
+  const seriesOf = (f: string) => /^(.+)-\d+\.(\w+)$/.exec(f)?.slice(1).join(".");
+  const firstFree = new Set<string>();
+  const nextOfSeries = (s: { file: string }) => { const k = seriesOf(s.file); if (!k) return true; if (firstFree.has(k)) return false; firstFree.add(k); return true; };
+  const desk = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
+  const blocksMe = (s: { file: string; shape: string }) => blocked.includes(s.file) || (blocked.some((b) => b.startsWith("shape:")) && blocked.some((b) => s.shape.startsWith(b.slice(6))));
+  const othersDeliver = (s: { by: string; by_word: string }) => !!s.by && s.by !== "human" && !byHelper(s) && !(me.roles ?? []).some((r) => s.by === `role:${r}` || s.by === r);
+  const missing = v.slots.filter((s) => !s.present && s.file !== "meta.json" && s.file !== "review.md" && !["interview", "data"].includes(s.shape) && !byHelper(s)
+    && (blocksMe(s) || (mine && (s.required || s.due_station === v.station) && !othersDeliver(s)))).filter(nextOfSeries);
+  const talkSlot = v.slots.find((s) => s.shape === "interview");
+  const outcomeReady = v.slots.some((s) => s.shape === "data" && s.present);
+  const draftHere = v.slots.some((s) => s.file === ((config.theme as { interview?: { draft?: string } }).interview?.draft) && s.present);
+  const onsiteHere = ((config.theme as { onsite?: { stages?: string[] } }).onsite?.stages ?? []).includes(v.stage);
+  const party = v.party || "";
+  const initials = (party || v.title).split(/[\s,]+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+  const urgent = main?.kind === "date" || r?.urgency === "high";
+  const stub = main
+    ? mine ? `${w.forYou} · ${primaryTurn?.reason && primaryTurn.reason !== v.stage_word ? primaryTurn.reason : v.stage_word}`
+      : main.actor === "claude" ? `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
+      : `${v.stage_word} · ${w.waitingFor(roleWord(main.actor))}`
+    : `${v.stage_word}${v.date ? ` · ${dateWords(v.date, lang)}` : ""}`;
+  // the core's sentence for the move, without the case's own title, which the head already shows
+  const headline = (primaryTurn?.headline ?? "").split(`${v.title}: `).join("").split(`: ${v.title}`).join("").trim();
+  const secondary = actionTurns.slice(1);
+  const cap = (x: string) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
+  const canCorrect = (e: Entry) => !!e.step && !!(e.to || e.amount) && e.actor === "person" && !["undone", "correction"].includes(e.status) && e.step !== v.undo_step;
+
+  const button = primaryTurn && !special && (
+    <span className="tipw">
+      <button type="button" className="primary" disabled={!canPress} data-action={primaryTurn.action} onClick={press}>
+        {primaryTurn.seal && <span className="p-seal"><Seal /></span>}{r && !done ? w.confirmCarry : primaryTurn.label} <span className="k">⏎</span>
+      </button>
+    </span>
+  );
+  const inputs = primaryTurn && blocked.length === 0 && (
+    <>
+      {needsAmount && <label className="c-field"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" /></label>}
+      {needsDate && <label className="c-field"><span>{w.date}</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>}
+      {(needsUrl || needsNote) && <label className="c-field wide"><span>{needsUrl ? w.link : primaryTurn.label}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="…" /></label>}
+    </>
+  );
+  const otherActs = (
+    <>
+      {secondary.map((t) => (
+        <button key={t.action} type="button" className="ghost" disabled={busy || t.blocked_by.length > 0} data-action={t.action}
+                onClick={() => { if (!(t.payload ?? []).includes("note")) { step.mutate({ action: t.action, label: t.label }); return; } setPending(t); setSide("conv"); setTimeout(() => askRef.current?.focus(), 0); }}>{t.label}</button>
+      ))}
+      {special && primaryTurn && (
+        <button type="button" className="ghost" onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : undefined}>{primaryTurn.label} →</button>
+      )}
+    </>
+  );
 
   return (
-    <main className="main">
-      <header className="case-head" data-help="cf.case-head">
-        <Cover label={v.label} number={v.number || v.id.split("-")[1] || ""} tint={v.tint} size="m" />
-        <span className="ref">{v.label_word}{v.meta?.series ? ` · ${v.meta.series}` : ""}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
-        <h1 className="num" title={extWord || undefined}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</h1>
-        <p className="title">{v.title}</p>
-        {headline && <p className="headline">{headline}</p>}
-        <p className="stub"><span className={`dot${mine ? " mine" : ""}`} /><span>{stub}</span>
-          <MetaSheet meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} title={w.metaTitle} table={w.metaTable} lists={config.lists ?? []} /></p>
-      </header>
-
-      <div data-help="cf.stations"><Line stations={v.stations} mine={mine} label={v.stage_word} caseId={v.id} /></div>
-
-      {refused && <div className="refused">{refused}</div>}
-
-      <div className={`body${readingIndex >= 0 ? " reading" : ""}`}>
-        <div className="desk" data-help="cf.desk">
-          {readingIndex >= 0 ? (
-            <Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].versions[docs[i].versions.length - 1].name)} onClose={() => setReading(null)} w={w} />
-          ) : (<>
-          <p className="kicker">{w.onDesk}</p>
-          <MailTriage data={(v as unknown as { data?: Record<string, unknown> }).data ?? {}} w={w} />
-          <div className="desk-grid">
-            {talkSlot && v.station !== "prepare" && (
-              <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "interview") ? " mine" : ""}`} data-help="cf.talk-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/gespraech`)}>
-                <span className="head"><span className="name">{w.talkOpen}</span></span>
-                <span className="hint">{w.talkOpenHint}</span>
-              </button>
-            )}
-            {((talkSlot && outcomeReady) || (!talkSlot && draftHere)) && (
-              <button type="button" className={`file wide talk-tile${v.my_turns.some((t) => t.action === "approve_canon") ? " mine" : ""}`} data-help="cf.outcome-tile" data-outcome="1" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>
-                <span className="head"><span className="name">{w.outcomeOpen}</span></span>
-                <span className="hint">{w.outcomeOpenHint}</span>
-              </button>
-            )}
-            {onsiteHere && (
-              <button type="button" className={`file wide talk-tile${mine ? " mine" : ""}`} data-onsite="1" onClick={() => go(`/case/${encodeURIComponent(id)}/vorort`)}>
-                <span className="head"><span className="name">{w.onsite} →</span></span>
-                <span className="hint">{w.onsiteHint}</span>
-              </button>
-            )}
-            {primary?.present && (
-              <button type="button" className="file wide stack" data-file={primary.file} onClick={() => setReading(primary.versions[primary.versions.length - 1].name)}>
-                <span className="head"><span className="name">{primary.word}</span><span className="meta">{tileMeta(primary)}</span></span>
-                {primary.versions.length > 1 && <span className="hint">{w.keeps}</span>}
-              </button>
-            )}
-            {desk.filter((s) => s.file !== v.primary).map((s) => {
-              const newest = s.versions[s.versions.length - 1];
-              return (
-                <button key={s.file} type="button" className={`file${s.versions.length > 1 ? " stack" : ""}${landed === s.file ? " landed" : ""}`} data-file={s.file} onClick={() => setReading(newest.name)}>
-                  {s.shape.startsWith("image") && <img src={BASE + newest.url} alt="" />}
-                  <span className="name">{s.word}</span>
-                  <span className="meta">{tileMeta(s)}</span>
-                </button>
-              );
-            })}
-            {desk.length === 0 && !primary?.present && !talkSlot && <span className="empty">{w.deskEmpty}</span>}
-          </div>
-
-          {missing.length > 0 && (
-            <>
-              <p className="kicker" style={{ marginTop: 10 }}>{w.missing}</p>
-              <div className="frames">
-                {missing.map((s) => <Frame key={s.file} slot={s} mine={mine && blocked.includes(s.file)} w={w} busy={busy} onFile={(f) => upload.mutate({ slot: s.file, file: f })}
-                                           sample={samples.includes(s.file)} onSample={() => sampleIn.mutate(s.file)} />)}
-
-              </div>
-            </>
-          )}
-          {needsDate && <label className="date" style={{ marginTop: 10, display: "inline-flex", gap: 10, alignItems: "center" }}>{w.date}<input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>}
-          {(needsUrl || needsNote) && <label className="ask" style={{ marginTop: 10, maxWidth: 480 }}><span className="sr">{needsUrl ? w.link : primaryTurn?.label}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder={needsUrl ? `${w.link} …` : `${primaryTurn?.label} …`} /></label>}
-          </>)}
+    <div className="ws-case">
+      <main className="center">
+        <div className="c-bar">
+          <span className="cid" title={v.id}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</span>
+          <span className="c-meta">· {v.label_word}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
+          {at >= 0 && <span className="c-of">{w.ofN(at + 1, list.length)}</span>}
         </div>
+        {readingIndex >= 0 ? (
+          <div className="c-reader"><Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].versions[docs[i].versions.length - 1].name)} onClose={() => setReading(null)} w={w} /></div>
+        ) : (
+        <div className="case">
+          <header className="c-head" data-help="cf.case-head">
+            <span className="hav" aria-hidden="true">{initials}</span>
+            <div className="hmain">
+              <h1 className="title">{v.title}</h1>
+              <div className="hsub">{party && <span>{party}</span>}{urgent && <span className="hurg">{w.urgent}</span>}</div>
+            </div>
+          </header>
+          <Stations stations={v.stations} caseId={v.id} />
+          <p className="c-stub"><i className={mine ? "you" : main?.actor === "claude" ? "ai" : ""} />{stub}</p>
 
-        <aside className="thread" aria-label={w.conversation} data-help="cf.thread">
-          <p className="kicker">{w.conversation}</p>
-          <div className="thread-scroll" ref={threadRef}>
-          <Thread entries={v.entries} meName={me.name ?? ""} agentName={v.agent} lang={lang} w={w} busy={busy}
-                  stageWord={stageWord}
-                  onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
-                  onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })} />
-          </div>
-          {secondary.length > 0 && (
-            <div className="chips">
-              {secondary.map((t) => <button key={t.action} type="button" className={`chip${pending?.action === t.action ? " on" : ""}`} disabled={busy || t.blocked_by.length > 0} title={t.blocked_by.join(", ")} data-action={t.action}
-                                            onClick={() => { if (!(t.payload ?? []).includes("note")) { step.mutate({ action: t.action }); return; } setPending(t); setAsk(""); askRef.current?.focus(); }}>{t.label}</button>)}
+          {refused && <div className="c-refused">{refused}</div>}
+
+          {r ? (
+            <div className="aicard" data-help="cf.triage"><div>
+              <div className="ai-head"><span className="plab"><span>✦</span> {w.aiSummary}</span>{(row?.word || r.kind) && <span className="rdas">{w.readAs}: <b>{row?.word ?? r.kind}</b></span>}</div>
+              {r.summary && <p className="ai-lead">{r.summary}</p>}
+              {r.fields && Object.keys(r.fields).filter((k) => r.fields![k] && !k.endsWith("_short") && k !== "title").length > 0 && (
+                <dl className="facts2">{Object.entries(r.fields).filter(([k, x]) => x && !k.endsWith("_short") && k !== "title").map(([k, x]) => <div key={k}><dt>{r.labels?.[k] ?? k.replace(/_/g, " ")}</dt><dd>{x}</dd></div>)}</dl>
+              )}
+              {!!r.reasons?.length && (
+                <div className="src"><div className="srch">{w.fromMail}</div>{r.reasons.slice(0, 3).map((x, i) => <div key={i} className="srcq"><span>{x}</span></div>)}</div>
+              )}
+              {done ? (
+                <div className="proposal done triage-done"><span className="plab"><Seal /> {w.sealed}</span>
+                  <b>{done.case ? <>{w.triageDone(done.target_label ?? "")} {done.url ? <a href={new URL(done.url, window.location.origin + BASE + "/").pathname}>{done.title ?? done.case}</a> : (done.title ?? done.case)}</> : w.triageFiled}</b></div>
+              ) : primaryTurn ? (
+                <div className="proposal">
+                  <div className="p-what"><span className="plab"><span>✦</span> {w.aiSuggestion}</span>
+                    <b>{row ? `${row.action_word}${row.target_word ? ` · ${row.target_word}` : ""}` : primaryTurn.label}</b></div>
+                  <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{primaryTurn.lock || w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>
+                </div>
+              ) : null}
+              <div className="acts2">{otherActs}</div>
+            </div></div>
+          ) : (
+            <div className="card plain">
+              {v.reopen_to ? (
+                <><p>{w.closedNote}</p><div className="pacts"><button type="button" className="primary" data-help="cf.move-back" disabled={busy} onClick={() => step.mutate({ action: "reopen", label: w.moveBack })}>{w.moveBack} · {v.reopen_word}</button></div></>
+              ) : (v.held_by ?? []).length > 0 ? (
+                <><p>{w.heldBy((v.held_by ?? []).join(", "))}</p>
+                  {primaryTurn && <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>}
+                  <div className="pacts" data-help="cf.held">
+                    <button type="button" className={primaryTurn ? "ghost" : "primary"} disabled={busy} onClick={() => step.mutate({ action: "remind" })}>{w.remind}</button>
+                    {v.take_back_to && <button type="button" className="ghost" disabled={busy} onClick={() => step.mutate({ action: "take_back", label: w.takeBack })}>{w.takeBack} · {v.take_back_word}</button>}
+                  </div>
+                  {primaryTurn && (secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
+              ) : primaryTurn ? (
+                <><p>{cap(headline || primaryTurn.reason || primaryTurn.label)}</p>
+                  <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>
+                  {(secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
+              ) : mine && main?.action === "answer" ? (
+                <><p>{cap(main.reason)}</p>
+                  <div className="pacts"><button type="button" className="primary" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .mbtn")?.click(), 0); }}>{w.answer}</button></div></>
+              ) : (
+                <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
+              )}
             </div>
           )}
-          <form className="ask" onSubmit={(e) => { e.preventDefault(); if (!ask.trim()) return; if (pending) { step.mutate({ action: pending.action, payload: { note: ask.trim(), text: ask.trim() } }); setPending(null); setAsk(""); } else run.mutate(ask.trim()); }}>
-            <span className="sr">{pending ? pending.label : w.notePlaceholder(v.agent)}</span>
-            {pending && <span className="chip on small" onClick={() => setPending(null)} role="button" tabIndex={0}>{pending.label} ×</span>}
-            <input ref={askRef} value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={pending ? `${pending.label} …` : w.notePlaceholder(v.agent)} />
-            <button type="submit" className="send" disabled={busy || !ask.trim()} aria-label="↵"><Send /></button>
-          </form>
-        </aside>
-      </div>
 
-      <footer className="foot">
-        {primaryTurn && framesAreTheMove ? (
-          <span className="says">{w.fillFrames(blocked.map(blockedWord).join(", "))}</span>
-        ) : primaryTurn ? (
-          <>
-            {blocked.length > 0 && <span className="says lock"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5 7V5a3 3 0 0 1 6 0v2" /></svg><span className="sr">{w.locked}: </span>{primaryTurn.lock || `${w.firstHere}: ${blocked.map(blockedWord).join(", ")}`}</span>}
-            {blocked.length > 0 && talkSlot && outcomeReady && <button type="button" className="btn ghost" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}>{w.outcomeOpen} →</button>}
-            {blocked.length === 0 && needsAmount && <label className="money says-input"><span>{w.amount}</span><input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="€" inputMode="decimal" autoFocus /></label>}
-            {blocked.length === 0 && needsDate && !date && <span className="says">{w.firstHere}: {w.date}</span>}
-            {!blocked.length && primaryTurn.reason && !mine && <span className="says">{primaryTurn.reason}</span>}
-            {blocked.length === 0 && <button type="button" className={`btn${primaryTurn.seal ? " arrive seal" : ""}`} disabled={!canPress} data-action={primaryTurn.action} onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : step.mutate({ action: primaryTurn.action, payload })}>{primaryTurn.label} →</button>}
-          </>
-        ) : main ? (
-          <span className="says">{main.actor === "claude" ? w.isWorking(v.agent) : `${w.waitingFor(roleWord(main.actor))}`}</span>
-        ) : (
-          <span className="says">{v.stage_word}</span>
+          <div className="c-desk" data-help="cf.desk">
+            <div className="deskh">{w.onDesk}</div>
+            <div className="docs">
+              {talkSlot && v.station !== "prepare" && <button type="button" className="doc tile" data-help="cf.talk-tile" onClick={() => go(`/case/${encodeURIComponent(id)}/gespraech`)}><span className="dn">{w.talkOpen}</span><span className="dm">{w.talkOpenHint}</span></button>}
+              {((talkSlot && outcomeReady) || (!talkSlot && draftHere)) && <button type="button" className="doc tile" data-help="cf.outcome-tile" data-outcome="1" onClick={() => go(`/case/${encodeURIComponent(id)}/ergebnis`)}><span className="dn">{w.outcomeOpen}</span><span className="dm">{w.outcomeOpenHint}</span></button>}
+              {onsiteHere && <button type="button" className="doc tile" data-onsite="1" data-help-skip="explained by cf.desk" onClick={() => go(`/case/${encodeURIComponent(id)}/vorort`)}><span className="dn">{w.onsite} →</span><span className="dm">{w.onsiteHint}</span></button>}
+              {(() => {
+                const photos = desk.filter((s) => s.shape.startsWith("image"));
+                const rest = desk.filter((s) => !s.shape.startsWith("image"));
+                const tile = (key: string, word: string, meta: string, open: () => void, icon: ReactNode) => (
+                  <button key={key} type="button" className="doc" data-file={key} onClick={open}>
+                    <span className="dn">{icon}{word}</span><span className="dm">{meta}</span>
+                  </button>
+                );
+                const metaOf = (s: CaseView["slots"][number]) => { const n = s.versions[s.versions.length - 1]; return `${w.version(Math.max(1, n.version))}${s.by_word ? ` · ${s.by_word}` : ""}`; };
+                return <>
+                  {rest.map((s) => tile(s.file, s.word, metaOf(s), () => setReading(s.versions[s.versions.length - 1].name), s.shape === "pdf" ? <DocIcon /> : s.shape === "money" ? <DocIcon /> : <PenIcon />))}
+                  {photos.length === 1 && tile(photos[0].file, photos[0].word, metaOf(photos[0]), () => setReading(photos[0].versions[photos[0].versions.length - 1].name), <PhotoIcon />)}
+                  {photos.length > 1 && tile("photos", `${w.photos} (${photos.length})`, metaOf(photos[0]), () => setReading(photos[0].versions[photos[0].versions.length - 1].name), <PhotoIcon />)}
+                </>;
+              })()}
+              {missing.map((s) => <Missing key={s.file} slot={s} mine={mine && blocked.includes(s.file)} busy={busy} sample={samples.includes(s.file)} w={w}
+                                           onFile={(f) => upload.mutate({ slot: s.file, file: f })} onSample={() => sampleIn.mutate(s.file)} />)}
+              {desk.length === 0 && missing.length === 0 && !talkSlot && <span className="c-empty">{w.deskEmpty}</span>}
+            </div>
+          </div>
+        </div>
         )}
-      </footer>
-      {toast && <div className={`toast${toast.sealed ? " sealed" : ""}`} role="status">{toast.sealed && <span className="stampmark">{w.sealed}</span>}<span>{toast.text}</span>{toast.undo && <button type="button" onClick={toast.undo}>{w.undo}</button>}<button type="button" onClick={() => go("/")}>{w.yourMove} →</button></div>}
-    </main>
+        <div className="c-keys" aria-hidden="true">
+          <span><span className="kbd">J</span> {w.keyNext}</span><span><span className="kbd">K</span> {w.keyPrev}</span>
+          <span><span className="kbd">⏎</span> {w.keyConfirm}</span><span><span className="kbd">Esc</span> {w.keyHome}</span>
+        </div>
+      </main>
+
+      <aside className="insp" aria-label={w.conversation}>
+        <div className="tabs" role="tablist">
+          {(["conv", "docs", "details"] as const).map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={side === t} className={side === t ? "on" : ""} onClick={() => setSide(t)}>{t === "conv" ? w.conversation : t === "docs" ? w.documents : w.details}</button>
+          ))}
+        </div>
+        {side === "conv" ? (
+          <div className="i-thread" ref={threadRef} data-help="cf.thread">
+            <Conversation entries={v.entries} meName={me.name ?? ""} lang={lang} w={w} busy={busy} stageWord={stageWord} onFile={openFile}
+                          onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
+                          onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })}
+                          canCorrect={canCorrect} onCorrect={(e, text, amt) => step.mutate({ action: "correct", label: w.correct, payload: { corrects: e.id, text, ...(amt ? { amount: amt } : {}) } })} />
+          </div>
+        ) : side === "docs" ? (
+          <div className="i-thread">
+            {docs.length === 0 ? <p className="conv-empty">{w.noDocs}</p> : docs.map((d) => (
+              <button key={d.word} type="button" className="i-doc" onClick={() => setReading(d.versions[d.versions.length - 1].name)}>
+                <b>{d.word}</b><small>{w.versionsN(d.versions.length)} · {d.versions[d.versions.length - 1].name}</small>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="i-thread"><MetaList meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} lists={config.lists ?? []} /></div>
+        )}
+        <form className="i-ask" onSubmit={(e) => { e.preventDefault(); if (!ask.trim()) return; if (pending) { step.mutate({ action: pending.action, label: pending.label, payload: { note: ask.trim(), text: ask.trim() } }); setPending(null); setAsk(""); } else run.mutate(ask.trim()); }}>
+          <span className="ask-i">✦</span>
+          {pending && <button type="button" className="ask-chip" onClick={() => setPending(null)}>{pending.label} ×</button>}
+          <input ref={askRef} value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={pending ? `${pending.label} …` : w.askAiPh} aria-label={w.askAiPh} />
+          {ask.trim() ? <button type="submit" className="ask-send" disabled={busy} aria-label="↵"><Send /></button> : <span className="kbd">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘J" : "Ctrl J"}</span>}
+        </form>
+      </aside>
+
+      {toast && (
+        <div className={`c-toast${toast.sealed ? " sealed" : ""}`} role="status">
+          {toast.sealed && <span className="t-seal"><Seal /></span>}<span>{toast.text}</span>
+          {toast.undo && v.undo_step && <button type="button" data-help="cf.undo" onClick={() => { setToast(null); step.mutate({ action: "undo" }); }}>{w.undo}</button>}
+          {neighbour(1) && <button type="button" onClick={() => { setToast(null); go(`/case/${encodeURIComponent(neighbour(1)!.id)}?g=${tab}`); }}>{w.keyNext} →</button>}
+        </div>
+      )}
+    </div>
   );
 }

@@ -789,6 +789,8 @@ pre.log { white-space: pre-wrap; font-size: 13px; }
 .topbar .pill.icon { width: 40px; padding: 0; justify-content: center; position: relative; }
 .topbar .pill .glyph { color: var(--muted); }
 .topbar .pop.right { right: 0; top: 48px; }
+.app-mark { display: inline-flex; color: var(--dot); flex: none; }
+.pop-row .app-mark { margin: 0 1px; }
 .topbar .dot, .pop-row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dot); flex: none; margin: 0 4px; }
 .bell-dot { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--your-move); color: var(--your-move-on);
   font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
@@ -883,3 +885,201 @@ body.opening { overflow: hidden; }
 
 /* the dashboard's two kinds of workspace: real work and resettable showcases (29.10.) */
 .ws-lead { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+
+/* ================================================================ the Casefile look (design hand-back, 2026-11-05)
+ * One product: the shell reads like the Casefile screens. Calm ground, a quiet rail, small sentence-case labels,
+ * soft cards, system type, one blue for "your move". Only the look changes here; markup and meanings stay. */
+
+body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; }
+h1, h2, h3, .ws-card .title, .card-head h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: -.02em; }
+a { color: var(--your-move); }
+
+/* the rail */
+.side { background: var(--ground-2); box-shadow: none; border-right: 1px solid var(--tint-8); padding: 14px 12px; gap: 1px; }
+.side .menu-head { border-bottom: none; padding: 4px 8px 14px; margin-bottom: 0; }
+.side .menu-head .brand-name { font-size: var(--fs-17); font-weight: 600; letter-spacing: -.02em; }
+.side .brand-mark { flex: none; }
+.side .nav-sec { border-top: none; margin-top: 10px; padding-top: 0; }
+.side .nav-sec > summary.section, .side .section { text-transform: none; letter-spacing: 0; font-size: var(--fs-12); font-weight: 500; color: var(--muted); margin: 4px 0 2px; padding: 4px 10px; }
+.side .nav-sec .chev { opacity: 0; transition: opacity .15s; }
+.side .nav-sec > summary.section:hover .chev { opacity: 1; }
+.side .nav-row { min-height: 32px; height: 32px; border-radius: var(--r-7); font-size: var(--fs-13-5); color: var(--sub); padding: 0 10px; gap: 10px; }
+:root[data-theme="dark"] .side .nav-row { color: var(--sub); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .side .nav-row { color: var(--sub); } }
+.side .nav-row:hover { background: var(--tint-4); color: var(--ink); }
+.side .nav-row.on { background: var(--tint-7); color: var(--ink); font-weight: 500; }
+.side .nav-row.on::before { display: none; }
+.side .nav-row.on .ic, .side .nav-row:hover .ic { color: var(--ink); }
+.side .nav-row .ic { width: 18px; color: var(--muted); }
+.side .nav-row .ic .glyph { width: 16px; height: 16px; }
+.side .nav-row .n { font-size: var(--fs-11); }
+.side .ws-row .tx { font-weight: 400; }
+.side .ws-item.here > .ws-row { background: var(--tint-7); color: var(--ink); }
+.side .dot { width: 8px; height: 8px; border-radius: var(--r-2); box-shadow: none; }
+.side .nav-row .badge { min-width: 20px; height: 18px; border-radius: var(--r-9); font-size: var(--fs-11); font-weight: 600; padding: 0 5px; }
+.side .who { border-top: none; border-radius: var(--r-10); padding: 8px; }
+.side .avatar, .me-head .avatar { background: var(--avatar); color: var(--ink); font-size: var(--fs-12); }
+:root[data-theme="dark"] .side .avatar, :root[data-theme="dark"] .me-head .avatar { background: var(--avatar); }
+.role-pill { border: none; padding: 0; color: var(--muted); font-size: var(--fs-12); }
+.side .version { padding-left: 8px; }
+
+/* the top bar */
+.topbar { top: 12px; right: 20px; }
+.topbar .pill { height: 34px; border-radius: var(--r-10); font-size: var(--fs-13); padding: 0 12px; border: 1px solid var(--tint-8); box-shadow: var(--shadow); }
+.topbar .pill.icon { width: 34px; }
+
+/* the page */
+main { padding: 64px 48px 56px; max-width: 1240px; margin: 0 auto; }
+body.has-rail main { margin: 0 auto; }
+.page-head h1, main > h1, .greet h1, .dlead h2 { font-size: var(--fs-34); font-weight: 600; letter-spacing: -.026em; line-height: 1.1; }
+.page-head .stamp, .stamp { font-size: var(--fs-12); color: var(--muted); }
+.waiting-line, .week-line, .hint, .card-head .sub { color: var(--sub); }
+h2.section, main > h2 { font-size: var(--fs-13); font-weight: 600; letter-spacing: -.005em; color: var(--ink); text-transform: none; }
+.module-page h2, .with-glyph { font-size: var(--fs-26); letter-spacing: -.022em; }
+
+/* labels in sentence case: Casefile never shouts */
+.ws-card .kicker, .block h3, .actions h3, .kcol h4, .pop-label, th, .ktag, .side .section, .card-foot .src {
+  text-transform: none !important; letter-spacing: 0 !important; font-weight: 500; }
+.ws-card .kicker, .block h3, .actions h3, .pop-label { font-size: var(--fs-12); color: var(--muted); }
+th { font-size: var(--fs-12); color: var(--muted); font-weight: 500; }
+
+/* surfaces */
+.card, .ws-card, .doc, .form-card, .tablewrap, .kcol, .action, .login-card, .links li, .outcome {
+  background: var(--surface); border: 1px solid var(--tint-8); border-radius: var(--r-m); box-shadow: var(--shadow); }
+.card { padding: 18px 20px 16px; }
+.card:hover, .ws-card:hover { border-color: var(--tint-14); }
+.ws-card { min-height: 96px; }
+.ws-card .title { font-size: var(--fs-17); }
+.ws-card.new { box-shadow: none; background: transparent; border: 1px dashed var(--tint-18); }
+.card::before { top: 20px; bottom: auto; height: 8px; width: 8px; left: auto; right: 20px; border-radius: 50%; display: none; }   /* the state says the badge */
+.headline .num { font-family: var(--font-display); font-weight: 600; letter-spacing: -.03em; }
+.badge { border-radius: var(--r-pill); font-size: var(--fs-11); font-weight: 600; padding: 2px 8px; border: none; }
+.badge.running { background: var(--ok-soft); }
+.kcard { border-radius: var(--r-10); border: 1px solid var(--tint-8); background: var(--ground); }
+table { font-size: var(--fs-13); }
+th, td { border-bottom: 1px solid var(--tint-6); }
+
+/* controls */
+.button, .btn-primary, .form-card button, .action button, .login-form button {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: var(--r-10); border: none;
+  font: inherit; font-weight: 600; font-size: var(--fs-14); color: var(--on-accent); cursor: pointer;
+  background: var(--btn-fill);
+  box-shadow: var(--btn-shadow); }
+.button:hover, .btn-primary:hover, .form-card button:hover, .action button:hover, .login-form button:hover {
+  filter: none; text-decoration: none; background: var(--btn-fill-hover); }
+.form-card input, .form-card select, .form-card textarea, .action input, .action select, .action textarea, .login-form input, .pop select {
+  font: inherit; font-size: var(--fs-14); background: var(--surface); border: 1px solid var(--tint-12); border-radius: var(--r-9); padding: 8px 11px; color: var(--ink); }
+.form-card input:focus, .action input:focus, .action textarea:focus, .login-form input:focus { outline: none; border-color: var(--your-move); box-shadow: 0 0 0 3px var(--your-move-halo); }
+.pop { border-radius: var(--r-m); border: 1px solid var(--tint-8); }
+.notice { border-radius: var(--r-10); }
+.side .who .avatar { background: var(--avatar); color: var(--ink); }
+:root[data-theme="dark"] .side .who .avatar { background: var(--avatar); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .side .who .avatar, :root:not([data-theme="light"]) .side .avatar { background: var(--avatar); } }
+:root[data-theme="dark"] :is(.waiting-line, .week-line, .hint, .card-head .sub) { color: var(--sub); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.waiting-line, .week-line, .hint, .card-head .sub) { color: var(--sub); } }
+
+/* ---------------------------------------------------------------- the Casefile look, second pass: calmer cards and menus */
+:root { --warn: var(--urgent); }
+
+/* cards: one title size, one number size, grey for everything that is not the point */
+.card { gap: 10px; min-height: 0; padding: 16px 18px 14px; }
+.card-head { align-items: center; }
+.card-head h2 { font-size: var(--fs-14); font-weight: 600; letter-spacing: -.01em; }
+.card-head .sub { font-size: var(--fs-12-5); color: var(--muted); margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.card-glyph { width: 28px; height: 28px; border-radius: var(--r-s); }
+.card-glyph .glyph { width: 16px; height: 16px; }
+.headline { margin: 6px 0 0; gap: 6px; }
+.headline .num { font-size: var(--fs-28); font-weight: 600; letter-spacing: -.025em; }
+.headline .unit { font-size: var(--fs-13); color: var(--muted); }
+.lines { gap: 4px; }
+.lines li { font-size: var(--fs-13); }
+.lines .label { color: var(--sub); }
+.lines .value { font-weight: 500; color: var(--ink); }
+.lines .value.ok, .lines .value.muted { color: var(--ink); font-weight: 500; }
+.lines .value.warn { color: var(--warn); font-weight: 600; }
+.legend { font-size: var(--fs-11-5); color: var(--muted); gap: 2px 12px; }
+.legend b { font-weight: 500; color: var(--sub); }
+.legend i { width: 7px; height: 7px; border-radius: 50%; }
+.fig { --accent: color-mix(in srgb, var(--your-move) 70%, var(--surface)); --ok: var(--ok-chart); --ink-3: var(--chart-quiet); }
+.fig-bar svg { height: 6px; }
+.flow-ends, .fig text { color: var(--muted-2); }
+.card-foot { border-top: 1px solid var(--tint-6); padding-top: 10px; font-size: var(--fs-12-5); }
+.card-foot .src { font-family: var(--font); font-size: var(--fs-12); color: var(--muted-2); }
+.card-foot a { font-size: var(--fs-13); font-weight: 500; }
+.card-foot .badge, .card-head .badge { font-size: var(--fs-11); font-weight: 500; padding: 2px 8px; background: var(--tint-5); color: var(--sub); }
+.card-head .badge.running, .badge.state-ok { color: var(--ok-ink); background: var(--ok-soft); }
+.badge.state-blocked, .card-foot .badge.tone-bad { color: var(--bad-ink); background: var(--bad-soft); }
+:root[data-theme="dark"] :is(.card-head .sub, .headline .unit, .legend, .card-foot .src) { color: var(--muted-2); }
+:root[data-theme="dark"] :is(.lines .label, .legend b, .card-foot .badge, .card-head .badge) { color: var(--sub); }
+:root[data-theme="dark"] .fig { --ink-3: var(--chart-quiet); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) :is(.card-head .sub, .headline .unit, .legend, .card-foot .src) { color: var(--muted-2); }
+  :root:not([data-theme="light"]) :is(.lines .label, .legend b, .card-foot .badge, .card-head .badge) { color: var(--sub); }
+  :root:not([data-theme="light"]) .fig { --ink-3: var(--chart-quiet); }
+}
+.grid { gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+/* the person menu: an Apple popover, not a form */
+.pop { padding: 10px; gap: 6px; border-radius: var(--r-m); }
+.me-pop { width: 288px; }
+.me-head { gap: 10px; padding: 4px 4px 10px; }
+.me-head .avatar, .avatar.lg { width: 34px; height: 34px; font-size: var(--fs-12); }
+.me-head .name { font-size: var(--fs-14); font-weight: 600; margin-bottom: 1px; }
+.me-head .role-pill, .me-head small { font-size: var(--fs-12); }
+.pop-label { font-size: var(--fs-12); font-weight: 500; color: var(--muted); margin: 6px 4px 0; text-transform: none; letter-spacing: 0; }
+.seg { border-radius: var(--r-9); padding: 2px; gap: 2px; background: var(--tint-6); border: none; }
+.seg button { font-size: var(--fs-12-5); padding: 5px 6px; border-radius: var(--r-7); color: var(--sub); }
+.seg button.on { color: var(--ink); font-weight: 500; box-shadow: var(--seg-shadow); }
+.look-pick { gap: 6px; }
+.look-pick button { padding: 8px 10px; border-radius: var(--r-10); gap: 1px; background: transparent; border: 1px solid var(--tint-10); }
+.look-pick button b { font-size: var(--fs-13); font-weight: 500; }
+.look-pick button span { font-size: var(--fs-11-5); line-height: 1.3; }
+.look-pick button.on { border-color: var(--your-move); background: var(--your-move-soft); }
+.glass-range { font-size: var(--fs-13); gap: 4px; padding: 0 4px; }
+.glass-range small { font-size: var(--fs-11-5); }
+.pop select { font-size: var(--fs-13); padding: 6px 9px; border-radius: var(--r-s); background: var(--surface); }
+.pop-row { padding: 7px 8px; gap: 10px; font-size: var(--fs-13); border-radius: var(--r-s); }
+.pop-row b { font-weight: 500; }
+.pop-row small { font-size: var(--fs-11-5); }
+.pop-row .glyph { width: 16px; height: 16px; }
+.pop hr { margin: 2px 0; }
+:root[data-theme="dark"] :is(.seg button, .pop-label) { color: var(--sub); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.seg button, .pop-label) { color: var(--sub); } }
+
+/* ---------------------------------------------------------------- one look: solid surfaces on a soft ambient ground (2026-11-05)
+ * The picker is gone. What made "glass" feel premium was the light behind the page, not the see-through cards, so every
+ * page gets that light, in the Casefile colours: violet from the top left, a cool blue to the right, a little warmth below.
+ * Cards, tables and text stay solid, so reading is never fighting the background. */
+body { background: var(--ambient); background-attachment: fixed; }
+.side { background: color-mix(in srgb, var(--ground-2) 82%, transparent); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4); }
+@media (prefers-reduced-transparency: reduce) { .side { background: var(--ground-2); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+.side .brand-link { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--ink); text-decoration: none; border-radius: var(--r-s); }
+.side .brand-link:hover { text-decoration: none; opacity: .85; }
+.side .brand-link:focus-visible { outline: 2px solid var(--your-move); outline-offset: 3px; }
+
+/* Casefile, one tool among the tools (2026-11-05): its mark in the rail and on the dashboard; workspaces live inside it */
+.cf-mark { width: 18px; height: 18px; border-radius: var(--r-5); background: var(--btn-fill); box-shadow: var(--btn-shadow); display: inline-grid; place-items: center; flex: none; }
+.cf-mark::after { content: ""; width: 7px; height: 7px; border-radius: var(--r-2); background: var(--on-accent); }
+.cf-mark.lg { width: 34px; height: 34px; border-radius: var(--r-9); }
+.cf-mark.lg::after { width: 13px; height: 13px; border-radius: var(--r-4); }
+.app-card { justify-content: space-between; }
+.app-card-head { display: flex; align-items: center; gap: 12px; }
+.quiet-links { margin: -18px 0 28px; }
+.quiet-links a { color: var(--muted); font-size: var(--fs-13); }
+.quiet-links a:hover { color: var(--ink); }
+
+/* The cockpit's own face (2026-11-05): same family as Casefile (type, cards, spacing), its own colour and frame.
+   Indigo for selection, links and buttons; a tinted glass rail. Blue stays for "waits for you" only. */
+a { color: var(--shell); }
+.side { background: var(--shell-side); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); border-right: 1px solid var(--shell-side-line); }
+.side .nav-row:hover { background: var(--shell-soft); }
+.side .nav-row.on { background: var(--shell-soft); color: var(--shell-ink); font-weight: 600; }
+.side .nav-row.on .ic, .side .nav-row.on:hover .ic { color: var(--shell); }
+.side a.nav-row, .side a.nav-row:hover { color: inherit; }
+.side a.nav-row.on { color: var(--shell-ink); }
+.side .nav-row .cf-mark { box-shadow: none; }
+.button, .btn-primary, .form-card button, .action button, .login-form button { background: var(--shell-fill); box-shadow: var(--shell-shadow); }
+.button:hover, .btn-primary:hover, .form-card button:hover, .action button:hover, .login-form button:hover { background: var(--shell-fill-hover); }
+.form-card input:focus, .action input:focus, .action textarea:focus, .login-form input:focus { border-color: var(--shell); box-shadow: 0 0 0 3px var(--shell-halo); }
+.app-card:hover { border-color: var(--shell-side-line); }
+@media (prefers-reduced-transparency: reduce) { .side { background: var(--ground-2); backdrop-filter: none; -webkit-backdrop-filter: none; } }

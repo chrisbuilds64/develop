@@ -1,36 +1,39 @@
 /* tokens.css — every colour, size and radius of the surface lives here and nowhere else (Bauplan §2).
  * The one accent is --your-move and means only: this waits for you. Light is the default; dark derives.
- * The second colour is --seal and means only: decided, it holds now (a gate passed, a canon released; Chris, 2026-10-26). */
+ * The second colour is --seal and means only: decided, it holds now (a gate passed, a canon released; Chris, 2026-10-26).
+ * Values from the Casefile redesign (design hand-back, 2026-11-05): warm off-white ground, near-black ink, app blue
+ * for "your move", system type. The meanings stay as they were. */
 
 :root {
-  --ground: #F6F3EE;
-  --ground-2: #FBF9F6;
+  --ground: #F6F5F2;
+  --ground-2: #EFEEEA;
   --surface: #FFFFFF;
-  --ink: #1B1916;
-  --ink-2: #4A453E;
-  --muted: #6E675D;
-  --hairline: #E3DDD2;
-  --hairline-2: #CFC7BA;
-  --dashed: #B9B0A2;
-  --chip: #F1ECE3;
-  --your-move: #1D4ED8;
+  --ink: #0E0E12;
+  --ink-2: #2A2A32;
+  --muted: #76767F;
+  --hairline: #E7E6E2;
+  --hairline-2: #D8D7D2;
+  --dashed: #C9C8C2;
+  --chip: #F1F0EC;
+  --your-move: #2F6BFF;                 /* the prototype's "you" blue (design hand-back); the filled button keeps its own gradient */
   --your-move-on: #FFFFFF;
-  --your-move-soft: #DCE6FF;
-  --your-move-ink: #1E3A8A;
-  --your-move-halo: rgba(29, 78, 216, 0.18);
-  --seal: #A3302A;
+  --your-move-soft: #E6EDFF;
+  --your-move-ink: #1F4FCC;
+  --your-move-halo: rgba(47, 107, 255, 0.18);
+  --seal: #C2562E;
   --seal-on: #FFF8F2;
-  --seal-soft: #F7E4DD;
-  --seal-ink: #7A1F1A;
-  --bubble-you: #1B1916;
-  --bubble-you-ink: #F6F3EE;
-  --bubble-you-muted: #CFC7BA;
+  --seal-soft: #F8E6DD;
+  --seal-ink: #8A3517;
+  --bubble-you: #0E0E12;
+  --bubble-you-ink: #F6F5F2;
+  --bubble-you-muted: #B5B4BC;
 
-  --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, "Segoe UI", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 
   --r-s: 8px;
-  --r-m: 12px;
+  --r-m: 14px;
   --r-l: 16px;
   --r-pill: 999px;
 
@@ -40,55 +43,167 @@
   --touch: 44px;
   --ease: cubic-bezier(.2, .8, .2, 1);
   --slide: 420ms;
+
+  /* the Casefile look (2026-11-05): secondary text, quiet tints of the ink, the button, the ambient ground, a type scale */
+  --fg: 20, 20, 40;
+  --sub: #5E5E68;
+  --muted-2: #8A8A95;
+  --avatar: #E4E2DC;
+  --chart-quiet: #C9C8C2;
+  --urgent: #B86E00;
+  --ok-ink: #2E8A5C;
+  --ok-chart: #34A86F;
+  --ok-soft: rgba(48, 164, 108, .11);
+  --bad-ink: #B03A2E;
+  --bad-soft: rgba(176, 58, 46, .08);
+  --on-accent: #FFFFFF;
+  --tint-3: rgba(var(--fg), .03); --tint-4: rgba(var(--fg), .04); --tint-5: rgba(var(--fg), .05); --tint-6: rgba(var(--fg), .06); --tint-7: rgba(var(--fg), .07);
+  --tint-8: rgba(var(--fg), .08); --tint-10: rgba(var(--fg), .10); --tint-12: rgba(var(--fg), .12); --tint-14: rgba(var(--fg), .14); --tint-18: rgba(var(--fg), .18);
+  --shadow-card: 0 1px 2px rgba(20, 20, 40, .05), 0 8px 24px rgba(20, 20, 40, .06);
+  --seg-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .04);
+  --btn-fill: linear-gradient(180deg, #3A8DFF 0%, #1877F2 55%, #0F66DB 100%);
+  --btn-fill-hover: linear-gradient(180deg, #4A97FF 0%, #2483F8 55%, #136DE4 100%);
+  --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 6px 16px -8px rgba(24, 119, 242, .55);
+  --ambient:
+    radial-gradient(900px 600px at 12% 8%, rgba(24, 119, 242, .18), transparent 70%),
+    radial-gradient(700px 500px at 85% 30%, rgba(245, 158, 11, .12), transparent 70%),
+    radial-gradient(800px 600px at 30% 100%, rgba(168, 85, 247, .12), transparent 70%),
+    #F6F5F2;
+  --fs-11: 11px; --fs-11-5: 11.5px; --fs-12: 12px; --fs-12-5: 12.5px; --fs-13: 13px; --fs-13-5: 13.5px; --fs-14: 14px;
+  --fs-17: 17px; --fs-26: 26px; --fs-28: 28px; --fs-34: 34px;
+  --r-2: 2.5px; --r-7: 7px; --r-9: 9px; --r-10: 10px; --r-11: 11px; --r-14: 14px;
+  /* Casefile app (2026-11-05): the AI's violet, the hover ground, a few more steps of the type scale */
+  --ai: #7046D8;
+  --ai-deep: #9B7BF5;
+  --ai-soft: rgba(183, 156, 255, .08);
+  --ai-line: rgba(183, 156, 255, .25);
+  --hover: #F3F2EE;
+  --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .14), transparent 60%);
+  --scrim: rgba(30, 28, 40, .28);
+  --pop-shadow: 0 18px 50px rgba(0, 0, 0, .18), 0 2px 6px rgba(0, 0, 0, .06);
+  --fs-10: 10px; --fs-14-5: 14.5px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-24: 24px;
+  --r-3: 3px; --r-4: 4px; --r-5: 5px; --r-6: 6px; --r-12: 12px;
+  /* the cockpit's own face (2026-11-05): indigo for the shell's chrome, so the room around the tools reads apart from
+     Casefile's blue. --your-move stays blue and keeps its one meaning; this is only selection, links and buttons. */
+  --shell: #5B4BDB;
+  --shell-ink: #3B2DA6;
+  --shell-soft: rgba(91, 75, 219, .11);
+  --shell-halo: rgba(91, 75, 219, .20);
+  --shell-fill: linear-gradient(180deg, #7565EC 0%, #5B4BDB 55%, #4A3BC6 100%);
+  --shell-fill-hover: linear-gradient(180deg, #8072F0 0%, #6556E2 55%, #5243CE 100%);
+  --shell-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 0 rgba(0, 0, 0, .18), 0 6px 16px -8px rgba(91, 75, 219, .6);
+  --shell-side: rgba(244, 242, 252, .62);
+  --shell-side-line: rgba(91, 75, 219, .12);
+  /* Flagged (2026-11-05): one colour per kind of hint: a possible duplicate, a repeat, an unusual amount */
+  --faint: #B5B4BC;                     /* separators, chevrons: the prototype's faintest grey */
+  --sg-dup: #1E93A8; --sg-dup-soft: rgba(48, 176, 199, .13);
+  --sg-rep: #D97A00; --sg-rep-soft: rgba(255, 149, 0, .14);
+  --sg-dev: #5250D8; --sg-dev-soft: rgba(94, 92, 230, .12);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground: #141516;
-    --ground-2: #191B1D;
-    --surface: #1D1F21;
-    --ink: #EDEAE4;
-    --ink-2: #C9C4BB;
-    --muted: #9A958C;
-    --hairline: #2C2E31;
-    --hairline-2: #3A3D41;
-    --dashed: #4A4E53;
-    --chip: #26282B;
-    --your-move: #7DA2FF;
-    --your-move-on: #141516;
-    --your-move-soft: #18233F;
+    --ground: #161618;
+    --ground-2: #1C1C1F;
+    --surface: #212125;
+    --ink: #EDEDF0;
+    --ink-2: #C9C9D1;
+    --muted: #8A8A95;
+    --hairline: #2C2C31;
+    --hairline-2: #3A3A40;
+    --dashed: #4A4A52;
+    --chip: #26262B;
+    --your-move: #6E9BFF;
+    --your-move-on: #0E0E12;
+    --your-move-soft: #1B2640;
     --your-move-ink: #B9CCFF;
-    --your-move-halo: rgba(125, 162, 255, 0.22);
-    --seal: #E2725F;
+    --your-move-halo: rgba(110, 155, 255, 0.22);
+    --seal: #E8875F;
     --seal-on: #1A0D0B;
-    --seal-soft: #3A1D18;
-    --seal-ink: #F4A898;
-    --bubble-you: #EDEAE4;
-    --bubble-you-ink: #141516;
-    --bubble-you-muted: #6E675D;
-  }
+    --seal-soft: #3A2018;
+    --seal-ink: #F4B49C;
+    --bubble-you: #EDEDF0;
+    --bubble-you-ink: #161618;
+    --bubble-you-muted: #5E5E68;
+
+    --fg: 255, 255, 255;
+    --sub: #A3A3AD;
+    --muted-2: #8A8A95;
+    --avatar: #2C2C32;
+    --chart-quiet: #4A4A52;
+    --urgent: #F2A541;
+    --ok-ink: #5FD39A;
+    --bad-ink: #FF8A7A;
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 8px 24px rgba(0, 0, 0, .28);
+    --ambient:
+      radial-gradient(1000px 640px at 10% -6%, rgba(155, 123, 245, .14), transparent 62%),
+      radial-gradient(760px 520px at 92% 22%, rgba(24, 119, 242, .08), transparent 66%),
+      #161618;
+    --ai: #CDBBFF;
+    --ai-deep: #B79CFF;
+    --ai-soft: rgba(183, 156, 255, .10);
+    --ai-line: rgba(183, 156, 255, .22);
+    --hover: #2A2A2F;
+    --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .10), transparent 60%);
+    --shell: #8E80FF;
+    --shell-ink: #C3BBFF;
+    --shell-soft: rgba(142, 128, 255, .16);
+    --shell-halo: rgba(142, 128, 255, .22);
+    --shell-side: rgba(26, 24, 38, .62);
+    --shell-side-line: rgba(142, 128, 255, .14);
+    --sg-dup: #5AC8DA; --sg-rep: #FFA94D; --sg-dev: #8E8CF5;
+    --scrim: rgba(5, 5, 7, .6);
+}
 }
 :root[data-theme="dark"] {
-  --ground: #141516;
-  --ground-2: #191B1D;
-  --surface: #1D1F21;
-  --ink: #EDEAE4;
-  --ink-2: #C9C4BB;
-  --muted: #9A958C;
-  --hairline: #2C2E31;
-  --hairline-2: #3A3D41;
-  --dashed: #4A4E53;
-  --chip: #26282B;
-  --your-move: #7DA2FF;
-  --your-move-on: #141516;
-  --your-move-soft: #18233F;
+  --ground: #161618;
+  --ground-2: #1C1C1F;
+  --surface: #212125;
+  --ink: #EDEDF0;
+  --ink-2: #C9C9D1;
+  --muted: #8A8A95;
+  --hairline: #2C2C31;
+  --hairline-2: #3A3A40;
+  --dashed: #4A4A52;
+  --chip: #26262B;
+  --your-move: #6E9BFF;
+  --your-move-on: #0E0E12;
+  --your-move-soft: #1B2640;
   --your-move-ink: #B9CCFF;
-  --your-move-halo: rgba(125, 162, 255, 0.22);
-  --seal: #E2725F;
+  --your-move-halo: rgba(110, 155, 255, 0.22);
+  --seal: #E8875F;
   --seal-on: #1A0D0B;
-  --seal-soft: #3A1D18;
-  --seal-ink: #F4A898;
-  --bubble-you: #EDEAE4;
-  --bubble-you-ink: #141516;
-  --bubble-you-muted: #6E675D;
+  --seal-soft: #3A2018;
+  --seal-ink: #F4B49C;
+  --bubble-you: #EDEDF0;
+  --bubble-you-ink: #161618;
+  --bubble-you-muted: #5E5E68;
+
+    --fg: 255, 255, 255;
+    --sub: #A3A3AD;
+    --muted-2: #8A8A95;
+    --avatar: #2C2C32;
+    --chart-quiet: #4A4A52;
+    --urgent: #F2A541;
+    --ok-ink: #5FD39A;
+    --bad-ink: #FF8A7A;
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 8px 24px rgba(0, 0, 0, .28);
+    --ambient:
+      radial-gradient(1000px 640px at 10% -6%, rgba(155, 123, 245, .14), transparent 62%),
+      radial-gradient(760px 520px at 92% 22%, rgba(24, 119, 242, .08), transparent 66%),
+      #161618;
+    --ai: #CDBBFF;
+    --ai-deep: #B79CFF;
+    --ai-soft: rgba(183, 156, 255, .10);
+    --ai-line: rgba(183, 156, 255, .22);
+    --hover: #2A2A2F;
+    --glow: radial-gradient(900px 380px at 15% -10%, rgba(155, 123, 245, .10), transparent 60%);
+    --shell: #8E80FF;
+    --shell-ink: #C3BBFF;
+    --shell-soft: rgba(142, 128, 255, .16);
+    --shell-halo: rgba(142, 128, 255, .22);
+    --shell-side: rgba(26, 24, 38, .62);
+    --shell-side-line: rgba(142, 128, 255, .14);
+    --sg-dup: #5AC8DA; --sg-rep: #FFA94D; --sg-dev: #8E8CF5;
+    --scrim: rgba(5, 5, 7, .6);
 }

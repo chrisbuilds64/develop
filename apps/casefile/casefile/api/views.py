@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import re
+
 from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
 from ..domain import lists as value_lists
+from ..domain import seen as reads
+from ..domain import step as stepping
 from ..domain import turn as whose
 from ..models import Case, Entry, Run, Turn
 
@@ -55,6 +59,8 @@ class CaseCard(BaseModel):
     external_url: str = ""                                # a link into that system, from the theme's url template
     number: str = ""                                      # the short number on the cover (meta.number)
     tint: str = ""                                        # the cover's colour, from theme.covers (by one meta key)
+    party: str = ""                                       # who the case is from, for the first column of a row: reported_by, client, the mail's sender
+    unread: bool = False                                  # new to the viewer: never opened, or somebody else wrote since (domain/seen.py)
 
 
 class StationView(BaseModel):
@@ -68,6 +74,78 @@ class GroupView(BaseModel):
     word: str
 
 
+LANG_FILE = re.compile(r"^(?P<stem>.+)\.(?P<lang>[a-z]{2})\.md$")
+TRANSLATABLE = (".md", ".txt", ".eml")
+
+
+def localized(doc: dict, lang: str) -> dict:
+    """Content in the viewer's language (request 8): a helper writes the original's language into the document and,
+    per further language, `i18n.<lang>` with the same keys (title, subtitle, summary, fields …). The viewer's
+    language wins key by key; `lang` keeps saying which language the original is in."""
+    if not isinstance(doc, dict):
+        return doc
+    over = (doc.get("i18n") or {}).get(lang) if isinstance(doc.get("i18n"), dict) else None
+    if not isinstance(over, dict):
+        return doc
+    out = {**doc}
+    for k, v in over.items():
+        out[k] = {**out[k], **v} if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
+
+def entries_in(entries: list, over) -> list:
+    """The thread in the viewer's language: `i18n.<lang>.entries.<id>` gives an entry's title and text there (request 8)."""
+    if not isinstance(over, dict):
+        return entries
+    return [e.model_copy(update={k: v for k, v in (over.get(e.id) or {}).items() if k in ("title", "text") and v}) for e in entries]
+
+
+def names_in(config: DomainConfig, entries: list, lang: str) -> list:
+    """Who wrote an entry and whom it is for, as the people file names them in the viewer's language ("Du" → "You").
+    After the actors are known, since those are found by the name as written."""
+    def name(n: str | None) -> str | None:
+        if not n:
+            return n
+        p = config.person(n)
+        return p.name_in(lang) if p is not None else n
+    return [e.model_copy(update={"author": name(e.author), "for_": name(e.for_)}) for e in entries]
+
+
+def translations(files: list[str]) -> dict[str, dict[str, str]]:
+    """`mail.md` and `mail.en.md` beside it: the original → {language: its translation}. The original is never replaced."""
+    names = set(files)
+    out: dict[str, dict[str, str]] = {}
+    for f in files:
+        m = LANG_FILE.match(f)
+        if not m:
+            continue
+        orig = next((m["stem"] + ext for ext in TRANSLATABLE if m["stem"] + ext in names), None)
+        if orig:
+            out.setdefault(orig, {})[m["lang"]] = f
+    return out
+
+
+def actor_of(config: DomainConfig, author: str) -> str:
+    """'ai' when an agent of this application wrote the entry, 'system' for the core itself, else 'person'."""
+    p = config.person(author)
+    if p is not None:
+        return "ai" if p.kind == "agent" else "person"
+    a = (author or "").strip().lower()
+    if a in ("claude", "ki", "ai") or a in (config.run_policy.get("skills") or {}):
+        return "ai"
+    return "system" if a in ("", "system") else "person"
+
+
+def with_actors(config: DomainConfig, entries: list[Entry]) -> list[Entry]:
+    """Derived for the surface: who made each entry, and which later entries undo or correct it (ADR-025)."""
+    later: dict[str, list[str]] = {}
+    for e in entries:
+        if e.corrects:
+            later.setdefault(e.corrects, []).append(e.id)
+    return [e.model_copy(update={"actor": actor_of(config, e.author), "corrected_by": later.get(e.id, [])}) for e in entries]
+
+
 class CaseView(CaseCard):
     meta: dict = Field(default_factory=dict)
     stations: list[StationView]
@@ -78,6 +156,14 @@ class CaseView(CaseCard):
     last_run: Run | None = None
     primary: str | None = None
     agent: str = "Claude"
+    reopen_to: str = ""                                   # a closed case: the stage "Move back" (action `reopen`) returns it to; empty while it is in the work
+    reopen_word: str = ""                                 # that stage in words
+    held_by: list[str] = Field(default_factory=list)      # somebody else holds the case: their names; "Send a reminder" (action `remind`) goes to them
+    take_back_to: str = ""                                # the viewer's own stage it came from: "Take it back" (action `take_back`) returns it there
+    take_back_word: str = ""
+    undo_step: str = ""                                   # the viewer's newest move, while nothing happened since: "Undo" (action `undo`) takes it back (ADR-025)
+    undo_word: str = ""                                   # that move in words
+    translations: dict[str, dict[str, str]] = Field(default_factory=dict)   # an original file → {language: the translation beside it}
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
 
 
@@ -143,7 +229,7 @@ def group_of(config: DomainConfig, case: Case, main: Turn | None, viewer: str | 
     return "others" if g == "you" else g
 
 
-def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> CaseCard:
+def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: dict[str, str] | None = None) -> CaseCard:
     turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     main = turns[0] if turns else None
     key, idx = station_of(config, case.stage)
@@ -151,16 +237,18 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> Cas
     ext = str(case.meta.get("external_id") or case.meta.get("claim_number") or "")
     tpl = str(config.theme.get("external_url") or "")
     tint = value_lists.tint(config.lists, config.theme, case.meta)
-    return CaseCard(id=case.id, number=str(case.meta.get("number") or ""), tint=tint, title=str(case.meta.get("title") or case.meta.get("working_title") or case.id), label=case.label,
+    party = next((str(case.meta.get(k)).split(",")[0].strip() for k in ("reported_by", "customer", "client", "from_name", "from") if case.meta.get(k)), "")
+    return CaseCard(id=case.id, party=party, number=str(case.meta.get("number") or ""), tint=tint, title=str(localized(case.meta, lang).get("title") or case.meta.get("working_title") or case.id), label=case.label,
                     external_id=ext, external_url=(tpl.replace("{external_id}", ext) if ext and tpl else ""),
                     label_word=value_lists.value_word(config.lists, "label", case.label, lang, config.word("labels", case.label, lang, case.label)), stage=case.stage,
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,
                     group_word=config.word("groups", g, lang, g), since=case.since, date=str(case.meta.get("publishDate") or "")[:10],
-                    turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))))
+                    turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))),
+                    unread=reads.unread(config, case, viewer, seen) if seen is not None else False)
 
 
-def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url) -> CaseView:
-    c = card(config, case, viewer, lang)
+def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url, seen: dict[str, str] | None = None, store=None) -> CaseView:
+    c = card(config, case, viewer, lang, seen)
     turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     mine = [t for t in turns if viewer and (t.actor == viewer or config.may_act(viewer, t.actor))]
     stations = [StationView(key=k, word=config.word("stations", k, lang, k), state="done" if i < c.station_index else "current" if i == c.station_index else "todo")
@@ -170,9 +258,19 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                       versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in s.versions], present=s.present)
              for s in case.slots]
     agent = config.agent
-    return CaseView(**c.model_dump(), meta=case.meta, stations=stations, slots=slots, entries=case.entries, turns=turns, my_turns=mine,
+    back = stepping.reopen_target(config, case) or ""
+    if back and not stepping.may_reopen(config, viewer, back):
+        back = ""                                          # offered only to whom it is allowed (review S4)
+    held = [p.name for p in stepping.holders(config, case, viewer)] if viewer else []
+    pull = stepping.take_back_target(config, case, viewer) or ""
+    undo = stepping.undoable(store, config, case, viewer) if store is not None else None
+    undo_action = config.action(undo.from_, undo.action) if undo else None
+    return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
+                    held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "",
+                    translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
+                    meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
-                    data={k: v for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
+                    data={k: localized(v, lang) for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
 
 def list_views(config: DomainConfig, lang: str, counts: dict | None = None) -> list[ListView]:

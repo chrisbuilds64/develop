@@ -1,5 +1,9 @@
 {
   "name": "Angebotsakte",
+  "app": {
+    "icon": "receipt",
+    "color": "#1FA39B"
+  },
   "lang": "de",
   "accent": "your-move",
   "$comment": "Same tokens as the claims file; the one accent means only: this waits for you.",

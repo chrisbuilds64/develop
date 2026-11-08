@@ -45,7 +45,12 @@
       "done": "Erledigt",
       "deliver": "Ablegen",
       "see_failure": "Nachsehen, was schiefging",
-      "wait": "Warten"
+      "wait": "Warten",
+      "reopen": "Zurückholen",
+      "remind": "Erinnern",
+      "take_back": "Zurücknehmen",
+      "undo": "Rückgängig",
+      "correct": "Korrektur eröffnen"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -71,7 +76,12 @@
       "question_word": "Datei",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
-      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert.",
+      "reminder": "Erinnerung",
+      "reminder_text": "Kannst du dir diesen Fall ansehen?",
+      "undone": "Rückgängig: {action}",
+      "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
+      "correction": "Korrektur: {title}"
     },
     "files": {
       "auftrag.md": "Auftrag",
@@ -146,7 +156,12 @@
       "done": "Done",
       "deliver": "File",
       "see_failure": "See what went wrong",
-      "wait": "Wait"
+      "wait": "Wait",
+      "reopen": "Move back",
+      "remind": "Send a reminder",
+      "take_back": "Take it back",
+      "undo": "Undo",
+      "correct": "Open a correction"
     },
     "reasons": {
       "running": "running",
@@ -172,7 +187,12 @@
       "question_word": "file",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; opens once {missing} is in the file.",
-      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}.",
+      "reminder": "Reminder",
+      "reminder_text": "Could you take a look at this case?",
+      "undone": "Undone: {action}",
+      "undone_text": "Taken back before the next step started.",
+      "correction": "Correction: {title}"
     },
     "files": {
       "auftrag.md": "Order",

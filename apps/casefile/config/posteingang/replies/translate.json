@@ -1,0 +1,11 @@
+{
+  "delay_s": 2,
+  "silent": true,
+  "files": {
+    "{out}": "inline:*Musterwelt: Hier stünde die Übersetzung von {file} ({lang}). Ein echter Lauf schreibt sie; das Original bleibt unverändert.*\n\n*Demo: a live run writes the translation of {file} ({lang}) here. The original stays as it came.*\n"
+  },
+  "entry": {
+    "title": "Übersetzung"
+  },
+  "model": "replay"
+}

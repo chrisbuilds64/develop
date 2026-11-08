@@ -264,3 +264,23 @@ def test_roles_missing_at_the_root_are_lent_by_the_domain(tmp_path):
     chris = cfg.person("chris")
     assert chris is not None and chris.roles                   # lent by config/people.json
     assert cfg.may_act("chris", "role:" + chris.roles[0])
+
+
+def test_a_person_moves_a_hint_and_the_hint_itself_stays(tmp_path):
+    from fastapi.testclient import TestClient
+    from casefile.api.app import Settings, create_app
+    from casefile.demo.worlds import CONFIG, build_claims
+    root = build_claims(tmp_path / "claims")
+    client = TestClient(create_app(Settings(root=root, config_dir=CONFIG / "claims-demo", secret="t", demo=True, samples_dir=None, replies_dir=None)))
+    client.post("/api/session", json={"person": "du"})
+    body = {s["id"]: s for s in client.get("/api/signals").json()}
+    assert set(body) == {"M-001", "M-002", "M-003"} and all(s["status"] == "offen" for s in body.values())
+    assert body["M-003"]["cases"][0]["color"]                                                 # the chip carries its label's colour
+    before = (root / "_signale" / "M-002.md").read_text(encoding="utf-8").split("---", 2)[2]
+    s = client.post("/api/signals/M-002/status", json={"status": "in_pruefung"}).json()
+    assert s["status"] == "in_pruefung" and s["decided_by"] == "Du" and s["decided_at"]
+    s = client.post("/api/signals/M-002/status", json={"status": "erledigt"}).json()
+    assert s["status"] == "erledigt"
+    assert (root / "_signale" / "M-002.md").read_text(encoding="utf-8").split("---", 2)[2] == before   # the text is never touched
+    assert client.post("/api/signals/M-002/status", json={"status": "weg"}).status_code == 422
+    assert client.post("/api/signals/X-9/status", json={"status": "offen"}).status_code == 404

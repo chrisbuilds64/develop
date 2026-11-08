@@ -140,7 +140,7 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
             fe = four_eyes_block(config, case, action, actor)
             if fe:
                 blocked.append(fe)
-            out.append(Turn(actor=actor, action=action.id, label=_label(config, action.label, lang), payload=list(action.payload), seal=action.seal,
+            out.append(Turn(actor=actor, action=action.id, label=_rule_label(config, case, lang) if action.compile == "handoff" else _label(config, action.label, lang), payload=list(action.payload), seal=action.seal,
                             reason=config.word("stages", case.stage, lang, case.stage), blocked_by=blocked, since=case.since))
     elif stage and stage.turn == "claude":
         out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
@@ -189,9 +189,27 @@ def classify(case: Case, action: Action | None, t: Turn) -> str:
     return "nudge"
 
 
+
+def _rule_label(config: DomainConfig, case: Case, lang: str | None) -> str:
+    """A mail's confirm says what it will do: the action word of the rule of the matrix the AI's reading picked
+    ("Open a claim file", "File away"), in the reader's language; the plain confirm when there is no reading yet."""
+    import json as _json
+    picked = (case.data.get("einordnung.json") or {}).get("rule") if isinstance(case.data.get("einordnung.json"), dict) else None
+    try:
+        rules = _json.loads((config.dir / "regeln.json").read_text(encoding="utf-8")).get("rules", []) if picked and config.dir else []
+    except (OSError, ValueError):
+        rules = []
+    rule = next((r for r in rules if r.get("id") == picked), None)
+    word = (rule or {}).get("action_word")
+    if isinstance(word, dict):
+        return str(word.get(lang or "") or word.get("en") or next(iter(word.values()), "")) or _label(config, "confirm", lang)
+    return str(word) if word else _label(config, "confirm", lang)
+
+
 def sentence(config: DomainConfig, case: Case, t: Turn, lang: str | None) -> tuple[str, str]:
     """(headline, lock) from the vocabulary's templates, with {title}, {label}, {missing}, {first}, {n} filled; defaults when none is configured."""
-    title = str(case.meta.get("title") or case.meta.get("working_title") or case.id)
+    over = ((case.meta.get("i18n") or {}).get(lang or "") or {}) if isinstance(case.meta.get("i18n"), dict) else {}
+    title = str(over.get("title") or case.meta.get("title") or case.meta.get("working_title") or case.id)   # in the reader's language (request 8)
     words = missing_words(config, t.blocked_by, lang)
     ctx = {"title": title, "label": t.label, "missing": ", ".join(words), "first": words[0] if words else "", "n": str(len(words))}
 

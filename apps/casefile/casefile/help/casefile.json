@@ -32,14 +32,14 @@
     },
     {
       "key": "cf.groups",
-      "since": "0.16.1",
+      "since": "0.22.0",
       "title": {
-        "de": "Was auf dich wartet",
-        "en": "What waits for you"
+        "de": "Start",
+        "en": "Home"
       },
       "text": {
-        "de": "„you“ zählt die Fälle, bei denen du dran bist. Darunter: was bei Claude liegt, bei anderen, was raus ist, und das Archiv.",
-        "en": "“you” counts the cases where it is your move. Below: what lies with Claude, with others, what is out, and the archive."
+        "de": "Start zeigt, was dich braucht: erst Dringendes, dann was zum Bestätigen bereitliegt, dann was noch auf etwas wartet, und was die KI gerade bearbeitet. Daneben: woran die KI arbeitet und was du heute besiegelt hast. Die Zahl im Menü zählt die Akten, bei denen du dran bist; ein blauer Punkt heißt: neu für dich.",
+        "en": "Home shows what needs you: urgent first, then what is ready to confirm, then what still waits for something, and what the AI is working on. Beside it: what the AI is doing now and what you sealed today. The number in the menu counts the cases where it is your move; a blue dot means: new to you."
       }
     },
     {
@@ -568,6 +568,270 @@
       "text": {
         "de": "Je Art von Mail, was geschieht: wenn Schadensmeldung, dann Akte in der Schadenakte anlegen. Die KI schlägt eine Zeile vor, ein Mensch bestätigt. Grau: noch nicht verbunden.",
         "en": "Per kind of mail, what happens: when a claim report, open a claim file. The AI proposes a row, a person confirms. Grey: not connected yet."
+      }
+    },
+    {
+      "key": "cf.search",
+      "since": "0.22.0",
+      "title": {
+        "de": "Suchen",
+        "en": "Search"
+      },
+      "text": {
+        "de": "Findet jede Akte, die du sehen darfst, nach Titel, Nummer, Absender oder Schadennummer. Strg+K oder ⌘K öffnet die Suche von überall, Enter öffnet den ersten Treffer.",
+        "en": "Finds every case you may see, by title, number, sender or claim number. Ctrl+K or ⌘K opens it from anywhere; Enter opens the first hit."
+      }
+    },
+    {
+      "key": "cf.workspaces",
+      "since": "0.22.0",
+      "title": {
+        "de": "Arbeitsbereiche",
+        "en": "Workspaces"
+      },
+      "text": {
+        "de": "Jeder Arbeitsbereich ist eine Anwendung mit eigenen Akten, Stufen und Regeln, mit seiner Farbe. Die Zahl sagt, wie viel dort auf dich wartet. Ein Klick öffnet seine Akten.",
+        "en": "Each workspace is an application with its own cases, stages and rules, in its own colour. The number says how much waits for you there. A click opens its cases."
+      }
+    },
+    {
+      "key": "cf.next",
+      "since": "0.22.0",
+      "title": {
+        "de": "Nächste Akte öffnen",
+        "en": "Open next case"
+      },
+      "text": {
+        "de": "Öffnet die Akte, die als Nächstes dran ist, in der Reihenfolge des Kerns: erst Termine, dann was zum Bestätigen bereitliegt. Enter tut dasselbe.",
+        "en": "Opens the case that is next, in the core's order: dates first, then what is ready to confirm. Enter does the same."
+      }
+    },
+    {
+      "key": "cf.person",
+      "since": "0.22.0",
+      "title": {
+        "de": "Du",
+        "en": "You"
+      },
+      "text": {
+        "de": "Alles, was dich betrifft: Hell oder Dunkel, Sprache, Ton, die Seite des Menüs, in der Demo die Person und das Zurücksetzen, sonst das Abmelden.",
+        "en": "Everything about you: light or dark, language, sound, the side of the menu, in the demo the person and starting over, otherwise signing out."
+      }
+    },
+    {
+      "key": "cf.held",
+      "since": "0.22.0",
+      "title": {
+        "de": "Liegt bei anderen",
+        "en": "With someone else"
+      },
+      "text": {
+        "de": "„Erinnern“ schreibt der Person eine Notiz in den Verlauf; die Akte wird für sie neu, ohne dass sie eine Aufgabe mehr hat. „Zurücknehmen“ holt die Akte auf deine Stufe zurück, wenn sie von dort kam. Beides steht im Verlauf.",
+        "en": "“Send a reminder” writes the person a note in the conversation; the case becomes new to them without giving them another task. “Take it back” returns the case to your stage when it came from there. Both are recorded."
+      }
+    },
+    {
+      "key": "cf.move-back",
+      "since": "0.22.0",
+      "title": {
+        "de": "Zurückholen",
+        "en": "Move back"
+      },
+      "text": {
+        "de": "Eine abgeschlossene Akte geht dorthin zurück, wo sie die Arbeit verlassen hat, und ist wieder in der Liste dessen, der dort dran ist. Das ist ein Schritt wie jeder andere, mit Eintrag im Verlauf.",
+        "en": "A closed case returns to where it left the work and is back in the list of whoever acts there. It is a step like any other, recorded in the conversation."
+      }
+    },
+    {
+      "key": "cf.undo",
+      "since": "0.22.0",
+      "title": {
+        "de": "Rückgängig",
+        "en": "Undo"
+      },
+      "text": {
+        "de": "Dein letzter Schritt lässt sich zurücknehmen, solange danach nichts passiert ist: kein neuer Eintrag, kein Auftrag an die KI, nichts an eine andere Anwendung geschickt. Die Entscheidung und ihr Zurücknehmen bleiben beide im Verlauf.",
+        "en": "Your last step can be taken back while nothing has happened since: no new entry, no order to the AI, nothing sent to another application. The decision and its undoing both stay in the conversation."
+      }
+    },
+    {
+      "key": "cf.correct",
+      "since": "0.22.0",
+      "title": {
+        "de": "Korrektur eröffnen",
+        "en": "Open a correction"
+      },
+      "text": {
+        "de": "Eine besiegelte Entscheidung wird nicht ersetzt: die Korrektur steht daneben, mit Begründung und, wo nötig, dem korrigierten Betrag. Das Original bleibt nachvollziehbar.",
+        "en": "A sealed decision is not replaced: the correction stands beside it, with its reason and, where needed, the corrected amount. The original stays traceable."
+      }
+    },
+    {
+      "key": "cf.rb-waiting",
+      "since": "0.22.0",
+      "title": {
+        "de": "Wartet auf dich",
+        "en": "Waiting for you"
+      },
+      "text": {
+        "de": "Neue Regeln, die die KI oder jemand aus dem Team vorschlägt. Nichts davon gilt, bis du annimmst. Ablehnen braucht einen Satz Begründung, er bleibt in der Akte.",
+        "en": "New rules the AI or someone on the team proposes. None of it holds until you accept. Rejecting needs one sentence as the reason, and it stays on record."
+      }
+    },
+    {
+      "key": "cf.rb-in-force",
+      "since": "0.22.0",
+      "title": {
+        "de": "In Kraft",
+        "en": "In force"
+      },
+      "text": {
+        "de": "Die Regeln, die jetzt gelten, nach Bereich. Eine Änderung wird eine neue Fassung und gilt, sobald eine zweite Person sie annimmt. Bereits entschiedene Fälle behalten ihre Fassung.",
+        "en": "The rules that hold now, by area. A change becomes a new version and holds once a second person accepts it. Cases already decided keep their version."
+      }
+    },
+    {
+      "key": "cf.rb-steps",
+      "since": "0.22.0",
+      "title": {
+        "de": "Fallschritte",
+        "en": "Case steps"
+      },
+      "text": {
+        "de": "Die Schritte jedes Falls, wie sie in der Konfiguration stehen: was passieren muss, damit es weitergeht, und wer dran ist.",
+        "en": "The steps of every case, as the configuration sets them: what has to happen to move on, and whose turn it is."
+      }
+    },
+    {
+      "key": "cf.rb-limits",
+      "since": "0.22.0",
+      "title": {
+        "de": "KI-Grenzen",
+        "en": "AI limits"
+      },
+      "text": {
+        "de": "Was jeder KI-Helfer tut und was er nie von sich aus tut. Diese Grenzen sind fest.",
+        "en": "What each AI helper does and what it never does on its own. These limits are fixed."
+      }
+    },
+    {
+      "key": "cf.rb-letters",
+      "since": "0.22.0",
+      "title": {
+        "de": "Textbausteine",
+        "en": "Letter templates"
+      },
+      "text": {
+        "de": "Freigegebene Absätze für Briefe. Eine Änderung ist eine neue Fassung, die eine zweite Person annimmt. Wörter in geschweiften Klammern setzt die KI je Fall ein.",
+        "en": "Approved paragraphs for letters. A change is a new version that a second person accepts. The AI fills in the words in curly brackets for each case."
+      }
+    },
+    {
+      "key": "cf.guides",
+      "since": "0.22.0",
+      "title": {
+        "de": "Anleitungen",
+        "en": "Guides"
+      },
+      "text": {
+        "de": "Geführte Touren, wo es sie gibt, die kurzen Videokapitel, die Hilfe und die Tastenkürzel an einem Ort.",
+        "en": "Guided tours where there are some, the short video chapters, help and the keyboard shortcuts, in one place."
+      }
+    },
+    {
+      "key": "cf.signals",
+      "since": "0.22.0",
+      "title": {
+        "de": "Auffällig",
+        "en": "Flagged"
+      },
+      "text": {
+        "de": "Was der KI über die Fälle hinweg auffällt: mögliche Doppelungen, Wiederholungen, ungewöhnliche Beträge. Ein Hinweis, nie eine Feststellung. Du schiebst ihn nach „Wird geprüft“ oder nach „Erledigt“ und kannst ihn jederzeit zurückholen; wer und wann bleibt stehen.",
+        "en": "What the AI notices across cases: possible duplicates, repeats, unusual amounts. A hint, never a finding. You move it to “Looking into it” or to “Done” and can move it back any time; who and when stays on record."
+      }
+    },
+    {
+      "key": "cf.new-workspace",
+      "since": "0.22.0",
+      "title": {
+        "de": "Neuer Arbeitsbereich",
+        "en": "New workspace"
+      },
+      "text": {
+        "de": "Legt im Cockpit einen weiteren Arbeitsbereich an, für eine neue Art von Fällen.",
+        "en": "Creates another workspace in the cockpit, for a new kind of case."
+      }
+    },
+    {
+      "key": "cf.team",
+      "since": "0.22.0",
+      "title": {
+        "de": "KI-Team",
+        "en": "AI team"
+      },
+      "text": {
+        "de": "Deine Helfer. Jeder hat ein Berufsprofil, arbeitet nur in Sitzungen, die du startest, und jede Sitzung wird protokolliert. Die Helfer gehören dir, nicht einem Arbeitsbereich.",
+        "en": "Your helpers. Each has a job profile, works only in sessions you start, and every session is logged. The helpers belong to you, not to one workspace."
+      }
+    },
+    {
+      "key": "cf.team-add",
+      "since": "0.22.0",
+      "title": {
+        "de": "Helfer hinzufügen",
+        "en": "Add a helper"
+      },
+      "text": {
+        "de": "Holt einen Helfer mit einem Berufsprofil in dein Team.",
+        "en": "Brings a helper with a job profile onto your team."
+      }
+    },
+    {
+      "key": "cf.team-session",
+      "since": "0.22.0",
+      "title": {
+        "de": "Sitzung",
+        "en": "Session"
+      },
+      "text": {
+        "de": "Ein Gespräch mit einem Helfer. Was er tut, schlägt er vor; du entscheidest.",
+        "en": "A conversation with a helper. It proposes what to do; you decide."
+      }
+    },
+    {
+      "key": "cf.team-end",
+      "since": "0.22.0",
+      "title": {
+        "de": "Sitzung beenden",
+        "en": "End session"
+      },
+      "text": {
+        "de": "Beendet die Sitzung mit einem Satz dazu, was herauskam. Der Satz kommt ins Protokoll.",
+        "en": "Ends the session with one sentence on what came out of it. The sentence goes into the log."
+      }
+    },
+    {
+      "key": "cf.team-logs",
+      "since": "0.22.0",
+      "title": {
+        "de": "Sitzungsprotokolle",
+        "en": "Session logs"
+      },
+      "text": {
+        "de": "Der Ordner, in den jede Sitzung geschrieben wird.",
+        "en": "The folder every session is written to."
+      }
+    },
+    {
+      "key": "cf.setup",
+      "since": "0.22.0",
+      "title": {
+        "de": "Einrichtung",
+        "en": "Setup"
+      },
+      "text": {
+        "de": "Woraus dieser Arbeitsbereich besteht: Plugins, Quellen, Module, Rollen, Schemata und Wertelisten. Das meiste kommt aus der Konfiguration; die Wertelisten änderst du hier.",
+        "en": "What this workspace is built from: plugins, sources, modules, roles, schemas and value lists. Most of it comes from the configuration; the value lists you change here."
       }
     }
   ]

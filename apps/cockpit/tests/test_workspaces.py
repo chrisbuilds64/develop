@@ -88,7 +88,11 @@ def test_workspaces_are_served_behind_the_cockpit_login_with_its_identity(world)
     assert me["shell"] == "/"                                                            # and the menu knows the way back to the cockpit
     assert client.get("/w/nothing/api/me").status_code == 404
     home = client.get("/").text
-    assert 'href="/w/shared/"' in home and "PressRoom shared" in home
+    assert home.count('class="nav-row ws-row casefile-link') == 1 and 'href="/w/' in home   # the rail: Casefile once, not each workspace
+    assert "PressRoom shared" not in home                                               # the workspaces are switched inside Casefile
+    places = {p["id"]: p for p in me["places"]}
+    assert places["shared"]["current"] and places["shared"]["name"] == "PressRoom shared"   # …whose rail lists them, this one current
+    assert all(p["url"] == f"/w/{i}/" for i, p in places.items() if i != "shared")        # the others by their address in the cockpit
 
 
 def test_under_a_prefix_the_mounted_surface_is_prefixed_once(world):
@@ -123,3 +127,21 @@ def test_a_person_of_the_tree_works_in_it_and_a_clone_is_one_form_away(world):
     assert "chris-sandbox" in client.get("/").text
     acct = client.get("/account").text
     assert "CLAUDE_CODE_OAUTH_TOKEN" in acct and "sk-ant" not in acct.replace("sk-ant-…", "")
+
+
+def test_an_application_marks_itself_through_its_theme_not_its_id(world, tmp_path):
+    ws = Workspaces(world / "workspaces.json", world)
+    app = ws.applications["pressroom"]
+    assert (app.icon, app.color) == ("mic", "#F07A5C")                   # config/pressroom/theme.json → app
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    (plain / "theme.json").write_text(json.dumps({"name": "Plain", "app": {"icon": "<script>", "color": "red"}}))
+    reg = json.loads((world / "workspaces.json").read_text())
+    reg["applications"]["plain"] = {"label": "Plain", "config_dir": str(plain)}
+    (world / "workspaces.json").write_text(json.dumps(reg))
+    again = Workspaces(world / "workspaces.json", world)
+    assert (again.applications["plain"].icon, again.applications["plain"].color) == (None, None)   # nothing unsafe gets through
+    client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
+    sign_in(client)
+    me = client.get("/w/shared/api/me").json()
+    assert {p["color"] for p in me["places"]} >= {"#F07A5C"}             # Casefile's rail shows each workspace in its application's colour

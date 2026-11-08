@@ -3,6 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      // light until the person picks otherwise (shell-theme, shared with the cockpit); set before the first paint, no flash
+      try { var t = localStorage.getItem("shell-theme"); if (t !== "auto") document.documentElement.dataset.theme = t === "dark" ? "dark" : "light"; } catch (e) { document.documentElement.dataset.theme = "light"; }
+    </script>
     <meta name="theme-color" content="#F6F3EE" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#141516" media="(prefers-color-scheme: dark)" />
     <title>PressRoom</title>
@@ -14,8 +18,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <script type="module" crossorigin src="/assets/index-1b-VBZbV.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DGyyfsBc.css">
+    <script type="module" crossorigin src="/assets/index-BFw1HmCW.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CtDcB6H2.css">
   </head>
   <body>
     <div id="root"></div>

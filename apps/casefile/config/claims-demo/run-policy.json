@@ -23,6 +23,15 @@
         "operator",
         "assessor"
       ]
+    },
+    "translate": {
+      "$comment": "Show translation (request 8): writes <stem>.<lang>.md beside a customer's text; the original stays. In the order: file, out, lang.",
+      "orderable_by": [
+        "approver",
+        "assessor",
+        "operator",
+        "settlement"
+      ]
     }
   },
   "agents": []

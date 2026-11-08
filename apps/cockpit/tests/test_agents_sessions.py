@@ -448,3 +448,23 @@ def test_a_question_from_the_page_help_carries_the_pages_topics(org):
     s = SimpleNamespace(focus={}, place={}, user="chris")
     text, f = r.focus_block(SimpleNamespace(workspaces=None), "chris", {"focus": {"help": "cf.desk,cf.thread", "title": "PressRoom"}}, s)
     assert "<page-help>" in text and "Schreibtisch" in text and "Gespräch" in text and "Regelwerk" not in text and f["help"] == "cf.desk,cf.thread"
+
+
+def test_a_mounted_application_works_on_the_persons_own_team(world):
+    """Casefile's AI team page talks to /api/cf-team: the same agents and sessions as /team, in the application's shape."""
+    client = _cockpit(world)
+    assert client.get("/api/cf-team").status_code == 401
+    sign_in(client)
+    v = client.get("/api/cf-team").json()
+    assert v["source"] == "cockpit" and v["agents"] == [] and [t["id"] for t in v["hireable"]] == ["axel"] and v["csrf"]
+    h = {"X-CSRF": client.cookies["csrf"]}
+    assert client.post("/api/cf-team", json={"what": "hire", "template": "axel"}).status_code == 403
+    v = client.post("/api/cf-team", json={"what": "hire", "template": "axel"}, headers=h).json()
+    assert [(a["id"], a["label"], a["role"]) for a in v["agents"]] == [("axel", "Axel", "Executor")] and v["hireable"][0]["taken"]
+    sid = client.post("/api/cf-team/sessions", json={"agent": "axel", "topic": "Claims"}, headers=h).json()["id"]
+    assert client.get("/api/cf-team").json()["agents"][0]["session"] == sid
+    s = client.post(f"/api/cf-team/sessions/{sid}/say", json={"text": "Hallo"}, headers=h).json()
+    assert s["status"] == "open" and s["turns"][0] == {"who": "you", "text": "Hallo"} and s["turns"][-1]["thinking"]
+    assert client.post("/api/cf-team", json={"what": "logs_dir", "logs_dir": "/tmp/x"}, headers=h).json()["logs_dir"] == "/tmp/x"
+    v = client.post("/api/cf-team", json={"what": "dismiss", "agent": "axel"}, headers=h).json()
+    assert v["agents"] == []

@@ -1,0 +1,19 @@
+{
+  "$comment": "The public demo has no cockpit, so Setup shows this copy of the cockpit's plugins (apps/cockpit/cockpit/plugins/*/plugin.json): name and version as they are there, the line in plain words for the surface. Inside the cockpit the shell hands over the real ones (Settings.plugins).",
+  "plugins": [
+    {"id": "audits", "name": "Audits", "version": "0.1.0",
+     "text": {"en": "When each kind of audit last ran, when the next is due, and every finding.", "de": "Wann jede Art von Prüfung zuletzt lief, wann die nächste fällig ist, und jeder Befund."}},
+    {"id": "canon", "name": "Canon", "version": "0.2.0",
+     "text": {"en": "The rulebook as it is on disk, readable and editable. A model only proposes; a person accepts.", "de": "Das Regelwerk, wie es auf der Platte liegt, lesbar und änderbar. Ein Modell schlägt nur vor; ein Mensch nimmt an."}},
+    {"id": "contextloop", "name": "Context Loop", "version": "0.1.0",
+     "text": {"en": "The working method as it is on disk: its version and procedures.", "de": "Die Arbeitsweise, wie sie auf der Platte liegt: Version und Abläufe."}},
+    {"id": "decisions", "name": "Decisions", "version": "0.2.0",
+     "text": {"en": "The decision log: one entry per decision, never edited afterwards.", "de": "Das Entscheidungsprotokoll: ein Eintrag pro Entscheidung, nachträglich nie geändert."}},
+    {"id": "gatehouse", "name": "Canon elicitation", "version": "0.1.0",
+     "text": {"en": "How far the rulebook interview is and where the answers went.", "de": "Wie weit das Interview zum Regelwerk ist und wohin die Antworten gingen."}},
+    {"id": "pipeline", "name": "PressRoom · Content pipeline", "version": "0.10.1",
+     "text": {"en": "Ideas become pieces, stage by stage, in folders.", "de": "Aus Ideen werden Stücke, Stufe für Stufe, in Ordnern."}},
+    {"id": "worklist", "name": "Work list", "version": "0.2.0",
+     "text": {"en": "Open items: what is due, who holds it, what is blocked.", "de": "Offene Punkte: was fällig ist, wer es hat, was blockiert ist."}}
+  ]
+}

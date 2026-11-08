@@ -2,6 +2,7 @@
   "$comment": "Every word the surface shows for the e-report world, in German and English. Stage words are sentences about the file's state; stations are the dots on the line; actions are the one button.",
   "de": {
     "product": "Gutachtenakte",
+    "workspace": "Gutachten",
     "labels": {
       "KH": "Kfz-Haftpflicht",
       "KK": "Kasko"
@@ -50,7 +51,12 @@
       "wait": "Warten",
       "capture_result": "Ergebnis aus dem Diktat erfassen lassen",
       "compose_report": "Gutachten aus Bausteinen zusammenstellen",
-      "close_inspection": "Besichtigung abschließen"
+      "close_inspection": "Besichtigung abschließen",
+      "reopen": "Zurückholen",
+      "remind": "Erinnern",
+      "take_back": "Zurücknehmen",
+      "undo": "Rückgängig",
+      "correct": "Korrektur eröffnen"
     },
     "reasons": {
       "running": "die KI prüft gerade",
@@ -66,7 +72,12 @@
       "replay_moved": "Weiter.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; öffnet sich, sobald {missing} in der Akte liegt.",
-      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert."
+      "no_turn": "Kein Zug bei dir. Der nächste kommt zu dir, wenn {actor} {missing} liefert.",
+      "reminder": "Erinnerung",
+      "reminder_text": "Kannst du dir diesen Fall ansehen?",
+      "undone": "Rückgängig: {action}",
+      "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
+      "correction": "Korrektur: {title}"
     },
     "files": {
       "auftrag.pdf": "Gutachtenauftrag",
@@ -134,6 +145,7 @@
   },
   "en": {
     "product": "Assessment File",
+    "workspace": "Assessments",
     "labels": {
       "KH": "Motor liability",
       "KK": "Comprehensive"
@@ -182,7 +194,12 @@
       "wait": "Wait",
       "capture_result": "Have the result taken from the dictation",
       "compose_report": "Compose the report from modules",
-      "close_inspection": "Close the inspection"
+      "close_inspection": "Close the inspection",
+      "reopen": "Move back",
+      "remind": "Send a reminder",
+      "take_back": "Take it back",
+      "undo": "Undo",
+      "correct": "Open a correction"
     },
     "reasons": {
       "running": "the AI is checking",
@@ -198,7 +215,12 @@
       "replay_moved": "On.",
       "headline_default": "{label}: {title}",
       "lock_default": "{label}; opens once {missing} is in the file.",
-      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}."
+      "no_turn": "No move of yours. The next one reaches you once {actor} delivers {missing}.",
+      "reminder": "Reminder",
+      "reminder_text": "Could you take a look at this case?",
+      "undone": "Undone: {action}",
+      "undone_text": "Taken back before the next step started.",
+      "correction": "Correction: {title}"
     },
     "files": {
       "auftrag.pdf": "Assessment order",

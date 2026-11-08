@@ -1,17 +1,37 @@
-// The menu: the three views under the name, groups by urgency, drop-in and the person at the bottom. Left or right.
+// The rail (design hand-back, 2026-11-05): the mark and name, search, Home, the workspaces, the admin pages, and the
+// person at the bottom with everything that is about you (theme, language, sound, side, the demo's people and reset).
+// It carries what the old menu carried; only the places changed. On a phone it slides in over the page.
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut } from "../api";
+import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut, type CaseCard } from "../api";
 import type { Route } from "../App";
 import type { words } from "../words";
-import { Book, Close, ListsIcon, Spark, Globe, MenuIcon, Moon, Restart, Sun, Swap, Worlds, ViewCases, ViewBoard, ViewList } from "./Icons";
-import { useState } from "react";
+import { Book, TeamIcon, SetupIcon, RulebookIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
 import { setSound, soundOn, chime, paper as paperSound } from "../moments";
 
-export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme }:
-  { config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
-    onFresh: (world?: string) => void; onPerson: (person: string) => void; onLang: (lang: string) => void; w: ReturnType<typeof words>; theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void }) {
-  const [open, setOpen] = useState(false);
+type Props = {
+  config: ConfigView; me: MeOut; route: Route; go: (p: string) => void; side: "left" | "right"; onSwap: () => void; onSignOut: () => void;
+  onFresh: (world?: string) => void; onPerson: (person: string) => void; onLang: (lang: string) => void; w: ReturnType<typeof words>;
+  theme: "light" | "dark" | "system"; onTheme: (t: "light" | "dark" | "system") => void; open: boolean; onClose: () => void;
+};
+
+/** Two letters for a name of two words or a long one ("Chris Moser" → CM, "designer" → DE); a short word gets its first ("You" → Y). */
+const initials = (name?: string | null) => {
+  const parts = (name ?? "?").trim().split(/\s+/);
+  if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return (parts[0].length <= 3 ? parts[0][0] : parts[0].slice(0, 2)).toUpperCase();
+};
+
+export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme, open, onClose }: Props) {
+  const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
+  const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
+  const mine = counts.get("you") ?? 0;
+  const everywhere = mine + (me.places ?? []).filter((p) => !p.current).reduce((n, p) => n + (p.count ?? 0), 0);   // Home gathers every workspace
+  const [pop, setPop] = useState(false);
   const [sound, setSoundState] = useState(soundOn());
+  const goClose = (p: string) => { setPop(false); onClose(); go(p); };
+
+  // a new case, as the old menu offered it: the domain's create spec, the value lists it asks for
   const create = (config.theme as { create?: { label?: string; roles?: string[]; meta?: Record<string, unknown> } }).create;
   const mayCreate = !!create && (create.roles ?? []).some((r) => me.roles.includes(r));
   const [making, setMaking] = useState(false);
@@ -19,8 +39,8 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const [madeError, setMadeError] = useState<string | null>(null);
   const asking = (config.lists ?? []).filter((l) => l.on_create && l.entries.some((e) => e.status !== "retired"));
   const [values, setValues] = useState<Record<string, string>>({});
-  // what the domain sets on its own when nothing is chosen (theme.create: its label, its meta) — shown as the choice, not as "choose"
   const defaults: Record<string, string> = { ...Object.fromEntries(Object.entries(create?.meta ?? {}).map(([k, v]) => [k, String(v)])), ...(create?.label ? { label: create.label } : {}) };
+  const labelWord = create?.label ? ((config.words as { labels?: Record<string, string> }).labels?.[create.label] ?? create.label) : "";
   const mailDrop = !!(config.theme as { mail_drop?: boolean }).mail_drop && me.roles.includes("operator");
   const dropMail = async (f: File | undefined) => {
     if (!f) return;
@@ -32,76 +52,55 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       paperSound(); goClose(`/case/${encodeURIComponent(j.id)}`);
     } catch (e) { setMadeError(String((e as Error).message)); }
   };
-  const labelWord = create?.label ? ((config.words as { labels?: Record<string, string> }).labels?.[create.label] ?? create.label) : "";
-  const goClose = (p: string) => { setOpen(false); go(p); };
+
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const humans = config.people.filter((p) => p.kind === "human");
-  const otherWorlds = me.worlds.filter((x) => x !== me.world);
-  const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
-  const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
-  const agent = config.people.find((p) => p.kind === "agent")?.name ?? "Claude";
-  const current = route.name === "group" ? route.key : route.name === "case" && route.group ? route.group : route.name === "home" ? "you" : null;
-  const view = route.name === "board" ? "board" : route.name === "list" ? "list" : "cases";
+  const places = me.places ?? [];
+  const inWorkspace = route.name === "group" || route.name === "case" || route.name === "board" || route.name === "list";
+  const roleWord = (r: string) => ((config.words as { roles?: Record<string, string> }).roles?.[r] ?? r);
+  const resettable = !!(config.theme as { resettable?: boolean }).resettable;
+  const reset = async () => {
+    setPop(false);
+    if (!resettable) { onFresh(); return; }
+    if (!window.confirm(w.resetConfirm)) return;
+    const r = await fetch(BASE + "/api/demo/reset", { method: "POST", credentials: "same-origin" });
+    if (r.ok) window.location.href = BASE + "/"; else window.alert(`${w.resetFailed} (${r.status})`);
+  };
+
   return (
-    <nav className={`menu${open ? " open" : ""}`} aria-label={w.menu}>
-      <button type="button" className={`nav-row phone-only${route.name === "home" ? " on" : ""}`} data-help-skip="phone copy of cf.groups" onClick={() => goClose("/")}>
-        <span>{(config.groups.find((g) => g.key === "you")?.word) ?? w.yourMove}</span>
-        {(counts.get("you") ?? 0) > 0 ? <span className="badge">{counts.get("you")}</span> : null}
-      </button>
-      <button type="button" className="drop-in phone-only" data-help-skip="phone copy of cf.drop-in" onClick={() => { if (mayCreate) { setOpen(true); setMaking(true); } else goClose("/"); }} aria-label={mayCreate ? w.newCase(labelWord) : w.dropIn}>+</button>
-      <button type="button" className="nav-row phone-only" data-help-skip="opens this menu on a phone" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? <Close /> : <MenuIcon />}<span style={{ marginLeft: 8 }}>{w.menu}</span></button>
-      <div className="sheet">
-      {me.shell && (
-        <a className="nav-row quiet shell-row" data-help="cf.back" href={me.shell} title={w.backToShell}><span>← {w.backToShell}</span></a>
-      )}
-      <div className="menu-head">
-        <div className={`brand${config.product.length > 11 ? " long" : ""}`}>
-          <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><path d="M1 4h8l2 3h14v14H1z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
-          <span>{config.product}</span>
-        </div>
-        <button type="button" className="swap" onClick={onSwap} aria-label={w.switchHand} title={w.switchHand}><Swap /></button>
-      </div>
-      <div className="views" role="tablist" aria-label={w.views} data-help="cf.views">
-        <button type="button" role="tab" aria-selected={view === "cases"} className={`view${view === "cases" ? " on" : ""}`} onClick={() => goClose("/")} title={w.casesView}><ViewCases /><span>{w.casesView}</span></button>
-        <button type="button" role="tab" aria-selected={view === "board"} className={`view${view === "board" ? " on" : ""}`} onClick={() => goClose("/board")} title={w.board}><ViewBoard /><span>{w.board}</span></button>
-        <button type="button" role="tab" aria-selected={view === "list"} className={`view${view === "list" ? " on" : ""}`} onClick={() => goClose("/list")} title={w.stacked}><ViewList /><span>{w.stacked}</span></button>
-      </div>
-      {config.groups.map((g) => {
-        const n = counts.get(g.key) ?? 0;
-        if (n === 0 && g.key !== "you") return null;           // an empty group says "nothing ever happens here"; only your own stays, even at zero
-        const phone = g.key === "you";
-        return (
-          <button key={g.key} type="button" className={`nav-row${current === g.key ? " on" : ""}${phone ? " phone" : ""}`} {...(g.key === "you" ? { "data-help": "cf.groups" } : {})}
-                  onClick={() => goClose(g.key === "you" ? "/" : `/group/${g.key}`)}>
-            <span>{g.word}</span>
-            {g.key === "you" ? (n > 0 ? <span className="badge">{n}</span> : <span className="n">0</span>) : <span className="n">{n}</span>}
-          </button>
-        );
-      })}
-      <div className="rule" />
-      <button type="button" className={`nav-row quiet${route.name === "signals" ? " on" : ""}`} onClick={() => goClose("/signals")} data-help="cf.patterns">
-        <span>{w.signals}</span><span className="n"><Spark /></span>
-      </button>
-      {(config.theme as { canon?: boolean }).canon && (
-        <button type="button" className={`nav-row quiet${route.name === "house" ? " on" : ""}`} onClick={() => goClose("/kanon")} data-help="cf.house">
-          <span>{w.house}</span><span className="n"><Book /></span>
+    <>
+    <nav className={`cf-rail${open ? " open" : ""}`} aria-label={w.menu}>
+      <div className="rail-brand">
+        <button type="button" className="rail-home" data-help-skip="explained by cf.groups" onClick={() => goClose("/")} aria-label={`${w.brand}, ${w.home}`}>
+          <span className="rail-mark" aria-hidden="true"><i /></span>
+          <b>{w.brand}</b>
         </button>
-      )}
-      <button type="button" className={`nav-row quiet${route.name === "rules" ? " on" : ""}`} onClick={() => goClose("/rules")} data-help="cf.rules">
-        <span>{w.rules}</span><span className="n"><Book /></span>
+        {me.demo && <span className="rail-tag" title={w.fictional}>{w.demoTag}</span>}
+      </div>
+      <Search w={w} cases={(groups.data ?? []).flatMap((g) => g.cases)} go={goClose} />
+      <button type="button" className={`nav${route.name === "home" ? " on" : ""}`} data-help="cf.groups" onClick={() => goClose("/")}>
+        <HomeIcon /><span className="tx">{w.home}</span>{everywhere > 0 ? <span className="badge">{everywhere}</span> : null}
       </button>
-      <button type="button" className={`nav-row quiet${route.name === "lists" ? " on" : ""}`} onClick={() => goClose("/lists")} data-help="cf.lists">
-        <span>{w.lists}</span><span className="n"><ListsIcon /></span>
-      </button>
-      <div className="spacer" />
+
+      <div className="rail-cap" data-help="cf.workspaces">{w.workspaces}</div>
+      {places.map((p) => (
+        <button key={p.id} type="button" className={`nav${p.current && inWorkspace ? " on" : ""}`} data-help-skip="explained by cf.workspaces"
+                onClick={() => (p.current ? goClose("/group/you") : p.url ? window.location.assign(p.url) : onFresh(p.id))}>
+          <span className="sq" style={{ background: p.color || undefined }} />
+          <span className="tx">{p.name}</span>
+          {(p.current ? mine : p.count) > 0 ? <span className="n">{p.current ? mine : p.count}</span> : null}
+        </button>
+      ))}
+      {me.shell && <a className="nav quiet" data-help="cf.new-workspace" href={`${me.shell.replace(/\/?$/, "/")}workspaces/new`}><span className="tx">{w.newWorkspace}</span></a>}
+      {me.shell && <a className="nav quiet" data-help="cf.back" href={me.shell}><span className="tx">{w.allWorkspaces}</span></a>}
       {mailDrop ? (
-        <label className="drop-in mail-drop" data-help="cf.drop-in">{w.dropMail}<input type="file" accept=".eml,message/rfc822" hidden onChange={(e) => dropMail(e.target.files?.[0])} />
-          {madeError && <span className="talk-error">{madeError}</span>}</label>
+        <label className="nav quiet rail-drop" data-help="cf.drop-in"><span className="tx">{w.dropMail}</span>
+          <input type="file" accept=".eml,message/rfc822" hidden onChange={(e) => dropMail(e.target.files?.[0])} /></label>
       ) : mayCreate ? (making ? (
-        <form className="new-case" data-help="cf.new-case" onSubmit={async (e) => { e.preventDefault(); if (!name.trim()) return; try { const r = await talk.create(name.trim(), stepId("new"), values); setMaking(false); setName(""); setValues({}); setMadeError(null); goClose(`/case/${encodeURIComponent(r.id)}`); } catch (err) { setMadeError(err instanceof ApiError ? err.message : String(err)); } }}>
+        <form className="rail-new" data-help="cf.new-case" onSubmit={async (e) => { e.preventDefault(); if (!name.trim()) return; try { const r = await talk.create(name.trim(), stepId("new"), values); setMaking(false); setName(""); setValues({}); setMadeError(null); goClose(`/case/${encodeURIComponent(r.id)}`); } catch (err) { setMadeError(err instanceof ApiError ? err.message : String(err)); } }}>
           <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={w.newCasePlaceholder} maxLength={120} onKeyDown={(e) => { if (e.key === "Escape") setMaking(false); }} />
           {asking.map((l) => (
-            <label key={l.id} className="new-case-pick"><span>{l.word}</span>
+            <label key={l.id}><span>{l.word}</span>
               <select value={values[l.field] ?? defaults[l.field] ?? ""} onChange={(e) => setValues({ ...values, [l.field]: e.target.value })}>
                 {!defaults[l.field] && <option value="">{w.pick}</option>}
                 {l.entries.filter((x) => x.status !== "retired").map((x) => <option key={x.key} value={x.key}>{x.word}{x.status === "planned" ? ` · ${w.entryStatus("planned")}` : ""}</option>)}
@@ -109,43 +108,95 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
             </label>
           ))}
           <button type="submit" className="btn small" disabled={!name.trim()}>{w.create}</button>
-          {madeError && <span className="talk-error">{madeError}</span>}
         </form>
       ) : (
-        <button type="button" className="drop-in" onClick={() => setMaking(true)} data-help="cf.drop-in">{w.newCase(labelWord)}</button>
-      )) : create ? null : (
-        <button type="button" className="drop-in" onClick={() => goClose("/")} aria-label={w.dropIn} data-help="cf.drop-in">{w.dropIn}</button>
-      )}
-      <button type="button" className="nav-row quiet ask-row" data-help="cf.ask" onClick={() => document.querySelector<HTMLInputElement>(".ask input")?.focus()}>
-        <span>{w.askClaude(agent)}</span><span className="mono n">⌘K</span>
-      </button>
+        <button type="button" className="nav quiet" data-help="cf.drop-in" onClick={() => setMaking(true)}><span className="tx">{w.newCaseShort}</span></button>
+      )) : null}
+      {madeError && <span className="talk-error">{madeError}</span>}
 
-      {me.demo && (
-        <div className="demo-row">
-          {otherWorlds.map((x) => <button key={x} type="button" className="nav-row quiet" data-help-skip="public demo only" onClick={() => onFresh(x)}><span>{w.world(x)}</span><span className="n"><Worlds /></span></button>)}
-          <button type="button" className="nav-row quiet" data-help-skip="public demo only" onClick={() => onFresh()}><span>{w.startOver}</span><span className="n"><Restart /></span></button>
+      <div className="rail-cap">{w.admin}</div>
+      {me.team && <button type="button" className={`nav${route.name === "team" || route.name === "teamSession" ? " on" : ""}`} data-help="cf.team" onClick={() => goClose("/team")}><TeamIcon /><span className="tx">{w.team}</span></button>}
+      <button type="button" className={`nav${route.name === "rules" ? " on" : ""}`} data-help="cf.rules" onClick={() => goClose("/rules")}><RulebookIcon /><span className="tx">{w.rules}</span>{me.waiting_rules > 0 && <span className="ndot" title={w.ndotRules(me.waiting_rules)} aria-label={w.ndotRules(me.waiting_rules)} />}</button>
+      <button type="button" className={`nav${route.name === "signals" ? " on" : ""}`} data-help="cf.patterns" onClick={() => goClose("/signals")}><Pulse /><span className="tx">{w.flagged}</span>{me.waiting_signals > 0 && <span className="ndot" title={w.ndotSignals(me.waiting_signals)} aria-label={w.ndotSignals(me.waiting_signals)} />}</button>
+      {(config.theme as { canon?: boolean }).canon && (
+        <button type="button" className={`nav${route.name === "house" ? " on" : ""}`} data-help="cf.house" onClick={() => goClose("/kanon")}><Book /><span className="tx">{w.house}</span></button>
+      )}
+      <button type="button" className={`nav${route.name === "setup" ? " on" : ""}`} data-help="cf.setup" onClick={() => goClose("/setup")}><SetupIcon /><span className="tx">{w.setup}</span></button>
+
+      <button type="button" className={`me${pop ? " on" : ""}`} data-help="cf.person" aria-haspopup="true" aria-expanded={pop} onClick={() => setPop(!pop)}>
+        <span className="av">{initials(me.name)}</span>
+        <span className="me-tx"><span className="me-name">{me.name}</span><span className="me-role">{me.roles.map(roleWord).join(", ")}</span></span>
+        <Updown />
+      </button>
+    </nav>
+    {open && <button type="button" className="rail-scrim" aria-label={w.close} onClick={onClose} />}
+    {pop && (
+      <>
+        <button type="button" className="pop-scrim" aria-label={w.close} onClick={() => setPop(false)} />
+        <div className={`me-pop ${side}`} role="menu">
+          <div className="me-head"><span className="av lg">{initials(me.name)}</span>
+            <span><b>{me.name}</b><small>{me.roles.map(roleWord).join(", ")}</small></span></div>
+          {me.demo && humans.length > 1 && (
+            <label className="pop-field"><span>{w.signIn}</span>
+              <select value={me.person ?? ""} onChange={(e) => { setPop(false); onPerson(e.target.value); }}>
+                {humans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select></label>
+          )}
+          <div className="pop-label">{w.theme}</div>
+          <div className="seg" role="group" aria-label={w.theme} data-help="cf.theme">
+            {(["light", "dark", "system"] as const).map((t) => (
+              <button key={t} type="button" className={theme === t ? "on" : ""} onClick={() => onTheme(t)}>{t === "light" ? w.light : t === "dark" ? w.dark : "System"}</button>
+            ))}
+          </div>
+          <hr />
+          <button type="button" className="pop-row" data-help="cf.language" lang={config.lang === "de" ? "en" : "de"} onClick={() => { setPop(false); onLang(config.lang === "de" ? "en" : "de"); }}><Globe /><span>{w.otherLang}</span></button>
+          <button type="button" className="pop-row" data-help="cf.sound" aria-pressed={sound} onClick={() => { setSound(!sound); setSoundState(!sound); if (!sound) setTimeout(() => chime(), 30); }}>
+            <Speaker on={sound} /><span>{sound ? w.soundOn : w.soundOff}</span></button>
+          <button type="button" className="pop-row" data-help-skip="explained by cf.person" onClick={() => { setPop(false); onSwap(); }}><Swap /><span>{side === "left" ? w.sideRight : w.sideLeft}</span></button>
+          {me.demo && <button type="button" className="pop-row" data-help-skip="public demo only" onClick={reset}><Restart /><span>{resettable ? w.resetData : w.startOver}</span></button>}
+          {me.shell && <a className="pop-row" data-help-skip="explained by cf.back" href={me.shell}><Close /><span>{w.backToShell}</span></a>}
+          {!me.demo && <button type="button" className="pop-row" data-help-skip="explained by cf.person" onClick={() => { setPop(false); onSignOut(); }}><Close /><span>{w.signOut}</span></button>}
+        </div>
+      </>
+    )}
+    </>
+  );
+}
+
+// Search: the cases this person can see, by title, number, sender or reference. Ctrl/Cmd+K opens it from anywhere.
+function Search({ w, cases, go }: { w: ReturnType<typeof words>; cases: CaseCard[]; go: (p: string) => void }) {
+  const [q, setQ] = useState("");
+  const [on, setOn] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && !document.querySelector(".ask input:focus")) { e.preventDefault(); setOn(true); setTimeout(() => ref.current?.focus(), 0); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const hits = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return [];
+    const seen = new Set<string>();
+    return cases.filter((c) => !seen.has(c.id) && seen.add(c.id) && [c.title, c.number, c.party, c.external_id, c.label_word].some((x) => (x ?? "").toLowerCase().includes(t))).slice(0, 8);
+  }, [q, cases]);
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  return (
+    <div className="rail-search" data-help="cf.search">
+      <SearchIcon />
+      <input ref={ref} value={q} placeholder={w.search} onFocus={() => setOn(true)} onBlur={() => setTimeout(() => setOn(false), 150)}
+             onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); ref.current?.blur(); } if (e.key === "Enter" && hits[0]) { setQ(""); go(`/case/${encodeURIComponent(hits[0].id)}`); } }} />
+      {!q && <span className="kbd">{mac ? "⌘K" : "Ctrl K"}</span>}
+      {on && q.trim() && (
+        <div className="search-pop" role="listbox">
+          {hits.length === 0 ? <p className="search-none">{w.searchNone}</p> : hits.map((c) => (
+            <button key={c.id} type="button" role="option" onMouseDown={(e) => e.preventDefault()} onClick={() => { setQ(""); go(`/case/${encodeURIComponent(c.id)}`); }}>
+              <span className="sq" style={{ background: c.tint || undefined }} /><b>{c.title}</b><small>{c.party || c.number}</small>
+            </button>
+          ))}
         </div>
       )}
-      <button type="button" className="nav-row quiet lang-row" data-help="cf.language" onClick={() => onLang(config.lang === "de" ? "en" : "de")} title={w.language} lang={config.lang === "de" ? "en" : "de"}>
-        <span>{w.otherLang}</span><span className="n"><Globe /></span>
-      </button>
-      <button type="button" className="nav-row quiet theme-row" data-help="cf.theme" onClick={() => onTheme(dark ? "light" : "dark")} aria-label={w.theme}>
-        <span>{dark ? w.light : w.dark}</span><span className="n">{dark ? <Sun /> : <Moon />}</span>
-      </button>
-      <button type="button" className="nav-row quiet sound-row" data-help="cf.sound" aria-pressed={sound} onClick={() => { setSound(!sound); setSoundState(!sound); if (!sound) setTimeout(() => chime(), 30); }}>
-        <span>{sound ? w.soundOn : w.soundOff}</span><span className="n"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" />{sound ? <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /> : <path d="M17 9l5 6M22 9l-5 6" />}</svg></span>
-      </button>
-      <div className="who">
-        <span className="avatar">{(me.name ?? "?").slice(0, 2).toUpperCase()}</span>
-        {me.demo && humans.length > 1 ? (
-          <select className="person-switch" value={me.person ?? ""} onChange={(e) => onPerson(e.target.value)} aria-label={w.signIn}>
-            {humans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        ) : <span>{me.name}</span>}
-        {!me.demo && <button type="button" className="btn link small" style={{ marginLeft: "auto", padding: 0 }} onClick={onSignOut}>{w.signOut}</button>}
-      </div>
-      </div>
-      {open && <button type="button" className="scrim" aria-label={w.menu} onClick={() => setOpen(false)} />}
-    </nav>
+    </div>
   );
 }
