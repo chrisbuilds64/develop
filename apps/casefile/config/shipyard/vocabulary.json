@@ -20,7 +20,7 @@
       "10-task": "Auftrag beschrieben, wartet auf Bestätigung",
       "20-build": "in Arbeit auf einem Branch",
       "30-checks": "Pull Request offen, Prüfungen laufen",
-      "40-approval": "geprüft, wartet auf Merge",
+      "40-approval": "geprüft · zuerst den Pull Request auf GitHub mergen, dann hier bestätigen",
       "50-release": "gemergt, Release wird getaggt",
       "60-entw": "in ENTW, wartet auf Abnahme",
       "70-test": "in TEST, wartet auf Freigabe PROD",
@@ -52,13 +52,15 @@
       "accept_task": "Auftrag bestätigen",
       "open_pr": "Pull Request eröffnet",
       "checks_green": "Prüfungen grün",
-      "merge": "Mergen",
+      "merge": "Auf GitHub gemergt",
       "send_back": "Zurück in die Umsetzung",
       "deploy_entw": "Auf ENTW gebracht",
       "approve_test": "ENTW abnehmen, für TEST freigeben",
       "approve_prod": "TEST abnehmen, für PROD freigeben",
       "close": "Abschließen",
-      "checks_red": "Prüfungen rot, zurück in die Umsetzung"
+      "checks_red": "Prüfungen rot, zurück in die Umsetzung",
+      "retry_release": "Release erneut anstoßen",
+      "deploy_refused": "Einspielen abgelehnt, zurück in die Stufe davor"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -125,7 +127,7 @@
       "10-task": "task written, waiting for confirmation",
       "20-build": "in progress on a branch",
       "30-checks": "pull request open, checks running",
-      "40-approval": "checked, waiting for the merge",
+      "40-approval": "checked · merge the pull request on GitHub first, then confirm here",
       "50-release": "merged, release being tagged",
       "60-entw": "in ENTW, waiting for acceptance",
       "70-test": "in TEST, waiting for PROD",
@@ -157,13 +159,15 @@
       "accept_task": "Confirm the task",
       "open_pr": "Pull request opened",
       "checks_green": "Checks green",
-      "merge": "Merge",
+      "merge": "Merged on GitHub",
       "send_back": "Back to the build",
       "deploy_entw": "Deployed to ENTW",
       "approve_test": "Accept ENTW, release to TEST",
       "approve_prod": "Accept TEST, release to PROD",
       "close": "Close",
-      "checks_red": "Checks red, back to the build"
+      "checks_red": "Checks red, back to the build",
+      "retry_release": "Release again",
+      "deploy_refused": "Deploy refused, back to the stage before"
     },
     "reasons": {
       "running": "running",
