@@ -12,7 +12,6 @@ is configuration, not code.
 |---|---|
 | `apps/casefile/` | The core. A case is a folder, its stage folder is its status, one core writes on everyone's behalf. Also the web surface (`web/`) and one configuration per domain (`config/<domain>/`). |
 | `apps/cockpit/` | The surface over the core: one sign-in, workspaces, accounts with their own AI subscription, an agent panel beside every case. |
-| `apps/gatehouse/` | Standalone canon elicitation. Since 2026-10-25 Gatehouse runs as a casefile application (`config/gatehouse`, ADR-021); this app stays until that path has carried a real run. |
 | `apps/mailsort/` | Mail pre-sorting. Exploration, moves nothing yet. |
 | `services/oracle/` | Oracle Database Free: schema, migrations, seed data for the Oracle demo. |
 | `infra/pressroom/` | `pressroom-env`: development, test and production on one server, described in one file. |
@@ -20,7 +19,7 @@ is configuration, not code.
 | `sandbox/` | The whole system offline on one Mac, with fictional sample worlds. |
 | `tools/` | Guards the checks run: design values only go down, the core imports no adapter or web framework. |
 | `docs/adr/` | Architecture decisions, one home for all. |
-| `docs/runbooks/`, `docs/requirements/` | Operations and the requirements chain: a case's task → requirement lines (REQ) → decision record (ADR) → pull request. |
+| `docs/requirements/`, `docs/adr/`, `docs/GATE-CHECKLIST.md` | The requirements chain: a case's task → requirement lines (REQ) → decision record (ADR) → pull request → gate protocol. Operations runbooks live beside their code (`infra/pressroom/README.md`). |
 
 ## Run it
 

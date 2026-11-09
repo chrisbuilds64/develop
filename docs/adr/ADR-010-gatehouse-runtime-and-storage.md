@@ -1,6 +1,6 @@
 # ADR-010: Gatehouse Runtime and Storage
 
-**Status:** Accepted
+**Status:** Superseded by ADR-021 (2026-11-09). The standalone Gatehouse this decided for is retired; it is kept in tag `archive/2026-11-09-standalone-gatehouse`.
 **Date:** 2026-08-22
 
 ---

@@ -1,0 +1,30 @@
+[pack]
+path = "/Users/christianmoser/ChrisBuilds64/products/base-build/kit/packs/software-de"
+
+[instance]
+path = "/Users/christianmoser/ChrisBuilds64/products/base-build/engagements/2026-08-22_chrisbuilds64-echtlauf"
+
+[model]
+default = "stark"
+
+[model.tasks]
+followup = "schnell"
+
+[model.profiles.keins]
+adapter = "echo"
+destination = "kein Modell angebunden"
+local = true
+
+[model.profiles.stark]
+adapter = "anthropic"
+model = "claude-opus-5"
+destination = "Anthropic API"
+
+[model.profiles.schnell]
+adapter = "anthropic"
+model = "claude-haiku-4-5"
+destination = "Anthropic API"
+
+[server]
+host = "127.0.0.1"
+port = 8100
