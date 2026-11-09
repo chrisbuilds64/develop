@@ -43,7 +43,9 @@
 {% endif %}
 <script>
 (function () { try { var u = localStorage.getItem('casefile-last'), a = document.querySelector('.app-card');
-  if (u && a && /^\/(?:[\w-]+\/)*w\/[\w-]+\/$/.test(u)) a.setAttribute('href', u); } catch (e) {} })();
+  // only a workspace of this stage: PROD (/) and ENTW (/entw) share the origin and so this storage
+  var own = a && (a.getAttribute('href') || '').replace(/w\/[\w-]+\/$/, '');
+  if (u && a && own && u.indexOf(own + 'w/') === 0 && /^w\/[\w-]+\/$/.test(u.slice(own.length))) a.setAttribute('href', u); } catch (e) {} })();
 // Who waits for you, honestly: each live workspace answers for itself (its own "your move" list); sample worlds do not count.
 (function () {
   var card = document.querySelector('.app-card');
