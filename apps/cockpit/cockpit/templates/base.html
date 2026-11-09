@@ -114,7 +114,9 @@
 <script>
 // Casefile opens where you left it: the last workspace you were in (Casefile notes it on this same origin).
 (function () { try { var u = localStorage.getItem('casefile-last'); var a = document.querySelector('a.casefile-link');
-  if (u && a && /^\/(?:[\w-]+\/)*w\/[\w-]+\/$/.test(u)) a.setAttribute('href', u); } catch (e) {} })();
+  // only a workspace of this stage: PROD (/) and ENTW (/entw) share the origin and so this storage
+  var own = a && (a.getAttribute('href') || '').replace(/w\/[\w-]+\/$/, '');
+  if (u && a && own && u.indexOf(own + 'w/') === 0 && /^w\/[\w-]+\/$/.test(u.slice(own.length))) a.setAttribute('href', u); } catch (e) {} })();
 </script>
 </nav>
 {% if user %}
