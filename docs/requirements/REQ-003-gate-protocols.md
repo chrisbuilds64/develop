@@ -38,6 +38,7 @@ before its build, and its test comes with it.
 | GP-20 | ENTW is accepted with an installation check, held by a developer: tag and commit on the stage, services active, migrations run, logs without new errors. | planned |
 | GP-21 | TEST is accepted with a business acceptance, held by the role `acceptance`, never by the change's developer; its case items are the instructions for this change. With us the role is held by the product owner in personal union or by a peer (Akhil). | planned |
 | GP-22 | PROD is closed with a production check, held by a developer: the installation check's items plus the way back. | planned |
+| GP-24 | The approval (merge) is given with a code review protocol, held by the product owner or a peer, never by the change's author: scope matches the task, a test for every requirement line, no secrets or internal names, architecture boundaries hold. The checks helper observes what it can (diff against the task, new tests, guards); the reviewer decides. | planned |
 | GP-23 | The verify helper fills observations for the items it can check and decides none. | planned |
 
 ## The database change file
