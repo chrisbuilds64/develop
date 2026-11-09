@@ -431,7 +431,8 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
 
     # 4c. a run, once
     if action and action.run and j.run is None:
-        j.run = ordering.order(store, config, j.case, stage_now, action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
+        # the helper works where the case will stand: the move below takes it there before the runner takes the order
+        j.run = ordering.order(store, config, j.case, (j.to or stage_now), action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
                                lang=j.payload.get("_lang"))
         _write_journal(store, j)
 
