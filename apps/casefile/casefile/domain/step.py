@@ -90,8 +90,9 @@ def _append_entry(store: FsStore, config: DomainConfig, case_id: str, stage: str
     return entry.id
 
 
-def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, by: str) -> StepResult:
-    """Perform one step on behalf of `by` (a person id). Never raises for a refusal; returns the reason."""
+def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, by: str, resolve=None) -> StepResult:
+    """Perform one step on behalf of `by` (a person id). Never raises for a refusal; returns the reason.
+    `resolve` reaches other application instances for `wait_for` (domain/depends.py); without it, their targets."""
     if not STEP_ID.match(req.step_id):
         return StepResult(ok=False, step_id=req.step_id, case=case_id, action=req.action, reason="step id must be 1–80 letters, digits, '-' or '_'")
     with store.lock(case_id):
@@ -125,6 +126,10 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _remind(store, config, j, case, person, req)
         if req.action == "take_back":
             return _take_back(store, config, j, case, person, req)
+        if req.action == "wait_for":
+            return _wait_for(store, config, j, case, person, req, resolve)
+        if req.action == "set_fields":
+            return _set_fields(store, config, j, case, person, req)
 
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
@@ -137,7 +142,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _refuse(store, j, f"'{req.action}' is not an action while the case stands in {case.stage}")
         if not offered(config, case, action):
             return _refuse(store, j, f"'{req.action}' is not offered for this case: nothing calls for it")
-        actor = action.actor or stage.turn
+        from .turn import actor_of
+        actor = actor_of(action.actor, case) or actor_of(stage.turn, case)
         if not config.may_act(person.id, actor) and not config.may_act(person.id, "role:operator"):
             return _refuse(store, j, f"{person.name} may not {req.action} here; it is {actor}'s move")
         missing = missing_for(config, case, action)
@@ -210,6 +216,63 @@ def _remind(store: FsStore, config: DomainConfig, j: Journal, case, person, req:
     _write_journal(store, j)
     j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "for": names, "step": j.step_id,
                                                                "title": config.word("texts", "reminder", None, "Reminder")[:120], "text": text})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _wait_for(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest, resolve) -> StepResult:
+    """Set what the case waits for (REQ-005 DP-01, DP-04, DP-05). The list replaces the old one; an empty list ends the
+    waiting. The case does not move; the thread says what changed."""
+    from . import depends
+    raw = req.payload.get("refs", [])
+    if not isinstance(raw, list):
+        return _refuse(store, j, "refs must be a list of case references")
+    refs = list(dict.fromkeys(str(r).strip() for r in raw if str(r).strip()))
+    resolve = resolve or depends.resolver_for(store, config)
+    refusal = depends.check(store, j.case, refs, resolve)
+    if refusal:
+        return _refuse(store, j, refusal)
+    before = depends.refs_of(case.meta)
+    if refs == before:
+        return _refuse(store, j, "nothing changed")
+    _write_journal(store, j)
+    store.write_json(f"{case.stage}/{j.case}/meta.json", {**{k: v for k, v in case.meta.items() if k != depends.KEY}, **({depends.KEY: refs} if refs else {})})
+    text = (config.word("texts", "waits_for", None, "Waits for {refs}.").format(refs=", ".join(refs)) if refs
+            else config.word("texts", "waits_for_nothing", None, "Waits for nothing any more."))
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                                               "title": config.word("texts", "dependencies", None, "Dependencies")[:120], "text": text})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _set_fields(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Change declared fields of a case (domain/fields.py): who may move the case may change them. The case does not
+    move; the thread names every change, old → new."""
+    from . import fields as declared
+    from .turn import actor_of
+    stage = config.stage(case.stage)
+    mover = actor_of(stage.turn, case) if stage else None
+    if not (config.may_act(person.id, "role:operator") or (mover and config.may_act(person.id, mover))):
+        return _refuse(store, j, f"{person.name} may not change this case")
+    raw = req.payload.get("fields")
+    if not isinstance(raw, dict) or not raw:
+        return _refuse(store, j, "fields must name at least one field and its value")
+    try:
+        values = declared.validate(config, raw)
+    except declared.FieldError as exc:
+        return _refuse(store, j, str(exc))
+    changed = {k: v for k, v in values.items() if str(case.meta.get(k) or "") != v}
+    if not changed:
+        return _refuse(store, j, "nothing changed")
+    _write_journal(store, j)
+    meta = {k: v for k, v in case.meta.items() if k not in changed or changed[k] != ""}
+    meta.update({k: v for k, v in changed.items() if v != ""})
+    store.write_json(f"{case.stage}/{j.case}/meta.json", meta)
+    lines = [f"{config.word('fields', k, None, k)}: {case.meta.get(k) or '—'} → {v or '—'}" for k, v in changed.items()]
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                                               "title": config.word("texts", "fields_changed", None, "Changed")[:120], "text": "\n".join(lines)})
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)

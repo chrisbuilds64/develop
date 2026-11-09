@@ -1849,10 +1849,13 @@ def create_app(settings: Settings) -> FastAPI:
         title = body.title.strip()[:120]
         if not title:
             return _refuse(Exception(c.config.word("texts", "create_empty", c.lang, "Give it a name.")))
+        from ..domain import fields as declared
         from ..domain import lists as chosen
+        own, listed = declared.split(c.config, body.values)            # declared fields (domain/fields.py) and the lists that ask on creation
         try:
-            values = chosen.validate_choice(c.config.lists, body.values)       # what the lists that ask for it gave: field → key
-        except chosen.ListError as exc:
+            values = chosen.validate_choice(c.config.lists, listed)     # what the lists that ask for it gave: field → key
+            values.update({k: v for k, v in declared.validate(c.config, own).items() if v != ""})
+        except (chosen.ListError, declared.FieldError) as exc:
             return _refuse(exc)
         label = values.get("label") or body.label or create.get("label", "X")
         first = create.get("stage") or next((s.folder for s in c.config.stages if s.group != "archive"), None)   # where a new case starts
@@ -1865,7 +1868,7 @@ def create_app(settings: Settings) -> FastAPI:
         from ..domain import numbering
         number = numbering.next_number(c.store, label, create.get("number"), values)   # the domain's own rule: in a year, in a series, or a placeholder
         slug = re.sub(r"[^a-z0-9]+", "-", title.lower().translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}))).strip("-")[:40] or "akte"
-        cid = f"{label}-{number}-{slug}"
+        cid = f"{label}-{number}-{slug}" if create.get("slug", True) else f"{label}-{number}"   # `slug: false`: the number alone is the name (the worklist's SYS-147)
         try:
             c.store.mkcase(first, cid)
         except StoreError as exc:
@@ -1942,6 +1945,7 @@ def app_from_env() -> FastAPI:
         return create_app(Settings(secret=secret, web_dist=web, demo=True, samples_dir=here / "casefile" / "demo" / "samples",
                                    replies_dir=here / "casefile" / "demo" / "replies",
                                    worlds={name: w for name, w in {         # in the design's order; a world not built yet is left out
+                                       "worklist": World(config_dir=here / "config" / "worklist", template=worlds_dir / "worklist", person="du", lang="de"),
                                        "inbox": World(config_dir=here / "config" / "posteingang", template=worlds_dir / "inbox", person="du", lang="de",
                                                       targets={"schadenakte": "claims", "angebot": "quotes", "pressroom": "pressroom"}),
                                        "quotes": World(config_dir=here / "config" / "angebot", template=worlds_dir / "quotes", person="du", lang="de"),

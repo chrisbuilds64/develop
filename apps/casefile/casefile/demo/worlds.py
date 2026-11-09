@@ -796,9 +796,63 @@ def build_quotes(root: Path) -> Path:
     return root
 
 
+WORKLIST_STAGES = ["10-backlog", "20-next", "30-doing", "40-waiting", "90-done"]
+WORKLIST_PEOPLE = {"people": [
+    {"id": "du", "name": "Du", "name_en": "You", "kind": "human", "roles": ["operator"]},
+    {"id": "kim", "name": "Kim", "kind": "human", "roles": ["operator"]},
+    {"id": "helfer", "name": "Helfer", "name_en": "Helper", "kind": "agent", "roles": ["operator"]}]}
+
+
+def build_worklist(root: Path) -> Path:
+    """The entry to casefile (REQ-005 EX-01): every concept on a handful of invented to-dos. An item is a case; it stands in
+    a stage; it is somebody's move (its assignee); its area and priority come from value lists; it may carry a document;
+    it may wait for other items; it may come from somebody else. Every other application adds words, required
+    documents and gates to exactly this."""
+    cfg = CONFIG / "worklist"
+    root = _root(root, cfg, WORKLIST_STAGES)
+    (root / "people.json").write_text(json.dumps(WORKLIST_PEOPLE, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    def item(stage, cid, title, en, review, files=None, **meta):
+        label, number = cid.split("-", 1)
+        _case(root, stage, cid, {"label": label, "number": number, "title": title, "created": meta.pop("created", _stamp(6)[:10]),
+                                 "created_by": meta.pop("created_by", "du"), "i18n": {"en": {"title": en}}, **meta}, files, review)
+
+    item("10-backlog", "SYS-12", "Erklärvideo zur Arbeitsliste", "Explainer video for the worklist",
+         _entry(1, "Angelegt", "Du", stage="10-backlog", when=_stamp(6, 9), text="Irgendwann, nicht jetzt."), priority="low")
+    item("20-next", "INF-7", "Passwörter des Testservers tauschen", "Rotate the test server's passwords",
+         _entry(1, "Angelegt", "Helfer", stage="10-backlog", when=_stamp(3, 8), text="Beim Prüflauf gefunden: drei Standardpasswörter.") +
+         _entry(2, "Als Nächstes", "Du", status="info", stage="10-backlog", when=_stamp(2, 11), frm="10-backlog", to="20-next", step="demo-w1"),
+         assignee="du", due=(dt.date.today() + dt.timedelta(days=3)).isoformat(), priority="high", origin_kind="audit",
+         origin_ref="Prüflauf vom Montag", created_by="helfer")                      # the helper created it, you hold it
+    item("30-doing", "CNT-21", "Beitrag über Abhängigkeiten", "A piece on dependencies",
+         _entry(1, "Angelegt", "Du", stage="10-backlog", when=_stamp(5, 9), text="Warum eine Akte auf eine andere warten darf.") +
+         _entry(2, "Anfangen", "Du", stage="20-next", when=_stamp(1, 10), frm="20-next", to="30-doing", step="demo-w2") +
+         _entry(3, "Abgelegt: Entwurf", "Du", stage="30-doing", when=_stamp(0, 9), files=["entwurf.md"], step="demo-w3", text="Erste Fassung."),
+         {"entwurf.md": "# Wenn eine Akte wartet\n\nFiktiver Entwurf. Eine Akte darf auf andere warten und zeigt, worauf.\n"},
+         assignee="du", priority="medium")
+    item("90-done", "INF-6", "Datensicherung zurückspielen und prüfen", "Restore and check the backup",
+         _entry(1, "Angelegt", "Kim", stage="10-backlog", when=_stamp(9, 9)) +
+         _entry(2, "Erledigt", "Kim", status="approved", stage="30-doing", when=_stamp(1, 16), frm="30-doing", to="90-done", step="demo-w4"),
+         assignee="kim", priority="high", created_by="kim")
+    item("40-waiting", "EVT-4", "Folien für den Vortrag", "Slides for the talk",
+         _entry(1, "Angelegt", "Kim", stage="10-backlog", when=_stamp(7, 9)) +
+         _entry(2, "Abhängigkeiten", "Kim", stage="40-waiting", when=_stamp(2, 9), step="demo-w5", text="Wartet auf INF-6, CNT-21."),
+         assignee="kim", due=(dt.date.today() + dt.timedelta(days=8)).isoformat(), priority="high", created_by="kim",
+         waitsFor=["INF-6", "CNT-21"])                                             # one done, one open: still waiting
+    item("20-next", "SYS-11", "Prüfprotokoll für den Server anlegen", "Write the server's check protocol",
+         _entry(1, "Angelegt", "Du", stage="10-backlog", when=_stamp(4, 9)) +
+         _entry(2, "Abhängigkeiten", "Du", stage="20-next", when=_stamp(4, 9), step="demo-w6", text="Wartet auf INF-6."),
+         assignee="du", priority="medium", waitsFor=["INF-6"])                     # INF-6 is done: released, but it does not move by itself
+    item("40-waiting", "MKT-3", "Rückfrage an die Druckerei", "Question to the print shop",
+         _entry(1, "Übergeben von Kim", "Kim", stage="40-waiting", when=_stamp(1, 14), text="Kannst du das übernehmen? Ich bin ab morgen weg."),
+         assignee="du", priority="low", origin_kind="other", origin_ref="übergeben von Kim, MKT-2", created_by="kim")
+    return root
+
+
 if __name__ == "__main__":
     import sys
     target = Path(sys.argv[1]).expanduser()
+    build_worklist(target / "worklist")
     build_inbox(target / "inbox")
     build_quotes(target / "quotes")
     build_claims(target / "claims")

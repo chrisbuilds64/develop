@@ -1,0 +1,56 @@
+{
+  "name": "Worklist",
+  "app": {
+    "icon": "check",
+    "color": "#0f766e"
+  },
+  "lang": "en",
+  "accent": "your-move",
+  "covers": {
+    "by": "label",
+    "colors": {
+      "CNT": "#2f6fed",
+      "CL": "#7c3aed",
+      "EVT": "#e0a52a",
+      "INF": "#c62828",
+      "MKT": "#db2777",
+      "SYS": "#0f766e",
+      "BUCH": "#92400e",
+      "DSG": "#475569",
+      "HW": "#57534e",
+      "TI": "#15803d"
+    },
+    "fallback": "#5a6270"
+  },
+  "create": {
+    "$comment": "An item starts in the backlog. Its number counts within its area and is its whole name: SYS-147 (slug false).",
+    "label": "SYS",
+    "roles": [
+      "operator"
+    ],
+    "stage": "10-backlog",
+    "number": [
+      "{seq}"
+    ],
+    "slug": false,
+    "meta": {}
+  },
+  "fields": {
+    "$comment": "What a member may set on an item (domain/fields.py). The creator is the core's created_by.",
+    "assignee": {
+      "kind": "person"
+    },
+    "due": {
+      "kind": "date"
+    },
+    "priority": {
+      "list": "priority"
+    },
+    "origin_kind": {
+      "list": "origin"
+    },
+    "origin_ref": {
+      "kind": "text"
+    }
+  }
+}
