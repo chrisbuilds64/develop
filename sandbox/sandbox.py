@@ -4,7 +4,7 @@
     python3 sandbox/sandbox.py setup      once (needs the network): Python environment, the web surface, a headless browser
     python3 sandbox/sandbox.py up         start: http://127.0.0.1:8200, sign in as designer / sandbox-local; the surface rebuilds on save
     python3 sandbox/sandbox.py reset      every workspace back to its sample world
-    python3 sandbox/sandbox.py check      the design guard, then every sample flow headless; screenshots per step in sandbox/.state/check/
+    python3 sandbox/sandbox.py check      the design guard, then every sample flow and walk headless; screenshots per step in sandbox/.state/check/
 
 The worlds in `sandbox/worlds/` are exported from the private demo builder (`demo.py sandbox`), with a name scan as the gate.
 The PressRoom here is casefile's built-in fictional one. Nothing in this folder talks to a server; `.state/` is yours to break.
@@ -182,6 +182,12 @@ def up() -> None:
 
 # ----------------------------------------------------------------------------- check
 
+# surface behaviour no demo flow presses, walked on its own after the flows: id → script in web/walks, workspace
+WALKS = [
+    ("note-editor", "walks/note-editor-shot.mjs", "posteingang-muster"),   # REQ-001 S-09
+]
+
+
 def flows() -> list[dict]:
     seen: dict[str, dict] = {}
     for f in sorted(WORLDS.glob("*/_ablaeufe/*.json")):
@@ -246,6 +252,15 @@ def check(only: list[str]) -> int:
             ok = r.returncode == 0 and tail == "clean"
             results.append((f["id"], ok, "" if ok else (r.stdout + r.stderr).strip().splitlines()[-3:]))
             print(f"{'green' if ok else 'RED  '}  {f['suite']['id']:10} {f['id']:24} {round(time.time() - t0):>4} s", flush=True)
+        for wid, script, ws in WALKS:
+            if only and wid not in only:
+                continue
+            t0 = time.time()
+            r = subprocess.run(["node", script, f"http://127.0.0.1:{port}", str(out / wid), ws], cwd=WEB, capture_output=True, text=True)
+            tail = (r.stdout.strip().splitlines() or ["(no output)"])[-1]
+            ok = r.returncode == 0 and tail == "clean"
+            results.append((wid, ok, "" if ok else (r.stdout + r.stderr).strip().splitlines()[-3:]))
+            print(f"{'green' if ok else 'RED  '}  {'walk':10} {wid:24} {round(time.time() - t0):>4} s", flush=True)
     finally:
         server.terminate()
     for fid, ok, why in results:
