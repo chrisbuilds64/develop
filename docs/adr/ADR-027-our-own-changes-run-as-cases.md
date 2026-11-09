@@ -1,6 +1,6 @@
 # ADR-027: Our Own Software Changes Run as Cases
 
-**Status:** Proposed (2026-11-08). Decision E5 by the product owner, the same day; this record waits for *Accepted*.
+**Status:** Accepted (2026-11-09, product owner). Decision E5 of 2026-11-08.
 **Date:** 2026-11-08
 
 ---
