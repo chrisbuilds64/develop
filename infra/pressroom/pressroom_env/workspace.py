@@ -84,7 +84,8 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     dev = d / "develop"
     if not (dev / ".git").is_dir():
         run(["git", "clone", "--no-checkout", s.develop_repo, str(dev)], user=s.runner_user)
-    run(["git", "-C", str(dev), "fetch", "--quiet", "origin", ref], user=s.runner_user)
+    # from the configured repository, not from `origin`: the checkout is the runner's, and so is its remote (ADR-028)
+    run(["git", "-C", str(dev), "fetch", "--quiet", s.develop_repo, ref], user=s.runner_user)
     run(["git", "-C", str(dev), "checkout", "--quiet", "--force", "FETCH_HEAD"], user=s.runner_user)
     commit = run(["git", "-C", str(dev), "log", "-1", "--format=%h %cd %s", "--date=short"], user=s.runner_user, quiet=True).stdout.strip()
     log.info("%s: develop at %s → %s", env.name, ref, commit)

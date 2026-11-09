@@ -12,6 +12,9 @@ It reads the case in the space's tree itself: the case must stand in the stage w
 which only the product owner's merge puts there. A space may deploy only to its own stage or below (ENTW < TEST <
 PROD), so a trial change on ENTW can never reach production.
 
+The service runs from a root-owned copy of this tool (`install-requests`), never from a checkout the runner can write,
+and asks the code host whether the tag is on main through a bare mirror of its own.
+
 Then `deploy <stage> --ref <tag>` runs as its own process. Its outcome is written next to the request (done/) and
 handed back to the case as an order for the `shipyard-verify` helper — the queue is a directory, so the report waits for a
 runner even when the deploy restarted the very runner that asked.
@@ -33,6 +36,7 @@ from .shell import OpsError, run
 log = logging.getLogger("pressroom-env")
 
 SPOOL = Path("/var/lib/pressroom/deploy-requests")
+MIRROR = Path("/var/lib/pressroom/develop.git")         # root's own view of the code host (on_main)
 ORDER = ("entw", "test", "prod")
 TAG = re.compile(r"^v\d{4}\.\d{2}\.\d{1,3}$")
 CASE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$")
@@ -72,12 +76,19 @@ def check(settings: Settings, req: dict) -> tuple[Env, Env, object, Path]:
     return settings.env(target), src, space, here
 
 
-def on_main(settings: Settings, env: Env, tag: str) -> str:
-    """The tag's commit, if it is on origin/main; raises otherwise."""
-    dev, user = str(env.dir(settings.server) / "develop"), settings.server.runner_user
-    run(["git", "-C", dev, "fetch", "--quiet", "--tags", "origin", "main"], user=user)
-    commit = run(["git", "-C", dev, "rev-parse", f"refs/tags/{tag}^{{commit}}"], user=user).stdout.strip()
-    if run(["git", "-C", dev, "merge-base", "--is-ancestor", commit, "origin/main"], user=user, check=False).returncode != 0:
+def on_main(settings: Settings, env: Env, tag: str, mirror: Path = MIRROR) -> str:
+    """The tag's commit, if it is on main of the code host; raises otherwise.
+
+    Asked of the code host itself, through a bare mirror only root can write. The stages' checkouts belong to the runner,
+    and a helper's run is the runner: there a remote URL, a ref or an object could be bent. Here nothing can."""
+    url = settings.server.develop_repo
+    if not (mirror / "HEAD").exists():
+        mirror.parent.mkdir(parents=True, exist_ok=True)
+        run(["git", "init", "--quiet", "--bare", str(mirror)])
+    git = ["git", "--git-dir", str(mirror)]
+    run([*git, "fetch", "--quiet", "--no-tags", url, f"+refs/heads/main:refs/heads/main", f"+refs/tags/{tag}:refs/tags/{tag}"])
+    commit = run([*git, "rev-parse", f"refs/tags/{tag}^{{commit}}"]).stdout.strip()
+    if run([*git, "merge-base", "--is-ancestor", commit, "refs/heads/main"], check=False).returncode != 0:
         raise OpsError(f"{tag} ({commit[:10]}) is not on main")
     return commit
 
