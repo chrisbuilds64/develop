@@ -107,13 +107,6 @@ plugin = "contextloop"
 sources = ["contextloop"]
 maturity = "running"
 
-[[module]]
-id = "gatehouse"
-plugin = "gatehouse"
-sources = ["elicitation"]
-maturity = "running"
-app_config = "gatehouse/gatehouse.toml"
-
 # --- Roles ---------------------------------------------------------------------------
 [[role]]
 id = "operator"

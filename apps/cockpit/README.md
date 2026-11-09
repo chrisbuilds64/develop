@@ -245,8 +245,8 @@ whenever it sees one); without a token the shared key is used. The run record sa
 
 ```bash
 cockpit plugin list
-cockpit plugin add ../gatehouse --link     # --link symlinks, for development
-cockpit plugin remove gatehouse
+cockpit plugin add ../my-plugin --link     # --link symlinks, for development
+cockpit plugin remove my-plugin
 ```
 
 The cockpit is the surface; **plugins** bring the mechanisms. A plugin is a directory with a
