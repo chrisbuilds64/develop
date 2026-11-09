@@ -90,8 +90,9 @@ def _append_entry(store: FsStore, config: DomainConfig, case_id: str, stage: str
     return entry.id
 
 
-def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, by: str) -> StepResult:
-    """Perform one step on behalf of `by` (a person id). Never raises for a refusal; returns the reason."""
+def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, by: str, resolve=None) -> StepResult:
+    """Perform one step on behalf of `by` (a person id). Never raises for a refusal; returns the reason.
+    `resolve` reaches other application instances for `wait_for` (domain/depends.py); without it, their targets."""
     if not STEP_ID.match(req.step_id):
         return StepResult(ok=False, step_id=req.step_id, case=case_id, action=req.action, reason="step id must be 1–80 letters, digits, '-' or '_'")
     with store.lock(case_id):
@@ -125,6 +126,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _remind(store, config, j, case, person, req)
         if req.action == "take_back":
             return _take_back(store, config, j, case, person, req)
+        if req.action == "wait_for":
+            return _wait_for(store, config, j, case, person, req, resolve)
         if req.action == "set_fields":
             return _set_fields(store, config, j, case, person, req)
 
@@ -213,6 +216,32 @@ def _remind(store: FsStore, config: DomainConfig, j: Journal, case, person, req:
     _write_journal(store, j)
     j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "for": names, "step": j.step_id,
                                                                "title": config.word("texts", "reminder", None, "Reminder")[:120], "text": text})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _wait_for(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest, resolve) -> StepResult:
+    """Set what the case waits for (REQ-005 DP-01, DP-04, DP-05). The list replaces the old one; an empty list ends the
+    waiting. The case does not move; the thread says what changed."""
+    from . import depends
+    raw = req.payload.get("refs", [])
+    if not isinstance(raw, list):
+        return _refuse(store, j, "refs must be a list of case references")
+    refs = list(dict.fromkeys(str(r).strip() for r in raw if str(r).strip()))
+    resolve = resolve or depends.resolver_for(store, config)
+    refusal = depends.check(store, j.case, refs, resolve)
+    if refusal:
+        return _refuse(store, j, refusal)
+    before = depends.refs_of(case.meta)
+    if refs == before:
+        return _refuse(store, j, "nothing changed")
+    _write_journal(store, j)
+    store.write_json(f"{case.stage}/{j.case}/meta.json", {**{k: v for k, v in case.meta.items() if k != depends.KEY}, **({depends.KEY: refs} if refs else {})})
+    text = (config.word("texts", "waits_for", None, "Waits for {refs}.").format(refs=", ".join(refs)) if refs
+            else config.word("texts", "waits_for_nothing", None, "Waits for nothing any more."))
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                                               "title": config.word("texts", "dependencies", None, "Dependencies")[:120], "text": text})
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)

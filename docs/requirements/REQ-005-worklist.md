@@ -71,7 +71,7 @@ the Context Loop's session handling.
 
 | # | Requirement | Evidence |
 |---|---|---|
-| EX-01 | A demo world "Worklist" shows every core concept on items: case, stage, whose move, value list, document, gate, hand-off, dependency, data point. | demo build test |
+| EX-01 | A demo world "Worklist" shows every core concept on items: case, stage, whose move, value list, document, gate, hand-off, dependency, data point. | `test_the_demo_world_shows_every_concept` |
 | EX-02 | A one-page explanation (German and English) maps each concept onto the worklist and names, for each other application, what it adds: words, required documents, gates. | review by the product owner |
 | EX-03 | Every stage, action and field has its word in German and English. | `test_both_languages_name_every_stage_action_and_field` |
 
