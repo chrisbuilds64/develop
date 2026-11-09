@@ -59,7 +59,8 @@
       "approve_prod": "TEST abnehmen, für PROD freigeben",
       "close": "Abschließen",
       "checks_red": "Prüfungen rot, zurück in die Umsetzung",
-      "retry_release": "Release erneut anstoßen"
+      "retry_release": "Release erneut anstoßen",
+      "deploy_refused": "Einspielen abgelehnt, zurück in die Stufe davor"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -165,7 +166,8 @@
       "approve_prod": "Accept TEST, release to PROD",
       "close": "Close",
       "checks_red": "Checks red, back to the build",
-      "retry_release": "Release again"
+      "retry_release": "Release again",
+      "deploy_refused": "Deploy refused, back to the stage before"
     },
     "reasons": {
       "running": "running",
