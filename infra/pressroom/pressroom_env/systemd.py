@@ -64,12 +64,13 @@ def install(settings: Settings, env: Env, dav_url: str) -> dict[str, str]:
         **spaces,
         names["cockpit"]: _render("cockpit.service", env=env.name, label=env.label, dir=d, mount_unit=cockpit_needs, user=s.runner_user),
         names["runner"]: _render("runner.service", env=env.name, label=env.label, dir=d, home=d / "home", ws=ws,
-                                 mount_unit=names["mount"], user=s.runner_user, data=env.mount / "flow",
+                                 mount_unit=cockpit_needs, user=s.runner_user, data=env.mount / "flow",
                                  claude=s.claude_bin, codex=s.claude_bin.parent / "codex", env_file=s.runner_env_file,
                                  pull=f"{s.shared / 'canon'},{s.shared / 'control'}", shared=s.shared,
                                  accounts=s.users_json.parent / "accounts",
                                  notes=f" --notes-repo {d / 'notes'}" if env.notes_branch else "",
-                                 agents=s.shared / "control" / "shared-context" / "agents"),
+                                 agents=s.shared / "control" / "shared-context" / "agents",
+                                 secrets=s.runner_env_file.parent / "pressroom-secrets"),
     }
     for name, text in units.items():
         p = SYSTEMD / name
@@ -131,3 +132,28 @@ def vhost_includes_snippet(settings: Settings, vhost: Path) -> bool:
     if not vhost.exists():
         return False
     return re.search(rf"^\s*include\s+{re.escape(str(settings.server.nginx_snippet))};", vhost.read_text(encoding="utf-8"), re.M) is not None
+
+
+REQUEST_UNITS = ("pressroom-deploy-requests.path", "pressroom-deploy-requests.service")
+
+
+def install_requests(settings: Settings, source: Env, config: Path, spool: Path) -> list[str]:
+    """ADR-028: the path unit that wakes the root service when a helper leaves a deploy request in the spool. The service
+    runs pressroom-env from the source stage's checkout (the stage whose spaces ask), with the same envs.toml."""
+    s = settings.server
+    spool.mkdir(parents=True, exist_ok=True)
+    run(["chown", f"{s.runner_user}:{s.runner_user}", str(spool)])
+    spool.chmod(0o750)
+    tool = source.dir(s) / "develop" / "infra" / "pressroom"
+    units = {
+        REQUEST_UNITS[0]: _render("deploy-requests.path", spool=spool),
+        REQUEST_UNITS[1]: _render("deploy-requests.service", tool=tool, config=config, spool=spool),
+    }
+    for name, text in units.items():
+        p = SYSTEMD / name
+        if not p.exists() or p.read_text(encoding="utf-8") != text:
+            p.write_text(text, encoding="utf-8"); p.chmod(0o644)
+            log.info("unit written: %s", name)
+    run(["systemctl", "daemon-reload"])
+    run(["systemctl", "enable", "--now", REQUEST_UNITS[0]])
+    return list(units)

@@ -266,8 +266,8 @@ def _seed_spaces(data: dict, env: Env, cfg: Path, s, space_ids: dict[str, int]) 
 
 
 def ensure_space_trees(settings: Settings, env: Env) -> list[str]:
-    """Every stage folder a space's application names, created through the mount (so Nextcloud knows them) when missing.
-    Runs after the mounts are up. Creates folders only; never touches a case."""
+    """Every stage folder a space's application names, created through the mount (so Nextcloud knows them) when missing,
+    and the application's run-policy.json. Runs after the mounts are up. Never touches a case."""
     s = settings.server
     cfg = env.dir(s) / "develop" / "apps" / "casefile" / "config"
     made = []
@@ -278,6 +278,15 @@ def ensure_space_trees(settings: Settings, env: Env) -> list[str]:
             if not p.is_dir():
                 run(["mkdir", "-p", str(p)], user=s.runner_user)
                 made.append(f"{sp.id}/{st['folder']}")
+        # The helpers' rights follow the code (ADR-028): the application's run-policy.json is written into the tree on
+        # every deploy, because the runner reads the policy from the tree and runs nothing without one.
+        policy = cfg / sp.application / "run-policy.json"
+        if policy.is_file():
+            target = sp.mount / "flow" / "run-policy.json"
+            text = policy.read_text(encoding="utf-8")
+            if not target.is_file() or target.read_text(encoding="utf-8") != text:
+                run(["sh", "-c", 'cat > "$1"', "sh", str(target)], user=s.runner_user, input=text)
+                made.append(f"{sp.id}/run-policy.json")
     if made:
         log.info("%s: stage folders created: %s", env.name, ", ".join(made))
     return made

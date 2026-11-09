@@ -1,0 +1,9 @@
+[Unit]
+Description=PressRoom deploy requests (ADR-028): wakes the service when a helper leaves a request
+
+[Path]
+PathExistsGlob={{spool}}/*.json
+Unit=pressroom-deploy-requests.service
+
+[Install]
+WantedBy=multi-user.target

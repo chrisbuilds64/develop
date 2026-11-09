@@ -7,7 +7,7 @@ launched, beside PressRoom, where our content is.
 **Scope:** the configuration `apps/casefile/config/shipyard/` and one live workspace on production. No new
 core code: the application is configuration only (ADR-015). Decision record: ADR-027.
 
-**Evidence** means a test in `apps/casefile/tests/test_shipyard.py`.
+**Evidence** means a test in `apps/casefile/tests/test_shipyard.py`, unless the row names another.
 
 ## The way of a change
 
@@ -38,8 +38,14 @@ The stages are the way of a change in [CONTRIBUTING.md](../../CONTRIBUTING.md), 
 | SW-07 | Every stage, action and record has its word in German and English. | `test_both_languages_name_every_stage_action_and_file` |
 | SW-08 | A new change is numbered within its year: `SW-2026-001`. | configuration (`theme.create`), numbering covered by REQ-001 C-08 |
 | SW-09 | The live workspace sits in its own folder, apart from content. | operations, not a test |
+| SW-10 | Each gate orders the helper's next stretch: the confirmed task the build, the pull request the checks, the merge and each acceptance the release (ADR-028). | `test_each_gate_orders_the_helper_for_the_next_stretch` |
+| SW-11 | Red checks send the change back to the build, with what failed. | `test_red_checks_send_the_change_back_to_the_build_with_what_failed` |
+| SW-12 | A helper makes its moves through the core, as its agent and never as a person. | `apps/casefile/tests/test_cli_step.py` |
+| SW-13 | A secret reaches only the skill whose policy names it; an agent's runs are billed to the person it belongs to. | `apps/cockpit/tests/test_runner_secrets.py` |
+| SW-14 | A deploy happens only when the case stands in the stage that deploys it, only for a tag on `main`, and never above the requesting space's stage; the outcome goes back to the case. | `infra/pressroom/tests/test_requests.py` |
 
 ## Not in this version
 
-- Pull request and check results are recorded by hand. A webhook from the code host comes later.
-- No helper builds or deploys from the case. The developer records what was done; the helper only answers questions.
+- No webhook from the code host: the checks helper waits for the checks itself.
+- Code-writing runs share the runner's user (ADR-028, *trust boundary*); a user and sandbox of their own come with the
+  security package (REQ-001 W-04).

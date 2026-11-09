@@ -57,7 +57,8 @@
       "deploy_entw": "Auf ENTW gebracht",
       "approve_test": "ENTW abnehmen, für TEST freigeben",
       "approve_prod": "TEST abnehmen, für PROD freigeben",
-      "close": "Abschließen"
+      "close": "Abschließen",
+      "checks_red": "Prüfungen rot, zurück in die Umsetzung"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -161,7 +162,8 @@
       "deploy_entw": "Deployed to ENTW",
       "approve_test": "Accept ENTW, release to TEST",
       "approve_prod": "Accept TEST, release to PROD",
-      "close": "Close"
+      "close": "Close",
+      "checks_red": "Checks red, back to the build"
     },
     "reasons": {
       "running": "running",

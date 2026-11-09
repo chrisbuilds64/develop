@@ -121,8 +121,48 @@ def test_whose_move_names_the_agent_while_it_builds_and_the_owner_at_each_gate(t
     assert moves and moves[0].actor == "role:product_owner"
     go("accept_task", "chris")
     moves = whose(reading.load(store, config, CID), config)
-    assert moves and moves[0].actor == "role:developer"
+    assert moves and moves[0].actor == "claude"                    # the confirmed task is the build's order: the helper works
     assert [p.id for p in config.persons_for("role:developer")] == ["akhil", "axel"]
+
+
+def runs(root):
+    return sorted(json.loads(f.read_text(encoding="utf-8"))["skill"] for f in (root / "_runs").glob("*.json"))
+
+
+def test_each_gate_orders_the_helper_for_the_next_stretch(tmp_path):
+    """ADR-028: the person confirms, merges and accepts; each of those orders the helper's next stretch, so a change
+    that an agent builds needs no terminal between the task and PROD."""
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "chris")
+    go("accept_task", "chris")
+    assert runs(root) == ["shipyard-build"]
+    go.deliver(root, "pr.md", "axel")
+    go("open_pr", "axel")
+    assert runs(root) == ["shipyard-build", "shipyard-checks"]
+    go.deliver(root, "checks.md", "axel")
+    assert go("checks_green", "axel").ok
+    go("merge", "chris")
+    assert runs(root) == ["shipyard-build", "shipyard-checks", "shipyard-release"]
+    go.deliver(root, "release.md", "axel")
+    go("deploy_entw", "axel")
+    go("approve_test", "chris")
+    go.deliver(root, "test.md", "axel")
+    go("approve_prod", "chris")
+    assert runs(root) == ["shipyard-build", "shipyard-checks", "shipyard-release", "shipyard-release", "shipyard-release"]
+
+
+def test_red_checks_send_the_change_back_to_the_build_with_what_failed(tmp_path):
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "chris")
+    go("accept_task", "chris")
+    go.deliver(root, "pr.md", "axel")
+    go("open_pr", "axel")
+    go.deliver(root, "checks.md", "axel")
+    assert not go("checks_red", "axel").ok                         # red says what failed
+    assert go("checks_red", "axel", note="flows: the desk does not open").ok
+    assert stage(store, config) == "20-build" and runs(root).count("shipyard-build") == 2
 
 
 def test_both_languages_name_every_stage_action_and_file(tmp_path):
