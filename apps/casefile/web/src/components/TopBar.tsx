@@ -8,6 +8,7 @@ import { BASE, type ConfigView, type MeOut } from "../api";
 import { VideoStage, type Video } from "./Explain";
 import { MenuIcon, Play, Contrast } from "./Icons";
 import { openKeys } from "./Keys";
+import { openNote } from "./NoteField";
 import type { words } from "../words";
 
 type Panel = { dock: (host: HTMLElement) => void; help: () => void };
@@ -36,7 +37,7 @@ export function TopBar({ config, w, crumb, canAsk, dark, onTheme, onMenu, views 
   const flowList = ((flows.data?.flows ?? []) as { id: string; title: string; summary?: string }[]);
   const guides = () => setVideoList(!videoList);
   const close = () => setVideoList(false);
-  const ask = () => document.querySelector<HTMLInputElement>(".i-ask input, .ask input, .ask textarea")?.focus();
+  const ask = () => { if (document.querySelector(".i-ask")) openNote(); else document.querySelector<HTMLInputElement>(".ask input, .ask textarea")?.focus(); };
 
   return (
     <header className="cf-bar" data-help="cf.topbar">

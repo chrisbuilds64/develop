@@ -356,7 +356,16 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .meta-list dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
 .insp .i-ask { display: flex; align-items: center; gap: 10px; height: 42px; margin: 12px 18px 16px; padding: 0 12px; border-radius: var(--r-10); background: var(--surface); border: 1px solid var(--tint-8); flex: none; }
 .insp .i-ask:focus-within { border-color: var(--ai-line); box-shadow: 0 0 0 3px var(--ai-soft); }
-.insp .i-ask input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; font-size: var(--fs-13); color: var(--ink); }
+.insp .i-ask .ask-open { flex: 1; min-width: 0; border: none; outline: none; background: transparent; padding: 0; text-align: left; cursor: text; font: inherit; font-size: var(--fs-13); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.insp .i-ask .ask-open.has { color: var(--ink); }
+/* the note editor the field opens (REQ-001 S-09) */
+.nf-scrim { position: fixed; inset: 0; z-index: 80; background: var(--scrim); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; }
+.nf-sheet { width: min(720px, calc(100% - 32px)); display: flex; flex-direction: column; border-radius: var(--r-l); background: var(--surface); border: 1px solid var(--ai-line); box-shadow: var(--pop-shadow); overflow: hidden; }
+.nf-head { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; }
+.nf-head b { font-size: var(--fs-15); font-weight: 600; letter-spacing: -.014em; color: var(--ink); }
+.nf-sheet textarea { min-height: 40vh; max-height: 60vh; resize: vertical; margin: 0 20px; padding: 10px 0; border: none; outline: none; background: transparent; font: inherit; font-size: var(--fs-15); line-height: 1.55; color: var(--ink); }
+.nf-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px 16px; border-top: 1px solid var(--hairline); }
+.nf-hint { font-size: var(--fs-12-5); color: var(--muted); }
 .ask-i { color: var(--ai); }
 .ask-chip { font: inherit; font-size: var(--fs-12); border: none; background: var(--your-move-soft); color: var(--your-move-ink); border-radius: var(--r-7); padding: 2px 8px; cursor: pointer; white-space: nowrap; }
 .ask-send { width: 28px; height: 28px; border: none; border-radius: var(--r-7); background: var(--your-move); color: var(--your-move-on); display: grid; place-items: center; cursor: pointer; }

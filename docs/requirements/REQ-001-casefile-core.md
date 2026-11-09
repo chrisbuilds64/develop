@@ -88,6 +88,7 @@ Suite on 2026-11-08: 164 tests, all green.
 | S-06 | Content follows the reader's language, the original stays. | `api/app.py` `/translate` | yes — `test_demo`, `test_demo_sessions` |
 | S-07 | Design values only go down (no raw colours outside tokens). | `tools/` guard | yes — `test_design_guard` |
 | S-08 | The surface (39 files, ~9,500 lines React/TS) is checked end to end: CI job `flows` clicks every demo flow in a headless browser (`sandbox.py check`). It has no component tests of its own. | `web/src/`, `sandbox/walks/` | end-to-end yes — CI `flows`; component tests **no** |
+| S-09 | A note is written in a large editor: ⌘J or a click opens it, ⌘Enter sends, Esc closes and keeps the draft per case. *(Added with SW-2026-001, 2026-11-09.)* | `web/src/components/NoteField.tsx` | end-to-end yes — walk `note-editor` in CI `flows` (`web/walks/note-editor-shot.mjs`) |
 
 ## Public demo (ADR-016)
 
