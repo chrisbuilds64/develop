@@ -39,6 +39,7 @@ from .detail import blocks_for, document_for
 from .i18n import I18n
 from .registry import build_cards, card_for, mount_apps, plugins_for, reader_for
 from .setup import add_attribute, schemas_for
+from .tokens import Tokens, bearer
 from .users import User, Users
 from .account import AccountError, Accounts, SECRETS, SETTINGS
 from .workspaces import WorkspaceError, Workspaces, mount_all, mount_one, web_dist_default
@@ -84,8 +85,15 @@ def create_app(config: Config) -> FastAPI:
         workspaces, ws_error = None, str(exc)
     web_dist = config.casefile_web or web_dist_default()
 
+    tokens = Tokens(config.accounts_path.parent / "tokens.json")
+
     def identity(request: Request) -> str | None:
-        """Who is signed in to the cockpit — the identity every mounted workspace works with."""
+        """Who is signed in to the cockpit — the identity every mounted workspace works with. A personal token
+        (`Authorization: Bearer cbt_…`, cockpit/tokens.py) stands for its owner; its scope is checked in guard_apps."""
+        raw = bearer(request.headers)
+        if raw is not None:
+            t = tokens.owner(raw)
+            return t["owner"] if t else None
         return users.redeem(request.cookies.get("session"))
 
     if base:
@@ -947,6 +955,17 @@ def create_app(config: Config) -> FastAPI:
             if not ctx(request)["role"].may_open(parts[2]):
                 return go("/")
         if len(parts) >= 3 and parts[1] == "w":
+            raw = bearer(request.headers)
+            if raw is not None:                       # a token: the API only, its workspaces only, writes only if it may
+                t = tokens.owner(raw)
+                if t is None:
+                    return JSONResponse({"reason": "token unknown, expired or revoked"}, status_code=401)
+                refusal = "a token opens the API only" if not (len(parts) >= 4 and parts[3] == "api") else Tokens.allows(t, parts[2], request.method)
+                if refusal:
+                    return JSONResponse({"reason": refusal}, status_code=403)
+                if workspaces is None or not workspaces.may_open(t["owner"], parts[2]):
+                    return JSONResponse({"reason": "no such workspace"}, status_code=404)
+                return await call_next(request)
             name = identity(request)
             is_api = len(parts) >= 4 and parts[3] == "api"
             if config.login_required and name is None:

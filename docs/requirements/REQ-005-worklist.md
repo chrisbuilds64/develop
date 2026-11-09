@@ -44,19 +44,19 @@ the Context Loop's session handling.
 
 | # | Requirement | Evidence |
 |---|---|---|
-| PV-01 | Every person has a private data point (a team folder only they can open); the store enforces it, not the surface. | operations, registry test |
-| PV-02 | A shared data point names who may read and write it; its items are visible to them and only to them. | registry test |
+| PV-01 | Every person has a private data point (a team folder only they can open); the store enforces it, not the surface. | `test_every_person_starts_in_their_private_data_point_and_sees_only_what_they_may_read` |
+| PV-02 | A shared data point names who may read and write it; its items are visible to them and only to them. | `test_a_case_of_an_unreadable_data_point_cannot_be_written` |
 | PV-03 | *Delegate:* an item is created in another person's private data point with origin, creator and link; in mine it closes with a reference to the new one. | `test_delegate_creates_there_and_closes_here` |
 | PV-04 | *Share:* an item moves into a shared data point the person may write; its id stays. | `test_share_moves_the_item_and_keeps_its_id` |
-| PV-05 | The instance binds its slot "items" to several data points; the surface shows a person every item they may read, in one list, each marked with its data point. | surface test |
+| PV-05 | The instance binds its slot "items" to several data points; the surface shows a person every item they may read, in one list, each marked with its data point. | `test_the_surface_marks_each_card_with_its_data_point` |
 
 ### One interface
 
 | # | Requirement | Evidence |
 |---|---|---|
-| IF-01 | The core's API is reachable from outside the server with a personal token. | `test_api_accepts_a_valid_token_and_refuses_others` |
+| IF-01 | The core's API is reachable from outside the server with a personal token. | `test_api_accepts_a_valid_token_and_refuses_others` (cockpit) |
 | IF-02 | A token belongs to one person or one agent instance, is issued by that person on the account page, names its instances and whether it may write, expires, and can be revoked at once. | same test |
-| IF-03 | Every write through a token is journaled with the token's owner. | `test_writes_are_journaled_with_the_token_owner` |
+| IF-03 | Every write through a token is journaled with the token's owner. | `test_writes_are_journaled_with_the_token_owner` (cockpit) |
 | IF-04 | `todo.py` keeps its commands (`list`, `show`, `add`, `set`, `done`, `check`) and calls the API; the skills `/todo`, `/todo-add`, `/todo-done` work unchanged. | `control` test of `todo.py` against ENTW |
 
 ### The move

@@ -130,6 +130,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _wait_for(store, config, j, case, person, req, resolve)
         if req.action == "set_fields":
             return _set_fields(store, config, j, case, person, req)
+        if req.action in ("share", "delegate"):
+            return _hand_on(store, config, j, case, person, req)
 
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
@@ -273,6 +275,85 @@ def _set_fields(store: FsStore, config: DomainConfig, j: Journal, case, person, 
     lines = [f"{config.word('fields', k, None, k)}: {case.meta.get(k) or '—'} → {v or '—'}" for k, v in changed.items()]
     j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
                                                                "title": config.word("texts", "fields_changed", None, "Changed")[:120], "text": "\n".join(lines)})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _private_point(store, person_id: str):
+    """The data point only this person reads and writes — where a delegated item lands."""
+    return next((p for p in store.all_points if p.readers == {person_id} and p.writers == {person_id}), None)
+
+
+def _hand_on(store, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Hand an item on between data points (REQ-005 PV-03, PV-04).
+
+    share     the case moves into a data point the person may write (`to`: its name); its id stays.
+    delegate  a new case with the next number of its label opens in the other person's private data point (`to`: the
+              person), with origin, creator and link; this one closes with a reference to it. Writing into somebody
+              else's private data point is the core's hand-off, not the person's right: they still cannot read it.
+    """
+    if not hasattr(store, "transfer"):
+        return _refuse(store, j, "this application runs on one data point; there is nowhere to hand it on to")
+    to = str(req.payload.get("to") or "").strip()
+    if not to:
+        return _refuse(store, j, "say where to: a data point (share) or a person (delegate)")
+    if req.action == "share":
+        try:
+            dst = store.point(to)
+        except StoreError as exc:
+            return _refuse(store, j, str(exc))
+        _write_journal(store, j)
+        try:
+            frm, _ = store.transfer(j.case, dst.name)
+        except StoreError as exc:
+            return _refuse(store, j, str(exc))
+        j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                "title": config.word("texts", "shared", None, "Shared")[:120],
+                                "text": config.word("texts", "shared_text", None, "Moved from {frm} to {to}.").format(frm=frm, to=dst.label or dst.name)})
+        j.status, j.finished = "done", _now()
+        _write_journal(store, j)
+        return _result(j)
+    # delegate
+    target = config.person(to)
+    if target is None:
+        return _refuse(store, j, f"'{to}' is nobody here")
+    if target.id == person.id:
+        return _refuse(store, j, "delegating to yourself changes nothing")
+    point = _private_point(store, target.id)
+    if point is None:
+        return _refuse(store, j, f"{target.name} has no private data point here")
+    closing = next((s.folder for s in config.stages if s.group in CLOSED), None)
+    if closing is None:
+        return _refuse(store, j, "this application has no stage that closes a case")
+    from . import numbering
+    label = str(case.meta.get("label") or case.id.split("-", 1)[0])
+    create = config.theme.get("create") or {}
+    number = numbering.next_number(store.everything, label, create.get("number"), case.meta)
+    new_id = f"{label}-{number}"
+    if store.everything.find(new_id) is not None:
+        return _refuse(store, j, f"'{new_id}' already exists")
+    _write_journal(store, j)
+    import shutil
+    src = store.case_dir(j.case)
+    first = create.get("stage") or case.stage
+    dst = point.store.write_root / first / new_id
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("review.md", ".*"))
+    meta = {**{k: v for k, v in case.meta.items() if k not in ("waitsFor",)}, "number": number, "assignee": target.id, "created": _now()[:10],
+            "created_by": person.id, "origin_kind": "other", "origin_ref": f"{j.case} ({person.name})"}
+    point.store.write_json(f"{first}/{new_id}/meta.json", meta)
+    text = config.word("texts", "delegated_from", None, "Delegated by {who} from {ref}.").format(who=person.name, ref=j.case)
+    head = f"# Review — {new_id}\n\nAppend only. Newest entry at the end, never edited afterwards.\n"
+    from ..models import Entry
+    point.store.append(f"{first}/{new_id}/review.md", thread.render(Entry.model_validate({"id": "REV-001", "date": dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
+                       "stage": first, "author": person.name, "status": "info", "step": j.step_id, "title": config.word("texts", "delegated", None, "Delegated")[:120],
+                       "text": text})), head=head)
+    j.to = closing
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id, "from": case.stage, "to": closing,
+                            "title": config.word("texts", "delegated", None, "Delegated")[:120],
+                            "text": config.word("texts", "delegated_to", None, "Delegated to {who} as {ref}.").format(who=target.name, ref=new_id)})
+    store.move(j.case, closing)
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)

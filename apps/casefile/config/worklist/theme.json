@@ -37,6 +37,9 @@
   },
   "fields": {
     "$comment": "What a member may set on an item (domain/fields.py). The creator is the core's created_by.",
+    "title": {
+      "kind": "text"
+    },
     "assignee": {
       "kind": "person"
     },

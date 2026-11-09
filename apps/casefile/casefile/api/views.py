@@ -63,6 +63,7 @@ class CaseCard(BaseModel):
     tint: str = ""                                        # the cover's colour, from theme.covers (by one meta key)
     party: str = ""                                       # who the case is from, for the first column of a row: reported_by, client, the mail's sender
     unread: bool = False                                  # new to the viewer: never opened, or somebody else wrote since (domain/seen.py)
+    data_point: str = ""                                  # an instance over several data points: where this case lies ("Private", "Team"), REQ-005 PV-05
 
 
 class StationView(BaseModel):
@@ -233,7 +234,7 @@ def group_of(config: DomainConfig, case: Case, main: Turn | None, viewer: str | 
     return "others" if g == "you" else g
 
 
-def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: dict[str, str] | None = None) -> CaseCard:
+def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: dict[str, str] | None = None, store=None) -> CaseCard:
     turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     main = turns[0] if turns else None
     key, idx = station_of(config, case.stage)
@@ -248,11 +249,17 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: 
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,
                     group_word=config.word("groups", g, lang, g), since=case.since, date=str(case.meta.get("publishDate") or "")[:10],
                     turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))),
-                    unread=reads.unread(config, case, viewer, seen) if seen is not None else False)
+                    unread=reads.unread(config, case, viewer, seen) if seen is not None else False,
+                    data_point=_point_word(store, case.id))
+
+
+def _point_word(store, case_id: str) -> str:
+    point = store.point_of(case_id) if store is not None and hasattr(store, "point_of") else None
+    return (point.label or point.name) if point else ""
 
 
 def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url, seen: dict[str, str] | None = None, store=None) -> CaseView:
-    c = card(config, case, viewer, lang, seen)
+    c = card(config, case, viewer, lang, seen, store)
     turns = whose.enrich(case, whose.turn(case, config, lang), config, lang)
     mine = [t for t in turns if viewer and (t.actor == viewer or config.may_act(viewer, t.actor))]
     stations = [StationView(key=k, word=config.word("stations", k, lang, k), state="done" if i < c.station_index else "current" if i == c.station_index else "todo")

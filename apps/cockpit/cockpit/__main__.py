@@ -230,6 +230,43 @@ def cmd_user(args):
         return 0
 
 
+def may_issue_for(accounts):
+    """The owner issues for themselves; a person issues for an agent whose account says it belongs to them (bill_to)."""
+    def check(issuer: str, owner: str) -> bool:
+        if issuer == owner:
+            return True
+        try:
+            return str(accounts.settings(owner).get("bill_to", "")).lower() == issuer
+        except Exception:
+            return False
+    return check
+
+
+def cmd_token(args):
+    """Personal tokens for a workspace's API from outside (REQ-005 IF-01, IF-02): issue, list, revoke."""
+    from .account import Accounts
+    from .tokens import TokenError, Tokens
+    config = _config(args)
+    accounts = Accounts(config.accounts_path)
+    tokens = Tokens(config.accounts_path.parent / "tokens.json")
+    try:
+        if args.sub == "issue":
+            raw = tokens.issue(args.owner, args.by, args.workspace, args.write, args.days, may_issue_for(accounts))
+            print(raw)
+            print("Shown once. Store it now; only its hash is kept.", file=sys.stderr)
+        elif args.sub == "list":
+            for t in tokens.listing(args.person):
+                state = "revoked" if t["revoked"] else f"until {t['expires'][:10]}"
+                print(f"{t['id']}  {t['owner']:10} {'write' if t['write'] else 'read ':5}  {','.join(t['workspaces'])}  {state}  (issued by {t['issued_by']})")
+        elif args.sub == "revoke":
+            tokens.revoke(args.id, args.by)
+            print(f"revoked {args.id}")
+    except TokenError as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_account(args):
     from .account import AccountError, Accounts, SECRETS
     config = _config(args)
@@ -397,6 +434,13 @@ def main(argv=None) -> int:
     s = uss.add_parser("list"); common(s)
     s = uss.add_parser("remove"); s.add_argument("name"); common(s)
     us.set_defaults(fn=cmd_user)
+
+    tk = sub.add_parser("token"); tks = tk.add_subparsers(dest="sub", required=True)
+    s = tks.add_parser("issue"); s.add_argument("owner"); s.add_argument("--by", required=True); s.add_argument("--workspace", action="append", required=True)
+    s.add_argument("--write", action="store_true"); s.add_argument("--days", type=int, default=90); common(s)
+    s = tks.add_parser("list"); s.add_argument("person"); common(s)
+    s = tks.add_parser("revoke"); s.add_argument("id"); s.add_argument("--by", required=True); common(s)
+    tk.set_defaults(fn=cmd_token)
 
     ac = sub.add_parser("account"); acs = ac.add_subparsers(dest="sub", required=True)
     s = acs.add_parser("show"); s.add_argument("name"); common(s)

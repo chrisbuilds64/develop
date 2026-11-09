@@ -419,6 +419,29 @@
         }
       }
     },
+    "/api/export": {
+      "get": {
+        "summary": "Export Cases",
+        "description": "Every case the viewer may read, as data: stage, meta, closing date, data point \u2014 for a client that keeps its\nown commands (REQ-005 IF-04: `todo.py`). One read, no surface words.",
+        "operationId": "export_cases_api_export_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExportOut"
+                  },
+                  "type": "array",
+                  "title": "Response Export Cases Api Export Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases": {
       "get": {
         "summary": "List Cases",
@@ -2212,6 +2235,11 @@
             "type": "boolean",
             "title": "Unread",
             "default": false
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
           }
         },
         "type": "object",
@@ -2325,6 +2353,11 @@
             "type": "boolean",
             "title": "Unread",
             "default": false
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
           },
           "meta": {
             "additionalProperties": true,
@@ -2908,6 +2941,45 @@
           "step_id"
         ],
         "title": "EntryIn"
+      },
+      "ExportOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "meta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Meta"
+          },
+          "closed": {
+            "type": "string",
+            "title": "Closed",
+            "default": ""
+          },
+          "changed": {
+            "type": "string",
+            "title": "Changed",
+            "default": ""
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "stage",
+          "meta"
+        ],
+        "title": "ExportOut"
       },
       "FinishIn": {
         "properties": {
