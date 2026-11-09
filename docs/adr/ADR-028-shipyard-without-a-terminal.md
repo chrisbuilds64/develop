@@ -51,6 +51,9 @@ a deploy restarts the stage's runner — a run that deploys its own stage would 
   so the service runs a root-owned copy of the tool, installed by an administrator; it asks the code host whether a tag
   is on `main` through a bare mirror of its own; and a deploy fetches from the configured repository, not from a
   checkout's remote. Found on installation (2026-11-09), before the service took its first request.
+- **A deploy never ends the run that asked for it.** When the request comes from a run on the runner of the very stage
+  it deploys, the service waits until that run has ended (at most 20 minutes, and the result says how long). Found in
+  the first trial (2026-11-09): the ENTW release run was cut off by its own ENTW deploy.
 - The deploy service hard-wires one name of the application, the reporting skill `shipyard-verify`.
 
 ## Alternatives considered

@@ -28,6 +28,7 @@ import logging
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from .config import Env, Settings
@@ -93,6 +94,29 @@ def on_main(settings: Settings, env: Env, tag: str, mirror: Path = MIRROR) -> st
     return commit
 
 
+RUN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,200}$")
+
+
+def wait_for_run(space, req: dict, target: Env, source: Env, timeout: int = 1200, poll: int = 5) -> int:
+    """A deploy restarts the stage's runner. When the request comes from a run on that very runner, the deploy waits until
+    the run has ended, or the restart would end it half-way (its record would stay "running" for ever). Returns the
+    seconds waited; after `timeout` it goes on and the result says so."""
+    rid = str(req.get("run", ""))
+    if target.name != source.name or not RUN.match(rid):
+        return 0
+    f = space.mount / "flow" / "_runs" / f"{rid}.json"
+    waited = 0
+    while waited < timeout:
+        try:
+            if json.loads(f.read_text(encoding="utf-8")).get("status") != "running":
+                return waited
+        except (OSError, ValueError):
+            return waited
+        time.sleep(poll)
+        waited += poll
+    return waited
+
+
 def report(settings: Settings, space, case_dir: Path, req: dict, result: dict) -> str:
     """The outcome back into the case: an order for `shipyard-verify`, with the report as its note. Written as the runner."""
     now = dt.datetime.now().astimezone()
@@ -123,6 +147,9 @@ def serve(settings: Settings, spool: Path = SPOOL, deploy=None, config: Path | N
         try:
             target, _src, space, case_dir = check(settings, req)
             result["commit"] = on_main(settings, target, req["tag"])
+            waited = wait_for_run(space, req, target, _src)
+            if waited:
+                result["waited_for_run_s"] = waited
             r = (deploy or _deploy)(target.name, req["tag"], config)
             result.update(outcome="deployed" if r.returncode == 0 else "failed", exit=r.returncode,
                           log_tail=(r.stdout + r.stderr).strip().splitlines()[-15:])
