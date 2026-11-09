@@ -137,14 +137,36 @@ def vhost_includes_snippet(settings: Settings, vhost: Path) -> bool:
 REQUEST_UNITS = ("pressroom-deploy-requests.path", "pressroom-deploy-requests.service")
 
 
-def install_requests(settings: Settings, source: Env, config: Path, spool: Path) -> list[str]:
+TOOL_HOME = Path("/usr/local/lib/pressroom-env")
+
+
+def install_tool(source: Path, home: Path = TOOL_HOME) -> Path:
+    """A root-owned copy of pressroom_env for the root service. The stages' checkouts belong to the runner, and a helper's
+    run is the runner: root must never run code from there. Changes to this tool reach the service only by installing it
+    again — an administrator's act, not a deploy's."""
+    import shutil
+    pkg = home / "pressroom_env"
+    fresh = home / ".pressroom_env.new"
+    home.mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(fresh, ignore_errors=True)
+    shutil.copytree(source / "pressroom_env", fresh, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"), symlinks=False)
+    for p in [fresh, *fresh.rglob("*")]:
+        p.chmod(0o755 if p.is_dir() else 0o644)
+    shutil.rmtree(pkg, ignore_errors=True)
+    fresh.rename(pkg)
+    home.chmod(0o755)
+    return home
+
+
+def install_requests(settings: Settings, source: Env, config: Path, spool: Path, home: Path = TOOL_HOME) -> list[str]:
     """ADR-028: the path unit that wakes the root service when a helper leaves a deploy request in the spool. The service
-    runs pressroom-env from the source stage's checkout (the stage whose spaces ask), with the same envs.toml."""
+    runs a root-owned copy of pressroom-env, taken from the source stage's checkout now, with the same envs.toml."""
     s = settings.server
     spool.mkdir(parents=True, exist_ok=True)
     run(["chown", f"{s.runner_user}:{s.runner_user}", str(spool)])
     spool.chmod(0o750)
-    tool = source.dir(s) / "develop" / "infra" / "pressroom"
+    tool = install_tool(source.dir(s) / "develop" / "infra" / "pressroom", home)
+    log.info("tool copied to %s (root-owned)", tool)
     units = {
         REQUEST_UNITS[0]: _render("deploy-requests.path", spool=spool),
         REQUEST_UNITS[1]: _render("deploy-requests.service", tool=tool, config=config, spool=spool),

@@ -166,7 +166,7 @@ def main(argv=None) -> int:
     s = sub.add_parser("nginx"); s.set_defaults(fn=cmd_nginx)
     s = sub.add_parser("serve-requests", help="take the waiting deploy requests once (ADR-028; started by the path unit)")
     s.add_argument("--spool", default="/var/lib/pressroom/deploy-requests"); s.set_defaults(fn=cmd_serve_requests)
-    s = sub.add_parser("install-requests", help="the path unit and service for deploy requests, run from the source stage's checkout")
+    s = sub.add_parser("install-requests", help="the path unit and service for deploy requests, with a root-owned copy of this tool from the source stage")
     s.add_argument("source", help="the stage whose checkout runs the service (normally prod)")
     s.add_argument("--spool", default="/var/lib/pressroom/deploy-requests"); s.set_defaults(fn=cmd_install_requests)
     args = p.parse_args(argv)

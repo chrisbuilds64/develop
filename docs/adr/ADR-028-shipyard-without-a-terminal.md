@@ -47,6 +47,10 @@ a deploy restarts the stage's runner — a run that deploys its own stage would 
   put unmerged code on a stage (the tag must be on `main`), but it could bring a merged change to the next stage
   before its acceptance. Closing this needs code-writing runs under a user of their own, in a sandbox without the
   content trees and the accounts; it is part of the security package (REQ-001 W-04).
+- **Root runs nothing the runner can write.** The deploy service is root and the stages' checkouts belong to the runner,
+  so the service runs a root-owned copy of the tool, installed by an administrator; it asks the code host whether a tag
+  is on `main` through a bare mirror of its own; and a deploy fetches from the configured repository, not from a
+  checkout's remote. Found on installation (2026-11-09), before the service took its first request.
 - The deploy service hard-wires one name of the application, the reporting skill `shipyard-verify`.
 
 ## Alternatives considered

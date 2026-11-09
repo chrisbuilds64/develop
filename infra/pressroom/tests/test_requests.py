@@ -167,3 +167,54 @@ def test_anything_but_a_release_tag_is_refused(tmp_path, monkeypatch, tag):
     deployed.clear()
     [r] = requests.serve(st, ask(tmp_path, tag=tag), deploy=deploy)
     assert r["outcome"] == "refused" and deployed == []
+
+
+# --- root runs nothing the runner can write (ADR-028) ---
+
+def _git(*args, cwd):
+    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True,
+                   env={"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x",
+                        "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin", "HOME": str(cwd)})
+
+
+def _code_host(tmp_path: Path) -> Path:
+    """A code host with a merged tag on main and a tag on a branch that was never merged."""
+    repo = tmp_path / "host"
+    repo.mkdir()
+    _git("init", "-q", "-b", "main", cwd=repo)
+    (repo / "a").write_text("a")
+    _git("add", "a", cwd=repo); _git("commit", "-qm", "merged", cwd=repo)
+    _git("tag", "-a", "v2026.11.1", "-m", "release", cwd=repo)
+    _git("switch", "-qc", "side", cwd=repo)
+    (repo / "b").write_text("b")
+    _git("add", "b", cwd=repo); _git("commit", "-qm", "never merged", cwd=repo)
+    _git("tag", "-a", "v2026.11.2", "-m", "not on main", cwd=repo)
+    _git("switch", "-q", "main", cwd=repo)
+    return repo
+
+
+def test_on_main_asks_the_code_host_through_roots_own_mirror(tmp_path):
+    from types import SimpleNamespace
+    host = _code_host(tmp_path)
+    st = SimpleNamespace(server=SimpleNamespace(develop_repo=str(host), runner_user="runner"))
+    mirror = tmp_path / "mirror.git"
+    assert len(requests.on_main(st, None, "v2026.11.1", mirror=mirror)) == 40
+    with pytest.raises(OpsError, match="not on main"):
+        requests.on_main(st, None, "v2026.11.2", mirror=mirror)
+    assert (mirror / "HEAD").exists()                     # a bare repository of its own, not a stage's checkout
+
+
+def test_the_service_runs_a_copy_of_the_tool_that_only_its_owner_can_write(tmp_path):
+    from pressroom_env import systemd
+    source = Path(__file__).resolve().parents[1]
+    home = systemd.install_tool(source, tmp_path / "lib")
+    pkg = home / "pressroom_env"
+    assert (pkg / "requests.py").is_file() and (pkg / "templates" / "deploy-requests.service").is_file()
+    assert not list(pkg.rglob("__pycache__"))
+    for p in [pkg, *pkg.rglob("*")]:
+        assert p.stat().st_mode & 0o022 == 0, f"{p} is writable by group or others"
+    r = subprocess.run([sys.executable, "-c", "import pressroom_env.requests as r; print(r.__file__)"], cwd=home,
+                       capture_output=True, text=True, check=True)
+    assert r.stdout.strip().startswith(str(home))
+    systemd.install_tool(source, tmp_path / "lib")        # again: replaced, not nested
+    assert not (pkg / "pressroom_env").exists()

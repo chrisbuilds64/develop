@@ -75,6 +75,12 @@ in the space's tree (the stage marked `"deploys"` in the application's `stages.j
 that the space does not ask above its own stage; then it deploys the tag and orders `shipyard-verify` in the case with
 its report. Install once with `pressroom-env install-requests prod`. Tests: `tests/test_requests.py`.
 
+Root runs nothing the runner can write: the stages' checkouts are the runner's, and a helper's run is the runner.
+`install-requests` copies this tool to `/usr/local/lib/pressroom-env` (root-owned) and the service runs that copy, so a
+change to the tool reaches the service only when an administrator installs it again. Whether a tag is on `main` is
+asked of the code host through a bare mirror only root writes (`/var/lib/pressroom/develop.git`), and a deploy fetches
+from the configured repository, never from a checkout's `origin`.
+
 ## Units
 
 `srv-pressroom\x2d<stage>.mount`, `pressroom-cockpit-<stage>.service`, `pressroom-runner-<stage>.service`.
