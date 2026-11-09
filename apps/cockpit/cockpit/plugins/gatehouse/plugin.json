@@ -2,7 +2,7 @@
   "id": "gatehouse",
   "name": "Canon elicitation",
   "version": "0.1.0",
-  "description": "How far the interview is and where the answers went. The application itself is the Gatehouse plugin in develop/apps/gatehouse — install it with `cockpit plugin add ../gatehouse --link` to get the workspace.",
+  "description": "How far the interview is and where the answers went. The standalone application it read is retired (tag archive/2026-11-09-standalone-gatehouse); Gatehouse runs as a casefile application (ADR-021).",
   "reader": "reader.py",
   "needs": [
     "elicitation"

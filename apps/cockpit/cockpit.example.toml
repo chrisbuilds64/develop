@@ -72,14 +72,6 @@ path = "~/ChrisBuilds64/context-loop"
 include = [".claude-plugin", "skills"]
 sensitivity = "public"
 
-[[source]]
-id = "elicitation"
-label = "Canon elicitation"
-path = "~/ChrisBuilds64/develop/apps/gatehouse/instances/demo"
-include = ["run.json", "audit.jsonl"]
-sensitivity = "confidential"
-
-# --- Modules: each names a plugin; reader and app come from its manifest -------------
 [[module]]
 id = "worklist"
 plugin = "worklist"
@@ -120,14 +112,6 @@ plugin = "contextloop"
 sources = ["contextloop"]
 maturity = "running"
 
-[[module]]
-id = "gatehouse"
-plugin = "gatehouse"
-sources = ["elicitation"]
-maturity = "running"
-app_config = "~/ChrisBuilds64/develop/apps/gatehouse/gatehouse.toml"
-
-# --- Roles ---------------------------------------------------------------------------
 [[role]]
 id = "operator"
 modules = ["*"]

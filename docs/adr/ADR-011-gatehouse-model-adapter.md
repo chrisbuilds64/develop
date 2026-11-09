@@ -1,6 +1,6 @@
 # ADR-011: Gatehouse Model Adapter
 
-**Status:** Accepted
+**Status:** Superseded by ADR-021 (2026-11-09). The standalone Gatehouse this decided for is retired; it is kept in tag `archive/2026-11-09-standalone-gatehouse`.
 **Date:** 2026-08-22
 
 ---
