@@ -1,7 +1,7 @@
 # ADR-028: Shipyard Without a Terminal
 
-**Status:** Proposed (2026-11-09). Decided by the product owner the same day (agent on the server, merge on the code
-host, deploys only with the gate); this record waits for *Accepted*.
+**Status:** Accepted (2026-11-09, product owner): agent on the server, merge on the code host, deploys only with
+the gate.
 **Date:** 2026-11-09
 
 ---
