@@ -16,10 +16,10 @@ before its build, and its test comes with it.
 | GP-02 | Its standing items come from a template in the application's configuration; a workspace may have its own in its tree. Whether a person may replace the template or only add items is a right of their role in the workspace. | planned |
 | GP-03 | A helper may draft case items from the task; each item records where it came from (template, helper, person). | planned |
 | GP-04 | Before the first verdict, the person who holds the gate may strike an item (with a reason) or add one. | planned |
-| GP-05 | Each item gets one verdict from a person in the gate's role: passed, failed or not applicable. | planned |
+| GP-05 | Each item is a question with a type and a criterion: yes/no, a number (equal, range, limit), a choice, or text/file/link as evidence. An answer that misses the criterion fails the item. | planned |
 | GP-06 | Nothing is preset: an item without a verdict is open, and a verdict is refused unless the person gave it. | planned |
 | GP-07 | Not applicable needs a reason; failed needs what was seen. Evidence may be a note, a file in the case or a link. | planned |
-| GP-08 | An agent may record an observation with its evidence on an item it can check; it can never give the verdict. | planned |
+| GP-08 | Who may answer is a role on the question. An objective question may be answered for good by an agent in its role; a judgement question has a person's role by default, where an agent may only observe and attach evidence. The gate is opened only by the role that holds it. | planned |
 
 ## The gate
 

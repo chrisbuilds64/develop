@@ -37,11 +37,16 @@ place of an answer.
    Whether a person may replace the template or only add items is a right of a role in the workspace, not a fixed rule.
 3. **Case items are added for the case.** A helper drafts them from the task (what to try, what to expect); the person
    who holds the gate strikes or adds items before working through them. Every item says where it came from.
-4. **Each item gets a verdict from a person in the role that holds the gate:** passed, failed, or not applicable. Not
-   applicable needs a reason; failed needs what was seen. Evidence is a note, a file or a link. **Nothing is preset** —
-   not a tick, not a verdict (the interview's 53 of 55 lesson).
-5. **An agent may observe, never decide.** For items it can check (a query, an HTTP call, a version) it writes what it
-   observed and the evidence; the person confirms or contradicts (do-confirm). The verdict field is the person's.
+4. **Each item is a question with a type and a criterion** (amended 2026-11-09, product owner): yes/no (must be yes),
+   a number (equal to a prediction, within a range, below a limit), a choice (one of the allowed values), or text, a
+   file or a link (must be there, as evidence). An answer that misses its criterion fails the item. Not applicable needs
+   a reason. **Nothing is preset** — not a tick, not an answer (the interview's 53 of 55 lesson).
+5. **Who may answer is a role on the question, not a kind of participant** (amended 2026-11-09): roles and functions,
+   not person or machine. A question whose criterion is objective (the tag is on `main`, no new invalid objects, rows
+   changed = rows predicted) may be answered for good by an agent in its role. A question that needs judgement (can the
+   business work with it, does the scope match the task) has a person's role by default; there an agent may observe and
+   attach evidence, and the person answers. **The gate itself is still opened only by the role that holds it**, with a
+   name and a time: the questionnaire is the condition, not the decision.
 6. **Must and should.** Each item is a must-item or a should-item (Stage-Gate's must-meet and should-meet). **The gate
    reads the protocol:** an action names it (`protocol: "<id>"`) and is offered only when every must-item passed or is not
    applicable with a reason. A failed must-item offers the way back instead, with the item as its reason. A failed
