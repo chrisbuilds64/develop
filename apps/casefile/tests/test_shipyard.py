@@ -177,3 +177,14 @@ def test_both_languages_name_every_stage_action_and_file(tmp_path):
                 assert a["id"] in v["actions"]
         for f in files:
             assert f in v["files"]
+
+
+def test_a_release_the_code_host_did_not_confirm_can_be_ordered_again_by_the_product_owner():
+    """The merge in the case comes after the merge on the code host. If it came first, the release run finds no merge,
+    writes a note and stops; once the product owner has merged on the code host, they order the release again."""
+    import json
+    from pathlib import Path
+    cfg = json.loads((Path(__file__).resolve().parents[1] / "config" / "shipyard" / "stages.json").read_text())
+    release = next(s for s in cfg["stages"] if s["folder"] == "50-release")
+    again = next(a for a in release["actions"] if a["id"] == "retry_release")
+    assert again["actor"] == "role:product_owner" and again["run"] == "shipyard-release" and not again.get("to")

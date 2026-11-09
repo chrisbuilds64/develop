@@ -115,6 +115,13 @@
             "release.md"
           ],
           "entry_status": "info"
+        },
+        {
+          "id": "retry_release",
+          "label": "retry_release",
+          "actor": "role:product_owner",
+          "run": "shipyard-release",
+          "entry_status": "info"
         }
       ],
       "deploys": "entw"
