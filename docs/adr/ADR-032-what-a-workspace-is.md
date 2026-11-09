@@ -1,6 +1,6 @@
 # ADR-032: What a Workspace Is
 
-**Status:** Proposed (2026-11-09), waiting for the product owner. Supersedes ADR-018 decisions 2 to 4 once accepted.
+**Status:** Accepted (2026-11-09, product owner). Supersedes ADR-018 decisions 2 to 4.
 **Date:** 2026-11-09
 
 ---
@@ -49,7 +49,7 @@ all records (2026-11-09) found where the old notion is assumed; the ranked list 
 5. **Hand-off goes from instance to instance** through their bindings inside a workspace. Across workspaces it needs a
    connection the tenant sets up. `targets.json` in a data tree goes away.
 6. **The tenant registers agent instances** from the available signatures; an agent instance is a member of workspaces
-   like a person. Who pays for its runs is open (see below).
+   like a person. **The tenant pays** for every run, of people and agent instances alike.
 7. **Stages are separate worlds.** ENTW, TEST and PROD each hold their own copy of every data point (ADR-017). As an
    exception, a data point may be shared by a stage with another one — for example a Nextcloud folder that ENTW reads
    as well — but only declared explicitly on that data point, never by default. A **sandbox** is a copy of a workspace
@@ -80,12 +80,11 @@ private):
 The change is large and goes in steps, each a Shipyard case, each leaving production running. Order and size are a
 separate plan; nothing in this record is built by accepting it.
 
-## Open questions
+## Decided with the acceptance (2026-11-09)
 
-- **Billing:** does the tenant pay, the person, or the tenant with a person per agent instance?
-- **Convenience:** who sets up data points and instances — the tenant's administrator in the surface, or us by
-  configuration at first?
-- **Order:** the worklist (ADR-031) as the first application on the new model, or the model first?
+- **Billing:** the tenant pays (decision 6).
+- **Set-up:** the tenant's administrator sets up data points, application instances and members.
+- **Order:** the worklist (ADR-031) is the first application built on this model; the rest follows case by case.
 
 ## Alternatives considered
 
