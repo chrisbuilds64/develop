@@ -47,6 +47,8 @@ before its build, and its test comes with it.
 | GP-30 | Before a deploy the core records the invalid objects of the target schema as the baseline. | planned |
 | GP-31 | After the deploy, "no new invalid objects against the baseline" is a standing must-item, observed by the core with the query and its result as evidence; compile errors of the changed objects are listed with it. | planned |
 | GP-32 | A new invalid object fails the item, and the gate offers the way back, not the next stage. | planned |
+| GP-33 | A data change states before its deploy how many rows it will change (from the analysis). After the deploy "rows changed = rows predicted" is a standing must-item, observed by the core with the query and the counts as evidence. | planned |
+| GP-34 | A change may name reference data: chosen rows with their expected values after the deploy (the case's own examples, e.g. one open and one closed order). After the deploy the core reads those rows and compares them field by field; every difference is evidence on a must-item. | planned |
 
 ## Not in this version
 
