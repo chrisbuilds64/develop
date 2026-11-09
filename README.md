@@ -20,7 +20,7 @@ is configuration, not code.
 | `sandbox/` | The whole system offline on one Mac, with fictional sample worlds. |
 | `tools/` | Guards the checks run: design values only go down, the core imports no adapter or web framework. |
 | `docs/adr/` | Architecture decisions, one home for all. |
-| `docs/runbooks/`, `docs/requirements/`, `docs/use-cases/` | Operations and the requirements chain. |
+| `docs/runbooks/`, `docs/requirements/` | Operations and the requirements chain: a case's task → requirement lines (REQ) → decision record (ADR) → pull request. |
 
 ## Run it
 

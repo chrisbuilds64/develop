@@ -8,7 +8,7 @@ Canon elicitation harness. Runs on client hardware, asks the questions a
 canon pack defines, and writes the answers into a directory the client
 owns and versions.
 
-See `docs/use-cases/UC-AG-004_gatehouse.md` for scope,
+See UC-AG-004 (tag `archive/2026-11-09-use-cases`; Gatehouse now runs as a casefile application, ADR-021) for scope,
 `docs/adr/ADR-010` for the runtime constraints and `docs/adr/ADR-011`
 for the model adapter.
 
