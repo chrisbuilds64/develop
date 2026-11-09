@@ -44,9 +44,9 @@ clone_from = "prod"
 # content. pressroom-env creates the team folder, mounts it beside the stage's own, registers the application and the
 # workspace, and creates the stage folders its configuration names. Spaces are not cloned.
 # [[env.prod.space]]
-# id = "softwarehaus"
-# folder = "softwarehaus"
-# mount = "/srv/softwarehaus"
-# application = "softwareaenderung"
-# label = "Softwarehaus"
+# id = "shipyard"
+# folder = "shipyard"
+# mount = "/srv/shipyard"
+# application = "shipyard"
+# label = "Shipyard"
 # members = ["chris", "akhil"]

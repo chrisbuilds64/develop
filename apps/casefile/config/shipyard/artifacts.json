@@ -3,13 +3,13 @@
   "common": [
     {
       "file": "meta.json",
-      "stage": "10-auftrag",
+      "stage": "10-task",
       "by": "human",
       "shape": "text"
     },
     {
       "file": "review.md",
-      "stage": "10-auftrag",
+      "stage": "10-task",
       "by": "human",
       "shape": "text"
     }
@@ -19,20 +19,20 @@
       "primary": "pr.md",
       "artifacts": [
         {
-          "file": "auftrag.md",
-          "stage": "10-auftrag",
+          "file": "task.md",
+          "stage": "10-task",
           "by": "role:developer",
           "shape": "text"
         },
         {
           "file": "pr.md",
-          "stage": "20-umsetzung",
+          "stage": "20-build",
           "by": "role:developer",
           "shape": "text"
         },
         {
-          "file": "pruefung.md",
-          "stage": "30-pruefung",
+          "file": "checks.md",
+          "stage": "30-checks",
           "by": "role:developer",
           "shape": "text"
         },

@@ -1,5 +1,5 @@
 {
-  "name": "Software change",
+  "name": "Shipyard",
   "app": {
     "icon": "code",
     "color": "#0f766e"
@@ -20,7 +20,7 @@
       "product_owner",
       "developer"
     ],
-    "stage": "10-auftrag",
+    "stage": "10-task",
     "number": [
       "{year}-{seq:03}"
     ],

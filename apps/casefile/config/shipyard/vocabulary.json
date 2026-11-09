@@ -1,7 +1,7 @@
 {
   "$comment": "Every word the surface shows for a software change, in German and English.",
   "de": {
-    "product": "Softwareänderung",
+    "product": "Shipyard",
     "labels": {
       "SW": "Änderung"
     },
@@ -17,15 +17,15 @@
       "closed": "Abgeschlossen"
     },
     "stages": {
-      "10-auftrag": "Auftrag beschrieben, wartet auf Bestätigung",
-      "20-umsetzung": "in Arbeit auf einem Branch",
-      "30-pruefung": "Pull Request offen, Prüfungen laufen",
-      "40-freigabe": "geprüft, wartet auf Merge",
+      "10-task": "Auftrag beschrieben, wartet auf Bestätigung",
+      "20-build": "in Arbeit auf einem Branch",
+      "30-checks": "Pull Request offen, Prüfungen laufen",
+      "40-approval": "geprüft, wartet auf Merge",
       "50-release": "gemergt, Release wird getaggt",
       "60-entw": "in ENTW, wartet auf Abnahme",
       "70-test": "in TEST, wartet auf Freigabe PROD",
       "80-prod": "in PROD, Nachweis folgt",
-      "90-abgeschlossen": "in PROD, abgeschlossen"
+      "90-closed": "in PROD, abgeschlossen"
     },
     "groups": {
       "you": "Du bist dran",
@@ -81,9 +81,9 @@
       "correction": "Korrektur: {title}"
     },
     "files": {
-      "auftrag.md": "Auftrag",
+      "task.md": "Auftrag",
       "pr.md": "Pull Request",
-      "pruefung.md": "Prüfung",
+      "checks.md": "Prüfung",
       "release.md": "Release",
       "test.md": "TEST",
       "prod.md": "PROD"
@@ -105,7 +105,7 @@
     }
   },
   "en": {
-    "product": "Software change",
+    "product": "Shipyard",
     "labels": {
       "SW": "Change"
     },
@@ -121,15 +121,15 @@
       "closed": "Closed"
     },
     "stages": {
-      "10-auftrag": "task written, waiting for confirmation",
-      "20-umsetzung": "in progress on a branch",
-      "30-pruefung": "pull request open, checks running",
-      "40-freigabe": "checked, waiting for the merge",
+      "10-task": "task written, waiting for confirmation",
+      "20-build": "in progress on a branch",
+      "30-checks": "pull request open, checks running",
+      "40-approval": "checked, waiting for the merge",
       "50-release": "merged, release being tagged",
       "60-entw": "in ENTW, waiting for acceptance",
       "70-test": "in TEST, waiting for PROD",
       "80-prod": "in PROD, record pending",
-      "90-abgeschlossen": "in PROD, closed"
+      "90-closed": "in PROD, closed"
     },
     "groups": {
       "you": "Your move",
@@ -185,9 +185,9 @@
       "correction": "Correction: {title}"
     },
     "files": {
-      "auftrag.md": "Task",
+      "task.md": "Task",
       "pr.md": "Pull request",
-      "pruefung.md": "Checks",
+      "checks.md": "Checks",
       "release.md": "Release",
       "test.md": "TEST",
       "prod.md": "PROD"

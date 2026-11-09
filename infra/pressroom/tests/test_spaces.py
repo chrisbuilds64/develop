@@ -42,7 +42,7 @@ SPACE = """
 id = "software"
 folder = "software"
 mount = "/srv/software"
-application = "softwareaenderung"
+application = "shipyard"
 label = "Software house"
 members = ["owner", "dev"]
 """
@@ -60,7 +60,7 @@ def test_a_stage_without_spaces_has_none(tmp_path):
 
 def test_a_space_is_read_with_its_folder_mount_and_application(tmp_path):
     sp = settings(tmp_path, SERVER + SPACE).env("prod").spaces[0]
-    assert (sp.id, sp.folder, str(sp.mount), sp.application, sp.members) == ("software", "software", "/srv/software", "softwareaenderung", ("owner", "dev"))
+    assert (sp.id, sp.folder, str(sp.mount), sp.application, sp.members) == ("software", "software", "/srv/software", "shipyard", ("owner", "dev"))
 
 
 def test_a_space_may_not_share_a_team_folder_or_a_mount_with_a_stage(tmp_path):
@@ -72,7 +72,7 @@ def test_a_space_may_not_share_a_team_folder_or_a_mount_with_a_stage(tmp_path):
 
 def test_a_space_without_an_application_is_refused_with_a_sentence(tmp_path):
     with pytest.raises(OpsError, match="application"):
-        settings(tmp_path, SERVER + SPACE.replace('application = "softwareaenderung"\n', ""))
+        settings(tmp_path, SERVER + SPACE.replace('application = "shipyard"\n', ""))
 
 
 def test_seeding_adds_the_application_and_the_workspace_once(tmp_path):
@@ -85,7 +85,7 @@ def test_seeding_adds_the_application_and_the_workspace_once(tmp_path):
     assert ws["root"] == "/nc/data/__groupfolders/7/files/flow"
     assert ws["write_root"] == "/srv/software/flow"
     assert ws["mode"] == "live" and ws["members"] == ["owner", "dev"]
-    assert data["applications"]["softwareaenderung"]["config_dir"] == str(cfg / "softwareaenderung")
+    assert data["applications"]["shipyard"]["config_dir"] == str(cfg / "shipyard")
     assert not workspace._seed_spaces(data, env, cfg, st.server, {"software": 7})      # idempotent
     assert len(data["workspaces"]) == 1
 

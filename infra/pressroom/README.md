@@ -62,7 +62,7 @@ keyboard.
 ## Spaces
 
 A stage can carry further live workspaces, each in a team folder of its own (`[[env.<stage>.space]]`, ADR-027). The
-first is the software house: our own changes as cases, apart from the content. `create` and `deploy` create the team
+first is Shipyard: our own software changes as cases, apart from the content. `create` and `deploy` create the team
 folder, mount it beside the stage's own, register the application and the workspace, and create the stage folders the
 application's configuration names. A space is never cloned; each stage that has one has its own tree. Tests:
 `python -m pytest -q tests` in this directory.

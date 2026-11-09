@@ -17,16 +17,16 @@ an agent, so the place where a person approves the agent's work has to be explic
 
 ## Decision
 
-1. **A software change is a case** in its own application, `softwareaenderung`, configured like any other domain
+1. **A software change is a case** in its own application, **Shipyard** (`shipyard`), configured like any other domain
    (ADR-015). No new core code.
 2. **The stages are the way of a change in CONTRIBUTING.md**, one stage per step, each leaving only with its record:
-   task (`auftrag.md`), pull request (`pr.md`), checks (`pruefung.md`), release (`release.md`), TEST (`test.md`),
+   task (`task.md`), pull request (`pr.md`), checks (`checks.md`), release (`release.md`), TEST (`test.md`),
    PROD (`prod.md`). The case claims nothing it does not link.
 3. **The product owner holds every gate:** confirms the task, merges, accepts ENTW and TEST. The merge is four eyes:
    whoever wrote the pull request record cannot merge it.
 4. **A developer may be a person or an agent.** The agent's moves are recorded under its own name, never under the
    person who approves them.
-5. **The live workspace is on production, in its own folder** (`softwarehaus`), apart from content. It holds our real
+5. **The live workspace is on production, in its own folder** (`shipyard`), apart from PressRoom's content. It holds our real
    changes from 2026-11-08 on; nothing in it is prepared.
 6. **Records are written by hand for now.** The developer records the pull request, the check run and each deploy as
    a file in the case. A webhook from the code host comes later and changes who writes the record, not the way.

@@ -12,8 +12,8 @@ from casefile.domain.turn import turn as whose
 from casefile.models import StepRequest
 from casefile.store import FsStore
 
-CFG = Path(__file__).resolve().parents[1] / "config" / "softwareaenderung"
-STAGES = ("10-auftrag", "20-umsetzung", "30-pruefung", "40-freigabe", "50-release", "60-entw", "70-test", "80-prod", "90-abgeschlossen")
+CFG = Path(__file__).resolve().parents[1] / "config" / "shipyard"
+STAGES = ("10-task", "20-build", "30-checks", "40-approval", "50-release", "60-entw", "70-test", "80-prod", "90-closed")
 CID = "SW-2026-001-split-the-api"
 
 
@@ -21,7 +21,7 @@ def world(tmp_path: Path):
     root = tmp_path / "flow"
     for s in STAGES:
         (root / s).mkdir(parents=True)
-    case = root / "10-auftrag" / CID
+    case = root / "10-task" / CID
     case.mkdir()
     (case / "meta.json").write_text(json.dumps({"label": "SW", "number": "2026-001", "title": "Split the API", "configVersion": "1"}), encoding="utf-8")
     (case / "review.md").write_text("", encoding="utf-8")
@@ -51,11 +51,11 @@ def stage(store, config):
 def test_the_whole_way_from_task_to_prod(tmp_path):
     root, store, config = world(tmp_path)
     go = Steps(store, config)
-    go.deliver(root, "auftrag.md", "axel")
+    go.deliver(root, "task.md", "axel")
     assert go("accept_task", "chris").ok
     go.deliver(root, "pr.md", "axel", "https://example.org/pull/4")
     assert go("open_pr", "axel").ok
-    go.deliver(root, "pruefung.md", "axel")
+    go.deliver(root, "checks.md", "axel")
     assert go("checks_green", "axel").ok
     assert go("merge", "chris").ok
     go.deliver(root, "release.md", "axel")
@@ -65,14 +65,14 @@ def test_the_whole_way_from_task_to_prod(tmp_path):
     assert go("approve_prod", "chris").ok
     go.deliver(root, "prod.md", "axel")
     assert go("close", "axel").ok
-    assert stage(store, config) == "90-abgeschlossen"
+    assert stage(store, config) == "90-closed"
 
 
 def test_a_task_moves_only_when_the_product_owner_confirms_it(tmp_path):
     root, store, config = world(tmp_path)
     go = Steps(store, config)
     assert not go("accept_task", "chris").ok                       # no task written yet
-    go.deliver(root, "auftrag.md", "axel")
+    go.deliver(root, "task.md", "axel")
     r = go("accept_task", "axel")                                  # the developer cannot confirm their own task
     assert not r.ok and "product_owner" in r.reason
     assert go("accept_task", "chris").ok
@@ -87,36 +87,36 @@ def test_the_author_of_the_pull_request_cannot_merge_it(tmp_path):
     (root / "people.json").write_text(json.dumps(data), encoding="utf-8")
     config = DomainConfig.load(CFG, root)
     go = Steps(store, config)
-    go.deliver(root, "auftrag.md", "axel")
+    go.deliver(root, "task.md", "axel")
     assert go("accept_task", "chris").ok
     go.deliver(root, "pr.md", "chris")
     assert go("open_pr", "chris").ok
-    go.deliver(root, "pruefung.md", "axel")
+    go.deliver(root, "checks.md", "axel")
     assert go("checks_green", "axel").ok
     r = go("merge", "chris")
     assert not r.ok and "four eyes" in r.reason
-    assert stage(store, config) == "40-freigabe"
+    assert stage(store, config) == "40-approval"
 
 
 def test_the_merge_waits_for_the_recorded_checks_and_can_send_the_change_back(tmp_path):
     root, store, config = world(tmp_path)
     go = Steps(store, config)
-    go.deliver(root, "auftrag.md", "axel")
+    go.deliver(root, "task.md", "axel")
     go("accept_task", "chris")
     go.deliver(root, "pr.md", "axel")
     go("open_pr", "axel")
     assert not go("checks_green", "axel").ok                       # no check run recorded
-    go.deliver(root, "pruefung.md", "axel")
+    go.deliver(root, "checks.md", "axel")
     go("checks_green", "axel")
     assert not go("send_back", "chris").ok                         # a send-back says why
     assert go("send_back", "chris", note="The tests describe the code, not the requirement.").ok
-    assert stage(store, config) == "20-umsetzung"
+    assert stage(store, config) == "20-build"
 
 
 def test_whose_move_names_the_agent_while_it_builds_and_the_owner_at_each_gate(tmp_path):
     root, store, config = world(tmp_path)
     go = Steps(store, config)
-    go.deliver(root, "auftrag.md", "axel")
+    go.deliver(root, "task.md", "axel")
     moves = whose(reading.load(store, config, CID), config)
     assert moves and moves[0].actor == "role:product_owner"
     go("accept_task", "chris")

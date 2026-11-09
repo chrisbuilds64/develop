@@ -1,12 +1,13 @@
-# REQ-002 — Software change: our own changes as cases
+# REQ-002 — Shipyard: our own software changes as cases
 
 **Status:** proposed 2026-11-08, waiting for the product owner. Decision E5 of 2026-11-08: a software house that
-builds on casefile runs its own changes through casefile. This is that application.
+builds on casefile runs its own changes through casefile. This is that application: **Shipyard**, where our software is built and
+launched, beside PressRoom, where our content is.
 
-**Scope:** the configuration `apps/casefile/config/softwareaenderung/` and one live workspace on production. No new
+**Scope:** the configuration `apps/casefile/config/shipyard/` and one live workspace on production. No new
 core code: the application is configuration only (ADR-015). Decision record: ADR-027.
 
-**Evidence** means a test in `apps/casefile/tests/test_softwareaenderung.py`.
+**Evidence** means a test in `apps/casefile/tests/test_shipyard.py`.
 
 ## The way of a change
 
@@ -14,9 +15,9 @@ The stages are the way of a change in [CONTRIBUTING.md](../../CONTRIBUTING.md), 
 
 | Stage | Whose move | Leaves when | Record in the case |
 |---|---|---|---|
-| 10 Task | product owner | the product owner confirms the task | `auftrag.md` — what and why, which requirement lines |
+| 10 Task | product owner | the product owner confirms the task | `task.md` — what and why, which requirement lines |
 | 20 Build | developer | a pull request is open | `pr.md` — link, what changed, what was tested |
-| 30 Checks | developer | the checks are green | `pruefung.md` — link to the check run, result |
+| 30 Checks | developer | the checks are green | `checks.md` — link to the check run, result |
 | 40 Approval | product owner | merged, or sent back with a reason | — |
 | 50 Release | developer | the tag is deployed to ENTW | `release.md` — tag, ENTW deploy |
 | 60 ENTW | product owner | ENTW accepted, released to TEST | — |

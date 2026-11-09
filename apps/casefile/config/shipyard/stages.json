@@ -1,11 +1,11 @@
 {
   "$comment": "A change to our own software as a case (REQ-002, ADR-027). The way of a change from CONTRIBUTING.md, stage by stage: the product owner confirms the task, a developer (a person or an agent) builds it on a branch and records the pull request, the checks are recorded, the product owner merges (four eyes: never the author of the pull request), the release is a tag, and each stage (ENTW, TEST, PROD) is accepted by the product owner. Every record is a file in the case; nothing is claimed that is not linked.",
-  "name": "Software change",
+  "name": "Shipyard",
   "lang": "en",
   "configVersion": "1",
   "stages": [
     {
-      "folder": "10-auftrag",
+      "folder": "10-task",
       "key": "task",
       "group": "you",
       "turn": "role:product_owner",
@@ -13,16 +13,16 @@
         {
           "id": "accept_task",
           "label": "accept_task",
-          "to": "20-umsetzung",
+          "to": "20-build",
           "requires": [
-            "auftrag.md"
+            "task.md"
           ],
           "entry_status": "approved"
         }
       ]
     },
     {
-      "folder": "20-umsetzung",
+      "folder": "20-build",
       "key": "build",
       "group": "you",
       "turn": "role:developer",
@@ -30,7 +30,7 @@
         {
           "id": "open_pr",
           "label": "open_pr",
-          "to": "30-pruefung",
+          "to": "30-checks",
           "requires": [
             "pr.md"
           ],
@@ -39,7 +39,7 @@
       ]
     },
     {
-      "folder": "30-pruefung",
+      "folder": "30-checks",
       "key": "checks",
       "group": "you",
       "turn": "role:developer",
@@ -47,16 +47,16 @@
         {
           "id": "checks_green",
           "label": "checks_green",
-          "to": "40-freigabe",
+          "to": "40-approval",
           "requires": [
-            "pruefung.md"
+            "checks.md"
           ],
           "entry_status": "info"
         }
       ]
     },
     {
-      "folder": "40-freigabe",
+      "folder": "40-approval",
       "key": "approval",
       "group": "you",
       "turn": "role:product_owner",
@@ -67,7 +67,7 @@
           "to": "50-release",
           "requires": [
             "pr.md",
-            "pruefung.md"
+            "checks.md"
           ],
           "four_eyes": true,
           "seal": true,
@@ -76,7 +76,7 @@
         {
           "id": "send_back",
           "label": "send_back",
-          "to": "20-umsetzung",
+          "to": "20-build",
           "payload": [
             "note"
           ],
@@ -146,7 +146,7 @@
         {
           "id": "close",
           "label": "close",
-          "to": "90-abgeschlossen",
+          "to": "90-closed",
           "requires": [
             "prod.md"
           ],
@@ -155,7 +155,7 @@
       ]
     },
     {
-      "folder": "90-abgeschlossen",
+      "folder": "90-closed",
       "key": "closed",
       "group": "out",
       "turn": null
