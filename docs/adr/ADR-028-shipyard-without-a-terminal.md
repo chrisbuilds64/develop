@@ -59,7 +59,8 @@ a deploy restarts the stage's runner — a run that deploys its own stage would 
   developers keep working from the terminal as well: a local agent session pushes and merges under the product owner's
   account, and deploys over SSH with `pressroom-env deploy`. `main` requires a pull request and green checks, but no
   approval. This is a deliberate exception while the process is being proven, not a gap. It ends once the gate
-  protocols run (ADR-029); from then on nothing reaches a stage past a case — the local agent under an identity of its
+  protocols run (ADR-029) and releases are solved (ADR-030): a complex order, split into parts, reaches production as
+  one release, concretely and successfully. From then on nothing reaches a stage past a case — the local agent under an identity of its
   own, an approval required on `main`, deploys only as requests. The PressRoom follows the same path afterwards.
 
 ## Alternatives considered
