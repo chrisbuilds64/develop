@@ -13,7 +13,7 @@ before its build, and its test comes with it.
 | # | Requirement | Evidence |
 |---|---|---|
 | GP-01 | A gate protocol is a deliverable of the case, written only through the core, under the case lock, atomically. | planned |
-| GP-02 | Its standing items come from a template in the application's configuration; a template in the workspace's tree overrides it. | planned |
+| GP-02 | Its standing items come from a template in the application's configuration; a workspace may have its own in its tree. Whether a person may replace the template or only add items is a right of their role in the workspace. | planned |
 | GP-03 | A helper may draft case items from the task; each item records where it came from (template, helper, person). | planned |
 | GP-04 | Before the first verdict, the person who holds the gate may strike an item (with a reason) or add one. | planned |
 | GP-05 | Each item gets one verdict from a person in the gate's role: passed, failed or not applicable. | planned |
@@ -29,13 +29,14 @@ before its build, and its test comes with it.
 | GP-10 | A failed must-item offers the way back instead, and the failed item is the reason of that step. | planned |
 | GP-11 | A completed protocol is sealed with the person and the time, and a readable record is compiled beside it. | planned |
 | GP-12 | A case sent back and deployed again gets a new protocol version; the earlier one stays readable. | planned |
+| GP-13 | Each item is a must-item or a should-item. A failed should-item does not block the gate; it is shown at the decision and stays in the sealed record. | planned |
 
 ## Shipyard
 
 | # | Requirement | Evidence |
 |---|---|---|
 | GP-20 | ENTW is accepted with an installation check, held by a developer: tag and commit on the stage, services active, migrations run, logs without new errors. | planned |
-| GP-21 | TEST is accepted with a business acceptance, held by the role `acceptance`, never by the change's developer; its case items are the instructions for this change. | planned |
+| GP-21 | TEST is accepted with a business acceptance, held by the role `acceptance`, never by the change's developer; its case items are the instructions for this change. With us the role is held by the product owner in personal union or by a peer (Akhil). | planned |
 | GP-22 | PROD is closed with a production check, held by a developer: the installation check's items plus the way back. | planned |
 | GP-23 | The verify helper fills observations for the items it can check and decides none. | planned |
 

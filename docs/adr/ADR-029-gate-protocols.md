@@ -33,7 +33,8 @@ place of an answer.
    only through the core, under the case lock, like every other record.
 2. **Its standing items come from a template** in the application's configuration (`protocols/<id>.json`): what is
    checked at this gate for every case — the version on the stage, the services, the migrations, no new invalid objects.
-   A workspace may override the template in its tree (`_protocols/`), as packs are (house rules are somebody's).
+   A workspace may have its own template in its tree (`_protocols/`), as packs are (house rules are somebody's).
+   Whether a person may replace the template or only add items is a right of a role in the workspace, not a fixed rule.
 3. **Case items are added for the case.** A helper drafts them from the task (what to try, what to expect); the person
    who holds the gate strikes or adds items before working through them. Every item says where it came from.
 4. **Each item gets a verdict from a person in the role that holds the gate:** passed, failed, or not applicable. Not
@@ -41,8 +42,10 @@ place of an answer.
    not a tick, not a verdict (the interview's 53 of 55 lesson).
 5. **An agent may observe, never decide.** For items it can check (a query, an HTTP call, a version) it writes what it
    observed and the evidence; the person confirms or contradicts (do-confirm). The verdict field is the person's.
-6. **The gate reads the protocol.** An action names it (`protocol: "<id>"`) and is offered only when every must-item
-   passed or is not applicable with a reason. A failed item offers the way back instead, with the item as its reason.
+6. **Must and should.** Each item is a must-item or a should-item (Stage-Gate's must-meet and should-meet). **The gate
+   reads the protocol:** an action names it (`protocol: "<id>"`) and is offered only when every must-item passed or is not
+   applicable with a reason. A failed must-item offers the way back instead, with the item as its reason. A failed
+   should-item does not block; it is shown at the decision and stays in the sealed record.
 7. **A completed protocol is sealed** with the person and the time and compiled into a readable record beside it. A
    change sent back and deployed again gets a new protocol version; the old one stays (C-06).
 8. **The same mechanism for every application.** Shipyard first: installation check on ENTW (developer), business
@@ -54,7 +57,8 @@ place of an answer.
 - Every acceptance rests on a person's evidence in their role, not on the report of the agent that deployed. ADR-027's
   `test.md` and `prod.md` become protocols; the verify helper fills observations, the person decides.
 - The business side gets instructions for exactly this change, written before it tests, and a place to say what it saw.
-- Shipyard needs a role for the business acceptance (`acceptance`), held by a person other than the change's developer.
+- Shipyard needs a role for the business acceptance (`acceptance`), never held by the change's developer. With us the
+  product owner holds it in personal union, or a peer (Akhil) as peer review; the configuration names both.
 - New core code: the protocol file and its steps (a sibling of `domain/interview.py`), the gate condition, the surface
   to work through a protocol. It needs better input fields; it comes after the editor (SYS-127).
 - An invalid object after a deploy becomes a failed item with its evidence, not a user's first error message.
