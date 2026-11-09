@@ -1,0 +1,9 @@
+{
+  "$comment": "The worklist orders no helpers of its own; the built-in question stays.",
+  "default": {
+    "orderable_by": [
+      "operator"
+    ]
+  },
+  "skills": {}
+}

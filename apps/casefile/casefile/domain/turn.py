@@ -92,6 +92,15 @@ def four_eyes_block(config: DomainConfig, case: Case, action: Action, actor: str
     return None
 
 
+def actor_of(actor: str | None, case: Case) -> str | None:
+    """`field:<key>` names whoever the case's meta holds under that key (the worklist's assignee): `person:<id>`.
+    Empty field, nobody's move. Every other actor stays as it is."""
+    if actor and actor.startswith("field:"):
+        who = str(case.meta.get(actor[6:]) or "").strip()
+        return f"person:{who}" if who else None
+    return actor
+
+
 def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn]:
     out: list[Turn] = []
     run = case.last_run
@@ -124,15 +133,16 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
             if not p["done"]:
                 out.append(Turn(actor=pid, action="interview", label=_label(config, "interview" if p["answered"] == 0 else "interview_continue", lang),
                                 reason=config.word("stages", case.stage, lang, case.stage), blocked_by=[], since=case.since))
-    if stage and stage.turn and stage.turn != "claude":
+    stage_turn = actor_of(stage.turn, case) if stage else None
+    if stage and stage_turn and stage_turn != "claude":
         for action in stage.actions:
             if not offered(config, case, action):
                 continue
             missing = missing_for(config, case, action)
-            actor = action.actor or stage.turn
-            if action.actor and action.actor != stage.turn and missing:
+            actor = actor_of(action.actor, case) or stage_turn
+            if action.actor and actor != stage_turn and missing:
                 # the stage's own actor must deliver first; the action's actor waits
-                out.append(Turn(actor=stage.turn, action="deliver", label=_label(config, "deliver", lang),
+                out.append(Turn(actor=stage_turn, action="deliver", label=_label(config, "deliver", lang),
                                 reason=config.word("reasons", "missing", lang, "something is still missing"),
                                 blocked_by=missing, since=case.since))
                 continue

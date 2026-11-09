@@ -1,0 +1,141 @@
+{
+  "$comment": "The worklist (ADR-031, REQ-005): casefile's simplest application. An item is a case; its stages are the statuses of an open item. Whose move it is comes from the item's assignee (field:assignee). Every member is an operator: anyone who may write an item may move it to any stage (WL-05). Done closes it; 'Move back' (reopen) returns it.",
+  "name": "Worklist",
+  "lang": "en",
+  "configVersion": "1",
+  "stages": [
+    {
+      "folder": "10-backlog",
+      "key": "backlog",
+      "group": "ideas",
+      "turn": "field:assignee",
+      "actions": [
+        {
+          "id": "to_next",
+          "label": "to_next",
+          "to": "20-next",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_doing",
+          "label": "to_doing",
+          "to": "30-doing",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_waiting",
+          "label": "to_waiting",
+          "to": "40-waiting",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_done",
+          "label": "to_done",
+          "to": "90-done",
+          "entry_status": "approved"
+        }
+      ]
+    },
+    {
+      "folder": "20-next",
+      "key": "next",
+      "group": "planned",
+      "turn": "field:assignee",
+      "actions": [
+        {
+          "id": "to_doing",
+          "label": "to_doing",
+          "to": "30-doing",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_backlog",
+          "label": "to_backlog",
+          "to": "10-backlog",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_waiting",
+          "label": "to_waiting",
+          "to": "40-waiting",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_done",
+          "label": "to_done",
+          "to": "90-done",
+          "entry_status": "approved"
+        }
+      ]
+    },
+    {
+      "folder": "30-doing",
+      "key": "doing",
+      "group": "others",
+      "turn": "field:assignee",
+      "actions": [
+        {
+          "id": "to_done",
+          "label": "to_done",
+          "to": "90-done",
+          "entry_status": "approved"
+        },
+        {
+          "id": "to_backlog",
+          "label": "to_backlog",
+          "to": "10-backlog",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_next",
+          "label": "to_next",
+          "to": "20-next",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_waiting",
+          "label": "to_waiting",
+          "to": "40-waiting",
+          "entry_status": "info"
+        }
+      ]
+    },
+    {
+      "folder": "40-waiting",
+      "key": "waiting",
+      "group": "others",
+      "turn": "field:assignee",
+      "actions": [
+        {
+          "id": "to_doing",
+          "label": "to_doing",
+          "to": "30-doing",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_backlog",
+          "label": "to_backlog",
+          "to": "10-backlog",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_next",
+          "label": "to_next",
+          "to": "20-next",
+          "entry_status": "info"
+        },
+        {
+          "id": "to_done",
+          "label": "to_done",
+          "to": "90-done",
+          "entry_status": "approved"
+        }
+      ]
+    },
+    {
+      "folder": "90-done",
+      "key": "done",
+      "group": "archive"
+    }
+  ]
+}

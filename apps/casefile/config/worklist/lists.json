@@ -1,0 +1,224 @@
+{
+  "$comment": "The worklist's value lists. label: the areas (clusters) — the key is the prefix of an item's number (SYS-147). priority and origin are set as fields (theme.fields), not asked on creation.",
+  "lists": {
+    "label": {
+      "word": {
+        "de": "Bereich",
+        "en": "Area"
+      },
+      "field": "label",
+      "on_create": true,
+      "entries": [
+        {
+          "key": "CNT",
+          "word": {
+            "de": "Content & Produktion",
+            "en": "Content & production"
+          },
+          "color": "#2f6fed",
+          "status": "active"
+        },
+        {
+          "key": "CL",
+          "word": {
+            "de": "Context Loop",
+            "en": "Context Loop"
+          },
+          "color": "#7c3aed",
+          "status": "active"
+        },
+        {
+          "key": "EVT",
+          "word": {
+            "de": "Events",
+            "en": "Events"
+          },
+          "color": "#e0a52a",
+          "status": "active"
+        },
+        {
+          "key": "INF",
+          "word": {
+            "de": "Infrastruktur & Sicherheit",
+            "en": "Infrastructure & security"
+          },
+          "color": "#c62828",
+          "status": "active"
+        },
+        {
+          "key": "MKT",
+          "word": {
+            "de": "Marke & Positionierung",
+            "en": "Brand & positioning"
+          },
+          "color": "#db2777",
+          "status": "active"
+        },
+        {
+          "key": "SYS",
+          "word": {
+            "de": "System & Kanon",
+            "en": "System & canon"
+          },
+          "color": "#0f766e",
+          "status": "active"
+        },
+        {
+          "key": "BUCH",
+          "word": {
+            "de": "Bücher",
+            "en": "Books"
+          },
+          "color": "#92400e",
+          "status": "active"
+        },
+        {
+          "key": "DSG",
+          "word": {
+            "de": "DSGVO",
+            "en": "GDPR"
+          },
+          "color": "#475569",
+          "status": "active"
+        },
+        {
+          "key": "HW",
+          "word": {
+            "de": "Hardware",
+            "en": "Hardware"
+          },
+          "color": "#57534e",
+          "status": "active"
+        },
+        {
+          "key": "TI",
+          "word": {
+            "de": "Tema Iron",
+            "en": "Tema Iron"
+          },
+          "color": "#15803d",
+          "status": "active"
+        }
+      ]
+    },
+    "priority": {
+      "word": {
+        "de": "Wichtigkeit",
+        "en": "Priority"
+      },
+      "field": "priority",
+      "on_create": false,
+      "entries": [
+        {
+          "key": "high",
+          "word": {
+            "de": "hoch",
+            "en": "high"
+          },
+          "color": "#c62828",
+          "status": "active"
+        },
+        {
+          "key": "medium",
+          "word": {
+            "de": "mittel",
+            "en": "medium"
+          },
+          "color": "#e0a52a",
+          "status": "active"
+        },
+        {
+          "key": "low",
+          "word": {
+            "de": "niedrig",
+            "en": "low"
+          },
+          "color": "#5a6270",
+          "status": "active"
+        }
+      ]
+    },
+    "origin": {
+      "word": {
+        "de": "Herkunft",
+        "en": "Origin"
+      },
+      "field": "origin_kind",
+      "on_create": false,
+      "entries": [
+        {
+          "key": "session-log",
+          "word": {
+            "de": "Session Log",
+            "en": "session log"
+          },
+          "status": "active"
+        },
+        {
+          "key": "audit",
+          "word": {
+            "de": "Audit",
+            "en": "audit"
+          },
+          "status": "active"
+        },
+        {
+          "key": "planning",
+          "word": {
+            "de": "Planungsdokument",
+            "en": "planning document"
+          },
+          "status": "active"
+        },
+        {
+          "key": "decision",
+          "word": {
+            "de": "Entscheid im Gespräch",
+            "en": "decision in conversation"
+          },
+          "status": "active"
+        },
+        {
+          "key": "review",
+          "word": {
+            "de": "Review",
+            "en": "review"
+          },
+          "status": "active"
+        },
+        {
+          "key": "communication",
+          "word": {
+            "de": "communication.md / DISC",
+            "en": "communication.md / DISC"
+          },
+          "status": "active"
+        },
+        {
+          "key": "rule",
+          "word": {
+            "de": "stehende Regel",
+            "en": "standing rule"
+          },
+          "status": "active"
+        },
+        {
+          "key": "event",
+          "word": {
+            "de": "Event-Dokument",
+            "en": "event document"
+          },
+          "status": "active"
+        },
+        {
+          "key": "other",
+          "word": {
+            "de": "sonstige",
+            "en": "other"
+          },
+          "status": "active"
+        }
+      ]
+    }
+  }
+}
