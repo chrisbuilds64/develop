@@ -16,6 +16,17 @@ const browser = await chromium.launch(pinned && existsSync(pinned) ? { executabl
 const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "de-DE" })).newPage();
 const issues = [];
 page.on("pageerror", (e) => { if (!/ViewTransition/.test(e.message)) issues.push(`pageerror: ${e.message}`); });
+// the keys the page saw, so a red run says whether ⌘J reached the page or the page did not answer it
+await page.addInitScript(() => {
+  window.__keys = [];
+  window.addEventListener("keydown", (e) => { window.__keys.push(`${e.ctrlKey ? "C-" : ""}${e.metaKey ? "M-" : ""}${e.key}`); }, true);
+});
+let at = "start";
+const state = () => page.evaluate(() => {
+  const a = document.activeElement;
+  return `url=${location.pathname} focus=${a ? a.tagName.toLowerCase() + (a.className ? "." + String(a.className).split(" ")[0] : "") : "none"}`
+    + ` i-ask=${document.querySelectorAll(".i-ask").length} nf-sheet=${document.querySelectorAll(".nf-sheet").length} keys=${(window.__keys ?? []).slice(-6).join(",")}`;
+}).catch((e) => `state unreadable: ${e.message}`);
 let n = 0;
 const shot = async (what) => { n += 1; await page.screenshot({ path: join(out, `${String(n).padStart(2, "0")}-${what}.png`) }); console.log(n, what); };
 const sheet = page.locator(".nf-sheet");
@@ -31,6 +42,7 @@ try {
   must(ids.length >= 2, `two cases needed, found ${ids.length}`);
   const open = (id) => page.goto(`${base}/w/${ws}/case/${encodeURIComponent(id)}`, { waitUntil: "networkidle" });
 
+  at = "open by click";
   await open(ids[0]);
   await page.locator(".i-ask .ask-open").click();
   await sheet.waitFor({ timeout: 5000 });
@@ -42,16 +54,19 @@ try {
   must((await area.inputValue()) === DRAFT, "the two lines are not in the editor");
   await shot("written");
 
+  at = "close with Esc";
   await page.keyboard.press("Escape");
   await sheet.waitFor({ state: "hidden", timeout: 3000 });
   must(page.url().includes("/case/"), "Esc in the editor left the case");
   await shot("closed");
 
+  at = "reopen with ⌘J";
   await page.keyboard.press("ControlOrMeta+j");
   await sheet.waitFor({ timeout: 3000 });
   must((await area.inputValue()) === DRAFT, "⌘J reopened the editor without the draft");
   await page.keyboard.press("Escape");
 
+  at = "⌘J after reload";
   await page.reload({ waitUntil: "networkidle" });
   await page.keyboard.press("ControlOrMeta+j");
   await sheet.waitFor({ timeout: 3000 });
@@ -59,12 +74,14 @@ try {
   await shot("after-reload");
   await page.keyboard.press("Escape");
 
+  at = "⌘J on another case";
   await open(ids[1]);
   await page.keyboard.press("ControlOrMeta+j");
   await sheet.waitFor({ timeout: 3000 });
   must((await area.inputValue()) === "", "another case shows this case's draft");
   await page.keyboard.press("Escape");
 
+  at = "send with ⌘Enter";
   await open(ids[0]);
   await page.keyboard.press("ControlOrMeta+j");
   await sheet.waitFor({ timeout: 3000 });
@@ -75,11 +92,12 @@ try {
   await sheet.waitFor({ state: "hidden", timeout: 3000 });
   await page.waitForFunction(() => document.querySelector(".i-thread")?.textContent?.includes("line two"), null, { timeout: 10000 });
   await shot("sent");
+  at = "⌘J after sending";
   await page.keyboard.press("ControlOrMeta+j");
   await sheet.waitFor({ timeout: 3000 });
   must((await area.inputValue()) === "", "the draft was not cleared after sending");
 } catch (e) {
-  issues.push(e.message);
+  issues.push(`${at}: ${e.message.split("\n")[0]} — ${await state()}`);
   await shot("broken").catch(() => undefined);
 }
 console.log(issues.length ? issues.join("\n") : "clean");
