@@ -157,7 +157,7 @@ def notes_worktree(settings: Settings, env: Env) -> Path | None:
     return tree
 
 
-def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
+def seed_workspaces(settings: Settings, env: Env, folder_id: int, space_ids: dict[str, int] | None = None) -> Path:
     """The registry of this stage: the applications from the checkout, the shared PressRoom on the team folder
     (read from the disk, written through the mount), and — on a showcase stage — the sample and demo workspaces from
     the worlds. Written once; the workspaces are added whenever they are missing (idempotent)."""
@@ -239,9 +239,48 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int) -> Path:
             if w["id"] in added and w.get("mode") == "replay":
                 w["open_identity"] = True              # sample worlds keep the person picker: their people are invented
         reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if _seed_spaces(data, env, cfg, s, space_ids or {}):
+        reg.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     _connect_targets(data, cp, cfg, s)
     log.info("%s: workspaces: %s", env.name, ", ".join(w["id"] for w in data["workspaces"]))
     return reg
+
+
+def _seed_spaces(data: dict, env: Env, cfg: Path, s, space_ids: dict[str, int]) -> bool:
+    """ADR-027: a further live workspace per space — its application from the checkout, its tree in its own team folder
+    (read from the disk, written through its mount), like the PressRoom. Added when missing; never rewritten."""
+    changed = False
+    have = {w["id"] for w in data["workspaces"]}
+    for sp in env.spaces:
+        if sp.application not in data["applications"]:
+            data["applications"][sp.application] = {"label": sp.label, "config_dir": str(cfg / sp.application), "mode": "live"}
+            changed = True
+        if sp.id in have or sp.folder not in space_ids:
+            continue
+        data["workspaces"].append({"id": sp.id, "application": sp.application, "label": sp.label, "shared": True, "members": list(sp.members),
+                                   "root": str(s.groupfolders_data / str(space_ids[sp.folder]) / "files" / "flow"),
+                                   "write_root": str(sp.mount / "flow"), "mode": "live"})
+        changed = True
+        log.info("%s: space %s added (team folder %s)", env.name, sp.id, sp.folder)
+    return changed
+
+
+def ensure_space_trees(settings: Settings, env: Env) -> list[str]:
+    """Every stage folder a space's application names, created through the mount (so Nextcloud knows them) when missing.
+    Runs after the mounts are up. Creates folders only; never touches a case."""
+    s = settings.server
+    cfg = env.dir(s) / "develop" / "apps" / "casefile" / "config"
+    made = []
+    for sp in env.spaces:
+        stages = json.loads((cfg / sp.application / "stages.json").read_text(encoding="utf-8"))["stages"]
+        for st in stages:
+            p = sp.mount / "flow" / st["folder"]
+            if not p.is_dir():
+                run(["mkdir", "-p", str(p)], user=s.runner_user)
+                made.append(f"{sp.id}/{st['folder']}")
+    if made:
+        log.info("%s: stage folders created: %s", env.name, ", ".join(made))
+    return made
 
 
 def _connect_targets(data: dict, cp: Path, cfg: Path, s) -> None:

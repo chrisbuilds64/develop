@@ -1,0 +1,29 @@
+{
+  "name": "Shipyard",
+  "app": {
+    "icon": "code",
+    "color": "#0f766e"
+  },
+  "lang": "en",
+  "accent": "your-move",
+  "covers": {
+    "by": "label",
+    "colors": {
+      "SW": "#0f766e"
+    },
+    "fallback": "#5a6270"
+  },
+  "create": {
+    "$comment": "A change starts as a task, written by a developer or the product owner. It counts within its year: SW-2026-001.",
+    "label": "SW",
+    "roles": [
+      "product_owner",
+      "developer"
+    ],
+    "stage": "10-task",
+    "number": [
+      "{year}-{seq:03}"
+    ],
+    "meta": {}
+  }
+}

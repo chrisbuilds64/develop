@@ -62,11 +62,13 @@ def cmd_create(args):
     env = st.env(args.stage)
     folders = TeamFolders(st.server)
     fid = folders.create(env.folder)
+    space_ids = {sp.folder: folders.create(sp.folder) for sp in env.spaces}
     workspace.deploy_code(st, env)
     workspace.write_cockpit_config(st, env, fid)
-    workspace.seed_workspaces(st, env, fid)
+    workspace.seed_workspaces(st, env, fid, space_ids)
     workspace.build_home(st, env, trust_from=Path(f"/home/{st.server.runner_user}/.claude.json"))
     names = systemd.install(st, env, folders.dav_url(env.folder))
+    workspace.ensure_space_trees(st, env)
     if env.clone_from and not (folders.files(fid) / "flow").is_dir():
         log.info("%s has no pipeline yet — cloning from %s", env.name, env.clone_from)
         clone(st, st.env(env.clone_from), env, folders)
@@ -98,9 +100,11 @@ def cmd_deploy(args):
     commit = workspace.deploy_code(st, env, args.ref)
     workspace.write_cockpit_config(st, env, ids[env.folder])
     workspace.notes_worktree(st, env)
-    workspace.seed_workspaces(st, env, ids[env.folder])
+    space_ids = {sp.folder: folders.create(sp.folder) for sp in env.spaces}     # a space added to envs.toml gets its team folder here
+    workspace.seed_workspaces(st, env, ids[env.folder], space_ids)
     workspace.build_home(st, env, trust_from=Path(f"/home/{st.server.runner_user}/.claude.json"))
     systemd.install(st, env, folders.dav_url(env.folder))
+    workspace.ensure_space_trees(st, env)
     print(f"{env.name}: {commit} deployed and restarted")
     return 0
 

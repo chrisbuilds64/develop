@@ -8,6 +8,7 @@ with a sentence, not a guess.
 
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,6 +41,17 @@ class Server:
 
 
 @dataclass(frozen=True)
+class Space:
+    """A further live workspace of a stage, in a team folder of its own (ADR-027: our software changes, apart from content)."""
+    id: str                     # the workspace id in the cockpit, also its URL segment
+    folder: str                 # Nextcloud team folder name
+    mount: Path                 # davfs2 mount point of that folder
+    application: str            # the casefile configuration it runs (config/<application>)
+    label: str
+    members: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class Env:
     name: str                   # "prod", "test", "entw" — also the stage label in the cockpit header
     label: str
@@ -51,6 +63,7 @@ class Env:
     clone_from: str             # the stage this one is cloned from; "" = never a clone target
     notes_branch: str = ""      # agents learn on this branch of control (a worktree per stage); "" = agents read control, never write
     showcase: bool = False      # the sample worlds and live demos are set up here; by default only where production lives (Chris, 2026-10-28)
+    spaces: tuple[Space, ...] = ()   # further live workspaces, each in its own team folder: [[env.<name>.space]]
 
     def dir(self, server: Server) -> Path:
         return server.envs_root / self.name
@@ -76,6 +89,15 @@ def _need(table: dict, key: str, where: str):
     if key not in table:
         raise OpsError(f"{where}: field '{key}' is missing")
     return table[key]
+
+
+def _space(t: dict, where: str) -> Space:
+    sid = str(_need(t, "id", where))
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", sid):
+        raise OpsError(f"{where}: id = '{sid}' — lower-case letters, digits and '-', it becomes a URL segment")
+    return Space(id=sid, folder=str(_need(t, "folder", where)), mount=Path(_need(t, "mount", where)),
+                 application=str(_need(t, "application", where)), label=str(t.get("label", sid)),
+                 members=tuple(str(m) for m in t.get("members", [])))
 
 
 def load(path: Path) -> Settings:
@@ -126,6 +148,7 @@ def load(path: Path) -> Settings:
             ref=str(e.get("ref", "main")), clone_from=str(e.get("clone_from", "")),
             notes_branch=str(e.get("notes_branch", "")),
             showcase=bool(e.get("showcase", not e.get("clone_from"))),
+            spaces=tuple(_space(x, f"{w} space") for x in (e.get("space") or [])),
         )
     if not envs:
         raise OpsError(f"{path.name}: no [env.<name>] tables — nothing to manage")
@@ -137,7 +160,10 @@ def load(path: Path) -> Settings:
             raise OpsError(f"[env.{e.name}]: clone_from = '{e.clone_from}' is not a stage")
         if e.clone_from == e.name:
             raise OpsError(f"[env.{e.name}]: a stage cannot be cloned from itself")
-    folders = [e.folder for e in envs.values()]
+    folders = [e.folder for e in envs.values()] + [x.folder for e in envs.values() for x in e.spaces]
     if len(set(folders)) != len(folders):
-        raise OpsError(f"{path.name}: two stages name the same team folder — every stage has its own")
+        raise OpsError(f"{path.name}: two stages or spaces name the same team folder — every one has its own")
+    mounts = [str(e.mount) for e in envs.values()] + [str(x.mount) for e in envs.values() for x in e.spaces]
+    if len(set(mounts)) != len(mounts):
+        raise OpsError(f"{path.name}: two stages or spaces share a mount point")
     return Settings(server=server, envs=envs, path=path)

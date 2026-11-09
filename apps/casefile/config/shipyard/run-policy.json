@@ -1,0 +1,29 @@
+{
+  "$comment": "No helper builds or deploys here yet: developers record what they did. A helper only answers questions about a change.",
+  "default": {
+    "orderable_by": [
+      "product_owner",
+      "developer"
+    ],
+    "permission_mode": "acceptEdits",
+    "write": [
+      "{container}"
+    ],
+    "tools": [
+      "Read",
+      "Glob"
+    ],
+    "web": false,
+    "timeout": 600,
+    "agent": "Axel",
+    "model": "claude-opus-5-5"
+  },
+  "skills": {
+    "ask": {
+      "does": "Answers a free question about the change.",
+      "never": "Decides, merges or deploys.",
+      "rules": []
+    }
+  },
+  "agents": []
+}

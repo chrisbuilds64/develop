@@ -1,0 +1,60 @@
+{
+  "$comment": "What a software change holds. Every file is a record with links (task, pull request, check run, tag, deploy); the case claims nothing it does not link.",
+  "common": [
+    {
+      "file": "meta.json",
+      "stage": "10-task",
+      "by": "human",
+      "shape": "text"
+    },
+    {
+      "file": "review.md",
+      "stage": "10-task",
+      "by": "human",
+      "shape": "text"
+    }
+  ],
+  "formats": {
+    "SW": {
+      "primary": "pr.md",
+      "artifacts": [
+        {
+          "file": "task.md",
+          "stage": "10-task",
+          "by": "role:developer",
+          "shape": "text"
+        },
+        {
+          "file": "pr.md",
+          "stage": "20-build",
+          "by": "role:developer",
+          "shape": "text"
+        },
+        {
+          "file": "checks.md",
+          "stage": "30-checks",
+          "by": "role:developer",
+          "shape": "text"
+        },
+        {
+          "file": "release.md",
+          "stage": "50-release",
+          "by": "role:developer",
+          "shape": "text"
+        },
+        {
+          "file": "test.md",
+          "stage": "70-test",
+          "by": "role:developer",
+          "shape": "text"
+        },
+        {
+          "file": "prod.md",
+          "stage": "80-prod",
+          "by": "role:developer",
+          "shape": "text"
+        }
+      ]
+    }
+  }
+}
