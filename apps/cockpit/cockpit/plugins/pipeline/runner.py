@@ -157,6 +157,26 @@ def take(queue: Path, me: str) -> tuple[Path, dict] | None:
     return None
 
 
+def orphans(queue: Path, me: str) -> list[str]:
+    """At start: a run this runner had taken and that still says "running" was cut off when the runner stopped (a deploy
+    restarts it). It is marked failed, with what happened, so the case shows a fact instead of "running" for ever and the
+    person whose move it then is can order it again. Runs taken by another runner are not touched."""
+    marked = []
+    for f in sorted(queue.glob("*.json")):
+        try:
+            run = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if run.get("status") != "running" or run.get("taken_by") != me:
+            continue
+        run.update(status="failed", finished=now(), exit=75,
+                   result=f"Interrupted: the runner stopped while this run was going (taken {run.get('started', '?')}). "
+                          "What it did before that is in the case; nothing after. Order it again if it is still needed.")
+        f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        marked.append(run.get("id", f.stem))
+    return marked
+
+
 def prompt_for(run: dict, agent: str) -> str:
     head = (f"You are {agent}, in a PressRoom session started by a run order from the cockpit — no conversation, "
             f"one task. Work on the container `{run['container']}` and nothing else. Write review entries and "
@@ -962,6 +982,11 @@ def main(argv=None) -> int:
     log.info("runner %s (%s) — %s, workspace %s, %s%s", me, KIND,
              f"registry {args.workspaces}" if args.workspaces else f"queue {args.data / '_runs'}", args.workspace, platform.system(),
              f", pull {', '.join(p.name for p in args.pull)}" if args.pull else "")
+    for _wid, data in queues(args):                       # once, before the first round: what the last stop cut off
+        q = data / "_runs"
+        if q.is_dir():
+            for rid in orphans(q, me):
+                log.warning("run %s was cut off by the last stop: marked failed", rid)
     warned: set[str] = set()
     while True:
         roots = queues(args)                               # re-read every round: a new workspace is served from its next order on
