@@ -433,6 +433,15 @@ class DecideIn(BaseModel):
     step_id: str
 
 
+class ExportOut(BaseModel):
+    id: str
+    stage: str
+    meta: dict
+    closed: str = ""                                      # the date it moved into a closing stage
+    changed: str = ""                                     # the date of its newest thread entry
+    data_point: str = ""
+
+
 class NewCaseIn(BaseModel):
     title: str
     label: str | None = None
@@ -1133,6 +1142,21 @@ def create_app(settings: Settings) -> FastAPI:
         all_cases = reading.load_all(c.store, c.config)
         seen = reads.load(c.store, who)
         return [TurnOut(case=views.card(c.config, case, who, c.lang, seen, c.store), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
+
+    @app.get("/api/export", response_model=list[ExportOut])
+    def export_cases(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Every case the viewer may read, as data: stage, meta, closing date, data point — for a client that keeps its
+        own commands (REQ-005 IF-04: `todo.py`). One read, no surface words."""
+        out = []
+        for case in reading.load_all(c.store, c.config):
+            st = c.config.stage(case.stage)
+            closed = ""
+            if st and st.group in stepping.CLOSED:
+                closed = next((e.date[:10] for e in reversed(case.entries) if e.to == case.stage), "") or case.since[:10]
+            point = c.store.point_of(case.id) if hasattr(c.store, "point_of") else None
+            out.append(ExportOut(id=case.id, stage=case.stage, meta=case.meta, closed=closed, data_point=point.name if point else "",
+                                 changed=(case.entries[-1].date[:10] if case.entries else str(case.meta.get("created") or ""))))
+        return out
 
     @app.get("/api/cases", response_model=list[GroupOut])
     def list_cases(group: str | None = None, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
@@ -1946,7 +1970,7 @@ def create_app(settings: Settings) -> FastAPI:
 def app_from_env() -> FastAPI:
     """`uvicorn casefile.api.app:app_from_env --factory`.
 
-    One pipeline: CASEFILE_ROOT, CASEFILE_CONFIG. The demo: CASEFILE_DEMO_WORLDS=<dir with claims/, pressroom/ and egutachten/> (built by
+    One pipeline: CASEFILE_ROOT, CASEFILE_CONFIG; over several data points CASEFILE_DATA_POINTS=<json list>, the root then the home. The demo: CASEFILE_DEMO_WORLDS=<dir with claims/, pressroom/ and egutachten/> (built by
     `python -m casefile.demo.worlds <dir>`), CASEFILE_SESSIONS=<dir>. Both: CASEFILE_WEB, CASEFILE_SECRET, CASEFILE_LANG.
     """
     here = Path(__file__).resolve().parents[2]
@@ -1968,7 +1992,8 @@ def app_from_env() -> FastAPI:
                                    default_world=os.environ.get("CASEFILE_DEFAULT_WORLD", "claims"),
                                    sessions_dir=Path(os.environ.get("CASEFILE_SESSIONS") or worlds_dir / "sessions"),
                                    open_identity=True))
-    return create_app(Settings(root=Path(os.environ["CASEFILE_ROOT"]).expanduser(),
+    points = json.loads(Path(os.environ["CASEFILE_DATA_POINTS"]).expanduser().read_text(encoding="utf-8")) if os.environ.get("CASEFILE_DATA_POINTS") else None
+    return create_app(Settings(root=Path(os.environ["CASEFILE_ROOT"]).expanduser(), data_points=points,
                                config_dir=Path(os.environ.get("CASEFILE_CONFIG") or here / "config" / "pressroom"),
                                lang=os.environ.get("CASEFILE_LANG"),
                                open_identity=os.environ.get("CASEFILE_OPEN_IDENTITY", "1") == "1",

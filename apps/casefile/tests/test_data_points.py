@@ -131,3 +131,16 @@ def test_the_surface_marks_each_card_with_its_data_point(tmp_path):
     assert stepping.step(store, config, b, StepRequest(action="share", step_id="s1", payload={"to": "team"}), "chris").ok
     marks = {c["id"]: c["data_point"] for g in client.get("/api/stages").json() for c in g["cases"]}
     assert marks == {a: "Private", b: "Team"}
+
+
+def test_export_gives_every_readable_case_as_data(tmp_path):
+    who = {"name": "chris"}
+    client = app(tmp_path, who)
+    a = new(client, "Mine", 1, label="INF", assignee="chris", due="2026-11-14")
+    store, config = scoped(tmp_path, "chris")
+    assert stepping.step(store, config, a, StepRequest(action="to_done", step_id="d1"), "chris").ok
+    who["name"] = "akhil"
+    new(client, "His", 2, label="SYS", assignee="akhil")
+    who["name"] = "chris"
+    rows = client.get("/api/export").json()
+    assert [(r["id"], r["stage"], r["meta"]["due"], r["data_point"], bool(r["closed"])) for r in rows] == [(a, "90-done", "2026-11-14", "chris", True)]

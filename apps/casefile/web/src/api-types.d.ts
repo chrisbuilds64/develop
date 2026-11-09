@@ -262,6 +262,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Cases
+         * @description Every case the viewer may read, as data: stage, meta, closing date, data point — for a client that keeps its
+         *     own commands (REQ-005 IF-04: `todo.py`). One read, no surface words.
+         */
+        get: operations["export_cases_api_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases": {
         parameters: {
             query?: never;
@@ -1412,6 +1433,32 @@ export interface components {
             resolves?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /** ExportOut */
+        ExportOut: {
+            /** Id */
+            id: string;
+            /** Stage */
+            stage: string;
+            /** Meta */
+            meta: {
+                [key: string]: unknown;
+            };
+            /**
+             * Closed
+             * @default
+             */
+            closed: string;
+            /**
+             * Changed
+             * @default
+             */
+            changed: string;
+            /**
+             * Data Point
+             * @default
+             */
+            data_point: string;
         };
         /** FinishIn */
         FinishIn: {
@@ -3051,6 +3098,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TurnOut"][];
+                };
+            };
+        };
+    };
+    export_cases_api_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"][];
                 };
             };
         };
