@@ -60,7 +60,8 @@
       "close": "Abschließen",
       "checks_red": "Prüfungen rot, zurück in die Umsetzung",
       "retry_release": "Release erneut anstoßen",
-      "deploy_refused": "Einspielen abgelehnt, zurück in die Stufe davor"
+      "deploy_refused": "Einspielen abgelehnt, zurück in die Stufe davor",
+      "retry_checks": "Prüfung erneut anstoßen"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -167,7 +168,8 @@
       "close": "Close",
       "checks_red": "Checks red, back to the build",
       "retry_release": "Release again",
-      "deploy_refused": "Deploy refused, back to the stage before"
+      "deploy_refused": "Deploy refused, back to the stage before",
+      "retry_checks": "Check again"
     },
     "reasons": {
       "running": "running",

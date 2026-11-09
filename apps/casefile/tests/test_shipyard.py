@@ -200,3 +200,29 @@ def test_a_refused_or_failed_deploy_takes_the_case_back_so_the_stage_never_claim
     for here, before in (("70-test", "60-entw"), ("80-prod", "70-test")):
         a = next(x for x in by[here]["actions"] if x["id"] == "deploy_refused")
         assert a["to"] == before and a["actor"] == "role:developer" and a["payload"] == ["note"]
+
+
+def test_a_run_ordered_by_a_move_works_in_the_stage_the_case_moves_to(tmp_path):
+    """Found on PROD 2026-11-09: the checks helper was given the build stage as its folder, the case already stood in
+    the checks stage, and the helper could not write its record there. A run ordered with a move works where the case
+    will stand."""
+    import json
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "chris")
+    go("accept_task", "chris")
+    go.deliver(root, "pr.md", "axel")
+    go("open_pr", "axel")
+    orders = sorted((root / "_runs").glob("*.json"))
+    containers = {json.loads(f.read_text())["skill"]: json.loads(f.read_text())["container"] for f in orders}
+    assert containers["shipyard-build"].startswith("20-build/")
+    assert containers["shipyard-checks"].startswith("30-checks/")
+
+
+def test_the_product_owner_can_order_the_checks_again_when_the_helper_could_not_finish():
+    import json
+    from pathlib import Path
+    cfg = json.loads((Path(__file__).resolve().parents[1] / "config" / "shipyard" / "stages.json").read_text())
+    checks = next(s for s in cfg["stages"] if s["folder"] == "30-checks")
+    again = next(a for a in checks["actions"] if a["id"] == "retry_checks")
+    assert again["actor"] == "role:product_owner" and again["run"] == "shipyard-checks" and not again.get("to")

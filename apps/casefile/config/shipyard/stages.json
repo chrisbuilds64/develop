@@ -67,6 +67,13 @@
             "checks.md"
           ],
           "entry_status": "info"
+        },
+        {
+          "id": "retry_checks",
+          "label": "retry_checks",
+          "actor": "role:product_owner",
+          "run": "shipyard-checks",
+          "entry_status": "info"
         }
       ]
     },
