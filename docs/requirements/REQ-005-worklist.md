@@ -54,9 +54,9 @@ the Context Loop's session handling.
 
 | # | Requirement | Evidence |
 |---|---|---|
-| IF-01 | The core's API is reachable from outside the server with a personal token. | `test_api_accepts_a_valid_token_and_refuses_others` |
+| IF-01 | The core's API is reachable from outside the server with a personal token. | `test_api_accepts_a_valid_token_and_refuses_others` (cockpit) |
 | IF-02 | A token belongs to one person or one agent instance, is issued by that person on the account page, names its instances and whether it may write, expires, and can be revoked at once. | same test |
-| IF-03 | Every write through a token is journaled with the token's owner. | `test_writes_are_journaled_with_the_token_owner` |
+| IF-03 | Every write through a token is journaled with the token's owner. | `test_writes_are_journaled_with_the_token_owner` (cockpit) |
 | IF-04 | `todo.py` keeps its commands (`list`, `show`, `add`, `set`, `done`, `check`) and calls the API; the skills `/todo`, `/todo-add`, `/todo-done` work unchanged. | `control` test of `todo.py` against ENTW |
 
 ### The move
