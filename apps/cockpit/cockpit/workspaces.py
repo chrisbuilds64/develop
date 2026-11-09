@@ -89,6 +89,7 @@ class Workspace:
     created: str = ""
     cloned_from: str | None = None
     components: dict[str, Component] = field(default_factory=dict)   # declared ones only; component() fills the defaults
+    data_points: list[dict] = field(default_factory=list)   # ADR-032: the application's cases over several data points, each {name, root, write_root?, readers, writers, label?}; `root` is then the instance's home
 
     def visible_to(self, user: str | None) -> bool:
         return self.shared or (user is not None and (user == self.owner or user in self.members))
@@ -170,7 +171,22 @@ class Workspaces:
                 members=[str(m) for m in w.get("members", [])], mode=str(w.get("mode", "live")),
                 open_identity=bool(w.get("open_identity", False)), created=str(w.get("created", "")), cloned_from=w.get("cloned_from"),
                 components=self._components(w.get("components") or {}, f"workspace '{wid}'"),
+                data_points=self._data_points(w.get("data_points") or [], f"workspace '{wid}'"),
             ))
+
+    def _data_points(self, raw: list, where: str) -> list[dict]:
+        out, names = [], set()
+        for d in raw:
+            if not isinstance(d, dict) or not d.get("name") or not d.get("root"):
+                raise WorkspaceError(f"{where}: a data point needs a name and a root")
+            if d["name"] in names:
+                raise WorkspaceError(f"{where}: data point '{d['name']}' appears twice")
+            names.add(d["name"])
+            out.append({"name": str(d["name"]), "root": str(self._abs(d["root"])),
+                        **({"write_root": str(self._abs(d["write_root"]))} if d.get("write_root") else {}),
+                        "readers": [str(x) for x in d.get("readers") or []], "writers": [str(x) for x in d.get("writers") or []],
+                        **({"label": str(d["label"])} if d.get("label") else {})})
+        return out
 
     def save(self) -> None:
         def rel(p: Path | None):
@@ -188,7 +204,9 @@ class Workspaces:
             "$comment": "The cockpit's workspaces: applications (a casefile domain configuration) and the trees that run under them. Edited by `cockpit workspace …` and the cockpit itself; paths relative to this file's directory or absolute.",
             "applications": {a.id: {k: v for k, v in {"label": a.label, "config_dir": rel(a.config_dir), "template": rel(a.template), "mode": a.mode}.items() if v is not None} for a in self.applications.values()},
             **({"defaults": comps(self.defaults)} if self.defaults else {}),
-            "workspaces": [{k: v for k, v in {**asdict(w), "root": rel(w.root), "write_root": rel(w.write_root), "components": comps(w.components)}.items()
+            "workspaces": [{k: v for k, v in {**asdict(w), "root": rel(w.root), "write_root": rel(w.write_root), "components": comps(w.components),
+                                              "data_points": [{**d, "root": rel(Path(d["root"])), **({"write_root": rel(Path(d["write_root"]))} if d.get("write_root") else {})}
+                                                              for d in w.data_points]}.items()
                             if v not in (None, "", [], False, {}) or k in ("shared", "members")} for w in self.items],
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -357,7 +375,7 @@ def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: P
     from casefile.api.app import Settings, create_app
     pkg = Path(casefile.__file__).resolve().parent
     settings = Settings(
-        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers, plugins=shell_plugins(),
+        root=w.root, write_root=w.write_root, data_points=w.data_points or None, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers, plugins=shell_plugins(),
         open_identity=w.open_identity, identity=None if w.open_identity else identity,
         secret=secret, web_dist=web_dist, demo=(w.mode == "replay"), template=app.template if w.mode == "replay" else None,
         samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies",

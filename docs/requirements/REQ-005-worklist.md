@@ -44,11 +44,11 @@ the Context Loop's session handling.
 
 | # | Requirement | Evidence |
 |---|---|---|
-| PV-01 | Every person has a private data point (a team folder only they can open); the store enforces it, not the surface. | operations, registry test |
-| PV-02 | A shared data point names who may read and write it; its items are visible to them and only to them. | registry test |
+| PV-01 | Every person has a private data point (a team folder only they can open); the store enforces it, not the surface. | `test_every_person_starts_in_their_private_data_point_and_sees_only_what_they_may_read` |
+| PV-02 | A shared data point names who may read and write it; its items are visible to them and only to them. | `test_a_case_of_an_unreadable_data_point_cannot_be_written` |
 | PV-03 | *Delegate:* an item is created in another person's private data point with origin, creator and link; in mine it closes with a reference to the new one. | `test_delegate_creates_there_and_closes_here` |
 | PV-04 | *Share:* an item moves into a shared data point the person may write; its id stays. | `test_share_moves_the_item_and_keeps_its_id` |
-| PV-05 | The instance binds its slot "items" to several data points; the surface shows a person every item they may read, in one list, each marked with its data point. | surface test |
+| PV-05 | The instance binds its slot "items" to several data points; the surface shows a person every item they may read, in one list, each marked with its data point. | `test_the_surface_marks_each_card_with_its_data_point` |
 
 ### One interface
 

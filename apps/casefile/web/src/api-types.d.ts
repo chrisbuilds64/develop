@@ -1071,6 +1071,11 @@ export interface components {
              * @default false
              */
             unread: boolean;
+            /**
+             * Data Point
+             * @default
+             */
+            data_point: string;
         };
         /** CaseView */
         CaseView: {
@@ -1137,6 +1142,11 @@ export interface components {
              * @default false
              */
             unread: boolean;
+            /**
+             * Data Point
+             * @default
+             */
+            data_point: string;
             /** Meta */
             meta?: {
                 [key: string]: unknown;

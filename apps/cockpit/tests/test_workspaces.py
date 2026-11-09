@@ -145,3 +145,23 @@ def test_an_application_marks_itself_through_its_theme_not_its_id(world, tmp_pat
     sign_in(client)
     me = client.get("/w/shared/api/me").json()
     assert {p["color"] for p in me["places"]} >= {"#F07A5C"}             # Casefile's rail shows each workspace in its application's colour
+
+
+def test_a_workspace_carries_its_data_points_and_writes_them_back(tmp_path):
+    """ADR-032: an application instance over several data points; the registry reads them, makes the paths absolute,
+    refuses a nameless or doubled one, and writes them back relative to itself."""
+    reg = {"applications": {"wl": {"label": "Worklist", "config_dir": "cfg"}},
+           "workspaces": [{"id": "team", "application": "wl", "root": "home", "members": ["chris"],
+                           "data_points": [{"name": "chris", "root": "dp/chris", "readers": ["chris"], "writers": ["chris"], "label": "Private"},
+                                           {"name": "team", "root": "dp/team", "readers": ["chris", "akhil"], "writers": ["chris", "akhil"]}]}]}
+    (tmp_path / "workspaces.json").write_text(json.dumps(reg))
+    ws = Workspaces(tmp_path / "workspaces.json", tmp_path)
+    dps = ws.get("team").data_points
+    assert [d["name"] for d in dps] == ["chris", "team"] and dps[0]["root"] == str(tmp_path / "dp" / "chris")
+    ws.save()
+    again = json.loads((tmp_path / "workspaces.json").read_text())["workspaces"][0]["data_points"]
+    assert again[0] == {"name": "chris", "root": "dp/chris", "readers": ["chris"], "writers": ["chris"], "label": "Private"}
+    reg["workspaces"][0]["data_points"].append({"name": "team", "root": "x"})
+    (tmp_path / "workspaces.json").write_text(json.dumps(reg))
+    with pytest.raises(WorkspaceError):
+        Workspaces(tmp_path / "workspaces.json", tmp_path)

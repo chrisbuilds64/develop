@@ -2212,6 +2212,11 @@
             "type": "boolean",
             "title": "Unread",
             "default": false
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
           }
         },
         "type": "object",
@@ -2325,6 +2330,11 @@
             "type": "boolean",
             "title": "Unread",
             "default": false
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
           },
           "meta": {
             "additionalProperties": true,
