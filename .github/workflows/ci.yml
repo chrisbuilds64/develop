@@ -64,6 +64,10 @@ jobs:
         run: |
           npm ci --silent
           npm run build --silent
+      - name: The committed surface is the built one
+        working-directory: apps/casefile/web
+        run: |
+          git diff --exit-code --stat -- dist || { echo "web/dist is not the build of web/src: run 'npm run build' in apps/casefile/web and commit dist"; exit 1; }
 
   flows:
     runs-on: ubuntu-latest
