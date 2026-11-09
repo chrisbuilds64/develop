@@ -218,3 +218,38 @@ def test_the_service_runs_a_copy_of_the_tool_that_only_its_owner_can_write(tmp_p
     assert r.stdout.strip().startswith(str(home))
     systemd.install_tool(source, tmp_path / "lib")        # again: replaced, not nested
     assert not (pkg / "pressroom_env").exists()
+
+
+# --- a deploy never ends the run that asked for it (ADR-028) ---
+
+def _run_file(tmp_path, space, rid, status):
+    d = tmp_path / "srv" / space / "flow" / "_runs"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{rid}.json").write_text(json.dumps({"id": rid, "status": status}), encoding="utf-8")
+    return d / f"{rid}.json"
+
+
+def test_a_deploy_of_the_asking_runs_own_stage_waits_until_the_run_has_ended(tmp_path, monkeypatch):
+    st = world(tmp_path, monkeypatch)
+    case_in(tmp_path, "50-release", space="shipyard-entw")
+    f = _run_file(tmp_path, "shipyard-entw", "rel-1", "running")
+    naps = []
+
+    def nap(s):                                                       # the run ends while the service waits
+        naps.append(s)
+        f.write_text(json.dumps({"id": "rel-1", "status": "done"}), encoding="utf-8")
+
+    monkeypatch.setattr(requests.time, "sleep", nap)
+    deployed.clear()
+    [r] = requests.serve(st, ask(tmp_path, space_stage="entw", run="rel-1"), deploy=deploy)
+    assert naps and r["outcome"] == "deployed" and r["waited_for_run_s"] == 5 and deployed == [("entw", "v2026.11.1")]
+
+
+def test_a_deploy_to_another_stage_does_not_wait(tmp_path, monkeypatch):
+    st = world(tmp_path, monkeypatch)
+    case_in(tmp_path, "50-release")
+    _run_file(tmp_path, "shipyard", "rel-2", "running")
+    monkeypatch.setattr(requests.time, "sleep", lambda s: (_ for _ in ()).throw(AssertionError("waited")))
+    deployed.clear()
+    [r] = requests.serve(st, ask(tmp_path, run="rel-2"), deploy=deploy)          # prod space → entw: another runner
+    assert r["outcome"] == "deployed" and "waited_for_run_s" not in r
