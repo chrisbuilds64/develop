@@ -7,7 +7,9 @@ import re
 from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
+from ..domain import depends
 from ..domain import lists as value_lists
+from ..domain.depends import Dependency
 from ..domain import seen as reads
 from ..domain import step as stepping
 from ..domain import turn as whose
@@ -165,6 +167,8 @@ class CaseView(CaseCard):
     undo_word: str = ""                                   # that move in words
     translations: dict[str, dict[str, str]] = Field(default_factory=dict)   # an original file → {language: the translation beside it}
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
+    waits: list[Dependency] = Field(default_factory=list) # the cases this one waits for, each found or not and closed or not (REQ-005 DP-02)
+    released: bool = False                                # it waits, and all of it is closed: free to go on, but it does not move by itself (DP-03)
 
 
 class ListEntryView(BaseModel):
@@ -265,7 +269,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     pull = stepping.take_back_target(config, case, viewer) or ""
     undo = stepping.undoable(store, config, case, viewer) if store is not None else None
     undo_action = config.action(undo.from_, undo.action) if undo else None
-    return CaseView(**c.model_dump(), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
+    deps = depends.waits(case.meta, depends.resolver_for(store, config), lang) if store is not None else []
+    return CaseView(**c.model_dump(), waits=deps, released=depends.released(deps), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
                     held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "",
                     translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
                     meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,

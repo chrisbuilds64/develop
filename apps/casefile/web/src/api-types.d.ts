@@ -1201,6 +1201,13 @@ export interface components {
             data?: {
                 [key: string]: unknown;
             };
+            /** Waits */
+            waits?: components["schemas"]["Dependency"][];
+            /**
+             * Released
+             * @default false
+             */
+            released: boolean;
         };
         /** ChapterIn */
         ChapterIn: {
@@ -1265,6 +1272,38 @@ export interface components {
              * @default false
              */
             fresh: boolean;
+        };
+        /** Dependency */
+        Dependency: {
+            /** Ref */
+            ref: string;
+            /**
+             * Instance
+             * @default
+             */
+            instance: string;
+            /** Case */
+            case: string;
+            /**
+             * Found
+             * @default false
+             */
+            found: boolean;
+            /**
+             * Closed
+             * @default false
+             */
+            closed: boolean;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Stage Word
+             * @default
+             */
+            stage_word: string;
         };
         /** DraftIn */
         DraftIn: {

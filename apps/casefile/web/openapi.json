@@ -2443,6 +2443,18 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Data"
+          },
+          "waits": {
+            "items": {
+              "$ref": "#/components/schemas/Dependency"
+            },
+            "type": "array",
+            "title": "Waits"
+          },
+          "released": {
+            "type": "boolean",
+            "title": "Released",
+            "default": false
           }
         },
         "type": "object",
@@ -2604,6 +2616,49 @@
         },
         "type": "object",
         "title": "DemoSessionIn"
+      },
+      "Dependency": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "instance": {
+            "type": "string",
+            "title": "Instance",
+            "default": ""
+          },
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "found": {
+            "type": "boolean",
+            "title": "Found",
+            "default": false
+          },
+          "closed": {
+            "type": "boolean",
+            "title": "Closed",
+            "default": false
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "stage_word": {
+            "type": "string",
+            "title": "Stage Word",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "case"
+        ],
+        "title": "Dependency"
       },
       "DraftIn": {
         "properties": {
