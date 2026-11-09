@@ -1,0 +1,8 @@
+[Unit]
+Description=PressRoom deploy requests (ADR-028): checks the gate on the case, then deploys the tag
+
+[Service]
+Type=oneshot
+WorkingDirectory={{tool}}
+ExecStart=/usr/bin/python3 -m pressroom_env --config {{config}} serve-requests --spool {{spool}}
+TimeoutStartSec=1h

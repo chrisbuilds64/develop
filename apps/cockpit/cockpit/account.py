@@ -225,6 +225,13 @@ class Accounts:
         """
         if name and NAME.match(name) and self.dir(name).exists():
             data, secrets = self.settings(name), self._read_secrets(name)
+            payer = str(data.get("bill_to", "")).lower()
+            if payer and payer != name and NAME.match(payer) and self.dir(payer).exists():
+                # An agent's account names the person it belongs to (ADR-020): its runs go on that person's account,
+                # and the log says for whom. One hop only — a person never bills on to somebody else.
+                b = self.billing(payer, base_env, allow_shared=allow_shared) if not self.settings(payer).get("bill_to") else None
+                if b is not None and b.mode != "none":
+                    return Billing(b.mode, b.env, f"{b.source}, for {name}")
             mode = data.get("billing", "auto")
             token = secrets.get("CLAUDE_CODE_OAUTH_TOKEN")
             if mode in ("auto", "subscription") and token:

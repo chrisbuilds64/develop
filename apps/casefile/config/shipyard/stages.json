@@ -1,5 +1,5 @@
 {
-  "$comment": "A change to our own software as a case (REQ-002, ADR-027). The way of a change from CONTRIBUTING.md, stage by stage: the product owner confirms the task, a developer (a person or an agent) builds it on a branch and records the pull request, the checks are recorded, the product owner merges (four eyes: never the author of the pull request), the release is a tag, and each stage (ENTW, TEST, PROD) is accepted by the product owner. Every record is a file in the case; nothing is claimed that is not linked.",
+  "$comment": "A change to our own software as a case (REQ-002, ADR-027). The way of a change from CONTRIBUTING.md, stage by stage: the product owner confirms the task, a developer (a person or an agent) builds it on a branch and records the pull request, the checks are recorded, the product owner merges (four eyes: never the author of the pull request), the release is a tag, and each stage (ENTW, TEST, PROD) is accepted by the product owner. Every record is a file in the case; nothing is claimed that is not linked. From 2026-11-09 the developer's moves can be a helper's (ADR-028): confirming the task orders the build, the pull request orders the checks, the merge and each acceptance order the release; the deploy reports back to the case.",
   "name": "Shipyard",
   "lang": "en",
   "configVersion": "1",
@@ -17,7 +17,8 @@
           "requires": [
             "task.md"
           ],
-          "entry_status": "approved"
+          "entry_status": "approved",
+          "run": "shipyard-build"
         }
       ]
     },
@@ -34,7 +35,8 @@
           "requires": [
             "pr.md"
           ],
-          "entry_status": "info"
+          "entry_status": "info",
+          "run": "shipyard-checks"
         }
       ]
     },
@@ -48,6 +50,19 @@
           "id": "checks_green",
           "label": "checks_green",
           "to": "40-approval",
+          "requires": [
+            "checks.md"
+          ],
+          "entry_status": "info"
+        },
+        {
+          "id": "checks_red",
+          "label": "checks_red",
+          "to": "20-build",
+          "run": "shipyard-build",
+          "payload": [
+            "note"
+          ],
           "requires": [
             "checks.md"
           ],
@@ -71,7 +86,8 @@
           ],
           "four_eyes": true,
           "seal": true,
-          "entry_status": "approved"
+          "entry_status": "approved",
+          "run": "shipyard-release"
         },
         {
           "id": "send_back",
@@ -80,7 +96,8 @@
           "payload": [
             "note"
           ],
-          "entry_status": "info"
+          "entry_status": "info",
+          "run": "shipyard-build"
         }
       ]
     },
@@ -99,7 +116,8 @@
           ],
           "entry_status": "info"
         }
-      ]
+      ],
+      "deploys": "entw"
     },
     {
       "folder": "60-entw",
@@ -115,7 +133,8 @@
             "release.md"
           ],
           "seal": true,
-          "entry_status": "approved"
+          "entry_status": "approved",
+          "run": "shipyard-release"
         }
       ]
     },
@@ -133,9 +152,11 @@
             "test.md"
           ],
           "seal": true,
-          "entry_status": "approved"
+          "entry_status": "approved",
+          "run": "shipyard-release"
         }
-      ]
+      ],
+      "deploys": "test"
     },
     {
       "folder": "80-prod",
@@ -152,7 +173,8 @@
           ],
           "entry_status": "info"
         }
-      ]
+      ],
+      "deploys": "prod"
     },
     {
       "folder": "90-closed",

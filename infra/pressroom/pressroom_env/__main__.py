@@ -134,6 +134,26 @@ def cmd_render(args):
     return 0
 
 
+def cmd_serve_requests(args):
+    _root()
+    from . import requests
+    st = _settings(args)
+    results = requests.serve(st, Path(args.spool), config=Path(args.config) if args.config else HERE.parent / "envs.toml")
+    for r in results:
+        req = r.get("request", {})
+        print(f"{req.get('case', '?')}: {req.get('tag', '?')} → {req.get('stage', '?')}: {r['outcome']} {r.get('reason', '')}".rstrip())
+    return 0
+
+
+def cmd_install_requests(args):
+    _root()
+    from . import requests
+    st = _settings(args)
+    config = Path(args.config).resolve() if args.config else HERE.parent / "envs.toml"
+    print("installed: " + ", ".join(systemd.install_requests(st, st.env(args.source), config, Path(args.spool))))
+    return 0
+
+
 def main(argv=None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S", stream=sys.stderr)
     p = argparse.ArgumentParser(prog="pressroom-env", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -144,6 +164,11 @@ def main(argv=None) -> int:
         s = sub.add_parser(name); s.add_argument("stage"); s.set_defaults(fn=fn)
     s = sub.add_parser("deploy"); s.add_argument("stage"); s.add_argument("--ref"); s.set_defaults(fn=cmd_deploy)
     s = sub.add_parser("nginx"); s.set_defaults(fn=cmd_nginx)
+    s = sub.add_parser("serve-requests", help="take the waiting deploy requests once (ADR-028; started by the path unit)")
+    s.add_argument("--spool", default="/var/lib/pressroom/deploy-requests"); s.set_defaults(fn=cmd_serve_requests)
+    s = sub.add_parser("install-requests", help="the path unit and service for deploy requests, run from the source stage's checkout")
+    s.add_argument("source", help="the stage whose checkout runs the service (normally prod)")
+    s.add_argument("--spool", default="/var/lib/pressroom/deploy-requests"); s.set_defaults(fn=cmd_install_requests)
     args = p.parse_args(argv)
     try:
         return args.fn(args) or 0

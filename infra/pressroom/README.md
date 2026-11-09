@@ -67,6 +67,14 @@ folder, mount it beside the stage's own, register the application and the worksp
 application's configuration names. A space is never cloned; each stage that has one has its own tree. Tests:
 `python -m pytest -q tests` in this directory.
 
+## Deploy requests
+
+A helper's run cannot deploy (ADR-028): it writes a request into `/var/lib/pressroom/deploy-requests/`, and
+`pressroom-deploy-requests.path` starts `pressroom-env serve-requests` as root. The service checks the gate on the case
+in the space's tree (the stage marked `"deploys"` in the application's `stages.json`), that the tag is on `main`, and
+that the space does not ask above its own stage; then it deploys the tag and orders `shipyard-verify` in the case with
+its report. Install once with `pressroom-env install-requests prod`. Tests: `tests/test_requests.py`.
+
 ## Units
 
 `srv-pressroom\x2d<stage>.mount`, `pressroom-cockpit-<stage>.service`, `pressroom-runner-<stage>.service`.

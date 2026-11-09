@@ -1,5 +1,5 @@
 {
-  "$comment": "No helper builds or deploys here yet: developers record what they did. A helper only answers questions about a change.",
+  "$comment": "What a helper may do in a software change (ADR-028). shipyard-build and shipyard-checks work in the code checkout of the runner (`/home/runner/shipyard/develop`, tests with `/home/runner/shipyard/venv`), never in the deployed code; they push branches and open pull requests under the helper's own identity on the code host, and `main` stays protected: only the product owner merges. shipyard-release tags a merged commit and asks the server to deploy it; the server checks the gate on the case itself. shipyard-verify reads what the server reported and files the record. No helper merges, and none deploys by itself.",
   "default": {
     "orderable_by": [
       "product_owner",
@@ -11,7 +11,8 @@
     ],
     "tools": [
       "Read",
-      "Glob"
+      "Glob",
+      "Grep"
     ],
     "web": false,
     "timeout": 600,
@@ -22,6 +23,89 @@
     "ask": {
       "does": "Answers a free question about the change.",
       "never": "Decides, merges or deploys.",
+      "rules": []
+    },
+    "shipyard-build": {
+      "does": "Builds the task on a branch: code and tests against the requirement lines the task names, the suite run, the branch pushed, the pull request opened, pr.md filed, the case moved to the checks.",
+      "never": "Pushes to main, merges, changes the CI workflows, or touches the deployed code.",
+      "write": [
+        "{container}",
+        "/home/runner/shipyard/develop"
+      ],
+      "tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Edit",
+        "Write",
+        "Bash(git:*)",
+        "Bash(gh:*)",
+        "Bash(ls:*)",
+        "Bash(cd:*)",
+        "Bash(/home/runner/shipyard/venv/bin/python:*)",
+        "Bash(python -m casefile.cli.step:*)"
+      ],
+      "secrets": [
+        "GH_TOKEN",
+        "GIT_AUTHOR_NAME",
+        "GIT_AUTHOR_EMAIL",
+        "GIT_COMMITTER_NAME",
+        "GIT_COMMITTER_EMAIL"
+      ],
+      "timeout": 3600,
+      "rules": []
+    },
+    "shipyard-checks": {
+      "does": "Waits for the checks of the pull request and files the result: green moves the change to approval, red sends it back to the build with what failed.",
+      "never": "Changes code or reruns a check until it passes.",
+      "tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write",
+        "Bash(gh:*)",
+        "Bash(python -m casefile.cli.step:*)"
+      ],
+      "secrets": [
+        "GH_TOKEN"
+      ],
+      "timeout": 2400,
+      "rules": []
+    },
+    "shipyard-release": {
+      "does": "After the merge: tags the merge commit. After each acceptance: asks the server to deploy that tag to the next stage.",
+      "never": "Deploys itself, tags a commit that is not on main, or asks for a stage the case has not been released to.",
+      "write": [
+        "{container}",
+        "/var/lib/pressroom/deploy-requests"
+      ],
+      "tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write",
+        "Bash(git:*)",
+        "Bash(gh:*)",
+        "Bash(python -m casefile.cli.step:*)"
+      ],
+      "secrets": [
+        "GH_TOKEN"
+      ],
+      "timeout": 900,
+      "rules": []
+    },
+    "shipyard-verify": {
+      "does": "Reads the server's report of a deploy, checks the stage answers, files release.md, test.md or prod.md and makes the developer's move.",
+      "never": "Accepts a stage: that is the product owner's.",
+      "tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write",
+        "Bash(curl:*)",
+        "Bash(python -m casefile.cli.step:*)"
+      ],
+      "timeout": 900,
       "rules": []
     }
   },

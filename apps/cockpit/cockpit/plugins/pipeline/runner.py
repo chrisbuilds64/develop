@@ -193,7 +193,37 @@ def session_env(run: dict, rules: dict, args, data: Path, workspace_id: str, hom
                 PRESSROOM_ENV=os.environ.get("PRESSROOM_ENV", "local"),
                 PRESSROOM_SKILL=str(run["skill"]), PRESSROOM_CONTAINER=str(run["container"]),
                 PRESSROOM_ORDERED_BY=str(run.get("requested_by", "")), PRESSROOM_AGENT=str(rules.get("agent", "agent")),
-                PRESSROOM_RUN_ID=str(run["id"]))
+                PRESSROOM_RUN_ID=str(run["id"]), PRESSROOM_PYTHON=sys.executable,
+                # the runner's interpreter first: `python -m casefile.cli.step` is the same command on every stage (ADR-028)
+                PATH=os.pathsep.join([str(Path(sys.executable).parent), os.environ.get("PATH", "")]))
+
+
+def policy_env(rules: dict, args, base: dict) -> dict:
+    """What a skill's policy adds to its session: plain values (`env`) and named secrets (`secrets`).
+
+    A secret is a file in --secrets-dir named like the variable: its content, or, when the file is executable, what it
+    prints (a token minted per run). A secret the policy does not name never reaches the session, even when the runner's
+    own environment carries it — a content run never sees the code host's token."""
+    out = {k: v for k, v in base.items() if k not in GUARDED}
+    out.update({str(k): str(v) for k, v in (rules.get("env") or {}).items()})
+    for name in rules.get("secrets") or []:
+        sdir = getattr(args, "secrets_dir", None)
+        f = (sdir / name) if sdir else None
+        if f is None or not f.is_file():
+            log.warning("secret %s: not in the secrets directory — the session runs without it", name)
+            continue
+        if os.access(f, os.X_OK):
+            r = subprocess.run([str(f)], capture_output=True, text=True, timeout=60)
+            if r.returncode != 0:
+                log.warning("secret %s: %s exited %s", name, f.name, r.returncode)
+                continue
+            out[name] = r.stdout.strip()
+        else:
+            out[name] = f.read_text(encoding="utf-8").strip()
+    return out
+
+
+GUARDED = ("GH_TOKEN", "GITHUB_TOKEN")                        # only through a policy's `secrets`, never inherited
 
 
 def billing_for(run: dict, rules: dict, env: dict, args) -> tuple[dict, str, str]:
@@ -312,6 +342,7 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
         refuse(f, run, rules, billed_by, env_for_tools=plain_env)
         return
     home, ws = run_home(args, data, workspace_id, run["id"])
+    env = policy_env(rules, args, env)
     env["HOME"] = str(home)
     context = context_file(run, env, args, ws)
     cmd = command_for(run, rules, args, data, context)
@@ -906,6 +937,8 @@ def main(argv=None) -> int:
     p.add_argument("--notes-repo", default="", help="a git worktree on the stage's notes branch that holds the agents' folders; "
                    "what an agent learns is committed there and pushed to --notes-remote ('' = notes are not committed)")
     p.add_argument("--notes-remote", default="notes", help="the remote the notes branch is pushed to — never control's main")
+    p.add_argument("--secrets-dir", default="", help="files named like the variables a skill's policy lists under `secrets`; "
+                   "an executable one prints the value (a token minted per run)")
     p.add_argument("--context-script", default="control/claude/hooks/runner-context.py",
                    help="script (relative to the workspace) that prints the run's operating context; '' for none")
     args = p.parse_args(argv)
@@ -920,6 +953,7 @@ def main(argv=None) -> int:
     args.accounts = Path(args.accounts).expanduser() if args.accounts else None
     args.notes_repo = Path(args.notes_repo).expanduser() if args.notes_repo else None
     args.agents = Path(args.agents).expanduser() if args.agents else None
+    args.secrets_dir = Path(args.secrets_dir).expanduser() if args.secrets_dir else None
     args.context_script = (args.workspace / args.context_script) if args.context_script else None
     if args.context_script and not args.context_script.is_file():
         log.warning("no context script at %s — runs get CLAUDE.md and the canon only", args.context_script)
