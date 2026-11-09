@@ -40,6 +40,7 @@
         "Write",
         "Bash(git:*)",
         "Bash(gh:*)",
+        "Bash(npm:*)",
         "Bash(ls:*)",
         "Bash(cd:*)",
         "Bash(/home/runner/shipyard/venv/bin/python:*)",
