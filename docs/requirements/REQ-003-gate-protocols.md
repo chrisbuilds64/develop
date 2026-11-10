@@ -1,10 +1,10 @@
 # REQ-003 — Gate protocols: what a person checked before a gate opened
 
-**Status:** proposed 2026-11-09, amended 2026-11-10, waiting for the product owner. High priority. Decision record: ADR-029.
+**Status:** accepted 2026-11-10 (product owner), amended the same day. High priority. Decision record: ADR-029.
 
 **Scope:** the core (`apps/casefile/casefile/`), the surface (`apps/casefile/web/`), the configuration of Shipyard
 (`config/shipyard/`), PressRoom (`config/pressroom/`) and the database change file (`config/aenderungsakte/`), and the
-Definition of Done in the canon (`canon/<domain>/definition-of-done.md`).
+Definition of Done as a catalogue in the tenant's rulebook (ADR-026).
 
 **Evidence** means a test that fails when the line breaks. None is written yet: every line below is a requirement
 before its build, and its test comes with it.
@@ -29,9 +29,9 @@ before its build, and its test comes with it.
 | GP-14 | The task carries acceptance criteria as a list of its own, drafted by the helper from the requirement: each a statement, how it is checked (an item type) and where (ENTW, TEST or both). | planned |
 | GP-15 | A task without acceptance criteria is not offered for confirmation; confirming the task confirms its criteria (Definition of Ready). | planned |
 | GP-16 | The acceptance criteria become case items of the protocols of the stages they name, each naming its criterion; the sealed protocol shows for every criterion the item that checked it. | planned |
-| GP-17 | A template includes the Definition of Done of its domain from the canon; every included item points at its canon rule. | planned |
+| GP-17 | A template includes items from the Definition of Done catalogue in the tenant's rulebook; every included item points at its catalogue entry. Who accepts a change of the catalogue is a configured role. | planned |
 | GP-18 | A rule a machine can check names its check; an agent in its role runs it and answers with the output as evidence. A rule that needs judgement is a person's item. | planned |
-| GP-19 | A sealed protocol keeps the rules it was checked against; a change of the canon applies from the next protocol version. | planned |
+| GP-19 | A sealed protocol keeps the items it was checked against; a change of the catalogue applies from the next protocol version. | planned |
 
 ## The gate
 
@@ -57,7 +57,7 @@ before its build, and its test comes with it.
 
 | # | Requirement | Evidence |
 |---|---|---|
-| GP-40 | The review gate is a protocol with the editorial Definition of Done from the canon: language, tone, the content boundaries, the symbolic language. | planned |
+| GP-40 | The review gate is a protocol with the editorial Definition of Done from the catalogue (with us: language, tone, the content boundaries, the symbolic language). | planned |
 | GP-41 | A fact check is an item answered by the role `fact_checker` (an agent) with its report as evidence; the reviewer decides. | planned |
 
 ## Parts (ADR-033)

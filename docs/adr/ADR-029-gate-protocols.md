@@ -1,7 +1,8 @@
 # ADR-029: Gate Protocols
 
-**Status:** Proposed (2026-11-09), amended 2026-11-10 (acceptance criteria, the canon as Definition of Done, the
-developer's acceptance on ENTW, every application). Waits for *Accepted*. Requirements: REQ-003.
+**Status:** Accepted (2026-11-10, product owner), amended the same day (acceptance criteria, the Definition of Done
+as a catalogue in the tenant's rulebook, the developer's acceptance on ENTW, every application). Requirements: REQ-003.
+Who accepts when — dates, recurrence and delegation of items — follows in a record of its own (after DOAG).
 **Date:** 2026-11-09
 
 ---
@@ -60,7 +61,8 @@ place of an answer.
 ## Amended 2026-11-10: acceptance criteria, the canon as Definition of Done, every application
 
 The product owner (2026-11-10), from practice: a user story carries acceptance criteria; a model drafts them well from
-the requirement; a team keeps a Definition of Done. The protocol takes all three in.
+the requirement; a team keeps a Definition of Done. The protocol takes all three in — abstractly: nothing assumes our
+own agents, canon or roles; a tenant configures them.
 
 9. **Acceptance criteria belong to the task.** When a helper writes the task (`task.md`), it drafts the acceptance
    criteria from the requirement as a list of its own: each a statement, how it is checked (one of the item types of
@@ -68,12 +70,14 @@ the requirement; a team keeps a Definition of Done. The protocol takes all three
    task confirms its criteria — the Definition of Ready. A task without acceptance criteria is not offered for
    confirmation. The criteria become the case items of the protocols (decision 3), each naming its criterion
    (`task AC-3`), so every item can be traced to the requirement and every criterion to the item that checked it.
-10. **The canon is the Definition of Done.** Standing items are not written into each template: a template includes the
-    Definition of Done of its domain from the canon (`canon/<domain>/definition-of-done.md`: per kind of gate, the
-    rules to check, each pointing at its canon rule). A rule that a machine can check (a guard, a linter, the tests, a
-    naming check) names its check; an agent in its role runs it and answers with the output as evidence (decision 5).
-    A rule that needs judgement stays a person's item. Changing the canon changes every protocol that includes it, from
-    its next version on; a sealed protocol keeps the rules it was checked against.
+10. **The Definition of Done is a catalogue in the tenant's rulebook** (ADR-026: versioned, a change accepted by four
+    eyes), not a path of ours. A tenant composes its gates' standing items from that catalogue, the way an assessor's
+    report is composed from a catalogue of text modules; our own canon is merely how one tenant fills it. Who must
+    accept a change of the catalogue is a role the tenant configures, and that acceptance is itself a gate with a
+    protocol. An item that a machine can check (a guard, a linter, the tests, a naming check) names its check; an agent
+    in its role runs it and answers with the output as evidence (decision 5); judgement stays a person's item. A change
+    of the catalogue applies from a protocol's next version; a sealed protocol keeps the items it was checked against.
+    Nothing here assumes a particular agent, canon or team.
 11. **On ENTW the developer accepts, technically and functionally.** The installation check of decision 8 becomes the
     developer's acceptance: the technical items (installation, Definition of Done) and the acceptance criteria marked
     for ENTW. TEST stays the business acceptance (the criteria marked for TEST, by a role that is not the developer);
