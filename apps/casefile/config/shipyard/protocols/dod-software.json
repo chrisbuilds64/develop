@@ -1,0 +1,59 @@
+{
+  "$comment": "The application's default Definition of Done for a software change (ADR-029 d. 10). A workspace replaces it with its own catalogue in _protocols/dod-software.json — what belongs here is the tenant's to decide (Gatehouse elicits it).",
+  "id": "dod-software",
+  "title": {
+    "de": "Definition of Done",
+    "en": "Definition of Done"
+  },
+  "items": [
+    {
+      "id": "dod-tests",
+      "question": {
+        "de": "Die Tests der betroffenen Teile laufen grün",
+        "en": "The tests of the parts it touches pass"
+      },
+      "type": "yesno",
+      "agent": true,
+      "rule": "dod:tests"
+    },
+    {
+      "id": "dod-guards",
+      "question": {
+        "de": "Design- und Architektur-Guards sind sauber",
+        "en": "The design and architecture guards are clean"
+      },
+      "type": "yesno",
+      "agent": true,
+      "rule": "dod:guards"
+    },
+    {
+      "id": "dod-lines",
+      "question": {
+        "de": "Jede genannte Anforderungszeile hat einen Test",
+        "en": "Every requirement line it names has a test"
+      },
+      "type": "yesno",
+      "rule": "dod:requirement-tests"
+    },
+    {
+      "id": "dod-secrets",
+      "question": {
+        "de": "Keine Schlüssel, Passwörter, internen Namen oder Pfade im Diff",
+        "en": "No keys, passwords, internal names or paths in the diff"
+      },
+      "type": "yesno",
+      "agent": true,
+      "rule": "dod:no-secrets"
+    },
+    {
+      "id": "dod-language",
+      "question": {
+        "de": "Code, Kommentare und Commits auf Englisch, Namen nach den Konventionen",
+        "en": "Code, comments and commits in English, names by the conventions"
+      },
+      "type": "yesno",
+      "must": false,
+      "rule": "dod:language-naming"
+    }
+  ]
+}

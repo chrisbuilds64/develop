@@ -1,0 +1,41 @@
+{
+  "id": "entw",
+  "title": {
+    "de": "Entwickler-Abnahme auf ENTW",
+    "en": "Developer acceptance on ENTW"
+  },
+  "criteria": {
+    "stage": "ENTW"
+  },
+  "items": [
+    {
+      "id": "installed",
+      "question": {
+        "de": "Der Tag läuft auf ENTW, die Oberfläche ist neu gebaut",
+        "en": "The tag runs on ENTW, the surface is rebuilt"
+      },
+      "type": "yesno",
+      "agent": true
+    },
+    {
+      "id": "errors",
+      "question": {
+        "de": "Neue Fehler im Log seit dem Deploy",
+        "en": "New errors in the log since the deploy"
+      },
+      "type": "number",
+      "criterion": {
+        "max": 0
+      },
+      "agent": true
+    },
+    {
+      "id": "tried",
+      "question": {
+        "de": "Was du ausprobiert hast und wie",
+        "en": "What you tried, and how"
+      },
+      "type": "evidence"
+    }
+  ]
+}

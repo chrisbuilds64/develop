@@ -15,10 +15,16 @@
           "label": "accept_task",
           "to": "20-build",
           "requires": [
-            "task.md"
+            "task.md",
+            "criteria"
           ],
           "entry_status": "approved",
           "run": "shipyard-build"
+        },
+        {
+          "id": "draft_task",
+          "label": "draft_task",
+          "run": "shipyard-task"
         }
       ]
     },
@@ -89,7 +95,8 @@
           "to": "50-release",
           "requires": [
             "pr.md",
-            "checks.md"
+            "checks.md",
+            "protocol:merge"
           ],
           "four_eyes": true,
           "seal": true,
@@ -144,11 +151,20 @@
           "label": "approve_test",
           "to": "70-test",
           "requires": [
-            "release.md"
+            "release.md",
+            "protocol:entw"
           ],
           "seal": true,
           "entry_status": "approved",
           "run": "shipyard-release"
+        },
+        {
+          "id": "entw_failed",
+          "label": "entw_failed",
+          "to": "20-build",
+          "when": [
+            "failed:entw"
+          ]
         }
       ]
     },
@@ -163,7 +179,8 @@
           "label": "approve_prod",
           "to": "80-prod",
           "requires": [
-            "test.md"
+            "test.md",
+            "protocol:test"
           ],
           "seal": true,
           "entry_status": "approved",
@@ -178,6 +195,14 @@
             "note"
           ],
           "entry_status": "info"
+        },
+        {
+          "id": "test_failed",
+          "label": "test_failed",
+          "to": "20-build",
+          "when": [
+            "failed:test"
+          ]
         }
       ],
       "deploys": "test"
@@ -193,7 +218,8 @@
           "label": "close",
           "to": "90-closed",
           "requires": [
-            "prod.md"
+            "prod.md",
+            "protocol:prod"
           ],
           "entry_status": "info"
         },
@@ -214,7 +240,8 @@
       "folder": "90-closed",
       "key": "closed",
       "group": "out",
-      "turn": null
+      "turn": null,
+      "actions": []
     }
   ]
 }

@@ -78,6 +78,15 @@ def load_template(config: DomainConfig, root: Path | None, tid: str, _seen: tupl
     return {"id": tid, "title": doc.get("title") or {}, "items": out}
 
 
+def _criteria_stage(config: DomainConfig, root: Path | None, tid: str) -> dict | None:
+    """`"criteria": {"stage": "ENTW", "from": "task.md"}` in a template: its case items are the task's criteria for that stage."""
+    f = _template_file(config, root, tid)
+    if f is None:
+        return None
+    c = json.loads(f.read_text(encoding="utf-8")).get("criteria")
+    return c if isinstance(c, dict) and c.get("stage") else None
+
+
 def _check_item(it: dict, where: str) -> None:
     if not it.get("id") or not isinstance(it.get("id"), str):
         raise ProtocolError(f"{where}: an item needs an id")
@@ -118,6 +127,13 @@ def start(store: FsStore, config: DomainConfig, case_id: str, tid: str, by: str,
         version, name = 1, f"protocol-{tid}.json"
     tpl = load_template(config, store.root, tid)
     extra = []
+    wants = _criteria_stage(config, store.root, tid)          # the template asks for the task's acceptance criteria of a stage
+    if wants:
+        from . import criteria as acs
+        task = reading.newest_versions(case.files).get(str(wants.get("from") or "task.md"))
+        if task:
+            found, _bad = acs.parse(store.case_text(case_id, task))
+            extra += acs.items_for(found, str(wants["stage"]), config.lang)
     for it in items or []:
         _check_item(it, "case item")
         extra.append({**it, "origin": it.get("origin") or f"case:{by}"})

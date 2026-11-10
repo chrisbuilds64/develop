@@ -26,7 +26,7 @@ def setup(tmp_path):
             {"id": "looks", "question": {"en": "How it looks"}, "type": "choice", "options": ["good", "acceptable", "broken"],
              "criterion": {"allowed": ["good", "acceptable"]}, "must": False, "role": "product_owner"},
             {"id": "shot", "question": {"en": "Screenshot of the station line"}, "type": "evidence", "must": True, "role": "product_owner"}]}))
-    Steps(store, config).deliver(root, "task.md", "axel")
+    Steps(store, config).deliver(root, "task.md", "axel", "# Task\n\nno criteria yet\n")
     return root, store, config
 
 
@@ -127,3 +127,62 @@ def test_the_protocol_is_worked_through_over_the_api_and_sealing_says_so_in_the_
     assert listed[0]["template"] == "entw" and listed[0]["state"]["gate_open"]
     case = reading.load(store, config, CID)
     assert any("Protocol sealed" in e.title for e in case.entries)
+
+
+TASK = """# Task: station words
+
+The station line overlaps.
+
+## Acceptance criteria
+
+- AC-1 · ENTW · yes/no — Station words never overlap at 480 px.
+- AC-2 · TEST · evidence — A screenshot of the case at 780 px.
+- AC-3 · both · number ≤ 0 — New errors in the log after the deploy.
+- AC-4 · TEST · choice good|acceptable / broken — How it looks on a phone.
+
+## Notes
+
+nothing
+"""
+
+
+def test_acceptance_criteria_are_read_from_the_task_and_a_bad_line_is_named():
+    from casefile.domain import criteria
+    found, bad = criteria.parse(TASK)
+    assert [c["id"] for c in found] == ["AC-1", "AC-2", "AC-3", "AC-4"] and bad == []
+    assert found[2]["stages"] == ["ENTW", "TEST"] and found[2]["criterion"] == {"max": 0.0}
+    assert found[3]["criterion"] == {"allowed": ["good", "acceptable"]} and found[3]["options"] == ["good", "acceptable", "broken"]
+    found, bad = criteria.parse(TASK.replace("number ≤ 0", "number about zero"))
+    assert len(found) == 3 and "AC-3" in bad[0]
+    assert [i["id"] for i in criteria.items_for(criteria.parse(TASK)[0], "ENTW")] == ["ac-1", "ac-3"]
+
+
+def test_the_task_is_ready_only_with_readable_criteria_and_the_protocol_takes_those_of_its_stage(tmp_path):
+    root, store, config = setup(tmp_path)
+    ready = Action(id="accept_task", label="accept", requires=["task.md", "criteria"])
+    case = lambda: reading.load(store, config, CID)  # noqa: E731
+    assert missing_for(config, case(), ready) == ["criteria"]                  # the task has no criteria yet (GP-15)
+    (root / "10-task" / CID / "task.md").write_text(TASK)
+    assert missing_for(config, case(), ready) == []
+    tpl = json.loads((root / "_protocols" / "entw.json").read_text())
+    tpl["criteria"] = {"stage": "ENTW"}
+    (root / "_protocols" / "entw.json").write_text(json.dumps(tpl))
+    name = P.start(store, config, CID, "entw", "chris")
+    items = json.loads((root / "10-task" / CID / name).read_text())["items"]
+    assert [(i["id"], i["origin"]) for i in items if i["origin"].startswith("task:")] == [("ac-1", "task:AC-1"), ("ac-3", "task:AC-3")]   # GP-16
+
+
+def test_a_helper_answers_objective_items_from_its_run_and_only_observes_the_rest(tmp_path, monkeypatch, capsys):
+    from casefile.cli import protocol as cli
+    from .test_shipyard import CFG
+    root, store, config = setup(tmp_path)
+    monkeypatch.setenv("COCKPIT_DATA_DIR", str(root))
+    monkeypatch.setenv("PRESSROOM_AGENT", "Axel")
+    monkeypatch.setenv("PRESSROOM_RUN_ID", "20261111-010000_shipyard-verify_x")
+    assert cli.main([CID, "entw", "start", "--config", str(CFG)]) == 0
+    assert cli.main([CID, "entw", "answer", "--config", str(CFG), "--item", "guards", "--yes", "--evidence", "design guard: clean"]) == 0
+    assert json.loads(capsys.readouterr().out.splitlines()[-1])["decided"]
+    assert cli.main([CID, "entw", "answer", "--config", str(CFG), "--item", "errors", "--value", "3", "--note", "3 errors since the deploy"]) == 0
+    assert json.loads(capsys.readouterr().out.splitlines()[-1])["observed"]      # a judgement item: observed only
+    monkeypatch.setenv("PRESSROOM_AGENT", "Chris")
+    assert cli.main([CID, "entw", "answer", "--config", str(CFG), "--item", "installed", "--yes"]) == 2   # a person answers in the surface

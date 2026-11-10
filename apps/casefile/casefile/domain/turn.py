@@ -34,6 +34,10 @@ def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
             _, draft, decisions = (req.split(":") + ["", ""])[:3]
             if undecided(case, draft, decisions):
                 out.append(req)
+        elif req == "criteria" or req.startswith("criteria:"):  # Definition of Ready: the task carries readable acceptance criteria
+            got = (case.data or {}).get("_criteria") or {}
+            if not got.get("found") or got.get("bad"):
+                out.append(req)
         elif req.startswith("protocol:"):                       # a gate protocol sealed with every must-item passed (ADR-029)
             from .protocol import gate_open
             if not gate_open(case, req[9:]):
