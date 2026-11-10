@@ -67,6 +67,13 @@
             "checks.md"
           ],
           "entry_status": "info"
+        },
+        {
+          "id": "retry_checks",
+          "label": "retry_checks",
+          "actor": "role:product_owner",
+          "run": "shipyard-checks",
+          "entry_status": "info"
         }
       ]
     },
@@ -115,6 +122,13 @@
             "release.md"
           ],
           "entry_status": "info"
+        },
+        {
+          "id": "retry_release",
+          "label": "retry_release",
+          "actor": "role:product_owner",
+          "run": "shipyard-release",
+          "entry_status": "info"
         }
       ],
       "deploys": "entw"
@@ -154,6 +168,16 @@
           "seal": true,
           "entry_status": "approved",
           "run": "shipyard-release"
+        },
+        {
+          "id": "deploy_refused",
+          "label": "deploy_refused",
+          "to": "60-entw",
+          "actor": "role:developer",
+          "payload": [
+            "note"
+          ],
+          "entry_status": "info"
         }
       ],
       "deploys": "test"
@@ -170,6 +194,16 @@
           "to": "90-closed",
           "requires": [
             "prod.md"
+          ],
+          "entry_status": "info"
+        },
+        {
+          "id": "deploy_refused",
+          "label": "deploy_refused",
+          "to": "70-test",
+          "actor": "role:developer",
+          "payload": [
+            "note"
           ],
           "entry_status": "info"
         }

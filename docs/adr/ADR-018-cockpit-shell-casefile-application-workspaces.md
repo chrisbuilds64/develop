@@ -1,6 +1,7 @@
 # ADR-018: The Cockpit Is the Shell, casefile the Application, the Workspace the Unit
 
-**Status:** Accepted (Chris, 2026-10-24)
+**Status:** Accepted (Chris, 2026-10-24). Decisions 2 to 4 superseded by ADR-032 (2026-11-09): a workspace is data
+points, application instances and members, not one tree under one application.
 **Date:** 2026-10-24
 
 ---

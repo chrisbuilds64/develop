@@ -1083,3 +1083,16 @@ a { color: var(--shell); }
 .form-card input:focus, .action input:focus, .action textarea:focus, .login-form input:focus { border-color: var(--shell); box-shadow: 0 0 0 3px var(--shell-halo); }
 .app-card:hover { border-color: var(--shell-side-line); }
 @media (prefers-reduced-transparency: reduce) { .side { background: var(--ground-2); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+
+/* Workspaces (ADR-032): the members line and the move control, in the form-card's terms */
+.sp-members, .sp-move { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 4px 0 14px; font-size: var(--fs-13); color: var(--ink-2); }
+.sp-move { margin: 0; flex-wrap: nowrap; }
+.sp-members label { display: flex; gap: 8px; align-items: center; }
+.sp-members input[type="text"], .sp-move select { font: inherit; font-size: var(--fs-14); color: var(--ink); background: var(--ground-2); border: 1px solid var(--hairline); border-radius: var(--r-s); padding: 7px 10px; }
+.sp-members input[type="text"] { min-width: 260px; }
+.sp-members button, .sp-move button { font: inherit; font-size: var(--fs-14); color: var(--ink); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-s); padding: 7px 12px; cursor: pointer; }
+.setup .quiet-links { margin-top: 18px; }
+
+/* The shell is Casefile (2026-11-10): its mark in the brand row, a little larger than in a nav row */
+.brand-cf { width: 26px; height: 26px; border-radius: var(--r-7); }
+.brand-cf::after { width: 10px; height: 10px; border-radius: var(--r-3); }

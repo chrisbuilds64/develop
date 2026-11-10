@@ -116,14 +116,126 @@ def context_file(run: dict, env: dict, args, ws: Path) -> Path | None:
     return out
 
 
+def describe(name: str, inp: dict) -> tuple[str, str]:
+    """(the line a person reads, the argument a phase pattern matches) for one tool call of the helper."""
+    inp = inp if isinstance(inp, dict) else {}
+    arg = str(inp.get("command") or inp.get("file_path") or inp.get("path") or inp.get("pattern") or inp.get("url") or "")
+    shown = arg
+    if inp.get("file_path") or inp.get("path"):
+        shown = "/".join(Path(arg).parts[-2:])               # the last two parts: enough to recognise, no machine paths
+    shown = " ".join(shown.split())[:90]
+    return (f"{name} {shown}".strip(), arg)
+
+
+def phase_of(phases: list[dict], name: str, arg: str) -> int:
+    """The furthest phase this tool call belongs to, or -1. A pattern is a tool name (`Edit`) or a tool with a glob on its
+    argument (`Bash(*pytest*)`, `Bash(git push*)`)."""
+    import fnmatch
+    hit = -1
+    for i, ph in enumerate(phases or []):
+        for pat in ph.get("on") or []:
+            pat = str(pat)
+            tool, _, rest = pat.partition("(")
+            if tool != name:
+                continue
+            if not rest or fnmatch.fnmatch(arg, rest[:-1] if rest.endswith(")") else rest):
+                hit = i
+    return hit
+
+
+class Progress:
+    """What a running helper is doing, for the people watching: one small file beside the order, `<id>.progress` (JSON,
+    deliberately not *.json, so no queue reads it as an order). Phases come from the skill's policy (`phases`); a phase
+    is reached when a tool call of its kind happens, and never goes back."""
+
+    def __init__(self, path: Path, phases: list[dict], transcript=None):
+        self.path, self.phases, self.transcript = path, phases or [], transcript
+        self.doc = {"updated": now(), "steps": 0, "phase": -1, "now": "", "recent": []}
+        self.write()
+
+    def write(self) -> None:
+        self.doc["updated"] = now()
+        tmp = self.path.with_name("." + self.path.name + ".tmp")
+        try:
+            tmp.write_text(json.dumps(self.doc, ensure_ascii=False) + "\n", encoding="utf-8")
+            os.replace(tmp, self.path)
+        except OSError:
+            pass                                             # progress is a courtesy; a full disk must not fail the run
+
+    def event(self, ev: dict) -> None:
+        if not isinstance(ev, dict) or ev.get("type") != "assistant":
+            return
+        for item in ((ev.get("message") or {}).get("content") or []):
+            if not isinstance(item, dict) or item.get("type") != "tool_use":
+                continue
+            line, arg = describe(str(item.get("name") or "?"), item.get("input") or {})
+            self.doc["steps"] += 1
+            self.doc["now"] = line
+            self.doc["recent"] = (self.doc["recent"] + [line])[-6:]
+            self.doc["phase"] = max(self.doc["phase"], phase_of(self.phases, str(item.get("name") or ""), arg))
+            if self.transcript is not None:
+                self.transcript.write(f"· {line}\n")
+                self.transcript.flush()
+        self.write()
+
+    def finish(self, status: str) -> None:
+        self.doc["finished"], self.doc["status"] = now(), status
+        if status == "done" and self.phases:
+            self.doc["phase"] = len(self.phases) - 1
+        self.write()
+
+
+def stream(cmd: list[str], cwd, env: dict, timeout: int, on_event) -> tuple[int, dict | None, str, str]:
+    """Run Claude Code with `--output-format stream-json`: every event as it happens goes to `on_event`; the last
+    `result` event is the answer, in the same shape `--output-format json` gives. A single JSON object without a type (an
+    older CLI, a stub) counts as the answer too. Returns (exit code, the answer or None, other output, stderr)."""
+    import tempfile
+    import threading
+    err = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
+    proc = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=err, stdin=subprocess.DEVNULL, text=True, bufsize=1)
+    timed_out = threading.Event()
+
+    def kill():
+        timed_out.set()
+        proc.kill()
+    timer = threading.Timer(timeout, kill)
+    timer.start()
+    final, other = None, []
+    try:
+        for raw in proc.stdout:
+            line = raw.strip()
+            if not line:
+                continue
+            try:
+                ev = json.loads(line)
+            except ValueError:
+                other.append(line)
+                continue
+            if isinstance(ev, dict) and (ev.get("type") == "result" or ("type" not in ev and "result" in ev)):
+                final = ev
+            try:
+                on_event(ev)
+            except Exception:                                # noqa: BLE001 — showing progress never breaks the run
+                pass
+        code = proc.wait()
+    finally:
+        timer.cancel()
+    err.seek(0)
+    stderr = err.read()
+    err.close()
+    if timed_out.is_set():
+        return 124, final, "\n".join(other), (stderr + f"\ntimed out after {timeout}s").strip()
+    return code, final, "\n".join(other), stderr
+
+
 def command_for(run: dict, rules: dict, args, data: Path, context: Path | None = None) -> list[str]:
     """The headless session, shaped by the policy: what it may write, which tools, how long.
 
     Every right the session gets is a line in run-policy.json — nothing here by default.
     """
     subst = {"{data}": str(data), "{container}": str(data / run["container"])}
-    cmd = [args.claude, "-p", prompt_for(run, rules.get("agent", "the agent")), "--output-format", "json",
-           "--permission-mode", rules.get("permission_mode", "acceptEdits")]
+    cmd = [args.claude, "-p", prompt_for(run, rules.get("agent", "the agent")), "--output-format", "stream-json", "--verbose",
+           "--permission-mode", rules.get("permission_mode", "acceptEdits")]   # stream-json: every step as it happens (progress)
     if context:
         cmd += ["--append-system-prompt-file", str(context)]
     if rules.get("model"):
@@ -157,12 +269,35 @@ def take(queue: Path, me: str) -> tuple[Path, dict] | None:
     return None
 
 
+def orphans(queue: Path, me: str) -> list[str]:
+    """At start: a run this runner had taken and that still says "running" was cut off when the runner stopped (a deploy
+    restarts it). It is marked failed, with what happened, so the case shows a fact instead of "running" for ever and the
+    person whose move it then is can order it again. Runs taken by another runner are not touched."""
+    marked = []
+    for f in sorted(queue.glob("*.json")):
+        try:
+            run = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if run.get("status") != "running" or run.get("taken_by") != me:
+            continue
+        run.update(status="failed", finished=now(), exit=75,
+                   result=f"Interrupted: the runner stopped while this run was going (taken {run.get('started', '?')}). "
+                          "What it did before that is in the case; nothing after. Order it again if it is still needed.")
+        f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        marked.append(run.get("id", f.stem))
+    return marked
+
+
 def prompt_for(run: dict, agent: str) -> str:
     head = (f"You are {agent}, in a PressRoom session started by a run order from the cockpit — no conversation, "
             f"one task. Work on the container `{run['container']}` and nothing else. Write review entries and "
             "your closing summary in English: review.md is read by people who do not read German. A review "
             "entry's For names one person from people.json, never two. When done, say in five lines what you "
-            "changed and what is open.\n\n")
+            "changed and what is open.\n\nWrite every review entry for a person reading it on a phone, in Markdown: one short "
+            "sentence first that says what happened or what you need, then a blank line; details as a short list ('- '); "
+            "choices you hand back as a numbered list ('1. ', '2. '), each saying what happens if it is chosen; files, "
+            "commands and ids in backticks. No run ids, commit hashes or job numbers unless the person needs them to act.\n\n")
     line = f"/{run['skill']} {run['container'].split('/')[-1]}"
     if run.get("note"):
         line += f"\n\n{run['note']}"
@@ -350,19 +485,19 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
     with transcript.open("w", encoding="utf-8") as out:
         out.write(f"# {run['id']} — started {run['started']} by {run['taken_by']} in workspace {workspace_id}\n$ {' '.join(cmd[:2])} … {' '.join(cmd[3:])}\n\n")
         out.flush()
+        progress = Progress(queue / (f.stem + ".progress"), rules.get("phases") or [], out)
         try:
-            r = subprocess.run(cmd, cwd=ws, env=env, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
-            code, stdout, stderr = r.returncode, r.stdout, r.stderr
-        except subprocess.TimeoutExpired as exc:
-            code, stdout, stderr = 124, (exc.stdout or ""), f"timed out after {timeout}s"
+            code, final, other, stderr = stream(cmd, ws, env, timeout, progress.event)
+        except OSError as exc:
+            code, final, other, stderr = 127, None, "", str(exc)
         result, session, spent = "", "", {}
-        try:
-            data = json.loads(stdout)
-            result, session = str(data.get("result", "")), str(data.get("session_id", ""))
-            spent = accounting(data)
-        except Exception:
-            result = stdout.strip()[-1500:]
-        out.write(result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
+        if final is not None:
+            result, session = str(final.get("result", "")), str(final.get("session_id", ""))
+            spent = accounting(final)
+        else:
+            result = (other.strip() or stderr.strip())[-1500:]
+        progress.finish("done" if code == 0 else "failed")
+        out.write("\n" + result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
     run.update(status="done" if code == 0 else "failed", finished=now(), exit=code, log=f"_runs/{transcript.name}",
                result=result.strip()[:4000], stage=env["PRESSROOM_ENV"], billing=billing, workspace=workspace_id)
     shutil.rmtree(home, ignore_errors=True)                  # the run's HOME was for this run only; the transcript stays in _runs
@@ -400,6 +535,17 @@ def _cockpit():
         sys.path.insert(0, str(HERE.parents[2]))
         from cockpit.workspaces import Workspaces
     return Workspaces
+
+
+def _entries(doc: dict) -> list[dict]:
+    """The registry's entries, one per application instance, in either format (ADR-032 format 2 is read through
+    cockpit.workspace_registry, so the runner has one way of reading)."""
+    try:
+        from cockpit import workspace_registry as registry
+    except ImportError:                                   # run from the source tree, outside the cockpit's interpreter
+        sys.path.insert(0, str(HERE.parents[2]))
+        from cockpit import workspace_registry as registry
+    return registry.instances(doc) if registry.is_v2(doc) else list(doc.get("workspaces") or [])
 
 
 def _templates(args):
@@ -962,6 +1108,11 @@ def main(argv=None) -> int:
     log.info("runner %s (%s) — %s, workspace %s, %s%s", me, KIND,
              f"registry {args.workspaces}" if args.workspaces else f"queue {args.data / '_runs'}", args.workspace, platform.system(),
              f", pull {', '.join(p.name for p in args.pull)}" if args.pull else "")
+    for _wid, data in queues(args):                       # once, before the first round: what the last stop cut off
+        q = data / "_runs"
+        if q.is_dir():
+            for rid in orphans(q, me):
+                log.warning("run %s was cut off by the last stop: marked failed", rid)
     warned: set[str] = set()
     while True:
         roots = queues(args)                               # re-read every round: a new workspace is served from its next order on
@@ -1034,7 +1185,7 @@ def poll_mailboxes(args, roots: list[tuple[str, Path]]) -> None:
     except (OSError, ValueError):
         return
     apps = reg.get("applications", {})
-    by_id = {str(w.get("id")): w for w in reg.get("workspaces", [])}
+    by_id = {str(w.get("id")): w for w in _entries(reg)}
     for wid, data in roots:
         conf_path = data / "mailbox.json"
         if not conf_path.is_file():
@@ -1087,7 +1238,12 @@ def queues(args) -> list[tuple[str, Path]]:
             return [("default", args.data)] if args.data else []
         base = args.workspaces.parent
         out = []
-        for w in doc.get("workspaces", []):
+        try:
+            entries = _entries(doc)
+        except Exception as exc:                          # noqa: BLE001 — a broken registry serves nothing, it never stops the runner
+            log.warning("workspaces registry unreadable: %s", exc)
+            return []
+        for w in entries:
             if w.get("mode", "live") != "live":            # replay worlds are served by their own app, never by Claude
                 continue
             raw = w.get("write_root") or w.get("root")

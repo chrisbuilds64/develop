@@ -431,5 +431,6 @@
     }
   ],
   "icon": "film",
-  "accent": "#3b82f6"
+  "accent": "#3b82f6",
+  "retired": "replaced by the PressRoom application in a workspace; the runner and the pipeline tools in this folder stay in use"
 }

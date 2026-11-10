@@ -40,6 +40,7 @@
         "Write",
         "Bash(git:*)",
         "Bash(gh:*)",
+        "Bash(npm:*)",
         "Bash(ls:*)",
         "Bash(cd:*)",
         "Bash(/home/runner/shipyard/venv/bin/python:*)",
@@ -53,7 +54,69 @@
         "GIT_COMMITTER_EMAIL"
       ],
       "timeout": 3600,
-      "rules": []
+      "rules": [],
+      "phases": [
+        {
+          "key": "read",
+          "words": {
+            "de": "Lesen",
+            "en": "Reading"
+          },
+          "on": [
+            "Read",
+            "Grep",
+            "Glob",
+            "Bash(*git log*)",
+            "Bash(*git diff*)"
+          ]
+        },
+        {
+          "key": "change",
+          "words": {
+            "de": "Ändern",
+            "en": "Changing"
+          },
+          "on": [
+            "Edit",
+            "Write"
+          ]
+        },
+        {
+          "key": "test",
+          "words": {
+            "de": "Testen",
+            "en": "Testing"
+          },
+          "on": [
+            "Bash(*pytest*)",
+            "Bash(*npm run build*)",
+            "Bash(*npm test*)",
+            "Bash(*types.sh*)"
+          ]
+        },
+        {
+          "key": "push",
+          "words": {
+            "de": "Hochladen",
+            "en": "Pushing"
+          },
+          "on": [
+            "Bash(*git commit*)",
+            "Bash(*git push*)"
+          ]
+        },
+        {
+          "key": "handover",
+          "words": {
+            "de": "Übergabe",
+            "en": "Handing over"
+          },
+          "on": [
+            "Bash(*gh pr create*)",
+            "Bash(*casefile.cli.step*)"
+          ]
+        }
+      ]
     },
     "shipyard-checks": {
       "does": "Waits for the checks of the pull request and files the result: green moves the change to approval, red sends it back to the build with what failed.",
@@ -70,7 +133,50 @@
         "GH_TOKEN"
       ],
       "timeout": 2400,
-      "rules": []
+      "rules": [],
+      "phases": [
+        {
+          "key": "read",
+          "words": {
+            "de": "Lesen",
+            "en": "Reading"
+          },
+          "on": [
+            "Read",
+            "Grep",
+            "Glob",
+            "Bash(*git log*)",
+            "Bash(*git diff*)",
+            "Bash(*cat *)",
+            "Bash(*ls *)"
+          ]
+        },
+        {
+          "key": "test",
+          "words": {
+            "de": "Prüfen",
+            "en": "Checking"
+          },
+          "on": [
+            "Bash(*pytest*)",
+            "Bash(*gh pr checks*)",
+            "Bash(*gh run*)",
+            "Bash(*npm*)"
+          ]
+        },
+        {
+          "key": "report",
+          "words": {
+            "de": "Bericht",
+            "en": "Report"
+          },
+          "on": [
+            "Write(*checks*)",
+            "Edit(*checks*)",
+            "Bash(*casefile.cli.step*)"
+          ]
+        }
+      ]
     },
     "shipyard-release": {
       "does": "After the merge: tags the merge commit. After each acceptance: asks the server to deploy that tag to the next stage.",

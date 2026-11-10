@@ -262,6 +262,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Cases
+         * @description Every case the viewer may read, as data: stage, meta, closing date, data point — for a client that keeps its
+         *     own commands (REQ-005 IF-04: `todo.py`). One read, no surface words.
+         */
+        get: operations["export_cases_api_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases": {
         parameters: {
             query?: never;
@@ -962,6 +983,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AgainView
+         * @description A helper finished in this stage and the case did not move on: the viewer may send it again (SYS-161). An offer on
+         *     the case, not a move — it never counts in anybody's stack.
+         */
+        AgainView: {
+            /** Skill */
+            skill: string;
+            /** Skill Word */
+            skill_word: string;
+            /**
+             * Finished
+             * @default
+             */
+            finished: string;
+        };
         /** AnchorIn */
         AnchorIn: {
             /** Text */
@@ -1071,6 +1108,18 @@ export interface components {
              * @default false
              */
             unread: boolean;
+            /**
+             * Data Point
+             * @default
+             */
+            data_point: string;
+            /**
+             * Values
+             * @default {}
+             */
+            values: {
+                [key: string]: string;
+            };
         };
         /** CaseView */
         CaseView: {
@@ -1137,6 +1186,18 @@ export interface components {
              * @default false
              */
             unread: boolean;
+            /**
+             * Data Point
+             * @default
+             */
+            data_point: string;
+            /**
+             * Values
+             * @default {}
+             */
+            values: {
+                [key: string]: string;
+            };
             /** Meta */
             meta?: {
                 [key: string]: unknown;
@@ -1201,6 +1262,15 @@ export interface components {
             data?: {
                 [key: string]: unknown;
             };
+            /** Waits */
+            waits?: components["schemas"]["Dependency"][];
+            /**
+             * Released
+             * @default false
+             */
+            released: boolean;
+            helper?: components["schemas"]["HelperView"] | null;
+            again?: components["schemas"]["AgainView"] | null;
         };
         /** ChapterIn */
         ChapterIn: {
@@ -1241,6 +1311,11 @@ export interface components {
              * @default []
              */
             lists: components["schemas"]["ListView"][];
+            /**
+             * Facets
+             * @default []
+             */
+            facets: components["schemas"]["FacetView"][];
         };
         /** DecideIn */
         DecideIn: {
@@ -1265,6 +1340,38 @@ export interface components {
              * @default false
              */
             fresh: boolean;
+        };
+        /** Dependency */
+        Dependency: {
+            /** Ref */
+            ref: string;
+            /**
+             * Instance
+             * @default
+             */
+            instance: string;
+            /** Case */
+            case: string;
+            /**
+             * Found
+             * @default false
+             */
+            found: boolean;
+            /**
+             * Closed
+             * @default false
+             */
+            closed: boolean;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Stage Word
+             * @default
+             */
+            stage_word: string;
         };
         /** DraftIn */
         DraftIn: {
@@ -1364,6 +1471,73 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** ExportOut */
+        ExportOut: {
+            /** Id */
+            id: string;
+            /** Stage */
+            stage: string;
+            /** Meta */
+            meta: {
+                [key: string]: unknown;
+            };
+            /**
+             * Closed
+             * @default
+             */
+            closed: string;
+            /**
+             * Changed
+             * @default
+             */
+            changed: string;
+            /**
+             * Data Point
+             * @default
+             */
+            data_point: string;
+        };
+        /** FacetValue */
+        FacetValue: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
+        };
+        /** FacetView */
+        FacetView: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Filter
+             * @default false
+             */
+            filter: boolean;
+            /**
+             * Sort
+             * @default false
+             */
+            sort: boolean;
+            /**
+             * Card
+             * @default false
+             */
+            card: boolean;
+            /**
+             * Values
+             * @default []
+             */
+            values: components["schemas"]["FacetValue"][];
+        };
         /** FinishIn */
         FinishIn: {
             /** Step Id */
@@ -1401,6 +1575,52 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HelperView
+         * @description A helper at work on this case, as far as anybody can know: the phases its skill declares (run-policy `phases`), the
+         *     one it reached, what it does right now and just did — and how long such a run usually takes.
+         */
+        HelperView: {
+            /** Run */
+            run: string;
+            /** Skill */
+            skill: string;
+            /** Skill Word */
+            skill_word: string;
+            /** Status */
+            status: string;
+            /**
+             * Created
+             * @default
+             */
+            created: string;
+            /**
+             * Started
+             * @default
+             */
+            started: string;
+            /** Phases */
+            phases?: components["schemas"]["PhaseView"][];
+            /**
+             * Phase
+             * @default -1
+             */
+            phase: number;
+            /**
+             * Now
+             * @default
+             */
+            now: string;
+            /** Recent */
+            recent?: string[];
+            /**
+             * Steps
+             * @default 0
+             */
+            steps: number;
+            /** Expected S */
+            expected_s?: number | null;
         };
         /**
          * HomePlace
@@ -1870,6 +2090,13 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /** PhaseView */
+        PhaseView: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+        };
         /**
          * PlaceOut
          * @description A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one.
@@ -1904,6 +2131,16 @@ export interface components {
              * @default 0
              */
             count: number;
+            /**
+             * Workspace
+             * @default
+             */
+            workspace: string;
+            /**
+             * Workspace Label
+             * @default
+             */
+            workspace_label: string;
         };
         /** RejectIn */
         RejectIn: {
@@ -2241,6 +2478,10 @@ export interface components {
              * @default false
              */
             background: boolean;
+            /** Progress */
+            progress?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** RunIn */
         RunIn: {
@@ -3002,6 +3243,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TurnOut"][];
+                };
+            };
+        };
+    };
+    export_cases_api_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"][];
                 };
             };
         };

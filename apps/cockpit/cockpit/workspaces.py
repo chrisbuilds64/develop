@@ -22,12 +22,15 @@ Nothing here names a domain; the words come from the application's configuration
 
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import json
 import re
 import shutil
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+
+from . import workspace_registry as registry
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{1,47}$")
 MODES = ("live", "replay")
@@ -89,6 +92,10 @@ class Workspace:
     created: str = ""
     cloned_from: str | None = None
     components: dict[str, Component] = field(default_factory=dict)   # declared ones only; component() fills the defaults
+    data_points: list[dict] = field(default_factory=list)   # ADR-032: the application's cases over several data points, each {name, root, write_root?, readers, writers, label?}; `root` is then the instance's home
+    workspace: str = ""                        # ADR-032 (format 2): the workspace this application instance runs in; "" in format 1
+    workspace_label: str = ""
+    template: Path | None = None               # the seed of its data point (format 2); None = the application's template
 
     def visible_to(self, user: str | None) -> bool:
         return self.shared or (user is not None and (user == self.owner or user in self.members))
@@ -101,6 +108,7 @@ class Workspaces:
         self.applications: dict[str, Application] = {}
         self.items: list[Workspace] = []
         self.defaults: dict[str, Component] = {}   # the stage's default per component (an `agents` directory for all)
+        self.doc: dict | None = None               # the registry as read, when it is format 2 (ADR-032); saved back in that shape
         self.load()
 
     def component(self, w: Workspace, name: str) -> Component | None:
@@ -134,7 +142,7 @@ class Workspaces:
         return p if p.is_absolute() else (self.base / p)
 
     def load(self) -> None:
-        self.applications, self.items, self.defaults = {}, [], {}
+        self.applications, self.items, self.defaults, self.doc, self.own = {}, [], {}, None, []
         if not self.path.exists():
             return
         try:
@@ -144,6 +152,8 @@ class Workspaces:
         for aid, a in (raw.get("applications") or {}).items():
             if not NAME.match(aid):
                 raise WorkspaceError(f"application id '{aid}' — lower-case letters, digits, - and _")
+            if a.get("kind") == "plugin":             # an own application: its code is a cockpit plugin (ADR-032, 2026-11-10)
+                continue
             if not a.get("config_dir"):
                 raise WorkspaceError(f"application '{aid}': config_dir is missing")
             config_dir = self._abs(a["config_dir"])
@@ -152,8 +162,17 @@ class Workspaces:
                                                  template=self._abs(a.get("template")), mode=str(a.get("mode", "live")),
                                                  icon=mark.get("icon"), color=mark.get("color"))
         self.defaults = self._components(raw.get("defaults") or {}, "defaults")
+        if registry.is_v2(raw):
+            self.doc = raw
+            try:
+                entries = registry.instances(raw)
+                self.own = registry.own_instances(raw)
+            except registry.RegistryError as exc:
+                raise WorkspaceError(str(exc)) from exc
+        else:
+            entries = raw.get("workspaces") or []
         seen = set()
-        for w in raw.get("workspaces") or []:
+        for w in entries:
             wid = str(w.get("id", ""))
             if not NAME.match(wid):
                 raise WorkspaceError(f"workspace id '{wid}' — lower-case letters, digits, - and _ (2 to 48)")
@@ -170,9 +189,153 @@ class Workspaces:
                 members=[str(m) for m in w.get("members", [])], mode=str(w.get("mode", "live")),
                 open_identity=bool(w.get("open_identity", False)), created=str(w.get("created", "")), cloned_from=w.get("cloned_from"),
                 components=self._components(w.get("components") or {}, f"workspace '{wid}'"),
+                data_points=self._data_points(w.get("data_points") or [], f"workspace '{wid}'"),
+                workspace=str(w.get("workspace") or ""), workspace_label=str(w.get("workspace_label") or ""),
+                template=self._abs(w.get("template")),
             ))
 
+    def _data_points(self, raw: list, where: str) -> list[dict]:
+        out, names = [], set()
+        for d in raw:
+            if not isinstance(d, dict) or not d.get("name") or not d.get("root"):
+                raise WorkspaceError(f"{where}: a data point needs a name and a root")
+            if d["name"] in names:
+                raise WorkspaceError(f"{where}: data point '{d['name']}' appears twice")
+            names.add(d["name"])
+            out.append({"name": str(d["name"]), "root": str(self._abs(d["root"])),
+                        **({"write_root": str(self._abs(d["write_root"]))} if d.get("write_root") else {}),
+                        "readers": [str(x) for x in d.get("readers") or []], "writers": [str(x) for x in d.get("writers") or []],
+                        **({"label": str(d["label"])} if d.get("label") else {})})
+        return out
+
+    def spaces(self) -> list[dict]:
+        """The workspaces of a format-2 registry, in their order: [{id, label}]; empty in format 1."""
+        return [{"id": str(w.get("id")), "label": str(w.get("label") or w.get("id"))} for w in (self.doc or {}).get("workspaces") or []]
+
+    def add_space(self, sid: str, label: str, members: list[str], open_: bool = False) -> dict:
+        """A new, empty workspace (ADR-032): a name and its members; data points and application instances come after."""
+        if self.doc is None:
+            raise WorkspaceError("the registry is still in format 1 — `cockpit workspace migrate` first")
+        if not NAME.match(sid):
+            raise WorkspaceError(f"'{sid}' is not a workspace id — lower-case letters, digits, - and _ (2 to 48)")
+        if sid in {s["id"] for s in self.spaces()}:
+            raise WorkspaceError(f"workspace '{sid}' exists")
+        sp = {"id": sid, "label": label or sid, "open": bool(open_), "members": list(members), "data_points": [], "instances": []}
+        self.doc.setdefault("workspaces", []).append(sp)
+        self._save_v2()
+        return sp
+
+    def grouped(self, user: str | None) -> list[dict]:
+        """The workspaces this person sees, each with the application instances in it they may open:
+        [{id, label, open, members, items}] in the registry's order; empty in format 1."""
+        out = []
+        for sp in (self.doc or {}).get("workspaces") or []:
+            items = [w for w in self.items if w.workspace == sp.get("id") and w.visible_to(user)]
+            own = [o for o in self.own if o["workspace"] == sp.get("id") and self.own_visible(o, user)]
+            if items or own or (user and user in (sp.get("members") or [])):
+                out.append({"id": str(sp["id"]), "label": str(sp.get("label") or sp["id"]), "open": bool(sp.get("open")),
+                            "members": list(sp.get("members") or []), "items": items, "own": own})
+        return out
+
+    def _space(self, sid: str) -> dict:
+        sp = next((x for x in (self.doc or {}).get("workspaces") or [] if x.get("id") == sid), None)
+        if sp is None:
+            raise WorkspaceError(f"no workspace '{sid}'")
+        return sp
+
+    def move(self, iid: str, to: str) -> None:
+        """An application instance into another workspace, with the data points it binds. Its address stays."""
+        if self.doc is None:
+            raise WorkspaceError("the registry is still in format 1 — `cockpit workspace migrate` first")
+        dst = self._space(to)
+        src = next((x for x in self.doc.get("workspaces") or [] if any(i.get("id") == iid for i in x.get("instances") or [])), None)
+        if src is None:
+            raise WorkspaceError(f"no application instance '{iid}'")
+        if src is dst:
+            return
+        inst = next(i for i in src["instances"] if i.get("id") == iid)
+        names = registry.bound_points(inst)
+        others = {n for i in src["instances"] if i is not inst for n in registry.bound_points(i)}
+        if names & others:
+            raise WorkspaceError(f"'{iid}' shares data points with other instances in '{src['id']}': {', '.join(sorted(names & others))}")
+        if names & {p.get("name") for p in dst.get("data_points") or []}:
+            raise WorkspaceError(f"'{to}' has a data point of the same name already: {', '.join(sorted(names))}")
+        dst.setdefault("data_points", []).extend(p for p in src.get("data_points") or [] if p.get("name") in names)
+        src["data_points"] = [p for p in src.get("data_points") or [] if p.get("name") not in names]
+        src["instances"] = [i for i in src["instances"] if i is not inst]
+        dst.setdefault("instances", []).append(inst)
+        self._write_and_reload()
+
+    def set_members(self, sid: str, members: list[str], open_: bool | None = None) -> None:
+        sp = self._space(sid)
+        sp["members"] = [m for m in dict.fromkeys(m.strip() for m in members) if m]
+        if open_ is not None:
+            sp["open"] = bool(open_)
+        self._write_and_reload()
+
+    def _write_and_reload(self) -> None:
+        self.path.write_text(json.dumps(self.doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        self.load()
+
+    def spaces_for(self, user: str | None, any_: bool = False) -> list[dict]:
+        """The workspaces this person may add an application to: their own, or every one for an administrator."""
+        return [{"id": str(w.get("id")), "label": str(w.get("label") or w.get("id"))} for w in (self.doc or {}).get("workspaces") or []
+                if any_ or (user and user in (w.get("members") or []))]
+
+    def _save_v2(self) -> None:
+        """Format 2 back: the document as read, with instances that left removed and new ones added — each new one on a
+        data point of its own, in its workspace (or the first one the owner belongs to). Nothing else is rewritten."""
+        doc = copy.deepcopy(self.doc)
+        ids = {w.id for w in self.items} | {o["id"] for o in self.own}
+        for ws in doc.get("workspaces") or []:
+            gone = [i for i in ws.get("instances") or [] if i.get("id") not in ids]
+            ws["instances"] = [i for i in ws.get("instances") or [] if i.get("id") in ids]
+            used = {n for i in ws["instances"] for n in registry.bound_points(i)}
+            dropped = {n for i in gone for n in registry.bound_points(i)}
+            ws["data_points"] = [p for p in ws.get("data_points") or [] if p.get("name") in used or p.get("name") not in dropped]
+        have = {i.get("id") for ws in doc.get("workspaces") or [] for i in ws.get("instances") or []}
+        if not doc.get("workspaces"):
+            doc["workspaces"] = [{"id": "home", "label": "Home", "open": False, "members": [], "data_points": [], "instances": []}]
+        if not any(c.get("kind") == "directory" and not c.get("root") for c in (doc.get("connectors") or {}).values()):
+            doc.setdefault("connectors", {})["server"] = {"kind": "directory", "label": "This server", "root": ""}
+        for w in self.items:
+            if w.id in have:
+                continue
+            ws = next((x for x in doc["workspaces"] if x.get("id") == w.workspace), None) or \
+                 next((x for x in doc["workspaces"] if w.owner and w.owner in (x.get("members") or [])), None) or doc["workspaces"][0]
+            w.workspace, w.workspace_label = str(ws["id"]), str(ws.get("label") or ws["id"])
+            names = {p.get("name") for p in ws.get("data_points") or []}
+            name = w.id if w.id not in names else f"{w.id}-{len(names)}"
+            root = self._rel(w.root)
+            ws.setdefault("data_points", []).append({"name": name, **registry._place(doc, root, self._rel(w.write_root) if w.write_root else None)})
+            inst = {"id": w.id, "application": w.application, "label": w.label, "mode": w.mode, "bind": {"cases": name}}
+            if w.owner:
+                inst["owner"] = w.owner
+            if w.members and sorted(w.members) != sorted(ws.get("members") or []):
+                inst["members"] = list(w.members)
+            for k in ("created", "cloned_from"):
+                if getattr(w, k):
+                    inst[k] = getattr(w, k)
+            if w.open_identity:
+                inst["open_identity"] = True
+            ws.setdefault("instances", []).append(inst)
+        doc["format"], doc["$comment"] = registry.FORMAT, registry.COMMENT
+        self.doc = doc
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    def _rel(self, p: Path | None) -> str | None:
+        if p is None:
+            return None
+        try:
+            return str(p.relative_to(self.base))
+        except ValueError:
+            return str(p)
+
     def save(self) -> None:
+        if self.doc is not None:
+            return self._save_v2()
+
         def rel(p: Path | None):
             if p is None:
                 return None
@@ -188,8 +351,10 @@ class Workspaces:
             "$comment": "The cockpit's workspaces: applications (a casefile domain configuration) and the trees that run under them. Edited by `cockpit workspace …` and the cockpit itself; paths relative to this file's directory or absolute.",
             "applications": {a.id: {k: v for k, v in {"label": a.label, "config_dir": rel(a.config_dir), "template": rel(a.template), "mode": a.mode}.items() if v is not None} for a in self.applications.values()},
             **({"defaults": comps(self.defaults)} if self.defaults else {}),
-            "workspaces": [{k: v for k, v in {**asdict(w), "root": rel(w.root), "write_root": rel(w.write_root), "components": comps(w.components)}.items()
-                            if v not in (None, "", [], False, {}) or k in ("shared", "members")} for w in self.items],
+            "workspaces": [{k: v for k, v in {**asdict(w), "root": rel(w.root), "write_root": rel(w.write_root), "components": comps(w.components),
+                                              "data_points": [{**d, "root": rel(Path(d["root"])), **({"write_root": rel(Path(d["write_root"]))} if d.get("write_root") else {})}
+                                                              for d in w.data_points]}.items()
+                            if (v not in (None, "", [], False, {}) or k in ("shared", "members")) and k not in ("workspace", "workspace_label", "template")} for w in self.items],
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -205,9 +370,17 @@ class Workspaces:
         w = self.get(wid)
         return w is not None and w.visible_to(user)
 
+    @staticmethod
+    def own_visible(o: dict, user: str | None) -> bool:
+        return bool(o.get("shared")) or (user is not None and user in (o.get("members") or []))
+
+    def own_instance(self, iid: str) -> dict | None:
+        """An instance of an own application (a plugin) by its id, or None."""
+        return next((o for o in self.own if o["id"] == iid), None)
+
     # ---------------------------------------------------------------- creating
     def create(self, wid: str, application: str, owner: str | None, label: str = "", source: str | None = None,
-               shared: bool = False, members: list[str] | None = None, where: Path | None = None) -> Workspace:
+               shared: bool = False, members: list[str] | None = None, where: Path | None = None, workspace: str = "") -> Workspace:
         """A new workspace: its tree copied from `source` (a workspace id the owner may see) or from the
         application's template, or started empty from the configuration. `where` is the parent directory of
         the new tree; default `<registry dir>/workspaces/<owner or shared>/<id>`."""
@@ -232,6 +405,8 @@ class Workspaces:
             src = s.root
         elif app.template and app.template.is_dir():
             src = app.template / "flow" if (app.template / "flow").is_dir() else app.template
+        if self.doc is not None and workspace and workspace not in {s["id"] for s in self.spaces()}:
+            raise WorkspaceError(f"no workspace '{workspace}' — defined: {', '.join(s['id'] for s in self.spaces())}")
         root.mkdir(parents=True)
         if src is not None:
             _copy_tree(src, root)
@@ -247,7 +422,8 @@ class Workspaces:
                   "$comment": "Written by the cockpit when this workspace was created. The tree is the truth; this says where it came from."}
         (root / "workspace.json").write_text(json.dumps(marker, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         w = Workspace(id=wid, application=application, label=label or wid, root=root, shared=shared, owner=owner,
-                      members=list(members or []), mode=app.mode, open_identity=False, created=marker["created"][:19], cloned_from=source)
+                      members=list(members or []), mode=app.mode, open_identity=False, created=marker["created"][:19], cloned_from=source,
+                      workspace=workspace)
         self.items.append(w)
         self.save()
         return w
@@ -330,7 +506,14 @@ def peers_of(workspaces: "Workspaces", w: Workspace, identity, shell: str | None
             a = workspaces.applications.get(o.application)
             mark = _mark(a.config_dir) if a else {}
             out.append({"id": o.id, "name": o.label, "url": f"{base}/w/{o.id}/", "color": mark.get("color") or "",
-                        "icon": mark.get("icon") or "", "current": o.id == w.id})
+                        "icon": mark.get("icon") or "", "current": o.id == w.id,
+                        "workspace": o.workspace, "workspace_label": o.workspace_label})
+        for o in workspaces.own:                 # own applications (plugins) of a workspace sit in the same group, opened in the cockpit
+            if workspaces.own_visible(o, user):
+                out.append({"id": o["id"], "name": o["label"], "url": f"{base}/m/{o['id']}", "color": "", "icon": "",
+                            "current": False, "workspace": o["workspace"], "workspace_label": o["workspace_label"]})
+        order = [s["id"] for s in workspaces.spaces()]
+        out.sort(key=lambda p: order.index(p["workspace"]) if p["workspace"] in order else len(order))
         return out
     return peers
 
@@ -357,9 +540,9 @@ def build_app(w: Workspace, app: Application, identity, secret: str, web_dist: P
     from casefile.api.app import Settings, create_app
     pkg = Path(casefile.__file__).resolve().parent
     settings = Settings(
-        root=w.root, write_root=w.write_root, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers, plugins=shell_plugins(),
+        root=w.root, write_root=w.write_root, data_points=w.data_points or None, config_dir=app.config_dir, label=w.label, stage=stage, shell=shell, peers=peers, plugins=shell_plugins(),
         open_identity=w.open_identity, identity=None if w.open_identity else identity,
-        secret=secret, web_dist=web_dist, demo=(w.mode == "replay"), template=app.template if w.mode == "replay" else None,
+        secret=secret, web_dist=web_dist, demo=(w.mode == "replay"), template=(w.template or app.template) if w.mode == "replay" else None,
         samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies",
     )
     return create_app(settings)

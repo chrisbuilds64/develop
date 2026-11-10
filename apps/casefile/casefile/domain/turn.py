@@ -92,6 +92,15 @@ def four_eyes_block(config: DomainConfig, case: Case, action: Action, actor: str
     return None
 
 
+def actor_of(actor: str | None, case: Case) -> str | None:
+    """`field:<key>` names whoever the case's meta holds under that key (the worklist's assignee): `person:<id>`.
+    Empty field, nobody's move. Every other actor stays as it is."""
+    if actor and actor.startswith("field:"):
+        who = str(case.meta.get(actor[6:]) or "").strip()
+        return f"person:{who}" if who else None
+    return actor
+
+
 def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn]:
     out: list[Turn] = []
     run = case.last_run
@@ -104,8 +113,14 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
 
     # 2. the last run failed
     if run and run.status == "failed":
-        out.append(Turn(actor=OPERATOR, action="see_failure", label=_label(config, "see_failure", lang), blocked_by=[],
-                        reason=config.word("reasons", "failed", lang, "the last run failed"), since=run.finished or run.created))
+        # Whoever may order the skill may order it again (run-policy `orderable_by`); the operator role when none of those is held.
+        from .runs import policy_for
+        roles = [r for r in policy_for(config, run.skill).get("orderable_by", []) if any(r in p.roles for p in config.people)]
+        why = config.word("reasons", "failed", lang, "the last run failed")
+        first = (run.result or "").strip().splitlines()[0][:160] if (run.result or "").strip() else ""
+        label = config.word("actions", "retry", lang, "Erneut starten" if (lang or config.lang) == "de" else "Run again")
+        out.append(Turn(actor=f"role:{roles[0]}" if roles else OPERATOR, action="retry", label=label, blocked_by=[],
+                        reason=f"{why}: {first}" if first else why, since=run.finished or run.created))
 
     # 3. open entries addressed to a person
     for e in thread.open_for(case.entries, None):
@@ -124,15 +139,16 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
             if not p["done"]:
                 out.append(Turn(actor=pid, action="interview", label=_label(config, "interview" if p["answered"] == 0 else "interview_continue", lang),
                                 reason=config.word("stages", case.stage, lang, case.stage), blocked_by=[], since=case.since))
-    if stage and stage.turn and stage.turn != "claude":
+    stage_turn = actor_of(stage.turn, case) if stage else None
+    if stage and stage_turn and stage_turn != "claude":
         for action in stage.actions:
             if not offered(config, case, action):
                 continue
             missing = missing_for(config, case, action)
-            actor = action.actor or stage.turn
-            if action.actor and action.actor != stage.turn and missing:
+            actor = actor_of(action.actor, case) or stage_turn
+            if action.actor and actor != stage_turn and missing:
                 # the stage's own actor must deliver first; the action's actor waits
-                out.append(Turn(actor=stage.turn, action="deliver", label=_label(config, "deliver", lang),
+                out.append(Turn(actor=stage_turn, action="deliver", label=_label(config, "deliver", lang),
                                 reason=config.word("reasons", "missing", lang, "something is still missing"),
                                 blocked_by=missing, since=case.since))
                 continue
@@ -145,7 +161,14 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
     elif stage and stage.turn == "claude":
         out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                         reason=config.word("stages", case.stage, lang, case.stage), since=case.since))
+
     return out
+
+
+def stage_run(case: Case):
+    """The last foreground run that worked on this case in the stage it stands in now, or None."""
+    fg = [r for r in case.runs if not r.background and (r.container or "").split("/")[0] == case.stage]
+    return fg[-1] if fg else None
 
 
 ORDER = ("date", "seal", "gate", "gap", "nudge")       # the stack's rule (Chris, 2026-10-29): a date first, then gates with a seal, gates without,
@@ -182,7 +205,7 @@ def classify(case: Case, action: Action | None, t: Turn) -> str:
         return "gap"
     if t.seal:
         return "seal"
-    if t.action in ("answer", "see_failure", "interview"):
+    if t.action in ("answer", "retry", "see_failure", "interview"):
         return "gate"
     if action is not None and action.to:
         return "gate"

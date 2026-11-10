@@ -1,0 +1,28 @@
+// Facets on board and table: filter bar, chips, a filter in the address. usage: node facets-shot.mjs <base> <outdir>
+import { chromium } from "playwright";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+const [base, out] = process.argv.slice(2);
+mkdirSync(out, { recursive: true });
+const browser = await chromium.launch();
+const issues = [];
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, baseURL: base, locale: "de-DE" });
+const page = await ctx.newPage();
+page.on("pageerror", (e) => issues.push(e.message));
+page.on("response", (r) => { if (r.status() >= 400) issues.push(`${r.status()} ${r.url()}`); });
+await page.request.post("/api/session", { data: { person: "chris" } });
+await page.goto("/board", { waitUntil: "networkidle" });
+await page.waitForTimeout(600);
+await page.screenshot({ path: join(out, "board.png") });
+console.log("cards on board:", await page.locator(".wb-card").count());
+await page.locator(".fc-pick .fc-btn").first().click();
+await page.locator(".fc-opt", { hasText: "System" }).first().click();
+await page.waitForTimeout(300);
+await page.screenshot({ path: join(out, "board-pick.png") });
+console.log("after pick:", await page.locator(".wb-card").count(), "| url:", page.url(), "|", await page.locator(".fc-count").innerText());
+await page.goto("/list?f.priority=high&sort=due", { waitUntil: "networkidle" });
+await page.waitForTimeout(600);
+await page.screenshot({ path: join(out, "table.png") });
+console.log("table rows high/due:", await page.locator(".wb-tbl tbody tr").count());
+console.log("issues:", issues.length ? issues : "none");
+await ctx.close(); await browser.close();

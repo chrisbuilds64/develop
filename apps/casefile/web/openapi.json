@@ -419,6 +419,29 @@
         }
       }
     },
+    "/api/export": {
+      "get": {
+        "summary": "Export Cases",
+        "description": "Every case the viewer may read, as data: stage, meta, closing date, data point \u2014 for a client that keeps its\nown commands (REQ-005 IF-04: `todo.py`). One read, no surface words.",
+        "operationId": "export_cases_api_export_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExportOut"
+                  },
+                  "type": "array",
+                  "title": "Response Export Cases Api Export Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases": {
       "get": {
         "summary": "List Cases",
@@ -2016,6 +2039,30 @@
   },
   "components": {
     "schemas": {
+      "AgainView": {
+        "properties": {
+          "skill": {
+            "type": "string",
+            "title": "Skill"
+          },
+          "skill_word": {
+            "type": "string",
+            "title": "Skill Word"
+          },
+          "finished": {
+            "type": "string",
+            "title": "Finished",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "skill",
+          "skill_word"
+        ],
+        "title": "AgainView",
+        "description": "A helper finished in this stage and the case did not move on: the viewer may send it again (SYS-161). An offer on\nthe case, not a move \u2014 it never counts in anybody's stack."
+      },
       "AnchorIn": {
         "properties": {
           "text": {
@@ -2212,6 +2259,19 @@
             "type": "boolean",
             "title": "Unread",
             "default": false
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Values",
+            "default": {}
           }
         },
         "type": "object",
@@ -2325,6 +2385,19 @@
             "type": "boolean",
             "title": "Unread",
             "default": false
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Values",
+            "default": {}
           },
           "meta": {
             "additionalProperties": true,
@@ -2443,6 +2516,38 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Data"
+          },
+          "waits": {
+            "items": {
+              "$ref": "#/components/schemas/Dependency"
+            },
+            "type": "array",
+            "title": "Waits"
+          },
+          "released": {
+            "type": "boolean",
+            "title": "Released",
+            "default": false
+          },
+          "helper": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HelperView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "again": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgainView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -2541,6 +2646,14 @@
             "type": "array",
             "title": "Lists",
             "default": []
+          },
+          "facets": {
+            "items": {
+              "$ref": "#/components/schemas/FacetView"
+            },
+            "type": "array",
+            "title": "Facets",
+            "default": []
           }
         },
         "type": "object",
@@ -2604,6 +2717,49 @@
         },
         "type": "object",
         "title": "DemoSessionIn"
+      },
+      "Dependency": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "instance": {
+            "type": "string",
+            "title": "Instance",
+            "default": ""
+          },
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "found": {
+            "type": "boolean",
+            "title": "Found",
+            "default": false
+          },
+          "closed": {
+            "type": "boolean",
+            "title": "Closed",
+            "default": false
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "stage_word": {
+            "type": "string",
+            "title": "Stage Word",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "case"
+        ],
+        "title": "Dependency"
       },
       "DraftIn": {
         "properties": {
@@ -2854,6 +3010,114 @@
         ],
         "title": "EntryIn"
       },
+      "ExportOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "meta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Meta"
+          },
+          "closed": {
+            "type": "string",
+            "title": "Closed",
+            "default": ""
+          },
+          "changed": {
+            "type": "string",
+            "title": "Changed",
+            "default": ""
+          },
+          "data_point": {
+            "type": "string",
+            "title": "Data Point",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "stage",
+          "meta"
+        ],
+        "title": "ExportOut"
+      },
+      "FacetValue": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word"
+        ],
+        "title": "FacetValue"
+      },
+      "FacetView": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "filter": {
+            "type": "boolean",
+            "title": "Filter",
+            "default": false
+          },
+          "sort": {
+            "type": "boolean",
+            "title": "Sort",
+            "default": false
+          },
+          "card": {
+            "type": "boolean",
+            "title": "Card",
+            "default": false
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValue"
+            },
+            "type": "array",
+            "title": "Values",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word",
+          "kind"
+        ],
+        "title": "FacetView"
+      },
       "FinishIn": {
         "properties": {
           "step_id": {
@@ -2946,6 +3210,85 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HelperView": {
+        "properties": {
+          "run": {
+            "type": "string",
+            "title": "Run"
+          },
+          "skill": {
+            "type": "string",
+            "title": "Skill"
+          },
+          "skill_word": {
+            "type": "string",
+            "title": "Skill Word"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created": {
+            "type": "string",
+            "title": "Created",
+            "default": ""
+          },
+          "started": {
+            "type": "string",
+            "title": "Started",
+            "default": ""
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/PhaseView"
+            },
+            "type": "array",
+            "title": "Phases"
+          },
+          "phase": {
+            "type": "integer",
+            "title": "Phase",
+            "default": -1
+          },
+          "now": {
+            "type": "string",
+            "title": "Now",
+            "default": ""
+          },
+          "recent": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recent"
+          },
+          "steps": {
+            "type": "integer",
+            "title": "Steps",
+            "default": 0
+          },
+          "expected_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected S"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run",
+          "skill",
+          "skill_word",
+          "status"
+        ],
+        "title": "HelperView",
+        "description": "A helper at work on this case, as far as anybody can know: the phases its skill declares (run-policy `phases`), the\none it reached, what it does right now and just did \u2014 and how long such a run usually takes."
       },
       "HomePlace": {
         "properties": {
@@ -3848,6 +4191,24 @@
         ],
         "title": "PersonView"
       },
+      "PhaseView": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word"
+        ],
+        "title": "PhaseView"
+      },
       "PlaceOut": {
         "properties": {
           "id": {
@@ -3882,6 +4243,16 @@
             "type": "integer",
             "title": "Count",
             "default": 0
+          },
+          "workspace": {
+            "type": "string",
+            "title": "Workspace",
+            "default": ""
+          },
+          "workspace_label": {
+            "type": "string",
+            "title": "Workspace Label",
+            "default": ""
           }
         },
         "type": "object",
@@ -4551,6 +4922,18 @@
             "type": "boolean",
             "title": "Background",
             "default": false
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
           }
         },
         "type": "object",

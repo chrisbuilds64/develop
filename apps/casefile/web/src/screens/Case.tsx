@@ -3,11 +3,13 @@
 // button for it — the AI's reading of a mail with its facts and suggestion, or the plain sentence of the move — and, when
 // the case lies elsewhere or is closed, remind, take back or move back; what is on the desk; the keys. Beside it the
 // conversation, the documents and the details. Every action is a step of the core; Undo follows the core's undo_step.
+import { RunProgress } from "../components/RunProgress";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type ConfigView, type MeOut, type Turn, type Entry } from "../api";
 import { Conversation } from "../components/Conversation";
-import { Send, Seal, DocIcon, PenIcon, PhotoIcon } from "../components/Icons";
+import { Seal, DocIcon, PenIcon, PhotoIcon } from "../components/Icons";
+import { NoteField, openNote } from "../components/NoteField";
 import { Reader, type Doc } from "../components/Reader";
 import { MetaList } from "../components/MetaSheet";
 import { casesOf, type Tab } from "./Queue";
@@ -26,21 +28,24 @@ export function docsOf(v: CaseView): Doc[] {
 type Reading = { kind?: string; rule?: string; urgency?: string; summary?: string; fields?: Record<string, string>; labels?: Record<string, string>; reasons?: string[] };
 type Done = { case?: string; title?: string; url?: string; target_label?: string };
 
+// Every station has a column of its own, so no two words touch at any width (SW-2026-002): the columns share the line
+// equally, except that the current station's column never gets narrower than its word; a word that does not fit its
+// column is cut with an ellipsis and keeps the full word in its title. Each column draws its own piece of the track, so
+// the track meets the dots however wide the columns end up.
 function Stations({ stations, caseId }: { stations: { key: string; word: string; state: string }[]; caseId: string }) {
   const cur = Math.max(0, stations.findIndex((s) => s.state === "current"));
-  const n = Math.max(1, stations.length - 1);
   const prev = useRef<{ id: string; cur: number } | null>(null);
   useEffect(() => {
     const p = prev.current;
     if (p && p.id === caseId && cur > p.cur) for (let i = 0; i < cur - p.cur; i++) tick(0.12 + i * 0.11);
     prev.current = { id: caseId, cur };
   }, [cur, caseId]);
+  const columns = stations.map((_, i) => (i === cur ? "minmax(max-content, 1fr)" : "minmax(0, 1fr)")).join(" ");
   return (
-    <div className="sline" role="img" aria-label={stations[cur]?.word} data-help="cf.stations">
-      <div className="strack"><i style={{ width: `${(cur / n) * 100}%` }} /></div>
-      <div className="sst">
-        {stations.map((s, i) => (
-          <span key={s.key} className={s.state === "done" ? "past" : s.state === "current" ? "now" : ""} style={{ left: `${(i / n) * 100}%` }}><b /><em>{s.word}</em></span>
+    <div className="sline" role="img" aria-label={`${stations[cur]?.word ?? ""} · ${stations.map((s) => s.word).join(", ")}`} data-help="cf.stations">
+      <div className="sst" style={{ gridTemplateColumns: columns }}>
+        {stations.map((s) => (
+          <span key={s.key} title={s.word} className={s.state === "done" ? "past" : s.state === "current" ? "now" : ""}><b /><em>{s.word}</em></span>
         ))}
       </div>
     </div>
@@ -69,6 +74,13 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const lang = config.lang;
   const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false, refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
+  // the case changed hands (a helper finished, a move went through): the list beside it follows at once, not 25 s later
+  useEffect(() => {
+    if (!q.data) return;
+    qc.invalidateQueries({ queryKey: ["groups"] });
+    qc.invalidateQueries({ queryKey: ["stages"] });
+    qc.invalidateQueries({ queryKey: ["home"] });
+  }, [q.data?.group, q.data?.stage, q.data?.turn?.actor]);   // eslint-disable-line react-hooks/exhaustive-deps
   const rules = useQuery({ queryKey: ["rules"], queryFn: api.rules, staleTime: 60_000 });
   const samples = ((config.theme as { samples?: string[] }).samples ?? []);
   const [refused, setRefused] = useState<string | null>(null);
@@ -76,11 +88,9 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [note, setNote] = useState("");
-  const [ask, setAsk] = useState("");
   const [pending, setPending] = useState<Turn | null>(null);
   const [reading, setReading] = useState<string | null>(null);
   const [side, setSide] = useState<"conv" | "docs" | "details">("conv");
-  const askRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); qc.invalidateQueries({ queryKey: ["rhythm"] }); };
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
@@ -98,7 +108,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     setToast({ text, sealed: !!t?.seal, undo: !!r.to && !["take_back", "reopen", "correct"].includes(p.action) });
   }, onError: fail });
   const entry = useMutation({ mutationFn: (b: Parameters<typeof api.entry>[1]) => api.entry(id, b), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
-  const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); setAsk(""); refresh(); }, onError: fail });
+  const run = useMutation({ mutationFn: (text: string) => api.run(id, { note: text, request_id: stepId("ask") }), onSuccess: () => { setRefused(null); refresh(); }, onError: fail });
   const upload = useMutation({ mutationFn: (p: { slot: string; file: File }) => api.asset(id, p.slot, stepId("up"), p.file), onSuccess: () => { setRefused(null); paper(); refresh(); }, onError: fail });
   const sampleIn = useMutation({ mutationFn: (slot: string) => putSample(id, slot, stepId("sample")), onSuccess: () => { setRefused(null); paper(); refresh(); }, onError: fail });
 
@@ -135,7 +145,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) || t.isContentEditable;
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") { e.preventDefault(); setSide("conv"); setTimeout(() => askRef.current?.focus(), 0); return; }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") { e.preventDefault(); setSide("conv"); openNote(); return; }
       if (typing || e.metaKey || e.ctrlKey || e.altKey || reading) return;
       if (e.key === "j" && neighbour(1)) go(`/case/${encodeURIComponent(neighbour(1)!.id)}?g=${tab}`);
       else if (e.key === "k" && neighbour(-1)) go(`/case/${encodeURIComponent(neighbour(-1)!.id)}?g=${tab}`);
@@ -209,7 +219,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     <>
       {secondary.map((t) => (
         <button key={t.action} type="button" className="ghost" disabled={busy || t.blocked_by.length > 0} data-action={t.action}
-                onClick={() => { if (!(t.payload ?? []).includes("note")) { step.mutate({ action: t.action, label: t.label }); return; } setPending(t); setSide("conv"); setTimeout(() => askRef.current?.focus(), 0); }}>{t.label}</button>
+                onClick={() => { if (!(t.payload ?? []).includes("note")) { step.mutate({ action: t.action, label: t.label }); return; } setPending(t); setSide("conv"); openNote(); }}>{t.label}</button>
       ))}
       {special && primaryTurn && (
         <button type="button" className="ghost" onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : undefined}>{primaryTurn.label} →</button>
@@ -283,8 +293,19 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                 <><p>{cap(main.reason)}</p>
                   <div className="pacts"><button type="button" className="primary" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .mbtn")?.click(), 0); }}>{w.answer}</button></div></>
               ) : (
-                <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
+                main?.actor === "claude" && v.helper ? <RunProgress h={v.helper} agent={v.agent} w={w} />
+                  : <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
               )}
+            </div>
+          )}
+
+          {v.again && !pending && (
+            <div className="c-again pacts" data-help="cf.again">
+              <button type="button" className="ghost" disabled={busy}
+                      onClick={() => { setPending({ actor: "", action: "order_again", label: w.againLabel(v.again!.skill_word), reason: "", blocked_by: [], payload: ["note"] } as unknown as Turn); setSide("conv"); openNote(); }}>
+                {w.againLabel(v.again.skill_word)}
+              </button>
+              <span className="hint">{w.againHint}</span>
             </div>
           )}
 
@@ -346,12 +367,10 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
         ) : (
           <div className="i-thread"><MetaList meta={(v.meta ?? {}) as Record<string, unknown>} words={(config.words ?? {}) as Record<string, unknown>} lang={lang} lists={config.lists ?? []} /></div>
         )}
-        <form className="i-ask" onSubmit={(e) => { e.preventDefault(); if (!ask.trim()) return; if (pending) { step.mutate({ action: pending.action, label: pending.label, payload: { note: ask.trim(), text: ask.trim() } }); setPending(null); setAsk(""); } else run.mutate(ask.trim()); }}>
-          <span className="ask-i">✦</span>
-          {pending && <button type="button" className="ask-chip" onClick={() => setPending(null)}>{pending.label} ×</button>}
-          <input ref={askRef} value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={pending ? `${pending.label} …` : w.askAiPh} aria-label={w.askAiPh} />
-          {ask.trim() ? <button type="submit" className="ask-send" disabled={busy} aria-label="↵"><Send /></button> : <span className="kbd">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘J" : "Ctrl J"}</span>}
-        </form>
+        <NoteField caseId={id} chip={pending?.label} onChip={() => setPending(null)} placeholder={pending ? `${pending.label} …` : w.askAiPh} busy={busy} w={w}
+                   onSend={(text) => pending
+                     ? step.mutateAsync({ action: pending.action, label: pending.label, payload: { note: text, text } }).then(() => setPending(null))
+                     : run.mutateAsync(text)} />
       </aside>
 
       {toast && (

@@ -138,6 +138,7 @@ class Run(BaseModel):
     file: str | None = None                      # translate: the original it reads
     out: str | None = None                       # translate: the file it writes beside the original
     background: bool = False                     # a helper that works beside the people (a follow-up while someone answers): never anybody's move
+    progress: dict | None = None                 # while it runs: what the helper is doing (the runner's `<id>.progress`: steps, phase, now, recent)
 
 
 class Case(BaseModel):
@@ -171,7 +172,7 @@ class Case(BaseModel):
 class Turn(BaseModel):
     """One move that waits. Element 0 of `turn()` is the main one."""
     actor: str                                   # person id, "role:<role>", or "claude"
-    action: str                                  # action id from the configuration, or a built-in: "answer", "see_failure", "wait"
+    action: str                                  # action id from the configuration, or a built-in: "answer", "retry", "wait"
     label: str                                   # the word the surface shows
     reason: str                                  # one sentence
     blocked_by: list[str]

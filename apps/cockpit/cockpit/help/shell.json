@@ -2,8 +2,8 @@
   "$comment": "Help for the cockpit shell and the side panel: one topic per data-help anchor in templates/ and static/*.js. `cockpit help check` keeps them in step.",
   "surface": "shell",
   "intro": {
-    "de": "Das Cockpit ist dein Arbeitsplatz: links Workspaces und dein Team, oben rechts Umschalter und Meldungen, rechts unten dein Team im Gespräch.",
-    "en": "The cockpit is your workplace: workspaces and your team on the left, switch and notifications top right, your team in conversation bottom right."
+    "de": "Casefile ist dein Arbeitsplatz: links deine Workspaces und dein Team, oben rechts Umschalter und Meldungen, rechts unten dein Team im Gespräch.",
+    "en": "Casefile is your workplace: your workspaces and your team on the left, switch and notifications top right, your team in conversation bottom right."
   },
   "topics": [
     {
@@ -26,8 +26,8 @@
         "en": "Tools"
       },
       "text": {
-        "de": "Alles, was im Cockpit lebt: Casefile und die übrigen Werkzeuge. Ein Klick öffnet es.",
-        "en": "Everything that lives in the cockpit: Casefile and the other tools. One click opens it."
+        "de": "Hilfsmodule, die außerhalb jedes Workspace laufen. Ein Klick öffnet eines.",
+        "en": "Helper modules that run outside every workspace. One click opens one."
       }
     },
     {
@@ -146,8 +146,8 @@
         "en": "Setup"
       },
       "text": {
-        "de": "Wie das Cockpit konfiguriert ist: Quellen, Module, Rollen.",
-        "en": "How the cockpit is configured: sources, modules, roles."
+        "de": "Wie diese Casefile-Installation konfiguriert ist: Quellen, Module, Rollen.",
+        "en": "How this Casefile installation is configured: sources, modules, roles."
       }
     },
     {
@@ -160,6 +160,30 @@
       "text": {
         "de": "Einmal je Sitzung: die Linie, ihre Stationen und ein Marker, der dort blau wird, wo du dran bist. Die Zahl ist echt: was in deinen Workspaces auf dich wartet. Jede Taste oder „Weiter“ überspringt.",
         "en": "Once per session: the line, its stations and a marker that turns blue where it is your move. The number is real: what waits for you in your workspaces. Any key or “Continue” skips it."
+      }
+    },
+    {
+      "key": "shell.workspaces",
+      "since": "0.20.0",
+      "title": {
+        "de": "Workspaces",
+        "en": "Workspaces"
+      },
+      "text": {
+        "de": "Deine Workspaces, etwa Betrieb und Muster. Jeder bündelt Datenpunkte, die Anwendungen darauf und seine Mitglieder. Ein Klick öffnet Casefile in diesem Workspace.",
+        "en": "Your workspaces, for instance operations and samples. Each holds data points, the applications on them and its members. A click opens Casefile in that workspace."
+      }
+    },
+    {
+      "key": "shell.workspace-admin",
+      "since": "0.20.0",
+      "title": {
+        "de": "Workspaces verwalten",
+        "en": "Manage workspaces"
+      },
+      "text": {
+        "de": "Zeigt je Workspace Mitglieder, Datenpunkte mit ihrem Connector und die Anwendungen. Wer verwalten darf, verschiebt hier eine Anwendung samt ihren Datenpunkten in einen anderen Workspace; ihre Adresse bleibt.",
+        "en": "Shows each workspace's members, data points with their connector, and applications. Who may manage moves an application with its data points into another workspace here; its address stays."
       }
     }
   ]

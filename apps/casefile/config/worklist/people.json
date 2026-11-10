@@ -1,0 +1,29 @@
+{
+  "$comment": "Default members of a worklist; a workspace's own people.json wins. Everyone is an operator: may start, move and change every item they can read (REQ-005 WL-05). Who sees what is decided by the data point, not here (ADR-032).",
+  "people": [
+    {
+      "id": "chris",
+      "name": "Chris",
+      "kind": "human",
+      "roles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "akhil",
+      "name": "Akhil",
+      "kind": "human",
+      "roles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "axel",
+      "name": "Axel",
+      "kind": "agent",
+      "roles": [
+        "operator"
+      ]
+    }
+  ]
+}

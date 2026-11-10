@@ -26,8 +26,8 @@
         "en": "Where you are"
       },
       "text": {
-        "de": "Die Leiste oben zeigt den Workspace mit ganzem Namen und die Stufe (ENTW, TEST). „← Cockpit“ führt zurück zur Übersicht.",
-        "en": "The bar at the top shows the workspace by its whole name and the stage (ENTW, TEST). “← Cockpit” leads back to the overview."
+        "de": "Oben links steht der Workspace, in dem du bist, und die Stufe (ENTW, TEST). „← Alle Workspaces“ ganz oben führt zurück zur Übersicht.",
+        "en": "Top left names the workspace you are in, and the stage (ENTW, TEST). “← All workspaces” at the very top leads back to the overview."
       }
     },
     {
@@ -202,12 +202,12 @@
       "key": "cf.back",
       "since": "0.17.1",
       "title": {
-        "de": "Zurück ins Cockpit",
-        "en": "Back to the cockpit"
+        "de": "Alle Workspaces",
+        "en": "All workspaces"
       },
       "text": {
-        "de": "Verlässt die Anwendung und bringt dich zu Dashboard, Workspaces und Team.",
-        "en": "Leaves the application for your dashboard, workspaces and team."
+        "de": "Ganz oben in der Leiste: zurück zur Übersicht von Casefile mit allen Workspaces, deinem Team und der Einrichtung.",
+        "en": "At the top of the rail: back to the Casefile overview with all workspaces, your team and setup."
       }
     },
     {
@@ -586,12 +586,12 @@
       "key": "cf.workspaces",
       "since": "0.22.0",
       "title": {
-        "de": "Arbeitsbereiche",
+        "de": "Workspaces",
         "en": "Workspaces"
       },
       "text": {
-        "de": "Jeder Arbeitsbereich ist eine Anwendung mit eigenen Akten, Stufen und Regeln, mit seiner Farbe. Die Zahl sagt, wie viel dort auf dich wartet. Ein Klick öffnet seine Akten.",
-        "en": "Each workspace is an application with its own cases, stages and rules, in its own colour. The number says how much waits for you there. A click opens its cases."
+        "de": "Die Anwendungen, nach Workspace gruppiert (etwa Betrieb und Muster). Jede hat ihre eigenen Akten, Stufen und Regeln und ihre Farbe; dieselbe Anwendung kann in mehreren Workspaces laufen, jeweils auf anderen Daten. Die Zahl sagt, wie viel dort auf dich wartet. Ein Klick auf den Namen eines Workspace klappt ihn auf oder zu, ein Klick auf eine Anwendung öffnet ihre Akten.",
+        "en": "The applications, grouped by workspace (for instance operations and samples). Each has its own cases, stages and rules and its colour; the same application can run in several workspaces, each on other data. The number says how much waits for you there. A click on a workspace's name opens or closes it, a click on an application opens its cases."
       }
     },
     {
@@ -754,12 +754,12 @@
       "key": "cf.new-workspace",
       "since": "0.22.0",
       "title": {
-        "de": "Neuer Arbeitsbereich",
+        "de": "Neuer Workspace",
         "en": "New workspace"
       },
       "text": {
-        "de": "Legt im Cockpit einen weiteren Arbeitsbereich an, für eine neue Art von Fällen.",
-        "en": "Creates another workspace in the cockpit, for a new kind of case."
+        "de": "Legt einen weiteren Workspace an oder nimmt eine Anwendung in einen Workspace auf.",
+        "en": "Creates another workspace in the cockpit, or adds an application to a workspace."
       }
     },
     {
@@ -770,7 +770,7 @@
         "en": "AI team"
       },
       "text": {
-        "de": "Deine Helfer. Jeder hat ein Berufsprofil, arbeitet nur in Sitzungen, die du startest, und jede Sitzung wird protokolliert. Die Helfer gehören dir, nicht einem Arbeitsbereich.",
+        "de": "Deine Helfer. Jeder hat ein Berufsprofil, arbeitet nur in Sitzungen, die du startest, und jede Sitzung wird protokolliert. Die Helfer gehören dir, nicht einem Workspace.",
         "en": "Your helpers. Each has a job profile, works only in sessions you start, and every session is logged. The helpers belong to you, not to one workspace."
       }
     },
@@ -830,8 +830,32 @@
         "en": "Setup"
       },
       "text": {
-        "de": "Woraus dieser Arbeitsbereich besteht: Plugins, Quellen, Module, Rollen, Schemata und Wertelisten. Das meiste kommt aus der Konfiguration; die Wertelisten änderst du hier.",
-        "en": "What this workspace is built from: plugins, sources, modules, roles, schemas and value lists. Most of it comes from the configuration; the value lists you change here."
+        "de": "Woraus diese Anwendung besteht: Plugins, Quellen, Module, Rollen, Schemata und Wertelisten. Das meiste kommt aus der Konfiguration; die Wertelisten änderst du hier.",
+        "en": "What this application is built from: plugins, sources, modules, roles, schemas and value lists. Most of it comes from the configuration; the value lists you change here."
+      }
+    },
+    {
+      "key": "cf.run-progress",
+      "since": "0.23.0",
+      "title": {
+        "de": "Ein Helfer arbeitet",
+        "en": "A helper at work"
+      },
+      "text": {
+        "de": "Was der Helfer gerade tut: die Phasen seines Auftrags (eine füllt sich, sobald ein Schritt dieser Art passiert ist), darunter der Schritt dieser Sekunde und die letzten davor. Rechts die Laufzeit und wie lange solche Läufe hier meist dauern.",
+        "en": "What the helper is doing: the phases of its order (one fills once a step of that kind has happened), below it the step of this second and the ones before. On the right the time so far and how long such runs usually take here."
+      }
+    },
+    {
+      "key": "cf.again",
+      "since": "0.23.0",
+      "title": {
+        "de": "Helfer erneut beauftragen",
+        "en": "Send the helper again"
+      },
+      "text": {
+        "de": "Erscheint, wenn ein Helfer in dieser Stufe fertig ist und der Fall trotzdem noch hier steht, etwa weil er dir eine Entscheidung zurückgegeben hat. Deine Notiz geht als Anweisung mit; der Helfer arbeitet dann mit demselben Auftrag weiter. Zählt nicht als offener Zug.",
+        "en": "Shows when a helper finished in this stage and the case still stands here, for instance because it handed a decision back to you. Your note goes with it as the instruction; the helper goes on with the same task. Not counted as an open move."
       }
     }
   ]

@@ -42,7 +42,7 @@ from ..domain import runs as runs_
 from ..domain import seen as reads
 from ..domain import turn as whose
 from ..models import Case, StepRequest, StepResult, Turn
-from ..store import FsStore, StoreError
+from ..store import DataPoint, FsStore, MultiStore, StoreError
 from . import views
 
 COOKIE = "cf_person"
@@ -64,6 +64,7 @@ class World:
 class Settings:
     root: Path | None = None                     # one pipeline: the root
     write_root: Path | None = None               # one pipeline: where writes go when that differs (a WebDAV mount of the same tree)
+    data_points: list[dict] | None = None        # one instance over several data points (ADR-032): [{name, root, write_root?, readers, writers, label?}]; `root` is then the instance's home (lists, people, journals)
     config_dir: Path | None = None               # one pipeline: config/<domain>
     lang: str | None = None
     open_identity: bool = True                   # POST /api/session {person} without a password (development, demo)
@@ -176,6 +177,8 @@ class PlaceOut(BaseModel):
     current: bool = False
     url: str = ""                                           # inside a shell: where this workspace lives; empty for this one and for demo worlds
     count: int = 0                                          # cases waiting for this person there (the demo knows it for every world)
+    workspace: str = ""                                     # inside a shell (ADR-032): the workspace this application instance runs in
+    workspace_label: str = ""
 
 
 class MeOut(BaseModel):
@@ -432,6 +435,15 @@ class DecideIn(BaseModel):
     step_id: str
 
 
+class ExportOut(BaseModel):
+    id: str
+    stage: str
+    meta: dict
+    closed: str = ""                                      # the date it moved into a closing stage
+    changed: str = ""                                     # the date of its newest thread entry
+    data_point: str = ""
+
+
 class NewCaseIn(BaseModel):
     title: str
     label: str | None = None
@@ -594,9 +606,15 @@ def create_app(settings: Settings) -> FastAPI:
     app.state.settings = settings
     limiter = Limiter()
     single: Ctx | None = None
+    points: list[DataPoint] = []
     if settings.root is not None and settings.config_dir is not None:
         store = FsStore(settings.root, settings.write_root)
         config = DomainConfig.load(settings.config_dir, settings.root)
+        if settings.data_points:
+            points = [DataPoint(name=str(d["name"]), store=FsStore(Path(d["root"]), Path(d["write_root"]) if d.get("write_root") else None),
+                                readers=set(d.get("readers") or []), writers=set(d.get("writers") or []), label=str(d.get("label") or ""))
+                      for d in settings.data_points]
+            store = MultiStore(store, points, viewer=None, unscoped=True)
         single = Ctx(store=store, config=config, lang=settings.lang or config.lang)
         if settings.recover_on_start:
             stepping.recover(store, config)
@@ -758,6 +776,11 @@ def create_app(settings: Settings) -> FastAPI:
         if not limiter.allow(_client(request), settings.rate_per_minute):
             raise HTTPException(429, "too many requests")
         if single is not None and not settings.worlds:
+            if points:                                  # several data points: the viewer sees what they may read, starts where they write
+                who = _who(request, single.config)
+                own = next((p.name for p in points if p.readers == {who} and p.writers == {who}), None) if who else None
+                first = own or next((p.name for p in points if p.may_write(who)), None)
+                return replace(single, store=MultiStore(single.store.home, points, viewer=who, create_in=first))
             return single
         raw = request.cookies.get(DEMO_COOKIE, "")
         if "." in raw:
@@ -837,9 +860,13 @@ def create_app(settings: Settings) -> FastAPI:
         if settings.peers is not None:
             # inside the cockpit: the person's other workspaces sit beside this one in the rail, in the cockpit's order
             peers = settings.peers(request)
-            mine = places[0].model_copy(update={"id": next((str(p["id"]) for p in peers if p.get("current")), places[0].id)})
+            cur = next((p for p in peers if p.get("current")), {})
+            mine = places[0].model_copy(update={"id": str(cur.get("id") or places[0].id), "workspace": str(cur.get("workspace") or ""),
+                                                "workspace_label": str(cur.get("workspace_label") or "")})
             places = [mine if p.get("current") else PlaceOut(id=str(p["id"]), name=str(p.get("name") or p["id"]), color=str(p.get("color") or ""),
-                                                             icon=str(p.get("icon") or ""), url=str(p.get("url") or "")) for p in peers]
+                                                             icon=str(p.get("icon") or ""), url=str(p.get("url") or ""),
+                                                             workspace=str(p.get("workspace") or ""), workspace_label=str(p.get("workspace_label") or ""))
+                      for p in peers]
             if not any(p.current for p in places):
                 places.insert(0, mine)
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None
@@ -1111,7 +1138,7 @@ def create_app(settings: Settings) -> FastAPI:
     # ------------------------------------------------------------ reading
     @app.get("/api/config", response_model=views.ConfigView)
     def get_config(c: Ctx = Depends(ctx)):
-        v = views.config_view(c.config, c.lang)
+        v = views.config_view(c.config, c.lang, getattr(c.store, "points", None))
         v.theme = {**v.theme, "canon": (Path(c.store.root) / "_kanon").is_dir() or bool(c.config.theme.get("interview")), "demo": settings.demo, "resettable": bool(settings.demo and settings.template is not None and not settings.worlds), "samples": samples_of(c)[1] if settings.demo else [], "world": c.world, "worlds": list(settings.worlds)}
         return v
 
@@ -1120,13 +1147,28 @@ def create_app(settings: Settings) -> FastAPI:
         stepping.detect(c.store, c.config)
         all_cases = reading.load_all(c.store, c.config)
         seen = reads.load(c.store, who)
-        return [TurnOut(case=views.card(c.config, case, who, c.lang, seen), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
+        return [TurnOut(case=views.card(c.config, case, who, c.lang, seen, c.store), turn=t) for case, t in whose.turns_for(who, all_cases, c.config, c.lang)]
+
+    @app.get("/api/export", response_model=list[ExportOut])
+    def export_cases(c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """Every case the viewer may read, as data: stage, meta, closing date, data point — for a client that keeps its
+        own commands (REQ-005 IF-04: `todo.py`). One read, no surface words."""
+        out = []
+        for case in reading.load_all(c.store, c.config):
+            st = c.config.stage(case.stage)
+            closed = ""
+            if st and st.group in stepping.CLOSED:
+                closed = next((e.date[:10] for e in reversed(case.entries) if e.to == case.stage), "") or case.since[:10]
+            point = c.store.point_of(case.id) if hasattr(c.store, "point_of") else None
+            out.append(ExportOut(id=case.id, stage=case.stage, meta=case.meta, closed=closed, data_point=point.name if point else "",
+                                 changed=(case.entries[-1].date[:10] if case.entries else str(case.meta.get("created") or ""))))
+        return out
 
     @app.get("/api/cases", response_model=list[GroupOut])
     def list_cases(group: str | None = None, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         stepping.detect(c.store, c.config)
         seen = reads.load(c.store, who)
-        cards = [views.card(c.config, case, who, c.lang, seen) for case in reading.load_all(c.store, c.config)]
+        cards = [views.card(c.config, case, who, c.lang, seen, c.store) for case in reading.load_all(c.store, c.config)]
         order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
         out = []
         for g in order:
@@ -1536,7 +1578,7 @@ def create_app(settings: Settings) -> FastAPI:
         out, seen = [], reads.load(c.store, who)
         for folder in c.store.stages():
             st = c.config.stage(folder)
-            cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang, seen) for cid in c.store.cases(folder)]
+            cards = [views.card(c.config, reading.load(c.store, c.config, cid), who, c.lang, seen, c.store) for cid in c.store.cases(folder)]
             out.append(StageOut(folder=folder, key=st.key if st else "", word=c.config.word("stages", folder, c.lang, folder),
                                 station=c.config.word("stations", st.key, c.lang, "") if st and st.key else "", cases=cards))
         return out
@@ -1849,10 +1891,13 @@ def create_app(settings: Settings) -> FastAPI:
         title = body.title.strip()[:120]
         if not title:
             return _refuse(Exception(c.config.word("texts", "create_empty", c.lang, "Give it a name.")))
+        from ..domain import fields as declared
         from ..domain import lists as chosen
+        own, listed = declared.split(c.config, body.values)            # declared fields (domain/fields.py) and the lists that ask on creation
         try:
-            values = chosen.validate_choice(c.config.lists, body.values)       # what the lists that ask for it gave: field → key
-        except chosen.ListError as exc:
+            values = chosen.validate_choice(c.config.lists, listed)     # what the lists that ask for it gave: field → key
+            values.update({k: v for k, v in declared.validate(c.config, own).items() if v != ""})
+        except (chosen.ListError, declared.FieldError) as exc:
             return _refuse(exc)
         label = values.get("label") or body.label or create.get("label", "X")
         first = create.get("stage") or next((s.folder for s in c.config.stages if s.group != "archive"), None)   # where a new case starts
@@ -1863,9 +1908,9 @@ def create_app(settings: Settings) -> FastAPI:
             if j.get("step_id") == body.step_id and j.get("action") == "create":
                 return NewCaseOut(id=j["case"], stage=c.store.find(j["case"]) or first)
         from ..domain import numbering
-        number = numbering.next_number(c.store, label, create.get("number"), values)   # the domain's own rule: in a year, in a series, or a placeholder
+        number = numbering.next_number(getattr(c.store, "everything", c.store), label, create.get("number"), values)   # over every data point   # the domain's own rule: in a year, in a series, or a placeholder
         slug = re.sub(r"[^a-z0-9]+", "-", title.lower().translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}))).strip("-")[:40] or "akte"
-        cid = f"{label}-{number}-{slug}"
+        cid = f"{label}-{number}-{slug}" if create.get("slug", True) else f"{label}-{number}"   # `slug: false`: the number alone is the name (the worklist's SYS-147)
         try:
             c.store.mkcase(first, cid)
         except StoreError as exc:
@@ -1931,7 +1976,7 @@ def create_app(settings: Settings) -> FastAPI:
 def app_from_env() -> FastAPI:
     """`uvicorn casefile.api.app:app_from_env --factory`.
 
-    One pipeline: CASEFILE_ROOT, CASEFILE_CONFIG. The demo: CASEFILE_DEMO_WORLDS=<dir with claims/, pressroom/ and egutachten/> (built by
+    One pipeline: CASEFILE_ROOT, CASEFILE_CONFIG; over several data points CASEFILE_DATA_POINTS=<json list>, the root then the home. The demo: CASEFILE_DEMO_WORLDS=<dir with claims/, pressroom/ and egutachten/> (built by
     `python -m casefile.demo.worlds <dir>`), CASEFILE_SESSIONS=<dir>. Both: CASEFILE_WEB, CASEFILE_SECRET, CASEFILE_LANG.
     """
     here = Path(__file__).resolve().parents[2]
@@ -1942,6 +1987,7 @@ def app_from_env() -> FastAPI:
         return create_app(Settings(secret=secret, web_dist=web, demo=True, samples_dir=here / "casefile" / "demo" / "samples",
                                    replies_dir=here / "casefile" / "demo" / "replies",
                                    worlds={name: w for name, w in {         # in the design's order; a world not built yet is left out
+                                       "worklist": World(config_dir=here / "config" / "worklist", template=worlds_dir / "worklist", person="du", lang="de"),
                                        "inbox": World(config_dir=here / "config" / "posteingang", template=worlds_dir / "inbox", person="du", lang="de",
                                                       targets={"schadenakte": "claims", "angebot": "quotes", "pressroom": "pressroom"}),
                                        "quotes": World(config_dir=here / "config" / "angebot", template=worlds_dir / "quotes", person="du", lang="de"),
@@ -1952,7 +1998,8 @@ def app_from_env() -> FastAPI:
                                    default_world=os.environ.get("CASEFILE_DEFAULT_WORLD", "claims"),
                                    sessions_dir=Path(os.environ.get("CASEFILE_SESSIONS") or worlds_dir / "sessions"),
                                    open_identity=True))
-    return create_app(Settings(root=Path(os.environ["CASEFILE_ROOT"]).expanduser(),
+    points = json.loads(Path(os.environ["CASEFILE_DATA_POINTS"]).expanduser().read_text(encoding="utf-8")) if os.environ.get("CASEFILE_DATA_POINTS") else None
+    return create_app(Settings(root=Path(os.environ["CASEFILE_ROOT"]).expanduser(), data_points=points,
                                config_dir=Path(os.environ.get("CASEFILE_CONFIG") or here / "config" / "pressroom"),
                                lang=os.environ.get("CASEFILE_LANG"),
                                open_identity=os.environ.get("CASEFILE_OPEN_IDENTITY", "1") == "1",

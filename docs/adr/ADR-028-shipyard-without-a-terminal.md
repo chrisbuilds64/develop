@@ -51,7 +51,17 @@ a deploy restarts the stage's runner — a run that deploys its own stage would 
   so the service runs a root-owned copy of the tool, installed by an administrator; it asks the code host whether a tag
   is on `main` through a bare mirror of its own; and a deploy fetches from the configured repository, not from a
   checkout's remote. Found on installation (2026-11-09), before the service took its first request.
+- **A deploy never ends the run that asked for it.** When the request comes from a run on the runner of the very stage
+  it deploys, the service waits until that run has ended (at most 20 minutes, and the result says how long). Found in
+  the first trial (2026-11-09): the ENTW release run was cut off by its own ENTW deploy.
 - The deploy service hard-wires one name of the application, the reporting skill `shipyard-verify`.
+- **Core-developer exception (2026-11-09, product owner).** Shipyard is the target path, not yet the only one. The core
+  developers keep working from the terminal as well: a local agent session pushes and merges under the product owner's
+  account, and deploys over SSH with `pressroom-env deploy`. `main` requires a pull request and green checks, but no
+  approval. This is a deliberate exception while the process is being proven, not a gap. It ends once the gate
+  protocols run (ADR-029) and releases are solved (ADR-030): a complex order, split into parts, reaches production as
+  one release, concretely and successfully. From then on nothing reaches a stage past a case — the local agent under an identity of its
+  own, an approval required on `main`, deploys only as requests. The PressRoom follows the same path afterwards.
 
 ## Alternatives considered
 

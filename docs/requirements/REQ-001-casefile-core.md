@@ -88,6 +88,10 @@ Suite on 2026-11-08: 164 tests, all green.
 | S-06 | Content follows the reader's language, the original stays. | `api/app.py` `/translate` | yes — `test_demo`, `test_demo_sessions` |
 | S-07 | Design values only go down (no raw colours outside tokens). | `tools/` guard | yes — `test_design_guard` |
 | S-08 | The surface (39 files, ~9,500 lines React/TS) is checked end to end: CI job `flows` clicks every demo flow in a headless browser (`sandbox.py check`). It has no component tests of its own. | `web/src/`, `sandbox/walks/` | end-to-end yes — CI `flows`; component tests **no** |
+| S-09 | A note is written in a large editor: ⌘J or a click opens it, ⌘Enter sends, Esc closes and keeps the draft per case. *(Added with SW-2026-001, 2026-11-09.)* | `web/src/components/NoteField.tsx` | end-to-end yes — walk `note-editor` in CI `flows` (`web/walks/note-editor-shot.mjs`) |
+| S-10 | Facets: every application gets filter, sort and card values from its own configuration — each value list, each declared field (person, date, list), the data points of an instance and the stages; defaults by kind, a list or field overrides them with `view` (`filter`, `sort`, `card`). No facet names a domain. *(Added 2026-11-10.)* | `domain/facets.py`, `/api/config` `facets`, card `values` | yes — `test_facets` |
+| S-11 | Board and table carry one facet bar: title search, a multiple choice per filter facet, "mine", "overdue" (the first date facet), an order by any sort facet, and how many of how many show. The choice lives in the address, so a view survives a reload and can be sent as a link. *(Added 2026-11-10.)* | `web/src/components/Facets.tsx`, `screens/Board.tsx` | end-to-end — walk `facets-shot` (`web/walks/facets-shot.mjs`), not yet in CI `flows` |
+| S-12 | A card shows its card facets as chips: a list value with its colour, the person, the date (marked when past and the case is still open), the data point. *(Added 2026-11-10.)* | `web/src/components/Facets.tsx` | end-to-end — walk `facets-shot` |
 
 ## Public demo (ADR-016)
 
@@ -116,6 +120,8 @@ Asked for by the product owner while accepting this list (2026-11-08). Not yet i
 | W-04 | A security package: injection checked across every input surface; the security audit as a built-in function whose runs are logged. | S-03 |
 | W-05 | The documentation audit as a built-in function: finds orphans, rule violations and logical gaps. | S-03 |
 | W-06 | Demo reset and demo flows get their evidence. | P-04 |
+| W-07 | Saved views (a named facet choice per person) and a stage facet that hides closed stages by default. | S-11 |
+| W-08 | A helper at work shows the phases its skill declares (run-policy `phases`), the one reached, the tool call going on and the ones before, the time so far and the usual duration of that skill; a failed run offers "run again" to whoever may order the skill. | `test_a_running_build_shows_its_phases_what_it_does_now_and_how_long_it_usually_takes`, `test_a_failed_run_is_run_again_by_whoever_may_order_its_skill` (test_shipyard.py), `test_a_running_helper_reports_its_steps_and_phase_as_it_goes` (cockpit) |
 
 ## Findings and decisions
 

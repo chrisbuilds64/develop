@@ -1,0 +1,148 @@
+{
+  "de": {
+    "product": "Arbeitsliste",
+    "stations": {
+      "backlog": "Backlog",
+      "next": "Nächstes",
+      "doing": "Läuft",
+      "waiting": "Wartet",
+      "done": "Erledigt"
+    },
+    "stages": {
+      "10-backlog": "Backlog",
+      "20-next": "Nächstes",
+      "30-doing": "Läuft",
+      "40-waiting": "Wartet",
+      "90-done": "Erledigt"
+    },
+    "groups": {
+      "you": "Du bist dran",
+      "claude": "Läuft gerade",
+      "others": "Bei anderen",
+      "date": "Termin",
+      "planned": "Nächstes",
+      "out": "Erledigt",
+      "ideas": "Backlog",
+      "archive": "Erledigt"
+    },
+    "actions": {
+      "answer": "Antworten",
+      "note": "Notiz",
+      "done": "Erledigt",
+      "deliver": "Ablegen",
+      "see_failure": "Nachsehen, was schiefging",
+      "wait": "Warten",
+      "reopen": "Zurückholen",
+      "remind": "Erinnern",
+      "take_back": "Zurücknehmen",
+      "undo": "Rückgängig",
+      "correct": "Korrektur eröffnen",
+      "to_backlog": "In den Backlog",
+      "to_next": "Als Nächstes",
+      "to_doing": "Anfangen",
+      "to_waiting": "Wartet",
+      "to_done": "Erledigt",
+      "wait_for": "Wartet auf …",
+      "set_fields": "Ändern"
+    },
+    "fields": {
+      "assignee": "Zuständig",
+      "due": "Termin",
+      "priority": "Wichtigkeit",
+      "origin_kind": "Herkunft",
+      "origin_ref": "Herkunft (Verweis)",
+      "label": "Bereich",
+      "title": "Titel"
+    },
+    "texts": {
+      "created": "Angelegt",
+      "fields_changed": "Geändert",
+      "dependencies": "Abhängigkeiten",
+      "waits_for": "Wartet auf {refs}.",
+      "waits_for_nothing": "Wartet auf nichts mehr.",
+      "create_refused": "Du darfst hier keinen Punkt anlegen.",
+      "create_empty": "Gib dem Punkt einen Namen."
+    },
+    "reasons": {
+      "running": "ein Helfer arbeitet daran",
+      "failed": "der letzte Lauf ist fehlgeschlagen",
+      "missing": "es fehlt noch etwas"
+    },
+    "roles": {
+      "operator": "Mitglied"
+    }
+  },
+  "en": {
+    "product": "Worklist",
+    "stations": {
+      "backlog": "Backlog",
+      "next": "Next",
+      "doing": "Doing",
+      "waiting": "Waiting",
+      "done": "Done"
+    },
+    "stages": {
+      "10-backlog": "Backlog",
+      "20-next": "Next",
+      "30-doing": "Doing",
+      "40-waiting": "Waiting",
+      "90-done": "Done"
+    },
+    "groups": {
+      "you": "Your move",
+      "claude": "Running",
+      "others": "With others",
+      "date": "Due",
+      "planned": "Next",
+      "out": "Done",
+      "ideas": "Backlog",
+      "archive": "Done"
+    },
+    "actions": {
+      "answer": "Answer",
+      "note": "Note",
+      "done": "Done",
+      "deliver": "File",
+      "see_failure": "See what went wrong",
+      "wait": "Wait",
+      "reopen": "Move back",
+      "remind": "Remind",
+      "take_back": "Take back",
+      "undo": "Undo",
+      "correct": "Open a correction",
+      "to_backlog": "To the backlog",
+      "to_next": "Next",
+      "to_doing": "Start",
+      "to_waiting": "Waiting",
+      "to_done": "Done",
+      "wait_for": "Waits for …",
+      "set_fields": "Change"
+    },
+    "fields": {
+      "assignee": "Assignee",
+      "due": "Due",
+      "priority": "Priority",
+      "origin_kind": "Origin",
+      "origin_ref": "Origin (reference)",
+      "label": "Area",
+      "title": "Title"
+    },
+    "texts": {
+      "created": "Created",
+      "fields_changed": "Changed",
+      "dependencies": "Dependencies",
+      "waits_for": "Waits for {refs}.",
+      "waits_for_nothing": "Waits for nothing any more.",
+      "create_refused": "You may not start an item here.",
+      "create_empty": "Give the item a name."
+    },
+    "reasons": {
+      "running": "a helper is working on it",
+      "failed": "the last run failed",
+      "missing": "something is still missing"
+    },
+    "roles": {
+      "operator": "Member"
+    }
+  }
+}

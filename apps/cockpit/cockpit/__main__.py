@@ -230,6 +230,43 @@ def cmd_user(args):
         return 0
 
 
+def may_issue_for(accounts):
+    """The owner issues for themselves; a person issues for an agent whose account says it belongs to them (bill_to)."""
+    def check(issuer: str, owner: str) -> bool:
+        if issuer == owner:
+            return True
+        try:
+            return str(accounts.settings(owner).get("bill_to", "")).lower() == issuer
+        except Exception:
+            return False
+    return check
+
+
+def cmd_token(args):
+    """Personal tokens for a workspace's API from outside (REQ-005 IF-01, IF-02): issue, list, revoke."""
+    from .account import Accounts
+    from .tokens import TokenError, Tokens
+    config = _config(args)
+    accounts = Accounts(config.accounts_path)
+    tokens = Tokens(config.accounts_path.parent / "tokens.json")
+    try:
+        if args.sub == "issue":
+            raw = tokens.issue(args.owner, args.by, args.workspace, args.write, args.days, may_issue_for(accounts))
+            print(raw)
+            print("Shown once. Store it now; only its hash is kept.", file=sys.stderr)
+        elif args.sub == "list":
+            for t in tokens.listing(args.person):
+                state = "revoked" if t["revoked"] else f"until {t['expires'][:10]}"
+                print(f"{t['id']}  {t['owner']:10} {'write' if t['write'] else 'read ':5}  {','.join(t['workspaces'])}  {state}  (issued by {t['issued_by']})")
+        elif args.sub == "revoke":
+            tokens.revoke(args.id, args.by)
+            print(f"revoked {args.id}")
+    except TokenError as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_account(args):
     from .account import AccountError, Accounts, SECRETS
     config = _config(args)
@@ -261,6 +298,21 @@ def cmd_workspace(args):
     config = _config(args)
     try:
         ws = Workspaces(config.workspaces_path, config.workspaces_path.parent)
+        if args.sub == "migrate":
+            return _migrate(ws, args)
+        if args.sub == "list" and ws.doc is not None:
+            for a in ws.applications.values():
+                print(f"application {a.id:14} {a.label:18} {a.config_dir}" + (f"  template {a.template}" if a.template else ""))
+            for c, con in (ws.doc.get("connectors") or {}).items():
+                print(f"connector   {c:14} {con.get('kind', ''):10} {con.get('root') or '(registry directory)'}" + (f"  writes via {con['write_root']}" if con.get("write_root") else ""))
+            for sp in ws.doc.get("workspaces") or []:
+                who = "open" if sp.get("open") else "members " + ", ".join(sp.get("members") or [])
+                print(f"workspace   {sp['id']:14} {sp.get('label', ''):18} {who}")
+                for p in sp.get("data_points") or []:
+                    print(f"  data point {p['name']:18} {p.get('connector', ''):10} {p.get('place', '')}" + (f"  seed {p['seed']}" if p.get("seed") else ""))
+                for w in (x for x in ws.items if x.workspace == sp["id"]):
+                    print(f"  instance   {w.id:22} {w.application:12} {w.mode:6} {w.label}")
+            return 0
         if args.sub == "list":
             for a in ws.applications.values():
                 print(f"application {a.id:14} {a.label:18} {a.config_dir}" + (f"  template {a.template}" if a.template else ""))
@@ -273,12 +325,40 @@ def cmd_workspace(args):
             if not args.shared and not args.owner:
                 sys.exit("a workspace is shared (--shared) or has an owner (--owner <name>)")
             w = ws.create(args.id, args.application, None if args.shared else args.owner, label=args.label or "", source=getattr(args, 'from'),
-                          shared=args.shared, members=args.member or [])
+                          shared=args.shared, members=args.member or [], workspace=args.space)
             print(f"workspace {w.id} ({w.application}) at {w.root}" + (f", copied from {w.cloned_from}" if w.cloned_from else "") + " — restart the cockpit to serve it")
         elif args.sub == "remove":
             print("removed" if ws.remove(args.id, delete_files=args.delete_files) else "no such workspace", args.id)
     except WorkspaceError as exc:
         sys.exit(str(exc))
+    return 0
+
+
+def _migrate(ws, args) -> int:
+    import json
+    import shutil
+    from . import workspace_registry as registry
+    try:
+        doc1 = json.loads(ws.path.read_text(encoding="utf-8"))
+        plan = json.loads(Path(args.plan).expanduser().read_text(encoding="utf-8"))
+        doc2 = registry.migrate(doc1, plan)
+        diff = registry.check(doc1, doc2, ws.path.parent)
+    except (registry.RegistryError, OSError, ValueError) as exc:
+        sys.exit(str(exc))
+    for sp in doc2["workspaces"]:
+        print(f"{sp['id']:12} {'open' if sp['open'] else 'members ' + ', '.join(sp['members'])}: " + ", ".join(i["id"] for i in sp["instances"]))
+    dropped = sorted(set(doc1.get("applications") or {}) - set(doc2["applications"]))
+    if dropped:
+        print("applications that were samples, now a seed on their data point: " + ", ".join(dropped))
+    if diff:
+        print("differences — nothing written:\n  " + "\n  ".join(diff))
+        return 1
+    print("every instance reads and writes where it did, same mode, same template")
+    if args.write:
+        backup = ws.path.with_name(ws.path.name + ".format1")
+        shutil.copy2(ws.path, backup)
+        ws.path.write_text(json.dumps(doc2, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"written; format 1 kept at {backup}")
     return 0
 
 
@@ -398,6 +478,13 @@ def main(argv=None) -> int:
     s = uss.add_parser("remove"); s.add_argument("name"); common(s)
     us.set_defaults(fn=cmd_user)
 
+    tk = sub.add_parser("token"); tks = tk.add_subparsers(dest="sub", required=True)
+    s = tks.add_parser("issue"); s.add_argument("owner"); s.add_argument("--by", required=True); s.add_argument("--workspace", action="append", required=True)
+    s.add_argument("--write", action="store_true"); s.add_argument("--days", type=int, default=90); common(s)
+    s = tks.add_parser("list"); s.add_argument("person"); common(s)
+    s = tks.add_parser("revoke"); s.add_argument("id"); s.add_argument("--by", required=True); common(s)
+    tk.set_defaults(fn=cmd_token)
+
     ac = sub.add_parser("account"); acs = ac.add_subparsers(dest="sub", required=True)
     s = acs.add_parser("show"); s.add_argument("name"); common(s)
     s = acs.add_parser("set"); s.add_argument("name"); s.add_argument("key"); s.add_argument("value"); common(s)
@@ -408,8 +495,12 @@ def main(argv=None) -> int:
     wsp = sub.add_parser("workspace"); wss = wsp.add_subparsers(dest="sub", required=True)
     s = wss.add_parser("list"); common(s)
     s = wss.add_parser("create"); s.add_argument("id"); s.add_argument("--application", required=True); s.add_argument("--owner")
-    s.add_argument("--shared", action="store_true"); s.add_argument("--label"); s.add_argument("--from", dest="from"); s.add_argument("--member", action="append"); common(s)
+    s.add_argument("--shared", action="store_true"); s.add_argument("--label"); s.add_argument("--from", dest="from"); s.add_argument("--member", action="append")
+    s.add_argument("--in", dest="space", default="", help="the workspace the new instance runs in (format 2)"); common(s)
     s = wss.add_parser("remove"); s.add_argument("id"); s.add_argument("--delete-files", action="store_true"); common(s)
+    s = wss.add_parser("migrate", help="format 1 → format 2 (ADR-032): workspaces with data points and instances, from a plan")
+    s.add_argument("--plan", required=True, help="JSON: connectors and workspaces, each naming its instances")
+    s.add_argument("--write", action="store_true", help="write it (a copy of the old file is kept beside it); without: show only"); common(s)
     wsp.set_defaults(fn=cmd_workspace)
 
     hp = sub.add_parser("help"); hps = hp.add_subparsers(dest="sub", required=True)

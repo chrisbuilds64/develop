@@ -25,3 +25,14 @@ The new surface is phone-first, shows one decision per screen, animates a case m
 
 - No Node.js in production; the static folder ships with the core.
 - The old surface stays reachable, frozen, until the new one is accepted, then it is removed.
+
+## Amended 2026-11-10: the built surface is not in git
+
+The built surface (`apps/casefile/web/dist/`) was checked in while the stages had no Node. Its file names carry a
+content hash, so every merged change to the surface renamed them, and every other open pull request that touched the
+surface conflicted on files nobody wrote — three times in one evening on a helper's pull request, each time a hand merge
+and another CI run.
+
+From now on the build is never in git. CI builds the surface (`guards`) to prove it compiles, and every deploy builds it
+on the server from the source it ships (`pressroom-env deploy`: `npm ci`, `npm run build`, refused when `dist/index.html`
+is missing). The servers have Node 22. A conflict in a pull request is again one in source, and worth a look.

@@ -192,6 +192,73 @@ def _action(a: dict, aw: str, sources: dict[str, Source]) -> Action:
     )
 
 
+def _module(m: dict, mid: str, where: str, sources: dict, plugins: dict, base: Path) -> Module:
+    """One module from its entry: the plugin's actions mapped onto the module's sources by position of `needs`,
+    withheld where a source is missing or read-only, then the entry's own actions. A [[module]] of cockpit.toml and an
+    instance of an own application in a workspace (ADR-032) both come through here."""
+    released = tuple(m.get("sources", []))            # the source ids this module may read, in the order of the plugin's needs
+    needs = released
+    for sid in needs:
+        if sid not in sources:
+            raise ConfigError(f"{where} ('{mid}'): source '{sid}' is not defined")
+    # Actions: the plugin's first, mapped onto this module's sources by position
+    # of `needs`; then the instance's own additions. Same id twice is a mistake.
+    actions: list[Action] = []
+    withheld: list[tuple[str, str]] = []
+    only = m.get("actions")
+    if only is not None and not isinstance(only, list):
+        raise ConfigError(f"{where} ('{mid}'): actions = [...] lists the plugin actions to keep")
+    plugin = plugins.get(m.get("plugin", mid))
+    if plugin is not None:
+        needs = list(plugin.manifest.get("needs", []))
+        bound = dict(zip(needs, list(m.get("sources", []))))
+        for a in plugin.manifest.get("actions", []):
+            aw = f"{where} ('{mid}') plugin '{plugin.id}' action '{a.get('id', '?')}'"
+            a = dict(a)
+            if only is not None and a["id"] not in only:
+                continue
+            # Offered only when everything it needs is released: the tool's source, and
+            # the data source in read-write. Otherwise withheld — an instance that opens a
+            # source for reading gets the reader, not the buttons. `cockpit check` says which.
+            reason = None
+            for key in ("tool", "data"):
+                name = a.get(key)
+                if name and name != "plugin":
+                    if name not in bound:
+                        reason = f"needs source '{name}' (position {needs.index(name) + 1} in sources)"
+                        break
+                    a[key] = bound[name]
+                    if key == "data" and sources[bound[name]].mode != "read-write":
+                        reason = f"source '{bound[name]}' is released read-only"
+                        break
+            if reason:
+                withheld.append((a["id"], reason))
+                continue
+            actions.append(_action(a, aw, sources))
+        if only is not None:
+            known = {a.get("id") for a in plugin.manifest.get("actions", [])}
+            for x in only:
+                if x not in known:
+                    raise ConfigError(f"{where} ('{mid}'): actions = [...] names '{x}', which plugin '{plugin.id}' does not define")
+    for j, a in enumerate(m.get("action", []), 1):
+        aw = f"{where} ('{mid}') [[module.action]] Nr. {j}"
+        act = _action(a, aw, sources)
+        if any(x.id == act.id for x in actions):
+            raise ConfigError(f"{aw}: id '{act.id}' is defined by the plugin — an instance adds actions, it does not redefine them")
+        actions.append(act)
+    return Module(
+        id=mid,
+        plugin=m.get("plugin", mid),
+        sources=released,                 # source ids, not the plugin's need names: readers pass them to Access
+        maturity=_choice(m.get("maturity", "running"), MATURITY, where, "maturity"),
+        label=m.get("label"),
+        enabled=bool(m.get("enabled", True)),
+        actions=tuple(actions),
+        withheld=tuple(withheld),
+        app_config=_path(m["app_config"], base) if m.get("app_config") else None,
+    )
+
+
 def load(path: Path) -> Config:
     path = Path(path)
     if not path.is_file():
@@ -237,66 +304,7 @@ def load(path: Path) -> Config:
         if mid in seen:
             raise ConfigError(f"{where}: id '{mid}' appears twice")
         seen.add(mid)
-        needs = tuple(m.get("sources", []))
-        for sid in needs:
-            if sid not in sources:
-                raise ConfigError(f"{where} ('{mid}'): source '{sid}' is not defined")
-        # Actions: the plugin's first, mapped onto this module's sources by position
-        # of `needs`; then the instance's own additions. Same id twice is a mistake.
-        actions: list[Action] = []
-        withheld: list[tuple[str, str]] = []
-        only = m.get("actions")
-        if only is not None and not isinstance(only, list):
-            raise ConfigError(f"{where} ('{mid}'): actions = [...] lists the plugin actions to keep")
-        plugin = plugins.get(m.get("plugin", mid))
-        if plugin is not None:
-            needs = list(plugin.manifest.get("needs", []))
-            bound = dict(zip(needs, list(m.get("sources", []))))
-            for a in plugin.manifest.get("actions", []):
-                aw = f"{where} ('{mid}') plugin '{plugin.id}' action '{a.get('id', '?')}'"
-                a = dict(a)
-                if only is not None and a["id"] not in only:
-                    continue
-                # Offered only when everything it needs is released: the tool's source, and
-                # the data source in read-write. Otherwise withheld — an instance that opens a
-                # source for reading gets the reader, not the buttons. `cockpit check` says which.
-                reason = None
-                for key in ("tool", "data"):
-                    name = a.get(key)
-                    if name and name != "plugin":
-                        if name not in bound:
-                            reason = f"needs source '{name}' (position {needs.index(name) + 1} in sources)"
-                            break
-                        a[key] = bound[name]
-                        if key == "data" and sources[bound[name]].mode != "read-write":
-                            reason = f"source '{bound[name]}' is released read-only"
-                            break
-                if reason:
-                    withheld.append((a["id"], reason))
-                    continue
-                actions.append(_action(a, aw, sources))
-            if only is not None:
-                known = {a.get("id") for a in plugin.manifest.get("actions", [])}
-                for x in only:
-                    if x not in known:
-                        raise ConfigError(f"{where} ('{mid}'): actions = [...] names '{x}', which plugin '{plugin.id}' does not define")
-        for j, a in enumerate(m.get("action", []), 1):
-            aw = f"{where} ('{mid}') [[module.action]] Nr. {j}"
-            act = _action(a, aw, sources)
-            if any(x.id == act.id for x in actions):
-                raise ConfigError(f"{aw}: id '{act.id}' is defined by the plugin — an instance adds actions, it does not redefine them")
-            actions.append(act)
-        modules.append(Module(
-            id=mid,
-            plugin=m.get("plugin", mid),
-            sources=needs,
-            maturity=_choice(m.get("maturity", "running"), MATURITY, where, "maturity"),
-            label=m.get("label"),
-            enabled=bool(m.get("enabled", True)),
-            actions=tuple(actions),
-            withheld=tuple(withheld),
-            app_config=_path(m["app_config"], base) if m.get("app_config") else None,
-        ))
+        modules.append(_module(m, mid, where, sources, plugins, base))
 
     # --- roles ------------------------------------------------------------
     roles: dict[str, Role] = {}
@@ -366,3 +374,38 @@ def load(path: Path) -> Config:
         roles=roles,
         base_dir=base,
     )
+
+
+def add_own_instances(config: Config, entries: list[dict]) -> list[str]:
+    """ADR-032: an instance of an own application (a plugin) in a workspace becomes a module of this cockpit, its sources
+    the data points it binds — named `<instance>.<need>`. The same rules as a [[module]] of cockpit.toml apply (actions,
+    read-only withholding, roles, sensitivity); who may open it is the workspace's business. Returns the module ids added;
+    an entry that cannot be added raises ConfigError with the reason."""
+    from .plugins import discover
+    plugins = discover(config.plugins_dir)
+    added = []
+    for e in entries:
+        mid, where = str(e["id"]), f"instance '{e['id']}'"
+        if any(m.id == mid for m in config.modules):
+            raise ConfigError(f"{where}: a module '{mid}' exists already in cockpit.toml")
+        plugin = plugins.get(str(e.get("plugin") or ""))
+        if plugin is None:
+            raise ConfigError(f"{where}: plugin '{e.get('plugin')}' is not installed")
+        if plugin.manifest.get("retired"):
+            raise ConfigError(f"{where}: plugin '{plugin.id}' is retired — {plugin.manifest.get('retired')}")
+        by_need = {s["need"]: s for s in e.get("sources") or []}
+        ids = []
+        for need in plugin.manifest.get("needs", []):
+            s = by_need.get(need)
+            if s is None:
+                raise ConfigError(f"{where}: plugin '{plugin.id}' needs '{need}' — bind it to a data point")
+            sid = f"{mid}.{need}"
+            config.sources[sid] = Source(id=sid, label=str(s.get("label") or need), path=Path(s["root"]),
+                                         mode=_choice(s.get("mode", "read"), MODES, where, "mode"), include=tuple(s.get("include") or []),
+                                         sensitivity=_choice(s.get("sensitivity", "internal"), SENSITIVITY, where, "sensitivity"),
+                                         tools_path=Path(s["write_root"]) if s.get("write_root") else None)
+            ids.append(sid)
+        config.modules.append(_module({"plugin": plugin.id, "sources": ids, "label": e.get("label")}, mid, where, config.sources,
+                                      plugins, config.base_dir))
+        added.append(mid)
+    return added

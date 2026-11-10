@@ -177,3 +177,146 @@ def test_both_languages_name_every_stage_action_and_file(tmp_path):
                 assert a["id"] in v["actions"]
         for f in files:
             assert f in v["files"]
+
+
+def test_a_release_the_code_host_did_not_confirm_can_be_ordered_again_by_the_product_owner():
+    """The merge in the case comes after the merge on the code host. If it came first, the release run finds no merge,
+    writes a note and stops; once the product owner has merged on the code host, they order the release again."""
+    import json
+    from pathlib import Path
+    cfg = json.loads((Path(__file__).resolve().parents[1] / "config" / "shipyard" / "stages.json").read_text())
+    release = next(s for s in cfg["stages"] if s["folder"] == "50-release")
+    again = next(a for a in release["actions"] if a["id"] == "retry_release")
+    assert again["actor"] == "role:product_owner" and again["run"] == "shipyard-release" and not again.get("to")
+
+
+def test_a_refused_or_failed_deploy_takes_the_case_back_so_the_stage_never_claims_what_is_not_installed():
+    """The acceptance moves the case before the deploy runs. If the server refuses or the deploy fails, the case must not
+    stand in a stage whose system it never reached: the developer takes it back, with the server's reason."""
+    import json
+    from pathlib import Path
+    cfg = json.loads((Path(__file__).resolve().parents[1] / "config" / "shipyard" / "stages.json").read_text())
+    by = {s["folder"]: s for s in cfg["stages"]}
+    for here, before in (("70-test", "60-entw"), ("80-prod", "70-test")):
+        a = next(x for x in by[here]["actions"] if x["id"] == "deploy_refused")
+        assert a["to"] == before and a["actor"] == "role:developer" and a["payload"] == ["note"]
+
+
+def test_a_run_ordered_by_a_move_works_in_the_stage_the_case_moves_to(tmp_path):
+    """Found on PROD 2026-11-09: the checks helper was given the build stage as its folder, the case already stood in
+    the checks stage, and the helper could not write its record there. A run ordered with a move works where the case
+    will stand."""
+    import json
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "chris")
+    go("accept_task", "chris")
+    go.deliver(root, "pr.md", "axel")
+    go("open_pr", "axel")
+    orders = sorted((root / "_runs").glob("*.json"))
+    containers = {json.loads(f.read_text())["skill"]: json.loads(f.read_text())["container"] for f in orders}
+    assert containers["shipyard-build"].startswith("20-build/")
+    assert containers["shipyard-checks"].startswith("30-checks/")
+
+
+def test_the_product_owner_can_order_the_checks_again_when_the_helper_could_not_finish():
+    import json
+    from pathlib import Path
+    cfg = json.loads((Path(__file__).resolve().parents[1] / "config" / "shipyard" / "stages.json").read_text())
+    checks = next(s for s in cfg["stages"] if s["folder"] == "30-checks")
+    again = next(a for a in checks["actions"] if a["id"] == "retry_checks")
+    assert again["actor"] == "role:product_owner" and again["run"] == "shipyard-checks" and not again.get("to")
+
+
+def test_a_failed_run_is_run_again_by_whoever_may_order_its_skill(tmp_path):
+    """A helper's run cut off (a deploy restarted the runner): the move goes to whoever may order that skill — here the
+    product owner, not an operator nobody is — and "run again" orders the same skill with its own fields, once."""
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    assert r.ok and r.run
+    run_file = root / "_runs" / f"{r.run}.json"
+    doc = json.loads(run_file.read_text())
+    doc.update(status="failed", exit=75, finished="2026-11-10T18:52:18+01:00",
+               result="Interrupted: the runner stopped while this run was going.", target="x")
+    run_file.write_text(json.dumps(doc))
+    moves = whose(reading.load(store, config, CID), config, "de")
+    assert moves[0].action == "retry" and moves[0].actor == "role:product_owner" and moves[0].label == "Erneut starten"
+    assert "Interrupted" in moves[0].reason
+    again = stepping.step(store, config, CID, StepRequest(action="retry", step_id="again-1"), "chris")
+    assert again.ok and again.run and again.run != r.run
+    new = json.loads((root / "_runs" / f"{again.run}.json").read_text())
+    assert (new["skill"], new["status"], new["retry_of"], new["target"]) == ("shipyard-build", "queued", r.run, "x")
+    assert "exit" not in new and "result" not in new
+    replay = stepping.step(store, config, CID, StepRequest(action="retry", step_id="again-1"), "chris")
+    assert replay.run == again.run                                           # the same click twice orders once
+    twice = stepping.step(store, config, CID, StepRequest(action="retry", step_id="again-2"), "chris")
+    assert not twice.ok and "did not fail" in twice.reason                  # the new run is queued: nothing to run again
+    case = reading.load(store, config, CID)
+    assert any("started again" in e.title for e in case.entries)
+
+
+def test_a_running_build_shows_its_phases_what_it_does_now_and_how_long_it_usually_takes(tmp_path):
+    """REQ-001 W-08: the case knows the helper's phases from the skill's policy, the one reached and the tool call going on
+    (the runner's `<id>.progress`), and the median of this skill's finished runs as the expected duration."""
+    from casefile.api import views
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    for i, secs in enumerate((300, 420, 360)):                               # three earlier builds, done
+        (root / "_runs" / f"20261101-10000{i}_shipyard-build_SW-2026-000-old.json").write_text(json.dumps(
+            {"id": f"20261101-10000{i}_shipyard-build_SW-2026-000-old", "skill": "shipyard-build", "container": "90-closed/SW-2026-000-old",
+             "requested_by": "chris", "status": "done", "created": "2026-11-01T10:00:00+01:00", "duration_s": secs}))
+    f = root / "_runs" / f"{r.run}.json"
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "running", "started": "2026-11-10T19:47:34+01:00"}))
+    (root / "_runs" / f"{r.run}.progress").write_text(json.dumps(
+        {"steps": 9, "phase": 2, "now": "Bash python -m pytest -q", "recent": ["Edit web/look.css", "Bash python -m pytest -q"]}))
+    h = views.helper(config, reading.load(store, config, CID), "de", store)
+    assert [p.word for p in h.phases] == ["Lesen", "Ändern", "Testen", "Hochladen", "Übergabe"]
+    assert (h.status, h.phase, h.steps, h.now) == ("running", 2, 9, "Bash python -m pytest -q")
+    assert h.expected_s == 360
+    assert h.skill == "shipyard-build" and h.started.startswith("2026-11-10")
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done"}))
+    assert views.helper(config, reading.load(store, config, CID), "de", store) is None    # nothing at work, nothing shown
+
+
+def test_after_a_hand_back_the_product_owner_sends_the_helper_again_with_a_note(tmp_path):
+    """SYS-161: the build helper finished but left the case in the build (it handed a decision back). Whoever may order the
+    build sends it again with a note; the offer is on the case, never a move in anybody's stack."""
+    from casefile.api import views
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    f = root / "_runs" / f"{r.run}.json"
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done", "finished": "2026-11-10T20:09:20+01:00", "duration_s": 1300}))
+    case = reading.load(store, config, CID)
+    assert views.again(config, case, "chris", "de").skill == "shipyard-build"
+    assert all(t.action != "order_again" for t in whose(case, config))          # not a move: it never counts in a stack
+    sent = stepping.step(store, config, CID, StepRequest(action="order_again", step_id="ag-1", payload={"note": "CI is green now, go on to the checks"}), "chris")
+    assert sent.ok and sent.run
+    new = json.loads((root / "_runs" / f"{sent.run}.json").read_text())
+    assert (new["skill"], new["status"], new["again_after"]) == ("shipyard-build", "queued", r.run)
+    assert new["note"].endswith("Chris: CI is green now, go on to the checks")
+    case = reading.load(store, config, CID)
+    assert views.again(config, case, "chris", "de") is None                  # at work again: nothing to offer
+    twice = stepping.step(store, config, CID, StepRequest(action="order_again", step_id="ag-2", payload={"note": "x"}), "chris")
+    assert not twice.ok
+
+
+def test_a_person_s_move_waits_while_a_helper_is_at_work_and_the_helper_s_own_steps_go_on(tmp_path):
+    """While the build helper runs, the product owner cannot move the case (even with the button in an old page); the
+    helper itself still files and moves; once its run is done, the person's moves are theirs again."""
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    f = root / "_runs" / f"{r.run}.json"
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "running"}))
+    held = go("send_back", "chris")
+    assert not held.ok and "helper is at work" in held.reason
+    go.deliver(root, "pr.md", "axel", "https://example.org/pull/4")
+    assert go("open_pr", "axel").ok                                         # the helper's own step
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done"}))

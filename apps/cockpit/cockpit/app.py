@@ -39,6 +39,7 @@ from .detail import blocks_for, document_for
 from .i18n import I18n
 from .registry import build_cards, card_for, mount_apps, plugins_for, reader_for
 from .setup import add_attribute, schemas_for
+from .tokens import Tokens, bearer
 from .users import User, Users
 from .account import AccountError, Accounts, SECRETS, SETTINGS
 from .workspaces import WorkspaceError, Workspaces, mount_all, mount_one, web_dist_default
@@ -82,10 +83,23 @@ def create_app(config: Config) -> FastAPI:
         workspaces = Workspaces(config.workspaces_path, config.workspaces_path.parent)
     except WorkspaceError as exc:                       # a broken registry is a line on the dashboard, not a shell that will not start
         workspaces, ws_error = None, str(exc)
+    if workspaces is not None and workspaces.own:     # ADR-032: instances of own applications become modules, their sources the bound data points
+        from .config import ConfigError as _CE, add_own_instances
+        try:
+            add_own_instances(config, workspaces.own)
+        except _CE as exc:
+            ws_error = str(exc)
     web_dist = config.casefile_web or web_dist_default()
 
+    tokens = Tokens(config.accounts_path.parent / "tokens.json")
+
     def identity(request: Request) -> str | None:
-        """Who is signed in to the cockpit — the identity every mounted workspace works with."""
+        """Who is signed in to the cockpit — the identity every mounted workspace works with. A personal token
+        (`Authorization: Bearer cbt_…`, cockpit/tokens.py) stands for its owner; its scope is checked in guard_apps."""
+        raw = bearer(request.headers)
+        if raw is not None:
+            t = tokens.owner(raw)
+            return t["owner"] if t else None
         return users.redeem(request.cookies.get("session"))
 
     if base:
@@ -166,7 +180,7 @@ def create_app(config: Config) -> FastAPI:
             "t": lambda key, **kw: i18n.t(lang, key, **kw),
             "version": __version__, "export": False,
             "modules_by_id": {m.id: m for m in config.modules},
-            "nav_modules": [m for m in config.modules if m.enabled and role.may_open(m.id)],
+            "nav_modules": [m for m in config.modules if m.enabled and role.may_open(m.id) and not (workspaces and workspaces.own_instance(m.id))],
             "plugins": plugins_for(config),
             "current": route_path(request).split("/")[2] if route_path(request).startswith("/m/") else "",
             "route": route_path(request),
@@ -177,6 +191,7 @@ def create_app(config: Config) -> FastAPI:
             "view": "werkstatt" if request.cookies.get("view") == "werkstatt" else "desk",
             "workspaces": workspaces.for_user(user.name) if (workspaces and user) else (workspaces.for_user(None) if workspaces else []),
             "applications": workspaces.applications if workspaces else {},
+            "spaces": workspaces.grouped(user.name if user else None) if workspaces else [],
             **nav_state(user, role),
             "ws_error": ws_error,
             "ws_failures": getattr(app.state, "workspace_failures", {}),
@@ -260,14 +275,82 @@ def create_app(config: Config) -> FastAPI:
         return go("/account?ok=" + quote(msg))
 
     @app.get("/workspaces/new", response_class=HTMLResponse)
-    def workspace_new(request: Request, err: str | None = None):
+    def workspace_new(request: Request, err: str | None = None, space: str | None = None):
         if (r := gate(request)):
             return r
         c = ctx(request)
         if not c["user"] or workspaces is None:
             return go("/")
+        may_share = c["role"].may_act("*") or c["role"].may_act("workspaces.shared")
         return templates.TemplateResponse(request, "workspace_new.html", {**c, "err": err, "sources": workspaces.for_user(c["user"].name),
-                                                                           "may_share": c["role"].may_act("*") or c["role"].may_act("workspaces.shared")})
+                                                                           "may_share": may_share, "v2": workspaces.doc is not None, "picked": space or "",
+                                                                           "space_choices": workspaces.spaces_for(c["user"].name, any_=may_share)})
+
+    def may_admin(c: dict) -> bool:
+        return c["role"].may_act("*") or c["role"].may_act("workspaces.shared")
+
+    @app.get("/workspaces", response_class=HTMLResponse)
+    def workspaces_page(request: Request, err: str | None = None, ok: str | None = None):
+        """ADR-032 made visible: each workspace with its members, data points (and their connectors) and application
+        instances. An administrator moves an instance between workspaces and keeps the members."""
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        if not c["user"] or workspaces is None:
+            return go("/")
+        doc = workspaces.doc or {}
+        admin = may_admin(c)
+        shown = [sp for sp in doc.get("workspaces") or [] if admin or c["user"].name in (sp.get("members") or []) or sp.get("open")]
+        return templates.TemplateResponse(request, "workspaces.html", {**c, "err": err, "ok": ok, "v2": workspaces.doc is not None,
+                                                                         "shown": shown, "connectors": doc.get("connectors") or {},
+                                                                         "admin": admin, "all_spaces": workspaces.spaces(),
+                                                                         "all_apps": doc.get("applications") or {}})
+
+    @app.post("/workspaces/move", response_class=HTMLResponse)
+    async def workspace_move(request: Request):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or workspaces is None or not csrf_ok(request, form) or not may_admin(c):
+            return go("/workspaces?err=" + quote("not allowed, or the form token did not match — reload the page"))
+        try:
+            workspaces.move(form.get("instance", ""), form.get("to", ""))
+        except WorkspaceError as exc:
+            return go("/workspaces?err=" + quote(str(exc)))
+        audit.record(c["role"].id, "workspaces", f"{form.get('instance')} → {form.get('to')}", f"move by {c['user'].name}")
+        return go("/workspaces?ok=" + quote(f"{form.get('instance')} → {form.get('to')}"))
+
+    @app.post("/workspaces/members", response_class=HTMLResponse)
+    async def workspace_members(request: Request):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or workspaces is None or not csrf_ok(request, form) or not may_admin(c):
+            return go("/workspaces?err=" + quote("not allowed, or the form token did not match — reload the page"))
+        try:
+            workspaces.set_members(form.get("workspace", ""), form.get("members", "").replace(";", ",").split(","), form.get("open") == "1")
+        except WorkspaceError as exc:
+            return go("/workspaces?err=" + quote(str(exc)))
+        audit.record(c["role"].id, "workspaces", form.get("workspace", ""), f"members by {c['user'].name}: {form.get('members', '')}")
+        return go("/workspaces?ok=" + quote(form.get("workspace", "")))
+
+    @app.post("/workspaces/space", response_class=HTMLResponse)
+    async def space_create(request: Request):
+        """A new workspace without an application (ADR-032); its creator is its first member."""
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or workspaces is None or not csrf_ok(request, form):
+            return go("/workspaces/new?err=" + quote("the form token did not match — reload the page and try again"))
+        open_ = form.get("open") == "1" and (c["role"].may_act("*") or c["role"].may_act("workspaces.shared"))
+        try:
+            sp = workspaces.add_space(form.get("id", "").strip().lower(), form.get("label", "").strip(), [c["user"].name], open_)
+        except WorkspaceError as exc:
+            return go("/workspaces/new?err=" + quote(str(exc)))
+        return go("/workspaces/new?space=" + quote(sp["id"]))
 
     @app.post("/workspaces/new", response_class=HTMLResponse)
     async def workspace_create(request: Request):
@@ -281,7 +364,8 @@ def create_app(config: Config) -> FastAPI:
         w = None
         try:
             w = workspaces.create(form.get("id", "").strip().lower(), form.get("application", ""), None if shared else c["user"].name,
-                                  label=form.get("label", "").strip(), source=form.get("source") or None, shared=shared)
+                                  label=form.get("label", "").strip(), source=form.get("source") or None, shared=shared,
+                                  workspace=form.get("workspace", "") if workspaces.doc is not None else "")
             mount_one(app, workspaces, w, identity, users.secret_text(), web_dist, config.environment, (base or "") + "/")
         except WorkspaceError as exc:
             return go("/workspaces/new?err=" + quote(str(exc)))
@@ -941,12 +1025,26 @@ def create_app(config: Config) -> FastAPI:
     @app.middleware("http")
     async def guard_apps(request: Request, call_next):
         parts = route_path(request).split("/")
+        if len(parts) >= 3 and parts[1] == "m" and workspaces is not None and (own := workspaces.own_instance(parts[2])) is not None:
+            if not workspaces.own_visible(own, identity(request)):   # an instance in a workspace: its members only (ADR-032)
+                return go("/")
         if len(parts) >= 4 and parts[1] == "m" and parts[3] == "app":
             if config.login_required and who(request) is None:
                 return go("/login")
             if not ctx(request)["role"].may_open(parts[2]):
                 return go("/")
         if len(parts) >= 3 and parts[1] == "w":
+            raw = bearer(request.headers)
+            if raw is not None:                       # a token: the API only, its workspaces only, writes only if it may
+                t = tokens.owner(raw)
+                if t is None:
+                    return JSONResponse({"reason": "token unknown, expired or revoked"}, status_code=401)
+                refusal = "a token opens the API only" if not (len(parts) >= 4 and parts[3] == "api") else Tokens.allows(t, parts[2], request.method)
+                if refusal:
+                    return JSONResponse({"reason": refusal}, status_code=403)
+                if workspaces is None or not workspaces.may_open(t["owner"], parts[2]):
+                    return JSONResponse({"reason": "no such workspace"}, status_code=404)
+                return await call_next(request)
             name = identity(request)
             is_api = len(parts) >= 4 and parts[3] == "api"
             if config.login_required and name is None:

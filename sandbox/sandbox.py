@@ -4,7 +4,11 @@
     python3 sandbox/sandbox.py setup      once (needs the network): Python environment, the web surface, a headless browser
     python3 sandbox/sandbox.py up         start: http://127.0.0.1:8200, sign in as designer / sandbox-local; the surface rebuilds on save
     python3 sandbox/sandbox.py reset      every workspace back to its sample world
-    python3 sandbox/sandbox.py check      the design guard, then every sample flow headless; screenshots per step in sandbox/.state/check/
+    python3 sandbox/sandbox.py check      the design guard, then every sample flow and walk headless; screenshots per step in sandbox/.state/check/
+    python3 sandbox/sandbox.py check ID…  only these flows or walks (CI plays one per machine, in parallel)
+    python3 sandbox/sandbox.py ids        every flow and walk id as JSON — the CI matrix
+
+    SANDBOX_PREBUILT=1 plays an existing web/dist and skips the guards (when both were just done by another step).
 
 The worlds in `sandbox/worlds/` are exported from the private demo builder (`demo.py sandbox`), with a name scan as the gate.
 The PressRoom here is casefile's built-in fictional one. Nothing in this folder talks to a server; `.state/` is yours to break.
@@ -42,6 +46,10 @@ SPACES = {
     "gutachtenakte-muster": ("egutachten", "egutachten", "Gutachtenakte · Muster"),
     "pressroom-muster": ("pressroom", "pressroom", "PressRoom · Muster"),
 }
+# mounted for the checks only, not offered in `up`: a world no demo flow plays, kept for a walk
+CHECK_SPACES = {
+    "shipyard-muster": ("shipyard", "shipyard", "Shipyard · Muster"),     # nine stations, the longest station line
+}
 
 
 def sh(cmd: list[str], **kw) -> None:
@@ -69,7 +77,8 @@ def setup() -> None:
     sh([PY, "-m", "pip", "install", "-q", "--upgrade", "pip"])
     sh([PY, "-m", "pip", "install", "-q", "-e", CASEFILE, "-e", COCKPIT])
     sh(["npm", "ci", "--silent"], cwd=WEB)
-    sh(["npm", "run", "build", "--silent"], cwd=WEB)
+    if os.environ.get("SANDBOX_PREBUILT") != "1":           # an existing build is kept when the caller just made it
+        sh(["npm", "run", "build", "--silent"], cwd=WEB)
     sh(["npx", "playwright", "install", "chromium"], cwd=WEB)
     print("\nReady. Start with: python3 sandbox/sandbox.py up")
 
@@ -182,6 +191,13 @@ def up() -> None:
 
 # ----------------------------------------------------------------------------- check
 
+# surface behaviour no demo flow presses, walked on its own after the flows: id → script in web/walks, workspace
+WALKS = [
+    ("note-editor", "walks/note-editor-shot.mjs", "posteingang-muster"),   # REQ-001 S-09
+    ("station-line", "walks/station-line-shot.mjs", "shipyard-muster"),    # REQ-001 S-08, SW-2026-002
+]
+
+
 def flows() -> list[dict]:
     seen: dict[str, dict] = {}
     for f in sorted(WORLDS.glob("*/_ablaeufe/*.json")):
@@ -198,12 +214,13 @@ def stage_app(trees: Path):
     import casefile
     pkg = Path(casefile.__file__).resolve().parent
     shutil.rmtree(trees, ignore_errors=True)
-    for ws, (world, _, _) in SPACES.items():
+    spaces = {**SPACES, **CHECK_SPACES}
+    for ws, (world, _, _) in spaces.items():
         (trees / ws).mkdir(parents=True)
         copy_world(world_dir(world), trees / ws)
     connect(lambda ws: trees / ws)
     shell = Starlette()
-    for ws, (world, conf, _) in SPACES.items():
+    for ws, (world, conf, _) in spaces.items():
         shell.mount(f"/w/{ws}", create_app(Settings(
             root=trees / ws, config_dir=CFG / conf, label=ws, open_identity=True, secret="sandbox", stage="check", shell="/",
             web_dist=WEB / "dist", demo=True, template=world_dir(world), samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies")))
@@ -222,14 +239,19 @@ def check(only: list[str]) -> int:
     out.mkdir(parents=True)
     if not (STATE / "worlds" / "pressroom").exists():
         build_pressroom()
-    # the design guard first: colour, type and radius from the tokens (the same gate the deploy holds)
-    guard = subprocess.run([str(PY), str(REPO / "tools" / "design_guard.py")])
-    if guard.returncode == 0:
-        guard = subprocess.run([str(PY), str(REPO / "tools" / "arch_guard.py")])
-    if guard.returncode != 0:
-        print("\nA guard failed, so the flows were not played. `python3 tools/design_guard.py --list` shows what is left.")
+    prebuilt = os.environ.get("SANDBOX_PREBUILT") == "1"     # the caller built the surface and ran the guards just now
+    if not prebuilt:
+        # the design guard first: colour, type and radius from the tokens (the same gate the deploy holds)
+        guard = subprocess.run([str(PY), str(REPO / "tools" / "design_guard.py")])
+        if guard.returncode == 0:
+            guard = subprocess.run([str(PY), str(REPO / "tools" / "arch_guard.py")])
+        if guard.returncode != 0:
+            print("\nA guard failed, so the flows were not played. `python3 tools/design_guard.py --list` shows what is left.")
+            return 1
+        sh(["npm", "run", "build", "--silent"], cwd=WEB, stdout=subprocess.DEVNULL)
+    elif not (WEB / "dist" / "index.html").exists():
+        print("SANDBOX_PREBUILT=1 but web/dist has no build")
         return 1
-    sh(["npm", "run", "build", "--silent"], cwd=WEB, stdout=subprocess.DEVNULL)
     port = free_port()
     server = subprocess.Popen([str(PY), __file__, "_stage", str(port)], stdout=open(out / "stage.log", "w"), stderr=subprocess.STDOUT)
     results = []
@@ -246,6 +268,15 @@ def check(only: list[str]) -> int:
             ok = r.returncode == 0 and tail == "clean"
             results.append((f["id"], ok, "" if ok else (r.stdout + r.stderr).strip().splitlines()[-3:]))
             print(f"{'green' if ok else 'RED  '}  {f['suite']['id']:10} {f['id']:24} {round(time.time() - t0):>4} s", flush=True)
+        for wid, script, ws in WALKS:
+            if only and wid not in only:
+                continue
+            t0 = time.time()
+            r = subprocess.run(["node", script, f"http://127.0.0.1:{port}", str(out / wid), ws], cwd=WEB, capture_output=True, text=True)
+            tail = (r.stdout.strip().splitlines() or ["(no output)"])[-1]
+            ok = r.returncode == 0 and tail == "clean"
+            results.append((wid, ok, "" if ok else (r.stdout + r.stderr).strip().splitlines()[-3:]))
+            print(f"{'green' if ok else 'RED  '}  {'walk':10} {wid:24} {round(time.time() - t0):>4} s", flush=True)
     finally:
         server.terminate()
     for fid, ok, why in results:
@@ -264,6 +295,8 @@ if __name__ == "__main__":
     cmd, rest = (sys.argv[1] if len(sys.argv) > 1 else ""), sys.argv[2:]
     if cmd == "setup":
         setup()
+    elif cmd == "ids":
+        print(json.dumps([f["id"] for f in flows()] + [w[0] for w in WALKS]))
     elif cmd in ("up", "reset", "check", "_stage"):
         in_venv()
         if cmd == "up":

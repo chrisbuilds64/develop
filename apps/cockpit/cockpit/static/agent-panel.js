@@ -13,6 +13,7 @@
     endNote: 'Notiz zum Abschluss (optional)', thinking: 'denkt nach …', writing: 'schreibt das Session-Log …', full: 'Vollansicht',
     back: '← Team', place: 'Ort', none: 'Noch niemand im Team. Stell auf der Seite „Mein Team“ einen Agenten ein.',
     manage: 'Team verwalten', running: 'läuft', closed: 'Session beendet.', log: 'Log', keys: 'Return sendet · Shift+Return neue Zeile',
+    noDictation: 'Dieser Browser diktiert hier nicht. In Safari: Systemeinstellungen → Tastatur → Diktieren einschalten; in Chrome geht es direkt. Sonst zweimal fn drücken: Das Diktieren von macOS schreibt in jedes Feld.',
     dictate: 'Diktieren', close: 'Schließen', stale: 'Die Seite ist veraltet — bitte neu laden.',
     help: 'Hilfe zu dieser Seite', tour: 'Tour starten', next: 'Weiter', prev: 'Zurück', done: 'Fertig', isNew: 'neu',
     askHelp: 'Frag nach — z. B. „Wie lege ich einen neuen Fall an?“', askWho: 'Wen fragen?', noTopics: 'Zu dieser Seite gibt es noch keine Hilfe.',
@@ -22,6 +23,7 @@
     endNote: 'Closing note (optional)', thinking: 'thinking …', writing: 'writing the session log …', full: 'Full view',
     back: '← Team', place: 'Place', none: 'Nobody on your team yet. Hire an agent on the “My team” page.',
     manage: 'Manage team', running: 'running', closed: 'Session ended.', log: 'Log', keys: 'Return sends · Shift+Return new line',
+    noDictation: 'This browser does not dictate here. In Safari: System Settings → Keyboard → turn Dictation on; Chrome works as is. Otherwise press fn twice: macOS dictation writes into any field.',
     dictate: 'Dictate', close: 'Close', stale: 'The page is stale — please reload.',
     help: 'Help for this page', tour: 'Start the tour', next: 'Next', prev: 'Back', done: 'Done', isNew: 'new',
     askHelp: 'Ask — e.g. “How do I start a new case?”', askWho: 'Ask whom?', noTopics: 'There is no help for this page yet.',
@@ -212,16 +214,20 @@
       var text = el('textarea', 'ap-text'); text.rows = 3; text.placeholder = T.keys; text.value = draft; text.disabled = !!v.pending;
       var row = el('div', 'ap-row');
       var send = el('button', 'ap-primary', T.send); send.type = 'button'; send.disabled = !!v.pending;
+      // The microphone is always there (SYS-156): with the browser's speech recognition it dictates; without it, a click says
+      // what to do instead of the button silently missing (Safari needs macOS dictation on; Firefox has none).
       var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (Rec) {
+      {
         var mic = el('button', 'ap-mic'); mic.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.07A7 7 0 0 1 5 12a1 1 0 1 1 2 0 5 5 0 0 0 10 0Z"/></svg>'; mic.type = 'button'; mic.title = T.dictate; mic.disabled = !!v.pending;
         var rec = null, baseText = '';
         mic.onclick = function () {
+          if (!Rec) { var tip = row.querySelector('.ap-mic-tip') || row.appendChild(el('span', 'ap-mic-tip', T.noDictation)); tip.hidden = false; text.focus(); return; }
           if (rec) { rec.stop(); return; }
           rec = new Rec(); rec.lang = DE ? 'de-DE' : 'en-US'; rec.interimResults = true; rec.continuous = true;
           baseText = text.value ? text.value.replace(/\s*$/, ' ') : '';
           rec.onresult = function (ev) { var s = ''; for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript; text.value = baseText + s; };
           rec.onend = function () { rec = null; mic.classList.remove('on'); text.focus(); };
+          rec.onerror = function (ev) { rec = null; mic.classList.remove('on'); var tip = row.querySelector('.ap-mic-tip') || row.appendChild(el('span', 'ap-mic-tip', '')); tip.textContent = T.noDictation + (ev && ev.error ? ' (' + ev.error + ')' : ''); tip.hidden = false; };
           rec.start(); mic.classList.add('on');
         };
         row.appendChild(mic);

@@ -52,7 +52,7 @@ the client's environment, on the client's own Claude or OpenAI subscription".
 
 - Engine code still names no domain: `interview`, `collects`, `background`, `answered`, `decided:`, `compile:
   canon` are mechanisms another domain can use.
-- The standalone `apps/gatehouse` stays until the new path has carried one real run with somebody outside.
+- The standalone `apps/gatehouse` stays until the new path has carried one real run with somebody outside. *(2026-11-09: retired before that run, by the product owner's decision — the work goes into casefile at the client; tag `archive/2026-11-09-standalone-gatehouse`.)*
 - Live runs need the skills `gatehouse-nachhaken` and `gatehouse-auswerten` in the shared checkout and a
   subscription or key on the orderer's account; a follow-up that cannot be billed fails quietly in its order file.
 - The next step, not built here: generate the customer's own application configuration (stages, gates, roles,

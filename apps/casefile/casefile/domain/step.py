@@ -90,8 +90,9 @@ def _append_entry(store: FsStore, config: DomainConfig, case_id: str, stage: str
     return entry.id
 
 
-def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, by: str) -> StepResult:
-    """Perform one step on behalf of `by` (a person id). Never raises for a refusal; returns the reason."""
+def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, by: str, resolve=None) -> StepResult:
+    """Perform one step on behalf of `by` (a person id). Never raises for a refusal; returns the reason.
+    `resolve` reaches other application instances for `wait_for` (domain/depends.py); without it, their targets."""
     if not STEP_ID.match(req.step_id):
         return StepResult(ok=False, step_id=req.step_id, case=case_id, action=req.action, reason="step id must be 1–80 letters, digits, '-' or '_'")
     with store.lock(case_id):
@@ -125,19 +126,36 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _remind(store, config, j, case, person, req)
         if req.action == "take_back":
             return _take_back(store, config, j, case, person, req)
+        if req.action == "wait_for":
+            return _wait_for(store, config, j, case, person, req, resolve)
+        if req.action == "set_fields":
+            return _set_fields(store, config, j, case, person, req)
+        if req.action in ("share", "delegate"):
+            return _hand_on(store, config, j, case, person, req)
+        if req.action == "retry":
+            return _retry(store, config, j, case, person)
+        if req.action == "order_again":
+            return _order_again(store, config, j, case, person, req)
 
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
             return _builtin(store, config, j, case, person.id, req)
 
         # ---- a configured action
+        # While a helper is at work on the case, a person's move waits: the case is not theirs until the helper is done
+        # (Chris, 2026-11-10 — the surface hides the buttons, the core refuses the move). The helper's own steps go on.
+        run = case.last_run
+        # running, not queued: a run that waits for a runner which never comes must not lock a case for good
+        if person.kind == "human" and run is not None and run.status == "running":
+            return _refuse(store, j, config.word("reasons", "helper_at_work", None, "a helper is at work on this case — your move comes when it is done"))
         stage = config.stage(case.stage)
         action = config.action(case.stage, req.action)
         if stage is None or action is None:
             return _refuse(store, j, f"'{req.action}' is not an action while the case stands in {case.stage}")
         if not offered(config, case, action):
             return _refuse(store, j, f"'{req.action}' is not offered for this case: nothing calls for it")
-        actor = action.actor or stage.turn
+        from .turn import actor_of
+        actor = actor_of(action.actor, case) or actor_of(stage.turn, case)
         if not config.may_act(person.id, actor) and not config.may_act(person.id, "role:operator"):
             return _refuse(store, j, f"{person.name} may not {req.action} here; it is {actor}'s move")
         missing = missing_for(config, case, action)
@@ -210,6 +228,142 @@ def _remind(store: FsStore, config: DomainConfig, j: Journal, case, person, req:
     _write_journal(store, j)
     j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "for": names, "step": j.step_id,
                                                                "title": config.word("texts", "reminder", None, "Reminder")[:120], "text": text})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _wait_for(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest, resolve) -> StepResult:
+    """Set what the case waits for (REQ-005 DP-01, DP-04, DP-05). The list replaces the old one; an empty list ends the
+    waiting. The case does not move; the thread says what changed."""
+    from . import depends
+    raw = req.payload.get("refs", [])
+    if not isinstance(raw, list):
+        return _refuse(store, j, "refs must be a list of case references")
+    refs = list(dict.fromkeys(str(r).strip() for r in raw if str(r).strip()))
+    resolve = resolve or depends.resolver_for(store, config)
+    refusal = depends.check(store, j.case, refs, resolve)
+    if refusal:
+        return _refuse(store, j, refusal)
+    before = depends.refs_of(case.meta)
+    if refs == before:
+        return _refuse(store, j, "nothing changed")
+    _write_journal(store, j)
+    store.write_json(f"{case.stage}/{j.case}/meta.json", {**{k: v for k, v in case.meta.items() if k != depends.KEY}, **({depends.KEY: refs} if refs else {})})
+    text = (config.word("texts", "waits_for", None, "Waits for {refs}.").format(refs=", ".join(refs)) if refs
+            else config.word("texts", "waits_for_nothing", None, "Waits for nothing any more."))
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                                               "title": config.word("texts", "dependencies", None, "Dependencies")[:120], "text": text})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _set_fields(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Change declared fields of a case (domain/fields.py): who may move the case may change them. The case does not
+    move; the thread names every change, old → new."""
+    from . import fields as declared
+    from .turn import actor_of
+    stage = config.stage(case.stage)
+    mover = actor_of(stage.turn, case) if stage else None
+    if not (config.may_act(person.id, "role:operator") or (mover and config.may_act(person.id, mover))):
+        return _refuse(store, j, f"{person.name} may not change this case")
+    raw = req.payload.get("fields")
+    if not isinstance(raw, dict) or not raw:
+        return _refuse(store, j, "fields must name at least one field and its value")
+    try:
+        values = declared.validate(config, raw)
+    except declared.FieldError as exc:
+        return _refuse(store, j, str(exc))
+    changed = {k: v for k, v in values.items() if str(case.meta.get(k) or "") != v}
+    if not changed:
+        return _refuse(store, j, "nothing changed")
+    _write_journal(store, j)
+    meta = {k: v for k, v in case.meta.items() if k not in changed or changed[k] != ""}
+    meta.update({k: v for k, v in changed.items() if v != ""})
+    store.write_json(f"{case.stage}/{j.case}/meta.json", meta)
+    lines = [f"{config.word('fields', k, None, k)}: {case.meta.get(k) or '—'} → {v or '—'}" for k, v in changed.items()]
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                                               "title": config.word("texts", "fields_changed", None, "Changed")[:120], "text": "\n".join(lines)})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _private_point(store, person_id: str):
+    """The data point only this person reads and writes — where a delegated item lands."""
+    return next((p for p in store.all_points if p.readers == {person_id} and p.writers == {person_id}), None)
+
+
+def _hand_on(store, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Hand an item on between data points (REQ-005 PV-03, PV-04).
+
+    share     the case moves into a data point the person may write (`to`: its name); its id stays.
+    delegate  a new case with the next number of its label opens in the other person's private data point (`to`: the
+              person), with origin, creator and link; this one closes with a reference to it. Writing into somebody
+              else's private data point is the core's hand-off, not the person's right: they still cannot read it.
+    """
+    if not hasattr(store, "transfer"):
+        return _refuse(store, j, "this application runs on one data point; there is nowhere to hand it on to")
+    to = str(req.payload.get("to") or "").strip()
+    if not to:
+        return _refuse(store, j, "say where to: a data point (share) or a person (delegate)")
+    if req.action == "share":
+        try:
+            dst = store.point(to)
+        except StoreError as exc:
+            return _refuse(store, j, str(exc))
+        _write_journal(store, j)
+        try:
+            frm, _ = store.transfer(j.case, dst.name)
+        except StoreError as exc:
+            return _refuse(store, j, str(exc))
+        j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                "title": config.word("texts", "shared", None, "Shared")[:120],
+                                "text": config.word("texts", "shared_text", None, "Moved from {frm} to {to}.").format(frm=frm, to=dst.label or dst.name)})
+        j.status, j.finished = "done", _now()
+        _write_journal(store, j)
+        return _result(j)
+    # delegate
+    target = config.person(to)
+    if target is None:
+        return _refuse(store, j, f"'{to}' is nobody here")
+    if target.id == person.id:
+        return _refuse(store, j, "delegating to yourself changes nothing")
+    point = _private_point(store, target.id)
+    if point is None:
+        return _refuse(store, j, f"{target.name} has no private data point here")
+    closing = next((s.folder for s in config.stages if s.group in CLOSED), None)
+    if closing is None:
+        return _refuse(store, j, "this application has no stage that closes a case")
+    from . import numbering
+    label = str(case.meta.get("label") or case.id.split("-", 1)[0])
+    create = config.theme.get("create") or {}
+    number = numbering.next_number(store.everything, label, create.get("number"), case.meta)
+    new_id = f"{label}-{number}"
+    if store.everything.find(new_id) is not None:
+        return _refuse(store, j, f"'{new_id}' already exists")
+    _write_journal(store, j)
+    import shutil
+    src = store.case_dir(j.case)
+    first = create.get("stage") or case.stage
+    dst = point.store.write_root / first / new_id
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("review.md", ".*"))
+    meta = {**{k: v for k, v in case.meta.items() if k not in ("waitsFor",)}, "number": number, "assignee": target.id, "created": _now()[:10],
+            "created_by": person.id, "origin_kind": "other", "origin_ref": f"{j.case} ({person.name})"}
+    point.store.write_json(f"{first}/{new_id}/meta.json", meta)
+    text = config.word("texts", "delegated_from", None, "Delegated by {who} from {ref}.").format(who=person.name, ref=j.case)
+    head = f"# Review — {new_id}\n\nAppend only. Newest entry at the end, never edited afterwards.\n"
+    from ..models import Entry
+    point.store.append(f"{first}/{new_id}/review.md", thread.render(Entry.model_validate({"id": "REV-001", "date": dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
+                       "stage": first, "author": person.name, "status": "info", "step": j.step_id, "title": config.word("texts", "delegated", None, "Delegated")[:120],
+                       "text": text})), head=head)
+    j.to = closing
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id, "from": case.stage, "to": closing,
+                            "title": config.word("texts", "delegated", None, "Delegated")[:120],
+                            "text": config.word("texts", "delegated_to", None, "Delegated to {who} as {ref}.").format(who=target.name, ref=new_id)})
+    store.move(j.case, closing)
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)
@@ -336,6 +490,65 @@ def _reopen(store: FsStore, config: DomainConfig, j: Journal, case, person, req:
     return _complete(store, config, j)
 
 
+RUN_OWN = {"id", "status", "created", "started", "finished", "taken_by", "exit", "result", "log", "cost_usd", "model", "claim",
+           "request_id", "retry_of", "background"}
+
+
+def _retry(store: FsStore, config: DomainConfig, j: Journal, case, person) -> StepResult:
+    """The last run failed: order the same skill again for the same case — its note and its own fields (a file, a target) as
+    they were, a new id, `retry_of` naming the failed one. Whoever may order the skill may do it. A thread entry says so."""
+    last = case.last_run
+    if last is None or last.status != "failed":
+        return _refuse(store, j, "the last run did not fail — nothing to run again")
+    refusal = ordering.may_order(config, last.skill, person)
+    if refusal:
+        return _refuse(store, j, refusal)
+    try:
+        raw = store.read_json(f"_runs/{last.id}.json")
+    except (OSError, ValueError):
+        raw = {}
+    extra = {k: v for k, v in raw.items() if k not in RUN_OWN and k not in ("skill", "container", "requested_by", "runner", "lang", "note")}
+    extra["retry_of"] = last.id
+    _write_journal(store, j)
+    j.run = ordering.order(store, config, j.case, case.stage, last.skill, person.id, raw.get("note") or last.note or "", request_id=j.step_id,
+                           lang=raw.get("lang"), extra=extra)
+    title = config.word("texts", "retry_title", None, "{skill} started again").format(skill=config.word("skills", last.skill, None, last.skill))
+    e = {"author": person.name, "status": "info", "title": title[:120], "text": (last.result or "").strip()[:600], "step": j.step_id}
+    j.entry = _append_entry(store, config, j.case, case.stage, e)
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _order_again(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """A helper finished in this stage and the case did not move on (it handed a decision back): order the same skill
+    again for this case, with the person's note on top of the original one (SYS-161)."""
+    from .turn import stage_run
+    last = stage_run(case)
+    active = case.last_run is not None and case.last_run.status in ("queued", "running")
+    if last is None or last.status != "done" or active:
+        return _refuse(store, j, "no helper finished in this stage, or one is at work — nothing to send again")
+    refusal = ordering.may_order(config, last.skill, person)
+    if refusal:
+        return _refuse(store, j, refusal)
+    try:
+        raw = store.read_json(f"_runs/{last.id}.json")
+    except (OSError, ValueError):
+        raw = {}
+    extra = {k: v for k, v in raw.items() if k not in RUN_OWN and k not in ("skill", "container", "requested_by", "runner", "lang", "note")}
+    extra["again_after"] = last.id
+    said = str(req.payload.get("note") or req.payload.get("text") or "").strip()
+    note = "\n\n".join(x for x in (raw.get("note") or last.note or "", f"{person.name}: {said}" if said else "") if x)
+    _write_journal(store, j)
+    j.run = ordering.order(store, config, j.case, case.stage, last.skill, person.id, note, request_id=j.step_id, lang=raw.get("lang"), extra=extra)
+    title = config.word("texts", "again_title", None, "{skill} sent again").format(skill=config.word("skills", last.skill, None, last.skill))
+    e = {"author": person.name, "status": "info", "title": title[:120], "text": said[:1200], "step": j.step_id}
+    j.entry = _append_entry(store, config, j.case, case.stage, e)
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
 def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: str, req: StepRequest) -> StepResult:
     text = str(req.payload.get("text", "")).strip()
     person = config.person(person_id)
@@ -431,7 +644,8 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
 
     # 4c. a run, once
     if action and action.run and j.run is None:
-        j.run = ordering.order(store, config, j.case, stage_now, action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
+        # the helper works where the case will stand: the move below takes it there before the runner takes the order
+        j.run = ordering.order(store, config, j.case, (j.to or stage_now), action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
                                lang=j.payload.get("_lang"))
         _write_journal(store, j)
 

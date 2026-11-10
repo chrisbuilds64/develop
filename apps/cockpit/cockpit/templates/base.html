@@ -34,7 +34,7 @@
 <nav class="side" aria-label="{{ t('app.menu') }}">
   <div class="menu-head">
     <a href="/" class="brand-link" data-help-skip="explained by shell.dashboard" aria-label="{{ t('app.dashboard') }}">
-      <img class="brand-mark" src="/static/mark.svg" width="26" height="26" alt="">
+      <span class="cf-mark brand-mark brand-cf" aria-hidden="true"></span>
       <span class="brand-name tx">{{ config.name }}</span>
     </a>
     {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}
@@ -53,11 +53,26 @@
     {%- set c = (a.color if a and a.color else (dots[appix.index(w.application) % dots|length] if a else '#94a3b8')) -%}
     {%- if a and a.icon %}<span class="app-mark" style="--dot: {{ c }}">{{ glyph(a.icon, size) }}</span>{% else %}<span class="dot" style="--dot: {{ c }}"></span>{% endif -%}
   {%- endmacro %}
-  {# The cockpit holds tools. Casefile is one of them, once; its workspaces (Schadenakte, PressRoom…) are switched inside Casefile. #}
   {% set first_ws = (live + samples)|first %}
+  {# ADR-032 (amended 2026-11-10): the workspaces are the way in. Each opens its first live Casefile application, or its first own
+     application. Casefile is the platform beneath, not an entry; before workspaces existed it stood once under Tools (Akhil, 2026-11-05). #}
+  {% if spaces %}
+  <details class="nav-sec" data-key="spaces" data-help="shell.workspaces" open>
+    <summary class="section"><span class="tx">{{ t('sp.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
+    {% for sp in spaces %}{% set lead = (sp['items']|selectattr('mode', 'equalto', 'live')|list + sp['items'])|first %}{% set ids = sp['items']|map(attribute='id')|list + sp['own']|map(attribute='id')|list %}
+    <a href="{{ ('/w/' ~ lead.id ~ '/') if lead else (('/m/' ~ sp['own'][0].id) if sp['own'] else '/workspaces#ws-' ~ sp.id) }}" class="nav-row ws-row{% if (route.startswith('/w/') or route.startswith('/m/')) and route.split('/')[2] in ids %} on{% endif %}" data-help-skip="explained by shell.workspaces" title="{{ sp.label }}">
+      <span class="ic">{{ glyph('folder', 18) }}</span><span class="tx">{{ sp.label }}</span>
+    </a>
+    {% endfor %}
+    <a href="/workspaces" class="nav-row quiet{% if route == '/workspaces' %} on{% endif %}" data-help="shell.workspace-admin" title="{{ t('sp.manage') }}"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('sp.manage') }}</span></a>
+  </details>
+  {% endif %}
+  {# Tools: only the modules that live outside any workspace. Where workspaces exist, Casefile is reached through them (ADR-032, 2026-11-10). #}
+  {% if not spaces or nav_modules %}
   <details class="nav-sec" data-key="tools" data-help="shell.tools" open>
     <summary class="section"><span class="tx">{{ t('app.tools') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
-    {% if first_ws %}
+    {% if spaces %}
+    {% elif first_ws %}
     <a href="/w/{{ first_ws.id }}/" class="nav-row ws-row casefile-link{% if route.startswith('/w/') %} on{% endif %}" data-help="shell.casefile" title="Casefile">
       <span class="ic"><span class="cf-mark" aria-hidden="true"></span></span><span class="tx">Casefile</span>
     </a>
@@ -70,6 +85,7 @@
     </a>
     {% endfor %}
   </details>
+  {% endif %}
 
   {% if user %}
   <details class="nav-sec" data-key="team" data-help="shell.team" open>
@@ -114,7 +130,9 @@
 <script>
 // Casefile opens where you left it: the last workspace you were in (Casefile notes it on this same origin).
 (function () { try { var u = localStorage.getItem('casefile-last'); var a = document.querySelector('a.casefile-link');
-  if (u && a && /^\/(?:[\w-]+\/)*w\/[\w-]+\/$/.test(u)) a.setAttribute('href', u); } catch (e) {} })();
+  // only a workspace of this stage: PROD (/) and ENTW (/entw) share the origin and so this storage
+  var own = a && (a.getAttribute('href') || '').replace(/w\/[\w-]+\/$/, '');
+  if (u && a && own && u.indexOf(own + 'w/') === 0 && /^w\/[\w-]+\/$/.test(u.slice(own.length))) a.setAttribute('href', u); } catch (e) {} })();
 </script>
 </nav>
 {% if user %}
