@@ -171,7 +171,7 @@ class Case(BaseModel):
 class Turn(BaseModel):
     """One move that waits. Element 0 of `turn()` is the main one."""
     actor: str                                   # person id, "role:<role>", or "claude"
-    action: str                                  # action id from the configuration, or a built-in: "answer", "see_failure", "wait"
+    action: str                                  # action id from the configuration, or a built-in: "answer", "retry", "wait"
     label: str                                   # the word the surface shows
     reason: str                                  # one sentence
     blocked_by: list[str]

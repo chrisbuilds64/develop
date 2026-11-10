@@ -113,8 +113,14 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
 
     # 2. the last run failed
     if run and run.status == "failed":
-        out.append(Turn(actor=OPERATOR, action="see_failure", label=_label(config, "see_failure", lang), blocked_by=[],
-                        reason=config.word("reasons", "failed", lang, "the last run failed"), since=run.finished or run.created))
+        # Whoever may order the skill may order it again (run-policy `orderable_by`); the operator role when none of those is held.
+        from .runs import policy_for
+        roles = [r for r in policy_for(config, run.skill).get("orderable_by", []) if any(r in p.roles for p in config.people)]
+        why = config.word("reasons", "failed", lang, "the last run failed")
+        first = (run.result or "").strip().splitlines()[0][:160] if (run.result or "").strip() else ""
+        label = config.word("actions", "retry", lang, "Erneut starten" if (lang or config.lang) == "de" else "Run again")
+        out.append(Turn(actor=f"role:{roles[0]}" if roles else OPERATOR, action="retry", label=label, blocked_by=[],
+                        reason=f"{why}: {first}" if first else why, since=run.finished or run.created))
 
     # 3. open entries addressed to a person
     for e in thread.open_for(case.entries, None):
@@ -192,7 +198,7 @@ def classify(case: Case, action: Action | None, t: Turn) -> str:
         return "gap"
     if t.seal:
         return "seal"
-    if t.action in ("answer", "see_failure", "interview"):
+    if t.action in ("answer", "retry", "see_failure", "interview"):
         return "gate"
     if action is not None and action.to:
         return "gate"

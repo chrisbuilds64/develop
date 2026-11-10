@@ -9,7 +9,7 @@ TABLE = [
     ("FN-101-the-quiet-audit",             "role:author",    "work_out",          [],                     []),
     ("POD-102-the-handoff",                "role:author",    "work_out",          [],                     []),
     ("FN-103-what-the-pilot-taught",       "claude",         "wait",              [],                     []),
-    ("WN-104-notes-on-friction",           "role:operator",  "see_failure",       [],                     ["role:author"]),
+    ("WN-104-notes-on-friction",           "role:operator",  "retry",             [],                     ["role:author"]),
     ("FN-105-the-review-that-reads-itself","role:approver",  "approve_to_visual", [],                     ["role:approver"]),
     ("FN-106-two-models-agreeing",         "chris",          "answer",            [],                     ["akhil", "role:approver", "role:approver"]),
     ("SP-107-written-by-chris",            "role:approver",  "approve_to_visual", [],                     ["role:approver"]),   # Sam may still approve; Chris may not (per person); the second turn is "rework"
@@ -68,7 +68,7 @@ def test_my_move_list_resolves_roles_to_persons(store, config):
     assert ("FN-105-the-review-that-reads-itself", "approve_to_visual") not in ids
     chris = {(c.id, t.action) for c, t in whose.turns_for("chris", all_cases, config)}
     assert ("FN-105-the-review-that-reads-itself", "approve_to_visual") in chris
-    assert ("WN-104-notes-on-friction", "see_failure") in chris
+    assert ("WN-104-notes-on-friction", "retry") in chris
     assert ("FN-101-the-quiet-audit", "work_out") in chris
 
 

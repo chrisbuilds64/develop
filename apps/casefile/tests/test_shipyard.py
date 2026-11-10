@@ -226,3 +226,32 @@ def test_the_product_owner_can_order_the_checks_again_when_the_helper_could_not_
     checks = next(s for s in cfg["stages"] if s["folder"] == "30-checks")
     again = next(a for a in checks["actions"] if a["id"] == "retry_checks")
     assert again["actor"] == "role:product_owner" and again["run"] == "shipyard-checks" and not again.get("to")
+
+
+def test_a_failed_run_is_run_again_by_whoever_may_order_its_skill(tmp_path):
+    """A helper's run cut off (a deploy restarted the runner): the move goes to whoever may order that skill — here the
+    product owner, not an operator nobody is — and "run again" orders the same skill with its own fields, once."""
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    assert r.ok and r.run
+    run_file = root / "_runs" / f"{r.run}.json"
+    doc = json.loads(run_file.read_text())
+    doc.update(status="failed", exit=75, finished="2026-11-10T18:52:18+01:00",
+               result="Interrupted: the runner stopped while this run was going.", target="x")
+    run_file.write_text(json.dumps(doc))
+    moves = whose(reading.load(store, config, CID), config, "de")
+    assert moves[0].action == "retry" and moves[0].actor == "role:product_owner" and moves[0].label == "Erneut starten"
+    assert "Interrupted" in moves[0].reason
+    again = stepping.step(store, config, CID, StepRequest(action="retry", step_id="again-1"), "chris")
+    assert again.ok and again.run and again.run != r.run
+    new = json.loads((root / "_runs" / f"{again.run}.json").read_text())
+    assert (new["skill"], new["status"], new["retry_of"], new["target"]) == ("shipyard-build", "queued", r.run, "x")
+    assert "exit" not in new and "result" not in new
+    replay = stepping.step(store, config, CID, StepRequest(action="retry", step_id="again-1"), "chris")
+    assert replay.run == again.run                                           # the same click twice orders once
+    twice = stepping.step(store, config, CID, StepRequest(action="retry", step_id="again-2"), "chris")
+    assert not twice.ok and "did not fail" in twice.reason                  # the new run is queued: nothing to run again
+    case = reading.load(store, config, CID)
+    assert any("started again" in e.title for e in case.entries)
