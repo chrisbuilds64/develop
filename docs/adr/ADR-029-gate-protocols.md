@@ -1,7 +1,7 @@
 # ADR-029: Gate Protocols
 
-**Status:** Proposed (2026-11-09). Asked for by the product owner the same day, high priority; this record waits for
-*Accepted*. Requirements: REQ-003.
+**Status:** Proposed (2026-11-09), amended 2026-11-10 (acceptance criteria, the canon as Definition of Done, the
+developer's acceptance on ENTW, every application). Waits for *Accepted*. Requirements: REQ-003.
 **Date:** 2026-11-09
 
 ---
@@ -56,6 +56,32 @@ place of an answer.
 8. **The same mechanism for every application.** Shipyard first: installation check on ENTW (developer), business
    acceptance on TEST (a role of its own), production check on PROD (developer). The database change file next, with
    "no new invalid objects against the baseline before the deploy" as a standing, agent-observed item.
+
+## Amended 2026-11-10: acceptance criteria, the canon as Definition of Done, every application
+
+The product owner (2026-11-10), from practice: a user story carries acceptance criteria; a model drafts them well from
+the requirement; a team keeps a Definition of Done. The protocol takes all three in.
+
+9. **Acceptance criteria belong to the task.** When a helper writes the task (`task.md`), it drafts the acceptance
+   criteria from the requirement as a list of its own: each a statement, how it is checked (one of the item types of
+   decision 4) and where (the developer's acceptance on ENTW, the business acceptance on TEST, or both). Confirming the
+   task confirms its criteria — the Definition of Ready. A task without acceptance criteria is not offered for
+   confirmation. The criteria become the case items of the protocols (decision 3), each naming its criterion
+   (`task AC-3`), so every item can be traced to the requirement and every criterion to the item that checked it.
+10. **The canon is the Definition of Done.** Standing items are not written into each template: a template includes the
+    Definition of Done of its domain from the canon (`canon/<domain>/definition-of-done.md`: per kind of gate, the
+    rules to check, each pointing at its canon rule). A rule that a machine can check (a guard, a linter, the tests, a
+    naming check) names its check; an agent in its role runs it and answers with the output as evidence (decision 5).
+    A rule that needs judgement stays a person's item. Changing the canon changes every protocol that includes it, from
+    its next version on; a sealed protocol keeps the rules it was checked against.
+11. **On ENTW the developer accepts, technically and functionally.** The installation check of decision 8 becomes the
+    developer's acceptance: the technical items (installation, Definition of Done) and the acceptance criteria marked
+    for ENTW. TEST stays the business acceptance (the criteria marked for TEST, by a role that is not the developer);
+    PROD the production check.
+12. **Every application has its gates this way.** PressRoom's review gate is a protocol with the editorial Definition of
+    Done (language, tone, the content boundaries, the symbolic language) and a fact check answered by the role
+    `fact_checker` — an agent — with its report as evidence; the reviewer decides. A case with parts (ADR-033) can ask
+    "every part closed" as an item the core answers.
 
 ## Consequences
 

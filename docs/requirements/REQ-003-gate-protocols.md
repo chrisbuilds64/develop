@@ -1,9 +1,10 @@
 # REQ-003 — Gate protocols: what a person checked before a gate opened
 
-**Status:** proposed 2026-11-09, waiting for the product owner. High priority. Decision record: ADR-029.
+**Status:** proposed 2026-11-09, amended 2026-11-10, waiting for the product owner. High priority. Decision record: ADR-029.
 
 **Scope:** the core (`apps/casefile/casefile/`), the surface (`apps/casefile/web/`), the configuration of Shipyard
-(`config/shipyard/`) and of the database change file (`config/aenderungsakte/`).
+(`config/shipyard/`), PressRoom (`config/pressroom/`) and the database change file (`config/aenderungsakte/`), and the
+Definition of Done in the canon (`canon/<domain>/definition-of-done.md`).
 
 **Evidence** means a test that fails when the line breaks. None is written yet: every line below is a requirement
 before its build, and its test comes with it.
@@ -21,6 +22,17 @@ before its build, and its test comes with it.
 | GP-07 | Not applicable needs a reason; failed needs what was seen. Evidence may be a note, a file in the case or a link. | planned |
 | GP-08 | Who may answer is a role on the question. An objective question may be answered for good by an agent in its role; a judgement question has a person's role by default, where an agent may only observe and attach evidence. The gate is opened only by the role that holds it. | planned |
 
+## Acceptance criteria and the Definition of Done (amended 2026-11-10)
+
+| # | Requirement | Evidence |
+|---|---|---|
+| GP-14 | The task carries acceptance criteria as a list of its own, drafted by the helper from the requirement: each a statement, how it is checked (an item type) and where (ENTW, TEST or both). | planned |
+| GP-15 | A task without acceptance criteria is not offered for confirmation; confirming the task confirms its criteria (Definition of Ready). | planned |
+| GP-16 | The acceptance criteria become case items of the protocols of the stages they name, each naming its criterion; the sealed protocol shows for every criterion the item that checked it. | planned |
+| GP-17 | A template includes the Definition of Done of its domain from the canon; every included item points at its canon rule. | planned |
+| GP-18 | A rule a machine can check names its check; an agent in its role runs it and answers with the output as evidence. A rule that needs judgement is a person's item. | planned |
+| GP-19 | A sealed protocol keeps the rules it was checked against; a change of the canon applies from the next protocol version. | planned |
+
 ## The gate
 
 | # | Requirement | Evidence |
@@ -35,11 +47,24 @@ before its build, and its test comes with it.
 
 | # | Requirement | Evidence |
 |---|---|---|
-| GP-20 | ENTW is accepted with an installation check, held by a developer: tag and commit on the stage, services active, migrations run, logs without new errors. | planned |
+| GP-20 | ENTW is accepted by the developer, technically and functionally: the installation (tag and commit on the stage, services active, migrations run, logs without new errors), the Definition of Done, and the acceptance criteria marked for ENTW. | planned |
 | GP-21 | TEST is accepted with a business acceptance, held by the role `acceptance`, never by the change's developer; its case items are the instructions for this change. With us the role is held by the product owner in personal union or by a peer (Akhil). | planned |
 | GP-22 | PROD is closed with a production check, held by a developer: the installation check's items plus the way back. | planned |
 | GP-24 | The approval (merge) is given with a code review protocol, held by the product owner or a peer, never by the change's author: scope matches the task, a test for every requirement line, no secrets or internal names, architecture boundaries hold. The checks helper observes what it can (diff against the task, new tests, guards); the reviewer decides. | planned |
 | GP-23 | The verify helper fills observations for the items it can check and decides none. | planned |
+
+## PressRoom
+
+| # | Requirement | Evidence |
+|---|---|---|
+| GP-40 | The review gate is a protocol with the editorial Definition of Done from the canon: language, tone, the content boundaries, the symbolic language. | planned |
+| GP-41 | A fact check is an item answered by the role `fact_checker` (an agent) with its report as evidence; the reviewer decides. | planned |
+
+## Parts (ADR-033)
+
+| # | Requirement | Evidence |
+|---|---|---|
+| GP-42 | "Every part closed" can be an item of a protocol, answered by the core. | planned |
 
 ## The database change file
 
