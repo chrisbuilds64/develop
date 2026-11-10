@@ -85,6 +85,16 @@ def load_data(store: FsStore, config: DomainConfig, case_id: str, label: str, fi
     return out
 
 
+RUN_ID = re.compile(r"^(\d{8}-\d{6})(?:-(\d+))?_")
+
+
+def run_order(run_id: str) -> tuple[str, int, str]:
+    """Runs in the order they were ordered: `20261110-192700_…` before `20261110-192700-1_…` (a second order in the same
+    second), which a plain sort of the names puts the other way round."""
+    m = RUN_ID.match(run_id)
+    return (m.group(1), int(m.group(2) or 0), run_id) if m else (run_id, 0, run_id)
+
+
 def load_runs(store: FsStore, case_ref: str) -> list[Run]:
     out = []
     for name in store.runs():
@@ -97,7 +107,7 @@ def load_runs(store: FsStore, case_ref: str) -> list[Run]:
                 out.append(Run.model_validate(doc))
             except Exception:
                 continue
-    return out
+    return sorted(out, key=lambda r: run_order(r.id))
 
 
 def load(store: FsStore, config: DomainConfig, case_id: str) -> Case:

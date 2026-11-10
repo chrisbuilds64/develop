@@ -132,6 +132,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _set_fields(store, config, j, case, person, req)
         if req.action in ("share", "delegate"):
             return _hand_on(store, config, j, case, person, req)
+        if req.action == "retry":
+            return _retry(store, config, j, case, person)
 
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
@@ -478,6 +480,36 @@ def _reopen(store: FsStore, config: DomainConfig, j: Journal, case, person, req:
     j.to = target
     _write_journal(store, j)
     return _complete(store, config, j)
+
+
+RUN_OWN = {"id", "status", "created", "started", "finished", "taken_by", "exit", "result", "log", "cost_usd", "model", "claim",
+           "request_id", "retry_of", "background"}
+
+
+def _retry(store: FsStore, config: DomainConfig, j: Journal, case, person) -> StepResult:
+    """The last run failed: order the same skill again for the same case — its note and its own fields (a file, a target) as
+    they were, a new id, `retry_of` naming the failed one. Whoever may order the skill may do it. A thread entry says so."""
+    last = case.last_run
+    if last is None or last.status != "failed":
+        return _refuse(store, j, "the last run did not fail — nothing to run again")
+    refusal = ordering.may_order(config, last.skill, person)
+    if refusal:
+        return _refuse(store, j, refusal)
+    try:
+        raw = store.read_json(f"_runs/{last.id}.json")
+    except (OSError, ValueError):
+        raw = {}
+    extra = {k: v for k, v in raw.items() if k not in RUN_OWN and k not in ("skill", "container", "requested_by", "runner", "lang", "note")}
+    extra["retry_of"] = last.id
+    _write_journal(store, j)
+    j.run = ordering.order(store, config, j.case, case.stage, last.skill, person.id, raw.get("note") or last.note or "", request_id=j.step_id,
+                           lang=raw.get("lang"), extra=extra)
+    title = config.word("texts", "retry_title", None, "{skill} started again").format(skill=config.word("skills", last.skill, None, last.skill))
+    e = {"author": person.name, "status": "info", "title": title[:120], "text": (last.result or "").strip()[:600], "step": j.step_id}
+    j.entry = _append_entry(store, config, j.case, case.stage, e)
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
 
 
 def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: str, req: StepRequest) -> StepResult:
