@@ -240,20 +240,20 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .hurg { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-13); font-weight: 500; color: var(--urgent); }
 .hurg::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--urgent); }
 
-.sline { position: relative; margin: 22px 0 4px; padding-bottom: 24px; }
-.strack { height: 2px; border-radius: var(--r-2); background: var(--tint-10); margin: 0 4px; }
-.strack i { display: block; height: 2px; border-radius: var(--r-2); background: var(--your-move); transition: width .5s ease; }
-.sst { position: relative; height: 0; margin: 0 4px; }
-.sst span { position: absolute; top: -5px; transform: translateX(-50%); }
-.sst span:first-child { transform: none; }
-.sst span:last-child { transform: translateX(-100%); text-align: right; }
-.sst b { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--ground); box-shadow: inset 0 0 0 1.5px var(--tint-18); }
-.sst span:last-child b { margin-left: auto; }
-.sst span:not(:first-child):not(:last-child) b { margin: 0 auto; }
+.sline { margin: 22px 0 4px; }
+.sst { display: grid; }
+.sst span { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+/* the track: each column draws the half before its dot and the half after it */
+.sst span::before, .sst span::after { content: ""; position: absolute; top: 3px; height: 2px; background: var(--tint-10); transition: background-color .5s ease; }
+.sst span::before { left: 0; right: 50%; }
+.sst span::after { left: 50%; right: 0; }
+.sst span:first-child::before, .sst span:last-child::after { display: none; }
+.sst .past::before, .sst .past::after, .sst .now::before { background: var(--your-move); }
+.sst b { position: relative; z-index: 1; display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--ground); box-shadow: inset 0 0 0 1.5px var(--tint-18); }
 .sst .past b { background: var(--your-move); box-shadow: none; }
 .sst .now b { background: var(--your-move); box-shadow: 0 0 0 4px var(--your-move-halo); }
-.sst em { display: block; margin-top: 7px; font-style: normal; font-size: var(--fs-11-5); color: var(--muted); white-space: nowrap; }
-.sst .now em { color: var(--ink); font-weight: 500; }
+.sst em { display: block; box-sizing: border-box; max-width: 100%; margin-top: 7px; padding: 0 3px; font-style: normal; font-size: var(--fs-11-5); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sst .now em { color: var(--ink); font-weight: 500; overflow: visible; }
 .c-stub { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; font-size: var(--fs-13); color: var(--sub); }
 .c-stub i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
 .c-stub i.you { background: var(--your-move); } .c-stub i.ai { background: var(--ai-deep); }
@@ -821,3 +821,17 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .c-again .ghost { border: 1px solid var(--hairline); background: var(--surface); box-shadow: var(--shadow-card); }
 .c-again .ghost:hover { background: var(--hover); }
 .c-again .hint { font-size: var(--fs-12-5); color: var(--muted); max-width: 52ch; }
+/* Two versions compared (SYS-162): added lines green, removed ones struck through, unchanged stretches folded */
+.versions-cap { margin-right: 6px; color: var(--muted); }
+.diff-toggle { margin-left: 8px; }
+.diff { display: grid; gap: 8px; min-width: 0; }
+.diff-sum { margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+.diff-n { font-variant-numeric: tabular-nums; font-weight: 600; }
+.diff-n.add { color: var(--ok-ink); }
+.diff-n.del { color: var(--bad-ink); }
+.diff-body { margin: 0; font-family: var(--mono); font-size: var(--fs-12-5); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; display: grid; border-radius: var(--r-s); overflow: hidden; border: 1px solid var(--hairline); }
+.diff-line { display: block; padding: 0 10px 0 6px; }
+.diff-line i { display: inline-block; width: 1.2em; font-style: normal; color: var(--muted); user-select: none; }
+.diff-line.add { background: var(--ok-soft); }
+.diff-line.del { background: var(--bad-soft); text-decoration: line-through; text-decoration-color: var(--bad-ink); color: var(--ink-2); }
+.diff-fold { display: block; padding: 2px 10px; color: var(--muted); background: var(--tint-6); font-style: italic; }

@@ -1,0 +1,14 @@
+{
+  "$comment": "A fictional software workspace, only for the checks: the station line with its nine stations (walk station-line).",
+  "people": [
+    {
+      "id": "du",
+      "name": "Du",
+      "kind": "human",
+      "roles": [
+        "product_owner",
+        "developer"
+      ]
+    }
+  ]
+}
