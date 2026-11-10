@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BASE } from "../api";
 import { Back, Close, Next, PopOut, Prev } from "./Icons";
+import { VersionDiff } from "./Diff";
 import type { words } from "../words";
 
 export type Version = { name: string; version: number; url: string };
@@ -26,6 +27,9 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
   const ver = doc ? doc.versions[Math.min(vi < 0 ? doc.versions.length - 1 : vi, doc.versions.length - 1)] : undefined;
   const kind = ver ? kindOf(ver.name) : "other";
   const [html, setHtml] = useState<string | null>(null);
+  const [compare, setCompare] = useState(false);
+  const at = doc && ver ? doc.versions.indexOf(ver) : -1;
+  const before = doc && at > 0 ? doc.versions[at - 1] : undefined;      // the version this one is compared with
   const tabs = useRef<HTMLDivElement>(null);
   useEffect(() => { tabs.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "center" }); }, [index]);
   const prev = () => onIndex((index - 1 + docs.length) % docs.length);
@@ -40,7 +44,7 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
-  useEffect(() => { setVi(-1); }, [index]);     // a new document opens on its newest version
+  useEffect(() => { setVi(-1); setCompare(false); }, [index]);     // a new document opens on its newest version, not compared
   useEffect(() => {
     setHtml(null);
     if (!ver || kind !== "text") return;
@@ -75,17 +79,23 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
       </header>
       <p className="reader-meta hint">
         {doc.versions.length > 1 ? (
-          <span className="versions" role="tablist" aria-label={w.versions}>
+          <span className="versions" role="tablist" aria-label={w.versions}><span className="versions-cap">{w.versions}:</span>
             {doc.versions.map((v, i) => <button key={v.name} type="button" role="tab" aria-selected={v === ver} className={`chip small${v === ver ? " on" : ""}`} onClick={() => setVi(i)}>{w.version(Math.max(1, v.version))}</button>)}
           </span>
         ) : <span className="mono">{w.version(Math.max(1, ver.version))}</span>}
         <span className="mono"> · {ver.name} · <a className="quiet" href={BASE + ver.url} target="_blank" rel="noreferrer">{w.openTab}</a></span>
+        {kind === "text" && before && (
+          <button type="button" className={`chip small diff-toggle${compare ? " on" : ""}`} aria-pressed={compare} onClick={() => setCompare(!compare)}>
+            {compare ? w.diffShowText : w.diffWith(Math.max(1, before.version))}
+          </button>
+        )}
       </p>
       <div className="reader-body">
         {kind === "image" && <img src={BASE + ver.url} alt={doc.word} />}
         {kind === "video" && <video src={BASE + ver.url} controls playsInline />}
         {kind === "pdf" && <iframe src={BASE + ver.url} title={doc.word} />}
-        {kind === "text" && (html === null ? <p className="hint">…</p> : <article className="prose" dangerouslySetInnerHTML={{ __html: html }} />)}
+        {kind === "text" && compare && before ? <VersionDiff older={{ url: before.url, version: Math.max(1, before.version) }} newer={{ url: ver.url, version: Math.max(1, ver.version) }} w={w} />
+          : kind === "text" && (html === null ? <p className="hint">…</p> : <article className="prose" dangerouslySetInnerHTML={{ __html: html }} />)}
         {kind === "other" && <p className="hint"><a href={BASE + ver.url} target="_blank" rel="noreferrer">{w.openTab}</a></p>}
       </div>
     </section>
