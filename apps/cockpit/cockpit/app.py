@@ -83,6 +83,12 @@ def create_app(config: Config) -> FastAPI:
         workspaces = Workspaces(config.workspaces_path, config.workspaces_path.parent)
     except WorkspaceError as exc:                       # a broken registry is a line on the dashboard, not a shell that will not start
         workspaces, ws_error = None, str(exc)
+    if workspaces is not None and workspaces.own:     # ADR-032: instances of own applications become modules, their sources the bound data points
+        from .config import ConfigError as _CE, add_own_instances
+        try:
+            add_own_instances(config, workspaces.own)
+        except _CE as exc:
+            ws_error = str(exc)
     web_dist = config.casefile_web or web_dist_default()
 
     tokens = Tokens(config.accounts_path.parent / "tokens.json")
@@ -174,7 +180,7 @@ def create_app(config: Config) -> FastAPI:
             "t": lambda key, **kw: i18n.t(lang, key, **kw),
             "version": __version__, "export": False,
             "modules_by_id": {m.id: m for m in config.modules},
-            "nav_modules": [m for m in config.modules if m.enabled and role.may_open(m.id)],
+            "nav_modules": [m for m in config.modules if m.enabled and role.may_open(m.id) and not (workspaces and workspaces.own_instance(m.id))],
             "plugins": plugins_for(config),
             "current": route_path(request).split("/")[2] if route_path(request).startswith("/m/") else "",
             "route": route_path(request),
@@ -297,7 +303,8 @@ def create_app(config: Config) -> FastAPI:
         shown = [sp for sp in doc.get("workspaces") or [] if admin or c["user"].name in (sp.get("members") or []) or sp.get("open")]
         return templates.TemplateResponse(request, "workspaces.html", {**c, "err": err, "ok": ok, "v2": workspaces.doc is not None,
                                                                          "shown": shown, "connectors": doc.get("connectors") or {},
-                                                                         "admin": admin, "all_spaces": workspaces.spaces()})
+                                                                         "admin": admin, "all_spaces": workspaces.spaces(),
+                                                                         "all_apps": doc.get("applications") or {}})
 
     @app.post("/workspaces/move", response_class=HTMLResponse)
     async def workspace_move(request: Request):
@@ -1018,6 +1025,9 @@ def create_app(config: Config) -> FastAPI:
     @app.middleware("http")
     async def guard_apps(request: Request, call_next):
         parts = route_path(request).split("/")
+        if len(parts) >= 3 and parts[1] == "m" and workspaces is not None and (own := workspaces.own_instance(parts[2])) is not None:
+            if not workspaces.own_visible(own, identity(request)):   # an instance in a workspace: its members only (ADR-032)
+                return go("/")
         if len(parts) >= 4 and parts[1] == "m" and parts[3] == "app":
             if config.login_required and who(request) is None:
                 return go("/login")

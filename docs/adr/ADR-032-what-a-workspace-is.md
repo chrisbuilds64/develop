@@ -26,7 +26,8 @@ all records (2026-11-09) found where the old notion is assumed; the ranked list 
 
 ## Decision
 
-1. **Eight terms, one meaning each** (the connector added 2026-11-10, see below).
+1. **Eight terms, one meaning each** (the connector added 2026-11-10; the kinds of application and Casefile as the
+   platform likewise, see below).
    - **Tenant** — owns workspaces, people, agent instances, connectors and billing. Today there is one, ChrisBuilds64.
    - **Workspace** — a set of data points, the application instances running on them, and members.
    - **Connector** — a technical access the tenant sets up once: a Nextcloud server, a directory on a host, a database
@@ -116,6 +117,31 @@ application differ only in their data point: `pressroom` (live, a Nextcloud team
 application of its own, although it points at the same configuration — the sample is in the wrong place there; it is a
 data point with a seed, not an application. The steps from this shape to the one above are planned in
 `control/planning/2026-11-10_workspaces-connectors-case-tree.md` (private).
+
+## Amended 2026-11-10: kinds of application, and Casefile as the platform
+
+The product owner (2026-11-10): the cockpit holds workspaces; in a workspace run application instances that reach the
+workspace's data points through its connectors. Applications are of two kinds:
+
+- **Casefile applications** — configuration on the Casefile core (PressRoom, Shipyard, the worklist, Schadenakte,
+  Gutachtenakte, Gatehouse, Posteingang …). Their slots are `cases` (and `home` when several data points are read together).
+- **Own applications** — their own code, using the shared components (identity, tokens, design system, runner). Today
+  these are the cockpit's plugins (Audits, Canon, Decisions, Context Loop). Their slots are the plugin's `needs`.
+
+**Casefile** is the platform beneath the first kind — the core and its one surface — not an entry in a menu. The
+**cockpit** is the shell around everything: sign-in, team and agents, setup, the list of workspaces.
+
+Consequences:
+
+- An own application runs as an instance in a workspace like any other: `"kind": "plugin"` in the registry, its needs
+  bound to data points, opened under `/m/<instance>` for the workspace's members. Plugins listed in `cockpit.toml`
+  outside any workspace still work (the local cockpit, the demo); they are the only thing left under "Tools".
+- Where workspaces exist, the cockpit's way in is the workspace, and "Tools" disappears unless such plugins remain. The
+  single "Casefile" entry of 2026-11-05 (Akhil: the instances are one product, not many) stays for registries without
+  workspaces.
+- Plugins replaced by an application are marked `retired` and cannot be placed in a workspace: the work list (by the
+  worklist application), the content pipeline (by PressRoom; its runner and tools stay), the canon elicitation (the
+  standalone Gatehouse it read is archived; ADR-021).
 
 ## Alternatives considered
 

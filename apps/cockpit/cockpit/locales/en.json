@@ -515,5 +515,7 @@
   "sp.waiting": "{n} for you",
   "sp.everyone": "everyone",
   "sp.done": "Saved: {what}",
-  "sp.as_members": "as the members"
+  "sp.as_members": "as the members",
+  "sp.kind_own": "own application",
+  "setup.retired": "retired"
 }

@@ -27,10 +27,11 @@
       <thead><tr><th>{{ t('sp.instances') }}</th><th>{{ t('sp.application') }}</th><th>{{ t('sp.mode') }}</th><th>{{ t('sp.data_points') }}</th><th>{{ t('sp.members') }}</th>{% if admin %}<th>{{ t('sp.move') }}</th>{% endif %}</tr></thead>
       <tbody>
       {% for i in sp.instances or [] %}
-      {% set cases = i.bind.cases if i.bind.cases is not string else [i.bind.cases] %}
+      {% set cases = (i.bind.cases if i.bind.cases is not string else [i.bind.cases]) if i.bind.cases else i.bind.values()|list %}
       <tr>
-        <td><a href="/w/{{ i.id }}/"><b>{{ i.label or i.id }}</b></a><br><span class="dim mono">/w/{{ i.id }}/</span></td>
-        <td>{{ applications[i.application].label if i.application in applications else i.application }}</td>
+        {% set app = all_apps.get(i.application, {}) %}{% set own = app.kind == 'plugin' %}{% set addr = ('/m/' ~ i.id) if own else ('/w/' ~ i.id ~ '/') %}
+        <td><a href="{{ addr }}"><b>{{ i.label or i.id }}</b></a><br><span class="dim mono">{{ addr }}</span></td>
+        <td>{{ app.label or i.application }}<br><span class="dim">{{ t('sp.kind_own') if own else 'Casefile' }}</span></td>
         <td>{{ i.mode or 'live' }}</td>
         <td class="mono">{% for c in cases %}{{ c.point if c is mapping else c }}{% if c is mapping and c['as'] %} <span class="dim">({{ c['as'] }})</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% if i.bind.home %}<br><span class="dim">home: {{ i.bind.home }}</span>{% endif %}</td>
         <td>{% if i.members %}{{ i.members|join(', ') }}{% else %}<span class="dim">{{ t('sp.everyone') if sp.open else t('sp.as_members') }}</span>{% endif %}</td>

@@ -19,7 +19,7 @@
       <thead><tr><th>ID</th><th>{{ t('setup.version') }}</th><th>{{ t('setup.origin') }}</th><th>App</th><th>{{ t('setup.used_by') }}</th><th>{{ t('setup.path') }}</th></tr></thead>
       <tbody>
       {% for p in plugins.values() %}
-      <tr><td><b>{{ p.id }}</b><br><span class="dim">{{ p.name }}</span></td><td>{{ p.version }}</td>
+      <tr><td><b>{{ p.id }}</b><br><span class="dim">{{ p.name }}</span>{% if p.manifest.retired %}<br><span class="badge" title="{{ p.manifest.retired }}">{{ t('setup.retired') }}</span>{% endif %}</td><td>{{ p.version }}</td>
           <td>{{ t('setup.bundled') if p.bundled else t('setup.installed') }}</td>
           <td>{% if p.app %}✓ {{ p.app.factory }}{% else %}—{% endif %}</td>
           <td>{{ (modules_using.get(p.id) or ['—'])|join(', ') }}</td>

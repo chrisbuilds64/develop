@@ -101,6 +101,11 @@
       "type": "string",
       "pattern": "^#[0-9a-fA-F]{6}$",
       "description": "The plugin's colour, used for its glyph. State colours stay the state's."
+    },
+    "retired": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Set when the plugin is replaced: why, and by what. A retired plugin still runs where cockpit.toml names it, but cannot be placed in a workspace (ADR-032, 2026-11-10)."
     }
   },
   "$defs": {

@@ -20,6 +20,10 @@ Format 2 of `workspaces.json` (format 1 had one flat list of entries, each one a
   (`[{"point": "worklist-team", "as": "team"}, …]`, read together, ADR-032), and then `home` to the data point that
   carries the instance's own files. `members` narrows the workspace's members for this instance.
 - A workspace that is `open` lets every signed-in person in (the samples); otherwise its members only.
+- An application is a **Casefile application** (`config_dir`: configuration on the Casefile core) or an **own
+  application** (`"kind": "plugin", "plugin": "<id>"`: its own code, a cockpit plugin). An instance of an own
+  application binds each of the plugin's `needs` to a data point (`"bind": {"audits": "control-audits"}`); such a data
+  point may say `mode` ("read" or "read-write"), `include` and `sensitivity`, as a cockpit source does.
 
 `instances()` reads format 2 and gives every instance in the shape a format-1 entry had, so the cockpit, the runner
 and pressroom-env keep one way of reading. `migrate()` writes format 2 from format 1 and a plan. Standard library
@@ -77,8 +81,50 @@ def _binding(cases) -> list[dict]:
     raise RegistryError("an instance binds `cases` to a data point or a list of them")
 
 
+def bound_points(inst: dict) -> set[str]:
+    """Every data point an instance binds, whatever the kind of its application."""
+    out: set[str] = set()
+    for slot, v in (inst.get("bind") or {}).items():
+        if slot == "cases":
+            out |= {c["point"] for c in _binding(v)}
+        elif isinstance(v, str):
+            out.add(v)
+    return out
+
+
+def is_own(doc: dict, application: str) -> bool:
+    """True for an own application (a plugin), False for a Casefile application."""
+    return ((doc.get("applications") or {}).get(application) or {}).get("kind") == "plugin"
+
+
+def own_instances(doc: dict) -> list[dict]:
+    """Every instance of an own application: [{id, label, plugin, workspace, workspace_label, shared, members,
+    sources: [{need, root, write_root?, mode, include, sensitivity, label}]}]."""
+    out = []
+    for ws in doc.get("workspaces") or []:
+        points = {p.get("name"): p for p in ws.get("data_points") or []}
+        for i in ws.get("instances") or []:
+            app = (doc.get("applications") or {}).get(i.get("application")) or {}
+            if app.get("kind") != "plugin":
+                continue
+            srcs = []
+            for need, name in (i.get("bind") or {}).items():
+                p = points.get(name)
+                if p is None:
+                    raise RegistryError(f"instance '{i.get('id')}': data point '{name}' is not in workspace '{ws.get('id')}'")
+                root, write = point_paths(doc, p)
+                srcs.append({"need": need, "root": root, **({"write_root": write} if write else {}), "mode": p.get("mode", "read"),
+                             "include": list(p.get("include") or []), "sensitivity": p.get("sensitivity", "internal"),
+                             "label": p.get("label") or name})
+            out.append({"id": str(i.get("id")), "label": i.get("label") or app.get("label") or i.get("id"), "plugin": app.get("plugin"),
+                        "workspace": ws.get("id"), "workspace_label": ws.get("label") or ws.get("id"),
+                        "shared": bool(ws.get("open", False)), "members": list(i.get("members") or ws.get("members") or []), "sources": srcs})
+    return out
+
+
 def instances(doc: dict) -> list[dict]:
-    """Every instance of a format-2 registry as a format-1 entry, plus `workspace`, `workspace_label` and `template`."""
+    """Every instance of a Casefile application in a format-2 registry as a format-1 entry, plus `workspace`,
+    `workspace_label` and `template`. Instances of own applications: `own_instances()`."""
     out, seen = [], set()
     for ws in doc.get("workspaces") or []:
         wid = str(ws.get("id") or "")
@@ -95,6 +141,11 @@ def instances(doc: dict) -> list[dict]:
 
         for i in ws.get("instances") or []:
             iid = str(i.get("id") or "")
+            if is_own(doc, str(i.get("application"))):
+                if iid in seen:
+                    raise RegistryError(f"instance '{iid}' appears twice — instance ids are unique across workspaces (they are the address /w/<id>/)")
+                seen.add(iid)
+                continue
             if iid in seen:
                 raise RegistryError(f"instance '{iid}' appears twice — instance ids are unique across workspaces (they are the address /w/<id>/)")
             seen.add(iid)
