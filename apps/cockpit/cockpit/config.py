@@ -196,7 +196,8 @@ def _module(m: dict, mid: str, where: str, sources: dict, plugins: dict, base: P
     """One module from its entry: the plugin's actions mapped onto the module's sources by position of `needs`,
     withheld where a source is missing or read-only, then the entry's own actions. A [[module]] of cockpit.toml and an
     instance of an own application in a workspace (ADR-032) both come through here."""
-    needs = tuple(m.get("sources", []))
+    released = tuple(m.get("sources", []))            # the source ids this module may read, in the order of the plugin's needs
+    needs = released
     for sid in needs:
         if sid not in sources:
             raise ConfigError(f"{where} ('{mid}'): source '{sid}' is not defined")
@@ -248,7 +249,7 @@ def _module(m: dict, mid: str, where: str, sources: dict, plugins: dict, base: P
     return Module(
         id=mid,
         plugin=m.get("plugin", mid),
-        sources=needs,
+        sources=released,                 # source ids, not the plugin's need names: readers pass them to Access
         maturity=_choice(m.get("maturity", "running"), MATURITY, where, "maturity"),
         label=m.get("label"),
         enabled=bool(m.get("enabled", True)),

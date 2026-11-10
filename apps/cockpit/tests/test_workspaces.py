@@ -252,3 +252,24 @@ def test_a_retired_plugin_cannot_be_placed_in_a_workspace(world):
     doc["workspaces"][0]["instances"].append({"id": "old-list", "application": "old", "bind": {"worklist": "wl", "tools": "wl"}})
     with pytest.raises(ConfigError, match="retired"):
         add_own_instances(load(world / "cockpit.toml"), registry.own_instances(doc))
+
+
+def test_an_own_instance_reads_its_bound_data_point_not_a_source_named_like_the_need(world):
+    """The module's sources are the bound source ids (`<instance>.<need>`); a reader passes them to Access as they are."""
+    from cockpit import workspace_registry as registry
+    from cockpit.access import Access
+    from cockpit.audit import AuditLog
+    from cockpit.config import add_own_instances
+    from cockpit.registry import card_for
+    doc = registry.migrate(json.loads((world / "workspaces.json").read_text()),
+                           {"connectors": {"server": {"kind": "directory", "label": "S", "root": ""}},
+                            "workspaces": [{"id": "ops", "members": ["alex"], "instances": ["shared"]}]})
+    doc["applications"]["a"] = {"label": "Audits", "kind": "plugin", "plugin": "audits"}
+    doc["workspaces"][0]["data_points"].append({"name": "au", "connector": "server", "place": str(world / "audits")})
+    doc["workspaces"][0]["instances"].append({"id": "ops-audits", "application": "a", "bind": {"audits": "au"}})
+    config = load(world / "cockpit.toml")
+    config.sources.pop("audits", None)                                    # nothing named like the need may help it
+    config.modules[:] = [m for m in config.modules if m.id != "audits"]
+    add_own_instances(config, registry.own_instances(doc))
+    card = card_for(config, Access(config, AuditLog(world / "a.jsonl"), {}), config.roles["operator"], "ops-audits")
+    assert card.verdict != "denied" and card.panel, card.reason
