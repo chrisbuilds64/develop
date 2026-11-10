@@ -195,6 +195,7 @@ def up() -> None:
 WALKS = [
     ("note-editor", "walks/note-editor-shot.mjs", "posteingang-muster"),   # REQ-001 S-09
     ("station-line", "walks/station-line-shot.mjs", "shipyard-muster"),    # REQ-001 S-08, SW-2026-002
+    ("loading-state", "walks/loading-state-shot.mjs", "posteingang-muster"),  # REQ-001 S-13, SW-2026-003
 ]
 
 
