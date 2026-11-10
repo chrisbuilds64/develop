@@ -33,6 +33,14 @@ jobs:
           python -m venv /tmp/cf && /tmp/cf/bin/pip install -q --upgrade pip
           /tmp/cf/bin/pip install -q -e "apps/casefile[dev]"
           cd apps/casefile && /tmp/cf/bin/python -m pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/casefile/web/package-lock.json
+      - name: The surface, for the cockpit's tests of the mounted page (web/dist is never in git)
+        working-directory: apps/casefile/web
+        run: npm ci --silent && npm run build --silent
       - name: cockpit
         run: |
           python -m venv /tmp/ck && /tmp/ck/bin/pip install -q --upgrade pip
@@ -65,10 +73,6 @@ jobs:
         run: |
           npm ci --silent
           npm run build --silent
-      - name: The committed surface is the built one
-        working-directory: apps/casefile/web
-        run: |
-          git diff --exit-code --stat -- dist || { echo "web/dist is not the build of web/src: run 'npm run build' in apps/casefile/web and commit dist"; exit 1; }
 
   changes:
     runs-on: ubuntu-latest
@@ -105,8 +109,6 @@ jobs:
       fail-fast: false
       matrix:
         id: ${{ fromJSON(needs.flow-plan.outputs.ids) }}
-    env:
-      SANDBOX_PREBUILT: "1"          # the committed web/dist; the guards job proved it is the build of web/src
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

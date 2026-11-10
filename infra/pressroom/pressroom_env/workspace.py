@@ -98,6 +98,13 @@ def deploy_code(settings: Settings, env: Env, ref: str | None = None) -> str:
     run([str(venv / "bin" / "pip"), "install", "--quiet", "--upgrade", "pip"], user=s.runner_user, quiet=True)
     run([str(venv / "bin" / "pip"), "install", "--quiet", "-e", str(dev / "apps" / "casefile")], user=s.runner_user)
     run([str(venv / "bin" / "pip"), "install", "--quiet", "-e", str(dev / "apps" / "cockpit")], user=s.runner_user)
+    # the surface is built here, from the source this stage ships — never taken from git (SYS-71, ADR-014 amended 2026-11-10)
+    web = dev / "apps" / "casefile" / "web"
+    run(["npm", "ci", "--no-audit", "--no-fund", "--silent"], user=s.runner_user, cwd=str(web), timeout=900)
+    run(["npm", "run", "build", "--silent"], user=s.runner_user, cwd=str(web), timeout=600)
+    if not (web / "dist" / "index.html").is_file():
+        raise OpsError(f"{env.name}: the surface did not build — {web / 'dist'} has no index.html")
+    log.info("%s: surface built from %s", env.name, ref)
     version = run([str(venv / "bin" / "python"), "-c", "import cockpit, casefile; print(cockpit.__version__, casefile.__version__)"], user=s.runner_user, quiet=True).stdout.strip()
     log.info("%s: cockpit + casefile %s installed", env.name, version)
     # the help must match the screen before the stage serves it: an anchor without a topic, or the other way round, stops here
