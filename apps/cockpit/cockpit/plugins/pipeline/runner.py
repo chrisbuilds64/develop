@@ -294,7 +294,10 @@ def prompt_for(run: dict, agent: str) -> str:
             f"one task. Work on the container `{run['container']}` and nothing else. Write review entries and "
             "your closing summary in English: review.md is read by people who do not read German. A review "
             "entry's For names one person from people.json, never two. When done, say in five lines what you "
-            "changed and what is open.\n\n")
+            "changed and what is open.\n\nWrite every review entry for a person reading it on a phone, in Markdown: one short "
+            "sentence first that says what happened or what you need, then a blank line; details as a short list ('- '); "
+            "choices you hand back as a numbered list ('1. ', '2. '), each saying what happens if it is chosen; files, "
+            "commands and ids in backticks. No run ids, commit hashes or job numbers unless the person needs them to act.\n\n")
     line = f"/{run['skill']} {run['container'].split('/')[-1]}"
     if run.get("note"):
         line += f"\n\n{run['note']}"
