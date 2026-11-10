@@ -82,7 +82,8 @@
       "reminder_text": "Kannst du dir diesen Fall ansehen?",
       "undone": "Rückgängig: {action}",
       "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
-      "correction": "Korrektur: {title}"
+      "correction": "Korrektur: {title}",
+      "retry_title": "{skill} neu gestartet"
     },
     "files": {
       "task.md": "Auftrag",
@@ -106,6 +107,13 @@
       "answered": "eine Antwort",
       "decided:": "deine Entscheide",
       "primary": "das Hauptdokument"
+    },
+    "skills": {
+      "ask": "Frage",
+      "shipyard-build": "Umsetzung",
+      "shipyard-checks": "Prüfung",
+      "shipyard-release": "Release",
+      "shipyard-verify": "Nachweis"
     }
   },
   "en": {
@@ -190,7 +198,8 @@
       "reminder_text": "Could you take a look at this case?",
       "undone": "Undone: {action}",
       "undone_text": "Taken back before the next step started.",
-      "correction": "Correction: {title}"
+      "correction": "Correction: {title}",
+      "retry_title": "{skill} started again"
     },
     "files": {
       "task.md": "Task",
@@ -214,6 +223,13 @@
       "answered": "an answer",
       "decided:": "your decisions",
       "primary": "the primary document"
+    },
+    "skills": {
+      "ask": "Question",
+      "shipyard-build": "Build",
+      "shipyard-checks": "Checks",
+      "shipyard-release": "Release",
+      "shipyard-verify": "Verification"
     }
   }
 }

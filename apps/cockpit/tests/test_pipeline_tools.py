@@ -312,3 +312,42 @@ def test_the_intake_takes_artifacts_that_already_exist(tmp_path):
     assert "— with script.md, teleprompter.txt" in json.loads((c / "meta.json").read_text())["origin"]
     assert "not an artifact of a SP" in run(root, "idea_new.py", "--label", "SP", "--title", "Nope", "--by", "akhil", "--put", "script.md", "a.md", str(s)).stderr
     assert "does not fit" in run(root, "idea_new.py", "--label", "POD", "--title", "Nope", "--by", "akhil", "--put", "script.md", "a.txt", str(t)).stderr
+
+
+def test_a_running_helper_reports_its_steps_and_phase_as_it_goes(tmp_path):
+    """stream-json: every tool call lands in `<id>.progress` and in the transcript while the run is going; the phase is the
+    furthest the skill's policy names for what happened; the last `result` event is the answer, bill included."""
+    root = make(tmp_path)
+    (root / "run.schema.json").write_text((Path(__file__).resolve().parents[1] / "fixtures" / "run.schema.json").read_text())
+    policy = json.loads((Path(__file__).resolve().parents[1] / "fixtures" / "run-policy.json").read_text())
+    policy["skills"]["interpret"]["phases"] = [
+        {"key": "read", "words": {"en": "Reading"}, "on": ["Read", "Grep"]},
+        {"key": "change", "words": {"en": "Changing"}, "on": ["Edit", "Write"]},
+        {"key": "test", "words": {"en": "Testing"}, "on": ["Bash(*pytest*)"]},
+        {"key": "push", "words": {"en": "Pushing"}, "on": ["Bash(git push*)"]}]
+    (root / "run-policy.json").write_text(json.dumps(policy))
+    (root / "review.schema.json").write_text(json.dumps({"required": ["id"], "properties": {
+        "id": {}, "date": {}, "author": {}, "for": {}, "status": {"enum": ["info"]}, "stage": {}, "title": {}, "resolves": {}, "text": {}}}))
+    assert run(root, "run_request.py", "30-review-human/POD-01", "--skill", "interpret", "--by", "chris", "--role", "operator").returncode == 0
+    order = next((root / "_runs").glob("*.json"))
+    events = [
+        {"type": "system", "subtype": "init"},
+        {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read", "input": {"file_path": "/x/apps/web/Case.tsx"}}]}},
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "thinking"},
+                                                      {"type": "tool_use", "name": "Edit", "input": {"file_path": "/x/apps/web/look.css"}}]}},
+        {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {"command": "python -m pytest -q"}}]}},
+        {"type": "result", "result": "built; PR opened", "session_id": "s-9", "total_cost_usd": 0.5, "num_turns": 4, "duration_ms": 61000}]
+    stub = tmp_path / "claude"
+    stub.write_text("#!/bin/sh\ncat <<'EOF'\n" + "\n".join(json.dumps(e) for e in events) + "\nEOF\n")
+    stub.chmod(0o755)
+    r = subprocess.run([sys.executable, str(TOOLS / "runner.py"), "--workspace", str(tmp_path), "--data", str(root), "--claude", str(stub), "--once"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    data = json.loads(order.read_text())
+    assert data["status"] == "done" and data["result"] == "built; PR opened" and data["duration_s"] == 61.0
+    prog = json.loads((root / "_runs" / (order.stem + ".progress")).read_text())
+    assert prog["steps"] == 3 and prog["phase"] == 3 and prog["status"] == "done"            # done fills the last phase
+    assert prog["recent"] == ["Read web/Case.tsx", "Edit web/look.css", "Bash python -m pytest -q"]
+    log = (root / "_runs" / (order.stem + ".log")).read_text()
+    assert "· Edit web/look.css" in log and "--output-format stream-json --verbose" in log
+    assert not list((root / "_runs").glob("*.progress.json"))                                # never read as an order
