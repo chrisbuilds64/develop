@@ -255,3 +255,28 @@ def test_a_failed_run_is_run_again_by_whoever_may_order_its_skill(tmp_path):
     assert not twice.ok and "did not fail" in twice.reason                  # the new run is queued: nothing to run again
     case = reading.load(store, config, CID)
     assert any("started again" in e.title for e in case.entries)
+
+
+def test_a_running_build_shows_its_phases_what_it_does_now_and_how_long_it_usually_takes(tmp_path):
+    """REQ-001 W-08: the case knows the helper's phases from the skill's policy, the one reached and the tool call going on
+    (the runner's `<id>.progress`), and the median of this skill's finished runs as the expected duration."""
+    from casefile.api import views
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    for i, secs in enumerate((300, 420, 360)):                               # three earlier builds, done
+        (root / "_runs" / f"20261101-10000{i}_shipyard-build_SW-2026-000-old.json").write_text(json.dumps(
+            {"id": f"20261101-10000{i}_shipyard-build_SW-2026-000-old", "skill": "shipyard-build", "container": "90-closed/SW-2026-000-old",
+             "requested_by": "chris", "status": "done", "created": "2026-11-01T10:00:00+01:00", "duration_s": secs}))
+    f = root / "_runs" / f"{r.run}.json"
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "running", "started": "2026-11-10T19:47:34+01:00"}))
+    (root / "_runs" / f"{r.run}.progress").write_text(json.dumps(
+        {"steps": 9, "phase": 2, "now": "Bash python -m pytest -q", "recent": ["Edit web/look.css", "Bash python -m pytest -q"]}))
+    h = views.helper(config, reading.load(store, config, CID), "de", store)
+    assert [p.word for p in h.phases] == ["Lesen", "Ändern", "Testen", "Hochladen", "Übergabe"]
+    assert (h.status, h.phase, h.steps, h.now) == ("running", 2, 9, "Bash python -m pytest -q")
+    assert h.expected_s == 360
+    assert h.skill == "shipyard-build" and h.started.startswith("2026-11-10")
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done"}))
+    assert views.helper(config, reading.load(store, config, CID), "de", store) is None    # nothing at work, nothing shown

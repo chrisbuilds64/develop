@@ -3,6 +3,7 @@
 // button for it — the AI's reading of a mail with its facts and suggestion, or the plain sentence of the move — and, when
 // the case lies elsewhere or is closed, remind, take back or move back; what is on the desk; the keys. Beside it the
 // conversation, the documents and the details. Every action is a step of the core; Undo follows the core's undo_step.
+import { RunProgress } from "../components/RunProgress";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, BASE, sample as putSample, stepId, type CaseView, type ConfigView, type MeOut, type Turn, type Entry } from "../api";
@@ -282,7 +283,8 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                 <><p>{cap(main.reason)}</p>
                   <div className="pacts"><button type="button" className="primary" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .mbtn")?.click(), 0); }}>{w.answer}</button></div></>
               ) : (
-                <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
+                main?.actor === "claude" && v.helper ? <RunProgress h={v.helper} agent={v.agent} w={w} />
+                  : <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
               )}
             </div>
           )}

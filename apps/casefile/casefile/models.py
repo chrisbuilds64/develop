@@ -138,6 +138,7 @@ class Run(BaseModel):
     file: str | None = None                      # translate: the original it reads
     out: str | None = None                       # translate: the file it writes beside the original
     background: bool = False                     # a helper that works beside the people (a follow-up while someone answers): never anybody's move
+    progress: dict | None = None                 # while it runs: what the helper is doing (the runner's `<id>.progress`: steps, phase, now, recent)
 
 
 class Case(BaseModel):
