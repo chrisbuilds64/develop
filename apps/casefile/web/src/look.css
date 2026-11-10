@@ -52,6 +52,9 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
   font-weight: 600; display: grid; place-items: center; padding: 0 5px; }
 .sq { width: 8px; height: 8px; border-radius: var(--r-2); flex: none; background: var(--chart-quiet); }
 .rail-cap { margin: 16px 10px 6px; font-size: var(--fs-11); color: var(--muted); font-weight: 500; }
+.rail-cap-toggle { display: flex; align-items: center; justify-content: space-between; width: calc(100% - 20px); border: none; background: none; padding: 0; cursor: pointer; font-family: inherit; text-align: left; }
+.rail-cap-toggle:hover { color: var(--ink); }
+.rail-cap-toggle i { font-style: normal; }
 .rail-drop { cursor: pointer; }
 .rail-new { display: flex; flex-direction: column; gap: 6px; padding: 6px 4px; }
 .rail-new input, .rail-new select { font: inherit; font-size: var(--fs-13); border: 1px solid var(--tint-12); border-radius: var(--r-s); padding: 6px 9px; background: var(--surface); color: var(--ink); }

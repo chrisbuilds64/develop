@@ -22,6 +22,20 @@ const initials = (name?: string | null) => {
   return (parts[0].length <= 3 ? parts[0][0] : parts[0].slice(0, 2)).toUpperCase();
 };
 
+type Place = NonNullable<MeOut["places"]>[number];
+
+/** The rail's places by workspace (ADR-032), in the order they come; one group without a name when none carries one. */
+function groupsOf(places: Place[]): { key: string; label: string; places: Place[] }[] {
+  const out: { key: string; label: string; places: Place[] }[] = [];
+  for (const p of places) {
+    const key = p.workspace ?? "";
+    let g = out.find((x) => x.key === key);
+    if (!g) { g = { key, label: p.workspace_label || key, places: [] }; out.push(g); }
+    g.places.push(p);
+  }
+  return out;
+}
+
 export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, onPerson, onLang, w, theme, onTheme, open, onClose }: Props) {
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const counts = new Map((groups.data ?? []).map((g) => [g.key, g.cases.length]));
@@ -56,6 +70,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const humans = config.people.filter((p) => p.kind === "human");
   const places = me.places ?? [];
+  const [opened, setOpened] = useState<string[]>([]);      // workspaces the person opened in the rail; the current one is always open
   const inWorkspace = route.name === "group" || route.name === "case" || route.name === "board" || route.name === "list";
   const roleWord = (r: string) => ((config.words as { roles?: Record<string, string> }).roles?.[r] ?? r);
   const resettable = !!(config.theme as { resettable?: boolean }).resettable;
@@ -82,15 +97,31 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
         <HomeIcon /><span className="tx">{w.home}</span>{everywhere > 0 ? <span className="badge">{everywhere}</span> : null}
       </button>
 
-      <div className="rail-cap" data-help="cf.workspaces">{w.workspaces}</div>
-      {places.map((p) => (
-        <button key={p.id} type="button" className={`nav${p.current && inWorkspace ? " on" : ""}`} data-help-skip="explained by cf.workspaces"
-                onClick={() => (p.current ? goClose("/group/you") : p.url ? window.location.assign(p.url) : onFresh(p.id))}>
-          <span className="sq" style={{ background: p.color || undefined }} />
-          <span className="tx">{p.name}</span>
-          {(p.current ? mine : p.count) > 0 ? <span className="n">{p.current ? mine : p.count}</span> : null}
-        </button>
-      ))}
+      <div className="rail-groups" data-help="cf.workspaces">
+      {groupsOf(places).map((g) => {
+        const shut = g.key !== "" && !g.places.some((p) => p.current) && !opened.includes(g.key);
+        return (
+          <div key={g.key || "all"} className="rail-group">
+            {g.key === "" ? (
+              <div className="rail-cap" data-help-skip="explained by cf.workspaces">{w.workspaces}</div>
+            ) : (
+              <button type="button" className="rail-cap rail-cap-toggle" aria-expanded={!shut} data-help-skip="explained by cf.workspaces"
+                      onClick={() => setOpened(shut ? [...opened, g.key] : opened.filter((k) => k !== g.key))}>
+                {g.label}<i aria-hidden="true">{shut ? "▸" : "▾"}</i>
+              </button>
+            )}
+            {!shut && g.places.map((p) => (
+              <button key={p.id} type="button" className={`nav${p.current && inWorkspace ? " on" : ""}`} data-help-skip="explained by cf.workspaces"
+                      onClick={() => (p.current ? goClose("/group/you") : p.url ? window.location.assign(p.url) : onFresh(p.id))}>
+                <span className="sq" style={{ background: p.color || undefined }} />
+                <span className="tx">{p.name}</span>
+                {(p.current ? mine : p.count) > 0 ? <span className="n">{p.current ? mine : p.count}</span> : null}
+              </button>
+            ))}
+          </div>
+        );
+      })}
+      </div>
       {me.shell && <a className="nav quiet" data-help="cf.new-workspace" href={`${me.shell.replace(/\/?$/, "/")}workspaces/new`}><span className="tx">{w.newWorkspace}</span></a>}
       {me.shell && <a className="nav quiet" data-help="cf.back" href={me.shell}><span className="tx">{w.allWorkspaces}</span></a>}
       {mailDrop ? (

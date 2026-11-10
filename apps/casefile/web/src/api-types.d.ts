@@ -2060,6 +2060,16 @@ export interface components {
              * @default 0
              */
             count: number;
+            /**
+             * Workspace
+             * @default
+             */
+            workspace: string;
+            /**
+             * Workspace Label
+             * @default
+             */
+            workspace_label: string;
         };
         /** RejectIn */
         RejectIn: {

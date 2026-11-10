@@ -4102,6 +4102,16 @@
             "type": "integer",
             "title": "Count",
             "default": 0
+          },
+          "workspace": {
+            "type": "string",
+            "title": "Workspace",
+            "default": ""
+          },
+          "workspace_label": {
+            "type": "string",
+            "title": "Workspace Label",
+            "default": ""
           }
         },
         "type": "object",

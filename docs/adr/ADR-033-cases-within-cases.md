@@ -1,6 +1,6 @@
 # ADR-033: Cases Within Cases
 
-**Status:** Proposed (2026-11-10). Requirements: REQ-006.
+**Status:** Accepted (2026-11-10, product owner). Requirements: REQ-006.
 **Date:** 2026-11-10
 
 ---

@@ -483,5 +483,12 @@
   "ws.showcase": "Vorführung",
   "ws.showcase_hint": "Musterdaten mit Abläufen. Jederzeit zurücksetzbar, nichts davon ist echt.",
   "app.tools": "Werkzeuge",
-  "home.casefile_hint": "Deine Fälle, in allen Workspaces."
+  "home.casefile_hint": "Deine Fälle, in allen Workspaces.",
+  "ws.space": "Workspace",
+  "ws.space_new": "Neuer Workspace",
+  "ws.space_create": "Workspace anlegen",
+  "ws.space_open": "offen für alle Angemeldeten (wie die Muster)",
+  "ws.space_hint": "Ein Workspace bündelt Datenpunkte, Anwendungen und Mitglieder. Du bist sein erstes Mitglied; Anwendungen nimmst du danach auf.",
+  "ws.instance_new": "Anwendung in einen Workspace aufnehmen",
+  "ws.instance_hint": "Dieselbe Anwendung kann in mehreren Workspaces laufen, jede auf eigenen Daten."
 }

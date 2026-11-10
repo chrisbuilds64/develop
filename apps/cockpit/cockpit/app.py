@@ -268,14 +268,32 @@ def create_app(config: Config) -> FastAPI:
         return go("/account?ok=" + quote(msg))
 
     @app.get("/workspaces/new", response_class=HTMLResponse)
-    def workspace_new(request: Request, err: str | None = None):
+    def workspace_new(request: Request, err: str | None = None, space: str | None = None):
         if (r := gate(request)):
             return r
         c = ctx(request)
         if not c["user"] or workspaces is None:
             return go("/")
+        may_share = c["role"].may_act("*") or c["role"].may_act("workspaces.shared")
         return templates.TemplateResponse(request, "workspace_new.html", {**c, "err": err, "sources": workspaces.for_user(c["user"].name),
-                                                                           "may_share": c["role"].may_act("*") or c["role"].may_act("workspaces.shared")})
+                                                                           "may_share": may_share, "v2": workspaces.doc is not None, "picked": space or "",
+                                                                           "spaces": workspaces.spaces_for(c["user"].name, any_=may_share)})
+
+    @app.post("/workspaces/space", response_class=HTMLResponse)
+    async def space_create(request: Request):
+        """A new workspace without an application (ADR-032); its creator is its first member."""
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or workspaces is None or not csrf_ok(request, form):
+            return go("/workspaces/new?err=" + quote("the form token did not match — reload the page and try again"))
+        open_ = form.get("open") == "1" and (c["role"].may_act("*") or c["role"].may_act("workspaces.shared"))
+        try:
+            sp = workspaces.add_space(form.get("id", "").strip().lower(), form.get("label", "").strip(), [c["user"].name], open_)
+        except WorkspaceError as exc:
+            return go("/workspaces/new?err=" + quote(str(exc)))
+        return go("/workspaces/new?space=" + quote(sp["id"]))
 
     @app.post("/workspaces/new", response_class=HTMLResponse)
     async def workspace_create(request: Request):
@@ -289,7 +307,8 @@ def create_app(config: Config) -> FastAPI:
         w = None
         try:
             w = workspaces.create(form.get("id", "").strip().lower(), form.get("application", ""), None if shared else c["user"].name,
-                                  label=form.get("label", "").strip(), source=form.get("source") or None, shared=shared)
+                                  label=form.get("label", "").strip(), source=form.get("source") or None, shared=shared,
+                                  workspace=form.get("workspace", "") if workspaces.doc is not None else "")
             mount_one(app, workspaces, w, identity, users.secret_text(), web_dist, config.environment, (base or "") + "/")
         except WorkspaceError as exc:
             return go("/workspaces/new?err=" + quote(str(exc)))

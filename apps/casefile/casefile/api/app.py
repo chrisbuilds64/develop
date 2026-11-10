@@ -177,6 +177,8 @@ class PlaceOut(BaseModel):
     current: bool = False
     url: str = ""                                           # inside a shell: where this workspace lives; empty for this one and for demo worlds
     count: int = 0                                          # cases waiting for this person there (the demo knows it for every world)
+    workspace: str = ""                                     # inside a shell (ADR-032): the workspace this application instance runs in
+    workspace_label: str = ""
 
 
 class MeOut(BaseModel):
@@ -858,9 +860,13 @@ def create_app(settings: Settings) -> FastAPI:
         if settings.peers is not None:
             # inside the cockpit: the person's other workspaces sit beside this one in the rail, in the cockpit's order
             peers = settings.peers(request)
-            mine = places[0].model_copy(update={"id": next((str(p["id"]) for p in peers if p.get("current")), places[0].id)})
+            cur = next((p for p in peers if p.get("current")), {})
+            mine = places[0].model_copy(update={"id": str(cur.get("id") or places[0].id), "workspace": str(cur.get("workspace") or ""),
+                                                "workspace_label": str(cur.get("workspace_label") or "")})
             places = [mine if p.get("current") else PlaceOut(id=str(p["id"]), name=str(p.get("name") or p["id"]), color=str(p.get("color") or ""),
-                                                             icon=str(p.get("icon") or ""), url=str(p.get("url") or "")) for p in peers]
+                                                             icon=str(p.get("icon") or ""), url=str(p.get("url") or ""),
+                                                             workspace=str(p.get("workspace") or ""), workspace_label=str(p.get("workspace_label") or ""))
+                      for p in peers]
             if not any(p.current for p in places):
                 places.insert(0, mine)
         outside = settings.identity(request) if (settings.identity is not None and request is not None) else None

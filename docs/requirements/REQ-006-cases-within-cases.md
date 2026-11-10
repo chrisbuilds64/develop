@@ -1,6 +1,6 @@
 # REQ-006 — Cases within cases
 
-**Status:** proposed 2026-11-10. Decision record: ADR-033.
+**Status:** accepted 2026-11-10 (product owner). Decision record: ADR-033.
 
 **Scope:** the core relation `partOf` for every application, its step, its view and its gate condition; the worklist
 as the first application to use it. Not in scope: the release case of ADR-030 (it builds on this).

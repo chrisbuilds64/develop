@@ -483,5 +483,12 @@
   "ws.showcase": "Showcase",
   "ws.showcase_hint": "Sample data with guided flows. Reset any time; none of it is real.",
   "app.tools": "Tools",
-  "home.casefile_hint": "Your cases, in every workspace."
+  "home.casefile_hint": "Your cases, in every workspace.",
+  "ws.space": "Workspace",
+  "ws.space_new": "New workspace",
+  "ws.space_create": "Create workspace",
+  "ws.space_open": "open to everyone signed in (like the samples)",
+  "ws.space_hint": "A workspace holds data points, applications and members. You are its first member; applications are added after.",
+  "ws.instance_new": "Add an application to a workspace",
+  "ws.instance_hint": "The same application can run in several workspaces, each on data of its own."
 }
