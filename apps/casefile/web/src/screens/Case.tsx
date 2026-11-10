@@ -28,21 +28,24 @@ export function docsOf(v: CaseView): Doc[] {
 type Reading = { kind?: string; rule?: string; urgency?: string; summary?: string; fields?: Record<string, string>; labels?: Record<string, string>; reasons?: string[] };
 type Done = { case?: string; title?: string; url?: string; target_label?: string };
 
+// Every station has a column of its own, so no two words touch at any width (SW-2026-002): the columns share the line
+// equally, except that the current station's column never gets narrower than its word; a word that does not fit its
+// column is cut with an ellipsis and keeps the full word in its title. Each column draws its own piece of the track, so
+// the track meets the dots however wide the columns end up.
 function Stations({ stations, caseId }: { stations: { key: string; word: string; state: string }[]; caseId: string }) {
   const cur = Math.max(0, stations.findIndex((s) => s.state === "current"));
-  const n = Math.max(1, stations.length - 1);
   const prev = useRef<{ id: string; cur: number } | null>(null);
   useEffect(() => {
     const p = prev.current;
     if (p && p.id === caseId && cur > p.cur) for (let i = 0; i < cur - p.cur; i++) tick(0.12 + i * 0.11);
     prev.current = { id: caseId, cur };
   }, [cur, caseId]);
+  const columns = stations.map((_, i) => (i === cur ? "minmax(max-content, 1fr)" : "minmax(0, 1fr)")).join(" ");
   return (
-    <div className="sline" role="img" aria-label={stations[cur]?.word} data-help="cf.stations">
-      <div className="strack"><i style={{ width: `${(cur / n) * 100}%` }} /></div>
-      <div className="sst">
-        {stations.map((s, i) => (
-          <span key={s.key} className={s.state === "done" ? "past" : s.state === "current" ? "now" : ""} style={{ left: `${(i / n) * 100}%` }}><b /><em>{s.word}</em></span>
+    <div className="sline" role="img" aria-label={`${stations[cur]?.word ?? ""} · ${stations.map((s) => s.word).join(", ")}`} data-help="cf.stations">
+      <div className="sst" style={{ gridTemplateColumns: columns }}>
+        {stations.map((s) => (
+          <span key={s.key} title={s.word} className={s.state === "done" ? "past" : s.state === "current" ? "now" : ""}><b /><em>{s.word}</em></span>
         ))}
       </div>
     </div>

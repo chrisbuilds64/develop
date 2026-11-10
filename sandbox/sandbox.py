@@ -46,6 +46,10 @@ SPACES = {
     "gutachtenakte-muster": ("egutachten", "egutachten", "Gutachtenakte · Muster"),
     "pressroom-muster": ("pressroom", "pressroom", "PressRoom · Muster"),
 }
+# mounted for the checks only, not offered in `up`: a world no demo flow plays, kept for a walk
+CHECK_SPACES = {
+    "shipyard-muster": ("shipyard", "shipyard", "Shipyard · Muster"),     # nine stations, the longest station line
+}
 
 
 def sh(cmd: list[str], **kw) -> None:
@@ -190,6 +194,7 @@ def up() -> None:
 # surface behaviour no demo flow presses, walked on its own after the flows: id → script in web/walks, workspace
 WALKS = [
     ("note-editor", "walks/note-editor-shot.mjs", "posteingang-muster"),   # REQ-001 S-09
+    ("station-line", "walks/station-line-shot.mjs", "shipyard-muster"),    # REQ-001 S-08, SW-2026-002
 ]
 
 
@@ -209,12 +214,13 @@ def stage_app(trees: Path):
     import casefile
     pkg = Path(casefile.__file__).resolve().parent
     shutil.rmtree(trees, ignore_errors=True)
-    for ws, (world, _, _) in SPACES.items():
+    spaces = {**SPACES, **CHECK_SPACES}
+    for ws, (world, _, _) in spaces.items():
         (trees / ws).mkdir(parents=True)
         copy_world(world_dir(world), trees / ws)
     connect(lambda ws: trees / ws)
     shell = Starlette()
-    for ws, (world, conf, _) in SPACES.items():
+    for ws, (world, conf, _) in spaces.items():
         shell.mount(f"/w/{ws}", create_app(Settings(
             root=trees / ws, config_dir=CFG / conf, label=ws, open_identity=True, secret="sandbox", stage="check", shell="/",
             web_dist=WEB / "dist", demo=True, template=world_dir(world), samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies")))
