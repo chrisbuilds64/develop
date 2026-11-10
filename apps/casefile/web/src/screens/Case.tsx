@@ -3,6 +3,7 @@
 // button for it — the AI's reading of a mail with its facts and suggestion, or the plain sentence of the move — and, when
 // the case lies elsewhere or is closed, remind, take back or move back; what is on the desk; the keys. Beside it the
 // conversation, the documents and the details. Every action is a step of the core; Undo follows the core's undo_step.
+import { ProtocolCard, type ProtocolEntry } from "../components/Protocol";
 import { RunProgress } from "../components/RunProgress";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -172,6 +173,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     const slot = v.slots.find((s) => s.file === b);
     if (slot) return slot.word;
     if (b.startsWith("shape:")) { const want = b.slice(6); const first = v.slots.find((s) => !s.present && s.shape.startsWith(want)); return first ? first.word : w.shape(want); }
+    if (b.startsWith("protocol:")) { const pr = ((v.protocols ?? []) as unknown as ProtocolEntry[]).find((x) => x.template === b.slice(9)); return w.pcBlocked(pr?.title ?? b.slice(9)); }
     return ((config.words as { files?: Record<string, string> }).files?.[b]) ?? b;
   };
   const byHelper = (s: { by: string; by_word: string }) => s.by === "claude" || (!!s.by_word && s.by_word === v.agent);
@@ -308,6 +310,10 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
               <span className="hint">{w.againHint}</span>
             </div>
           )}
+
+          {((v.protocols ?? []) as unknown as ProtocolEntry[]).filter((p) => p.here).map((p) => (
+            <ProtocolCard key={p.template} p={p} caseId={id} lang={config.lang} w={w} onChanged={() => { qc.invalidateQueries({ queryKey: ["case", id] }); }} />
+          ))}
 
           <div className="c-desk" data-help="cf.desk">
             <div className="deskh">{w.onDesk}</div>

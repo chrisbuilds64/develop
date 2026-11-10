@@ -2800,6 +2800,14 @@
                 "type": "null"
               }
             ]
+          },
+          "protocols": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Protocols"
           }
         },
         "type": "object",

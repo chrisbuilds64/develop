@@ -1902,14 +1902,17 @@ def create_app(settings: Settings) -> FastAPI:
             return _refuse(exc)
         st = gate.state(doc)
         p = c.config.person(who)
+        de = (c.lang or c.config.lang) == "de"
+        title = ((doc.get("title") or {}).get(c.lang) or (doc.get("title") or {}).get("en") or tid)
         with c.store.lock(case_id):
             stage = c.store.find(case_id)
             failed = ", ".join(st["failed_must"])
             stepping._append_entry(c.store, c.config, case_id, stage, {
                 "author": p.name if p else who, "status": "info", "step": body.step_id,
-                "title": (c.config.word("texts", "protocol_sealed", c.lang, "Protocol sealed: {tid}").format(tid=tid))[:120],
-                "text": (f"Gate open: every must-item passed." if st["gate_open"] else f"Gate closed — failed must-items: {failed}.")
-                        + (f" Should-items failed: {', '.join(st['failed_should'])}." if st["failed_should"] else "")})
+                "title": (c.config.word("texts", "protocol_sealed", c.lang, "Fragebogen versiegelt: {title}" if de else "Protocol sealed: {title}").format(title=title))[:120],
+                "text": ((("Tor offen: jeder Muss-Punkt bestanden." if de else "Gate open: every must-item passed.") if st["gate_open"]
+                         else (f"Tor zu — Muss-Punkte nicht bestanden: {failed}." if de else f"Gate closed — failed must-items: {failed}."))
+                         + ((f" Soll-Punkte nicht bestanden: {', '.join(st['failed_should'])}." if de else f" Should-items failed: {', '.join(st['failed_should'])}.") if st["failed_should"] else ""))})
         return {"ok": True, "state": st}
 
     @app.get("/api/cases/{case_id}/outcome", response_model=OutcomeOut)

@@ -1356,6 +1356,10 @@ export interface components {
             released: boolean;
             helper?: components["schemas"]["HelperView"] | null;
             again?: components["schemas"]["AgainView"] | null;
+            /** Protocols */
+            protocols?: {
+                [key: string]: unknown;
+            }[];
         };
         /** ChapterIn */
         ChapterIn: {

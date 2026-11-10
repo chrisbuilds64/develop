@@ -857,6 +857,18 @@
         "de": "Erscheint, wenn ein Helfer in dieser Stufe fertig ist und der Fall trotzdem noch hier steht, etwa weil er dir eine Entscheidung zurückgegeben hat. Deine Notiz geht als Anweisung mit; der Helfer arbeitet dann mit demselben Auftrag weiter. Zählt nicht als offener Zug.",
         "en": "Shows when a helper finished in this stage and the case still stands here, for instance because it handed a decision back to you. Your note goes with it as the instruction; the helper goes on with the same task. Not counted as an open move."
       }
+    },
+    {
+      "key": "cf.protocol",
+      "since": "0.23.0",
+      "title": {
+        "de": "Fragebogen am Tor",
+        "en": "Gate protocol"
+      },
+      "text": {
+        "de": "Was vor diesem Tor geprüft wird, Punkt für Punkt: Muss oder Soll, das Kriterium, woher der Punkt stammt (Vorlage, Definition of Done, Akzeptanzkriterium) und wer ihn beantwortet. Nichts ist vorausgefüllt; Nein braucht, was du gesehen hast, „nicht zutreffend“ einen Grund. Vor dem ersten Urteil kannst du Punkte streichen. Ist nichts mehr offen, versiegelst du ihn — das Tor öffnet, wenn jeder Muss-Punkt bestanden ist; sonst bleibt der Weg zurück offen.",
+        "en": "What is checked before this gate, item by item: must or should, the criterion, where the item came from (template, Definition of Done, acceptance criterion) and who answers it. Nothing is preset; No needs what you saw, not applicable a reason. Before the first verdict you can strike items. When nothing is open you seal it — the gate opens when every must-item passed; otherwise the way back stays open."
+      }
     }
   ]
 }
