@@ -9,5 +9,6 @@
   ],
   "maturity": "running",
   "icon": "gate",
-  "accent": "#e0a52a"
+  "accent": "#e0a52a",
+  "retired": "the standalone Gatehouse it read is archived; Gatehouse runs as a Casefile application (ADR-021)"
 }

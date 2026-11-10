@@ -142,7 +142,7 @@ class Workspaces:
         return p if p.is_absolute() else (self.base / p)
 
     def load(self) -> None:
-        self.applications, self.items, self.defaults, self.doc = {}, [], {}, None
+        self.applications, self.items, self.defaults, self.doc, self.own = {}, [], {}, None, []
         if not self.path.exists():
             return
         try:
@@ -152,6 +152,8 @@ class Workspaces:
         for aid, a in (raw.get("applications") or {}).items():
             if not NAME.match(aid):
                 raise WorkspaceError(f"application id '{aid}' — lower-case letters, digits, - and _")
+            if a.get("kind") == "plugin":             # an own application: its code is a cockpit plugin (ADR-032, 2026-11-10)
+                continue
             if not a.get("config_dir"):
                 raise WorkspaceError(f"application '{aid}': config_dir is missing")
             config_dir = self._abs(a["config_dir"])
@@ -164,6 +166,7 @@ class Workspaces:
             self.doc = raw
             try:
                 entries = registry.instances(raw)
+                self.own = registry.own_instances(raw)
             except registry.RegistryError as exc:
                 raise WorkspaceError(str(exc)) from exc
         else:
@@ -228,9 +231,10 @@ class Workspaces:
         out = []
         for sp in (self.doc or {}).get("workspaces") or []:
             items = [w for w in self.items if w.workspace == sp.get("id") and w.visible_to(user)]
-            if items or (user and user in (sp.get("members") or [])):
+            own = [o for o in self.own if o["workspace"] == sp.get("id") and self.own_visible(o, user)]
+            if items or own or (user and user in (sp.get("members") or [])):
                 out.append({"id": str(sp["id"]), "label": str(sp.get("label") or sp["id"]), "open": bool(sp.get("open")),
-                            "members": list(sp.get("members") or []), "items": items})
+                            "members": list(sp.get("members") or []), "items": items, "own": own})
         return out
 
     def _space(self, sid: str) -> dict:
@@ -250,10 +254,8 @@ class Workspaces:
         if src is dst:
             return
         inst = next(i for i in src["instances"] if i.get("id") == iid)
-        bind = inst.get("bind") or {}
-        names = {c["point"] for c in registry._binding(bind.get("cases"))} | ({bind["home"]} if bind.get("home") else set())
-        others = {c["point"] for i in src["instances"] if i is not inst for c in registry._binding((i.get("bind") or {}).get("cases"))} | \
-                 {(i.get("bind") or {}).get("home") for i in src["instances"] if i is not inst}
+        names = registry.bound_points(inst)
+        others = {n for i in src["instances"] if i is not inst for n in registry.bound_points(i)}
         if names & others:
             raise WorkspaceError(f"'{iid}' shares data points with other instances in '{src['id']}': {', '.join(sorted(names & others))}")
         if names & {p.get("name") for p in dst.get("data_points") or []}:
@@ -284,14 +286,12 @@ class Workspaces:
         """Format 2 back: the document as read, with instances that left removed and new ones added — each new one on a
         data point of its own, in its workspace (or the first one the owner belongs to). Nothing else is rewritten."""
         doc = copy.deepcopy(self.doc)
-        ids = {w.id for w in self.items}
+        ids = {w.id for w in self.items} | {o["id"] for o in self.own}
         for ws in doc.get("workspaces") or []:
             gone = [i for i in ws.get("instances") or [] if i.get("id") not in ids]
             ws["instances"] = [i for i in ws.get("instances") or [] if i.get("id") in ids]
-            used = {c["point"] for i in ws["instances"] for c in registry._binding((i.get("bind") or {}).get("cases"))} | \
-                   {(i.get("bind") or {}).get("home") for i in ws["instances"]}
-            dropped = {c["point"] for i in gone for c in registry._binding((i.get("bind") or {}).get("cases"))} | \
-                      {(i.get("bind") or {}).get("home") for i in gone}
+            used = {n for i in ws["instances"] for n in registry.bound_points(i)}
+            dropped = {n for i in gone for n in registry.bound_points(i)}
             ws["data_points"] = [p for p in ws.get("data_points") or [] if p.get("name") in used or p.get("name") not in dropped]
         have = {i.get("id") for ws in doc.get("workspaces") or [] for i in ws.get("instances") or []}
         if not doc.get("workspaces"):
@@ -369,6 +369,14 @@ class Workspaces:
     def may_open(self, user: str | None, wid: str) -> bool:
         w = self.get(wid)
         return w is not None and w.visible_to(user)
+
+    @staticmethod
+    def own_visible(o: dict, user: str | None) -> bool:
+        return bool(o.get("shared")) or (user is not None and user in (o.get("members") or []))
+
+    def own_instance(self, iid: str) -> dict | None:
+        """An instance of an own application (a plugin) by its id, or None."""
+        return next((o for o in self.own if o["id"] == iid), None)
 
     # ---------------------------------------------------------------- creating
     def create(self, wid: str, application: str, owner: str | None, label: str = "", source: str | None = None,
@@ -500,6 +508,12 @@ def peers_of(workspaces: "Workspaces", w: Workspace, identity, shell: str | None
             out.append({"id": o.id, "name": o.label, "url": f"{base}/w/{o.id}/", "color": mark.get("color") or "",
                         "icon": mark.get("icon") or "", "current": o.id == w.id,
                         "workspace": o.workspace, "workspace_label": o.workspace_label})
+        for o in workspaces.own:                 # own applications (plugins) of a workspace sit in the same group, opened in the cockpit
+            if workspaces.own_visible(o, user):
+                out.append({"id": o["id"], "name": o["label"], "url": f"{base}/m/{o['id']}", "color": "", "icon": "",
+                            "current": False, "workspace": o["workspace"], "workspace_label": o["workspace_label"]})
+        order = [s["id"] for s in workspaces.spaces()]
+        out.sort(key=lambda p: order.index(p["workspace"]) if p["workspace"] in order else len(order))
         return out
     return peers
 

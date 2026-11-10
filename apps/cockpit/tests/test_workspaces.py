@@ -215,3 +215,40 @@ def test_the_cockpit_shows_the_workspaces_above_the_tools_and_lets_them_be_manag
     assert r.status_code == 303
     moved = Workspaces(world / "workspaces.json", world).get("shared")
     assert moved.workspace == "operations" and not moved.shared                    # alex administers the demo; closed now
+
+
+def test_an_own_application_runs_as_an_instance_in_a_workspace_for_its_members_only(world):
+    """ADR-032 (amended 2026-11-10): a plugin is an own application; its instance binds the plugin's needs to data points
+    of its workspace, opens under /m/<id> for the workspace's members, and sits in that workspace — not under Tools."""
+    from cockpit import workspace_registry as registry
+    doc1 = json.loads((world / "workspaces.json").read_text())
+    plan = {"connectors": {"server": {"kind": "directory", "label": "Server", "root": ""}},
+            "workspaces": [{"id": "ops", "label": "Operations", "open": False, "members": ["alex"], "instances": ["shared"]}]}
+    doc = registry.migrate(doc1, plan)
+    doc["applications"]["audit-log"] = {"label": "Audits", "kind": "plugin", "plugin": "audits"}
+    ops = doc["workspaces"][0]
+    ops["data_points"].append({"name": "audits", "connector": "server", "place": "audits", "mode": "read"})
+    ops["instances"].append({"id": "ops-audits", "application": "audit-log", "label": "Audits", "bind": {"audits": "audits"}})
+    (world / "workspaces.json").write_text(json.dumps(doc))
+    client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
+    sign_in(client, "alex")
+    assert client.get("/m/ops-audits").status_code == 200
+    home = client.get("/").text
+    assert 'href="/m/ops-audits"' not in home.split('data-key="tools"')[1].split("</details>")[0]   # not under Tools
+    places = {p["id"]: p for p in client.get("/w/shared/api/me").json()["places"]}
+    assert places["ops-audits"]["url"].endswith("/m/ops-audits") and places["ops-audits"]["workspace"] == "ops"
+    sign_in(client, "sam")                                               # not a member of ops
+    assert client.get("/m/ops-audits").status_code in (302, 303)
+
+
+def test_a_retired_plugin_cannot_be_placed_in_a_workspace(world):
+    from cockpit import workspace_registry as registry
+    from cockpit.config import ConfigError, add_own_instances
+    doc1 = json.loads((world / "workspaces.json").read_text())
+    doc = registry.migrate(doc1, {"connectors": {"server": {"kind": "directory", "label": "S", "root": ""}},
+                                  "workspaces": [{"id": "ops", "members": ["alex"], "instances": ["shared"]}]})
+    doc["applications"]["old"] = {"label": "Work list", "kind": "plugin", "plugin": "worklist"}
+    doc["workspaces"][0]["data_points"].append({"name": "wl", "connector": "server", "place": "worklist"})
+    doc["workspaces"][0]["instances"].append({"id": "old-list", "application": "old", "bind": {"worklist": "wl", "tools": "wl"}})
+    with pytest.raises(ConfigError, match="retired"):
+        add_own_instances(load(world / "cockpit.toml"), registry.own_instances(doc))

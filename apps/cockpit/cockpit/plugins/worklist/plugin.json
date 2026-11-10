@@ -103,5 +103,6 @@
     }
   ],
   "icon": "check",
-  "accent": "#2fa36b"
+  "accent": "#2fa36b",
+  "retired": "replaced by the worklist application (config/worklist) in a workspace, 2026-11-10"
 }

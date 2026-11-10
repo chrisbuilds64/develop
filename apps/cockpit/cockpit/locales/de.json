@@ -515,5 +515,7 @@
   "sp.waiting": "{n} für dich",
   "sp.everyone": "alle",
   "sp.done": "Gespeichert: {what}",
-  "sp.as_members": "wie die Mitglieder"
+  "sp.as_members": "wie die Mitglieder",
+  "sp.kind_own": "eigene Anwendung",
+  "setup.retired": "abgelöst"
 }

@@ -29,9 +29,9 @@
 <h2 class="section" style="margin:0 0 10px">{{ t('sp.title') }}</h2>
 <div class="ws-grid" data-help="shell.workspaces">
   {% for sp in spaces %}{% set lead = (sp['items']|selectattr('mode', 'equalto', 'live')|list + sp['items'])|first %}
-  <a class="ws-card sp-card" href="{{ ('/w/' ~ lead.id ~ '/') if lead else '/workspaces#ws-' ~ sp.id }}">
+  <a class="ws-card sp-card" href="{{ ('/w/' ~ lead.id ~ '/') if lead else (('/m/' ~ sp['own'][0].id) if sp['own'] else '/workspaces#ws-' ~ sp.id) }}">
     <span class="app-card-head"><span class="title">{{ sp.label }}</span></span>
-    <span class="meta"><span>{{ sp['items']|map(attribute='label')|join(' · ') }}</span></span>
+    <span class="meta"><span>{{ (sp['items']|map(attribute='label')|list + sp['own']|map(attribute='label')|list)|join(' · ') }}</span></span>
     <span class="ws-waiting sp-waiting" hidden data-tpl="{{ t('sp.waiting') }}"></span>
     {% for w in sp['items'] if w.mode == 'live' %}<i class="sp-live" hidden data-href="/w/{{ w.id }}/"></i>{% endfor %}
   </a>
@@ -39,6 +39,7 @@
 </div>
 <p class="ws-lead quiet-links"><a href="/workspaces">{{ t('sp.manage') }}</a></p>
 {% endif %}
+{% if not spaces %}
 <h2 class="section" style="margin:0 0 10px">{{ t('app.tools') }}</h2>
 <div class="ws-grid">
   {% if applications %}
@@ -51,6 +52,7 @@
   </a>
   {% endif %}
 </div>
+{% endif %}
 {% if applications %}<p class="ws-lead quiet-links"><a href="/workspaces/new" data-help="shell.new-workspace">{{ t('ws.new_short') }}</a></p>{% endif %}
 
 {% if cards %}
