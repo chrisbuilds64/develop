@@ -73,6 +73,6 @@ node_modules/
 
 infra/ansible/inventory.local.yml
 
-# the casefile surface is checked in for now: the stages have no Node (SYS-71)
-!apps/casefile/web/dist/
-!apps/casefile/web/dist/**
+# the casefile surface is built, never checked in: CI builds it to check it compiles, every deploy builds it from the
+# source it ships (SYS-71, 2026-11-10; ADR-014 amended). A built file in git made every two surface changes conflict.
+apps/casefile/web/dist/

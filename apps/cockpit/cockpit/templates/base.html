@@ -34,7 +34,7 @@
 <nav class="side" aria-label="{{ t('app.menu') }}">
   <div class="menu-head">
     <a href="/" class="brand-link" data-help-skip="explained by shell.dashboard" aria-label="{{ t('app.dashboard') }}">
-      <img class="brand-mark" src="/static/mark.svg" width="26" height="26" alt="">
+      <span class="cf-mark brand-mark brand-cf" aria-hidden="true"></span>
       <span class="brand-name tx">{{ config.name }}</span>
     </a>
     {% if config.environment and config.environment != 'prod' %}<span class="env env-{{ config.environment }}" title="{{ t('app.environment') }}">{{ config.environment|upper }}</span>{% endif %}

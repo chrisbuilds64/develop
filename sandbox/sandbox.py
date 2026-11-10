@@ -8,7 +8,7 @@
     python3 sandbox/sandbox.py check ID…  only these flows or walks (CI plays one per machine, in parallel)
     python3 sandbox/sandbox.py ids        every flow and walk id as JSON — the CI matrix
 
-    In CI, SANDBOX_PREBUILT=1 takes the committed web/dist and skips the guards: the `guards` job holds both already.
+    SANDBOX_PREBUILT=1 plays an existing web/dist and skips the guards (when both were just done by another step).
 
 The worlds in `sandbox/worlds/` are exported from the private demo builder (`demo.py sandbox`), with a name scan as the gate.
 The PressRoom here is casefile's built-in fictional one. Nothing in this folder talks to a server; `.state/` is yours to break.
@@ -77,7 +77,7 @@ def setup() -> None:
     sh([PY, "-m", "pip", "install", "-q", "--upgrade", "pip"])
     sh([PY, "-m", "pip", "install", "-q", "-e", CASEFILE, "-e", COCKPIT])
     sh(["npm", "ci", "--silent"], cwd=WEB)
-    if os.environ.get("SANDBOX_PREBUILT") != "1":           # CI plays the committed build; the guards job proved it is the build of src
+    if os.environ.get("SANDBOX_PREBUILT") != "1":           # an existing build is kept when the caller just made it
         sh(["npm", "run", "build", "--silent"], cwd=WEB)
     sh(["npx", "playwright", "install", "chromium"], cwd=WEB)
     print("\nReady. Start with: python3 sandbox/sandbox.py up")
@@ -239,7 +239,7 @@ def check(only: list[str]) -> int:
     out.mkdir(parents=True)
     if not (STATE / "worlds" / "pressroom").exists():
         build_pressroom()
-    prebuilt = os.environ.get("SANDBOX_PREBUILT") == "1"     # CI: the guards job built the surface and ran the guards
+    prebuilt = os.environ.get("SANDBOX_PREBUILT") == "1"     # the caller built the surface and ran the guards just now
     if not prebuilt:
         # the design guard first: colour, type and radius from the tokens (the same gate the deploy holds)
         guard = subprocess.run([str(PY), str(REPO / "tools" / "design_guard.py")])

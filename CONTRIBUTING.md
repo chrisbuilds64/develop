@@ -50,7 +50,7 @@ ADR comes with the pull request, status *Proposed*; the product owner sets *Acce
 
 | Place | Rule |
 |---|---|
-| `apps/casefile/web/dist/` | The deploy takes the built surface from the repo. Rebuild it from your branch's source after updating from `main`; never merge it by hand. |
+| `apps/casefile/web/dist/` | Never in git (since 2026-11-10): CI builds the surface to check it, every deploy builds it on the server from the source it ships. Build it locally with `npm run build` when you need it. |
 | `openapi.json`, `api-types.d.ts` | Generated. Regenerate after updating from `main`, never merge by hand. |
 | `tools/design_guard.baseline.json` | A ratchet: the number of raw values may go down, never up. |
 | `config/*/vocabulary.json` | Add words, do not rewrite them. Worlds shown live in German are not rewritten without agreement. |

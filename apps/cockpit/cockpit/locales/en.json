@@ -1,6 +1,6 @@
 {
   "_name": "English",
-  "app.title": "Cockpit",
+  "app.title": "Casefile",
   "app.environment": "Stage",
   "app.tagline": "What the tools know, in one place.",
   "app.as_of": "as of {when}",
@@ -131,7 +131,7 @@
   "app.signed_in": "Signed in as",
   "app.context": "your context",
   "setup.title": "Setup",
-  "setup.subtitle": "What this cockpit is made of — plugins, sources, modules, roles, and every schema it knows.",
+  "setup.subtitle": "What this Casefile installation is made of — plugins, sources, modules, roles, and every schema it knows.",
   "setup.plugins": "Plugins",
   "setup.sources": "Sources",
   "setup.modules": "Modules",
