@@ -70,6 +70,7 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const humans = config.people.filter((p) => p.kind === "human");
   const places = me.places ?? [];
+  const here = places.find((p) => p.current)?.workspace_label ?? "";     // the workspace you are in (ADR-032), named at the top
   const [opened, setOpened] = useState<string[]>([]);      // workspaces the person opened in the rail; the current one is always open
   const inWorkspace = route.name === "group" || route.name === "case" || route.name === "board" || route.name === "list";
   const roleWord = (r: string) => ((config.words as { roles?: Record<string, string> }).roles?.[r] ?? r);
@@ -85,10 +86,11 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   return (
     <>
     <nav className={`cf-rail${open ? " open" : ""}`} aria-label={w.menu}>
+      {me.shell && <a className="rail-back" data-help="cf.back" href={me.shell}><span aria-hidden="true">←</span> {w.allWorkspaces}</a>}
       <div className="rail-brand">
-        <button type="button" className="rail-home" data-help-skip="explained by cf.groups" onClick={() => goClose("/")} aria-label={`${w.brand}, ${w.home}`}>
+        <button type="button" className="rail-home" data-help-skip="explained by cf.groups" onClick={() => goClose("/")} aria-label={`${here || w.brand}, ${w.home}`}>
           <span className="rail-mark" aria-hidden="true"><i /></span>
-          <b>{w.brand}</b>
+          <span className="rail-name"><b>{here || w.brand}</b>{here && <small>{w.brand}</small>}</span>
         </button>
         {me.demo && <span className="rail-tag" title={w.fictional}>{w.demoTag}</span>}
       </div>
@@ -123,7 +125,6 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       })}
       </div>
       {me.shell && <a className="nav quiet" data-help="cf.new-workspace" href={`${me.shell.replace(/\/?$/, "/")}workspaces/new`}><span className="tx">{w.newWorkspace}</span></a>}
-      {me.shell && <a className="nav quiet" data-help="cf.back" href={me.shell}><span className="tx">{w.allWorkspaces}</span></a>}
       {mailDrop ? (
         <label className="nav quiet rail-drop" data-help="cf.drop-in"><span className="tx">{w.dropMail}</span>
           <input type="file" accept=".eml,message/rfc822" hidden onChange={(e) => dropMail(e.target.files?.[0])} /></label>

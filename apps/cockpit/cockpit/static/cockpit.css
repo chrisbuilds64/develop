@@ -1092,3 +1092,7 @@ a { color: var(--shell); }
 .sp-members input[type="text"] { min-width: 260px; }
 .sp-members button, .sp-move button { font: inherit; font-size: var(--fs-14); color: var(--ink); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-s); padding: 7px 12px; cursor: pointer; }
 .setup .quiet-links { margin-top: 18px; }
+
+/* The shell is Casefile (2026-11-10): its mark in the brand row, a little larger than in a nav row */
+.brand-cf { width: 26px; height: 26px; border-radius: var(--r-7); }
+.brand-cf::after { width: 10px; height: 10px; border-radius: var(--r-3); }

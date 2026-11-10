@@ -808,3 +808,10 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .md li { padding-left: 2px; }
 .md code { font-family: var(--mono); font-size: .92em; background: var(--tint-6); border-radius: var(--r-2); padding: 0 4px; overflow-wrap: anywhere; }
 .md a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* Where am I (2026-11-10): the way back to all workspaces sits on top of the rail; the brand row names the workspace */
+.rail-back { display: flex; align-items: center; gap: 6px; margin: 0 10px 10px; padding: 6px 10px; border-radius: var(--r-s); font-size: var(--fs-13); color: var(--ink-2); text-decoration: none; background: var(--tint-6); }
+.rail-back:hover { background: var(--hover); color: var(--ink); }
+.rail-name { display: grid; line-height: 1.15; text-align: left; min-width: 0; }
+.rail-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-name small { font-size: var(--fs-11); color: var(--muted); font-weight: 500; }

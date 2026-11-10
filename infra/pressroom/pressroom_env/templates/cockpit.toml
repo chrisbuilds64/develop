@@ -3,7 +3,7 @@
 # on 2026-10-26 (Chris). The pipeline source stays: the people of the team are read from it. Users and the cookie secret are shared by all stages: one sign-in works
 # everywhere, but a cookie is scoped to its stage's path.
 [cockpit]
-name = "Cockpit"        # the shell, not one of its applications (ADR-018, Chris 2026-10-28)
+name = "Casefile"       # the whole system and its principle; the helper modules live inside it (Chris, 2026-11-10; was "Cockpit")
 locale = "de"
 bind = "127.0.0.1:{{port}}"
 base_path = "{{base_path}}"

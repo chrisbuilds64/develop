@@ -26,8 +26,8 @@
         "en": "Where you are"
       },
       "text": {
-        "de": "Die Leiste oben zeigt den Workspace mit ganzem Namen und die Stufe (ENTW, TEST). „← Cockpit“ führt zurück zur Übersicht.",
-        "en": "The bar at the top shows the workspace by its whole name and the stage (ENTW, TEST). “← Cockpit” leads back to the overview."
+        "de": "Oben links steht der Workspace, in dem du bist, und die Stufe (ENTW, TEST). „← Alle Workspaces“ ganz oben führt zurück zur Übersicht.",
+        "en": "Top left names the workspace you are in, and the stage (ENTW, TEST). “← All workspaces” at the very top leads back to the overview."
       }
     },
     {
@@ -202,12 +202,12 @@
       "key": "cf.back",
       "since": "0.17.1",
       "title": {
-        "de": "Zurück ins Cockpit",
-        "en": "Back to the cockpit"
+        "de": "Alle Workspaces",
+        "en": "All workspaces"
       },
       "text": {
-        "de": "Verlässt die Anwendung und bringt dich zu Dashboard, Workspaces und Team.",
-        "en": "Leaves the application for your dashboard, workspaces and team."
+        "de": "Ganz oben in der Leiste: zurück zur Übersicht von Casefile mit allen Workspaces, deinem Team und der Einrichtung.",
+        "en": "At the top of the rail: back to the Casefile overview with all workspaces, your team and setup."
       }
     },
     {
@@ -758,7 +758,7 @@
         "en": "New workspace"
       },
       "text": {
-        "de": "Legt im Cockpit einen weiteren Workspace an oder nimmt eine Anwendung in einen Workspace auf.",
+        "de": "Legt einen weiteren Workspace an oder nimmt eine Anwendung in einen Workspace auf.",
         "en": "Creates another workspace in the cockpit, or adds an application to a workspace."
       }
     },
