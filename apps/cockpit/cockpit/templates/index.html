@@ -24,6 +24,21 @@
 {% set live = workspaces|selectattr('mode', 'equalto', 'live')|list %}
 {% set samples = workspaces|rejectattr('mode', 'equalto', 'live')|list %}
 {% set first_ws = (live + samples)|first %}
+{% if spaces %}
+{# ADR-032: the workspaces first — each a card with its applications; what waits for you is counted in its live ones. #}
+<h2 class="section" style="margin:0 0 10px">{{ t('sp.title') }}</h2>
+<div class="ws-grid" data-help="shell.workspaces">
+  {% for sp in spaces %}{% set lead = (sp['items']|selectattr('mode', 'equalto', 'live')|list + sp['items'])|first %}
+  <a class="ws-card sp-card" href="{{ ('/w/' ~ lead.id ~ '/') if lead else '/workspaces#ws-' ~ sp.id }}">
+    <span class="app-card-head"><span class="title">{{ sp.label }}</span></span>
+    <span class="meta"><span>{{ sp['items']|map(attribute='label')|join(' · ') }}</span></span>
+    <span class="ws-waiting sp-waiting" hidden data-tpl="{{ t('sp.waiting') }}"></span>
+    {% for w in sp['items'] if w.mode == 'live' %}<i class="sp-live" hidden data-href="/w/{{ w.id }}/"></i>{% endfor %}
+  </a>
+  {% endfor %}
+</div>
+<p class="ws-lead quiet-links"><a href="/workspaces">{{ t('sp.manage') }}</a></p>
+{% endif %}
 <h2 class="section" style="margin:0 0 10px">{{ t('app.tools') }}</h2>
 <div class="ws-grid">
   {% if applications %}
@@ -67,6 +82,17 @@
   })).then(function (ns) {
     var n = ns.reduce(function (a, b) { return a + b; }, 0), el = document.getElementById('week-line');
     if (n > 0) { el.textContent = n === 1 ? el.dataset.one : el.dataset.many.replace('{n}', n); el.hidden = false; }
+  });
+  // each workspace card counts its own live applications, the same way
+  [].slice.call(document.querySelectorAll('.sp-card')).forEach(function (card) {
+    var hrefs = [].slice.call(card.querySelectorAll('.sp-live')).map(function (i) { return new URL(i.dataset.href, location.href).href; });
+    Promise.all(hrefs.map(function (h) {
+      return fetch(new URL('api/me/turns', h), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+        .then(function (turns) { return new Set(turns.map(function (t) { return t.case.id; })).size; });
+    })).then(function (ns) {
+      var n = ns.reduce(function (a, b) { return a + b; }, 0), b = card.querySelector('.sp-waiting');
+      if (n && b) { b.textContent = b.dataset.tpl.replace('{n}', n); b.hidden = false; card.classList.add('mine'); }
+    });
   });
   var op = document.getElementById('opener'), line = document.getElementById('waiting-line');
   function words(n) { var d = op.dataset; return n === 0 ? d.none : n === 1 ? d.one : d.many.replace('{n}', '<b>' + n + '</b>'); }

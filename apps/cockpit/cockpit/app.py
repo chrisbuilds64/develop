@@ -185,6 +185,7 @@ def create_app(config: Config) -> FastAPI:
             "view": "werkstatt" if request.cookies.get("view") == "werkstatt" else "desk",
             "workspaces": workspaces.for_user(user.name) if (workspaces and user) else (workspaces.for_user(None) if workspaces else []),
             "applications": workspaces.applications if workspaces else {},
+            "spaces": workspaces.grouped(user.name if user else None) if workspaces else [],
             **nav_state(user, role),
             "ws_error": ws_error,
             "ws_failures": getattr(app.state, "workspace_failures", {}),
@@ -277,7 +278,56 @@ def create_app(config: Config) -> FastAPI:
         may_share = c["role"].may_act("*") or c["role"].may_act("workspaces.shared")
         return templates.TemplateResponse(request, "workspace_new.html", {**c, "err": err, "sources": workspaces.for_user(c["user"].name),
                                                                            "may_share": may_share, "v2": workspaces.doc is not None, "picked": space or "",
-                                                                           "spaces": workspaces.spaces_for(c["user"].name, any_=may_share)})
+                                                                           "space_choices": workspaces.spaces_for(c["user"].name, any_=may_share)})
+
+    def may_admin(c: dict) -> bool:
+        return c["role"].may_act("*") or c["role"].may_act("workspaces.shared")
+
+    @app.get("/workspaces", response_class=HTMLResponse)
+    def workspaces_page(request: Request, err: str | None = None, ok: str | None = None):
+        """ADR-032 made visible: each workspace with its members, data points (and their connectors) and application
+        instances. An administrator moves an instance between workspaces and keeps the members."""
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        if not c["user"] or workspaces is None:
+            return go("/")
+        doc = workspaces.doc or {}
+        admin = may_admin(c)
+        shown = [sp for sp in doc.get("workspaces") or [] if admin or c["user"].name in (sp.get("members") or []) or sp.get("open")]
+        return templates.TemplateResponse(request, "workspaces.html", {**c, "err": err, "ok": ok, "v2": workspaces.doc is not None,
+                                                                         "shown": shown, "connectors": doc.get("connectors") or {},
+                                                                         "admin": admin, "all_spaces": workspaces.spaces()})
+
+    @app.post("/workspaces/move", response_class=HTMLResponse)
+    async def workspace_move(request: Request):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or workspaces is None or not csrf_ok(request, form) or not may_admin(c):
+            return go("/workspaces?err=" + quote("not allowed, or the form token did not match — reload the page"))
+        try:
+            workspaces.move(form.get("instance", ""), form.get("to", ""))
+        except WorkspaceError as exc:
+            return go("/workspaces?err=" + quote(str(exc)))
+        audit.record(c["role"].id, "workspaces", f"{form.get('instance')} → {form.get('to')}", f"move by {c['user'].name}")
+        return go("/workspaces?ok=" + quote(f"{form.get('instance')} → {form.get('to')}"))
+
+    @app.post("/workspaces/members", response_class=HTMLResponse)
+    async def workspace_members(request: Request):
+        if (r := gate(request)):
+            return r
+        c = ctx(request)
+        form = {k: str(v) for k, v in (await request.form()).items()}
+        if not c["user"] or workspaces is None or not csrf_ok(request, form) or not may_admin(c):
+            return go("/workspaces?err=" + quote("not allowed, or the form token did not match — reload the page"))
+        try:
+            workspaces.set_members(form.get("workspace", ""), form.get("members", "").replace(";", ",").split(","), form.get("open") == "1")
+        except WorkspaceError as exc:
+            return go("/workspaces?err=" + quote(str(exc)))
+        audit.record(c["role"].id, "workspaces", form.get("workspace", ""), f"members by {c['user'].name}: {form.get('members', '')}")
+        return go("/workspaces?ok=" + quote(form.get("workspace", "")))
 
     @app.post("/workspaces/space", response_class=HTMLResponse)
     async def space_create(request: Request):

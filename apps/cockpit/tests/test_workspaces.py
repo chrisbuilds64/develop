@@ -194,3 +194,24 @@ def test_in_format_2_a_workspace_is_created_without_an_application_and_takes_one
     assert party["members"] == ["chris"] and [i["id"] for i in party["instances"]] == ["party-list"]
     sign_in(client, "alex")                                              # not a member of the party
     assert client.get("/w/party-list/api/me").status_code in (302, 303, 403, 404)
+
+
+def test_the_cockpit_shows_the_workspaces_above_the_tools_and_lets_them_be_managed(world):
+    """ADR-032 made visible: rail and dashboard name the workspaces; /workspaces shows members, data points, instances."""
+    from cockpit import workspace_registry as registry
+    doc1 = json.loads((world / "workspaces.json").read_text())
+    plan = {"connectors": {"server": {"kind": "directory", "label": "Server", "root": ""}},
+            "workspaces": [{"id": "samples", "label": "Samples", "open": True, "members": [], "instances": ["shared"]},
+                           {"id": "operations", "label": "Operations", "open": False, "members": ["alex"], "instances": []}]}
+    (world / "workspaces.json").write_text(json.dumps(registry.migrate(doc1, plan)))
+    client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
+    sign_in(client, "alex")
+    home = client.get("/").text
+    assert 'class="ws-card sp-card"' in home and "Samples" in home and "Operations" in home
+    assert home.index('data-key="spaces"') < home.index('data-key="tools"')          # workspaces above the tools
+    page = client.get("/workspaces").text
+    assert 'id="ws-samples"' in page and "/w/shared/" in page and 'id="connectors"' in page
+    r = client.post("/workspaces/move", data={"instance": "shared", "to": "operations", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 303
+    moved = Workspaces(world / "workspaces.json", world).get("shared")
+    assert moved.workspace == "operations" and not moved.shared                    # alex administers the demo; closed now

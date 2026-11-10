@@ -146,3 +146,28 @@ def test_the_runner_serves_the_live_instances_of_format_2(stage):
     assert got["pressroom"] == tmp / "cloud" / "mnt" / "pressroom" / "flow"     # writes go through the mount, as before
     assert got["posteingang"] == tmp / "workspaces" / "shared" / "posteingang" / "flow"
     assert "pressroom-muster" not in got                                       # replay is never served by Claude
+
+
+def test_an_instance_moves_with_its_data_points_and_keeps_its_address(stage):
+    tmp, doc1 = stage
+    (tmp / "workspaces.json").write_text(json.dumps(registry.migrate(doc1, plan(tmp))))
+    ws = Workspaces(tmp / "workspaces.json", tmp)
+    root = ws.get("worklist").root
+    ws.move("worklist", "samples")
+    w = Workspaces(tmp / "workspaces.json", tmp).get("worklist")
+    assert w.workspace == "samples" and w.root == root and [d["name"] for d in w.data_points] == ["ana", "team"]
+    doc = json.loads((tmp / "workspaces.json").read_text())
+    ops, samples = doc["workspaces"]
+    assert not any(p["name"].startswith("worklist") for p in ops["data_points"])
+    assert {p["name"] for p in samples["data_points"]} >= {"worklist-home", "worklist-ana", "worklist-team"}
+
+
+def test_members_are_kept_per_workspace_and_decide_who_enters(stage):
+    tmp, doc1 = stage
+    (tmp / "workspaces.json").write_text(json.dumps(registry.migrate(doc1, plan(tmp))))
+    ws = Workspaces(tmp / "workspaces.json", tmp)
+    assert not ws.may_open("cleo", "pressroom")
+    ws.set_members("operations", ["ana", "ben", "cleo", "cleo", ""])
+    assert ws.may_open("cleo", "pressroom")
+    assert [g["id"] for g in ws.grouped("cleo")] == ["operations", "samples"]
+    assert [w.id for w in ws.grouped("cleo")[0]["items"]] == ["pressroom", "worklist"]     # the inbox stays narrowed to ana
