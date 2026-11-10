@@ -1,6 +1,7 @@
 // The case's conversation (design hand-back, 2026-11-05): one card per entry. The AI's are violet (actor "ai", request 5),
 // yours sit to the right, an open question for you carries Answer and Done, a sealed decision shows its seal, and an
 // undone or corrected decision says so (ADR-025). A decision you may correct offers "Open a correction".
+import { Md } from "./Md";
 import { useState } from "react";
 import type { Entry } from "../api";
 import { ago, type words } from "../words";
@@ -37,7 +38,7 @@ export function Conversation({ entries, meName, lang, w, busy, stageWord, onAnsw
               <span>{[e.for && !mine && !open ? `→ ${e.for}` : "", open ? w.youOnIt : "", ago(e.date, lang)].filter(Boolean).join(" · ")}</span>
             </div>
             {e.title && e.title !== e.text && <p className="m-title">{e.title}{undone ? ` · ${w.undoneWord}` : corrected ? ` · ${w.corrected}` : ""}</p>}
-            {e.text && <p>{e.text}</p>}
+            {e.text && <Md text={e.text} />}
             {(e.amount || e.to) && <p className="m-fact">{[e.amount, e.to ? `→ ${stageWord(e.to)}` : ""].filter(Boolean).join(" · ")}</p>}
             {e.files && e.files.length > 0 && <span className="m-files">{e.files.map((f) => <button key={f} type="button" onClick={() => onFile(f)}>{f}</button>)}</span>}
             {open && answering !== e.id && (

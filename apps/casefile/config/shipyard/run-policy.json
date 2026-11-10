@@ -66,8 +66,8 @@
             "Read",
             "Grep",
             "Glob",
-            "Bash(git log*)",
-            "Bash(git diff*)"
+            "Bash(*git log*)",
+            "Bash(*git diff*)"
           ]
         },
         {
@@ -101,8 +101,8 @@
             "en": "Pushing"
           },
           "on": [
-            "Bash(git commit*)",
-            "Bash(git push*)"
+            "Bash(*git commit*)",
+            "Bash(*git push*)"
           ]
         },
         {
@@ -112,7 +112,7 @@
             "en": "Handing over"
           },
           "on": [
-            "Bash(gh pr create*)",
+            "Bash(*gh pr create*)",
             "Bash(*casefile.cli.step*)"
           ]
         }
@@ -145,8 +145,10 @@
             "Read",
             "Grep",
             "Glob",
-            "Bash(git log*)",
-            "Bash(git diff*)"
+            "Bash(*git log*)",
+            "Bash(*git diff*)",
+            "Bash(*cat *)",
+            "Bash(*ls *)"
           ]
         },
         {
@@ -157,8 +159,8 @@
           },
           "on": [
             "Bash(*pytest*)",
-            "Bash(gh pr checks*)",
-            "Bash(gh run*)",
+            "Bash(*gh pr checks*)",
+            "Bash(*gh run*)",
             "Bash(*npm*)"
           ]
         },
