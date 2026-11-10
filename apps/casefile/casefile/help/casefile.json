@@ -845,6 +845,18 @@
         "de": "Was der Helfer gerade tut: die Phasen seines Auftrags (eine füllt sich, sobald ein Schritt dieser Art passiert ist), darunter der Schritt dieser Sekunde und die letzten davor. Rechts die Laufzeit und wie lange solche Läufe hier meist dauern.",
         "en": "What the helper is doing: the phases of its order (one fills once a step of that kind has happened), below it the step of this second and the ones before. On the right the time so far and how long such runs usually take here."
       }
+    },
+    {
+      "key": "cf.again",
+      "since": "0.23.0",
+      "title": {
+        "de": "Helfer erneut beauftragen",
+        "en": "Send the helper again"
+      },
+      "text": {
+        "de": "Erscheint, wenn ein Helfer in dieser Stufe fertig ist und der Fall trotzdem noch hier steht, etwa weil er dir eine Entscheidung zurückgegeben hat. Deine Notiz geht als Anweisung mit; der Helfer arbeitet dann mit demselben Auftrag weiter. Zählt nicht als offener Zug.",
+        "en": "Shows when a helper finished in this stage and the case still stands here, for instance because it handed a decision back to you. Your note goes with it as the instruction; the helper goes on with the same task. Not counted as an open move."
+      }
     }
   ]
 }

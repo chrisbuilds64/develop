@@ -83,7 +83,8 @@
       "undone": "Rückgängig: {action}",
       "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
       "correction": "Korrektur: {title}",
-      "retry_title": "{skill} neu gestartet"
+      "retry_title": "{skill} neu gestartet",
+      "again_title": "{skill} erneut beauftragt"
     },
     "files": {
       "task.md": "Auftrag",
@@ -199,7 +200,8 @@
       "undone": "Undone: {action}",
       "undone_text": "Taken back before the next step started.",
       "correction": "Correction: {title}",
-      "retry_title": "{skill} started again"
+      "retry_title": "{skill} started again",
+      "again_title": "{skill} sent again"
     },
     "files": {
       "task.md": "Task",

@@ -74,6 +74,13 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const lang = config.lang;
   const q = useQuery({ queryKey: ["case", id], queryFn: () => api.case(id), retry: false, refetchInterval: (query) => (query.state.data?.group === "claude" ? 2500 : 25_000) });
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
+  // the case changed hands (a helper finished, a move went through): the list beside it follows at once, not 25 s later
+  useEffect(() => {
+    if (!q.data) return;
+    qc.invalidateQueries({ queryKey: ["groups"] });
+    qc.invalidateQueries({ queryKey: ["stages"] });
+    qc.invalidateQueries({ queryKey: ["home"] });
+  }, [q.data?.group, q.data?.stage, q.data?.turn?.actor]);   // eslint-disable-line react-hooks/exhaustive-deps
   const rules = useQuery({ queryKey: ["rules"], queryFn: api.rules, staleTime: 60_000 });
   const samples = ((config.theme as { samples?: string[] }).samples ?? []);
   const [refused, setRefused] = useState<string | null>(null);
@@ -289,6 +296,16 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                 main?.actor === "claude" && v.helper ? <RunProgress h={v.helper} agent={v.agent} w={w} />
                   : <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
               )}
+            </div>
+          )}
+
+          {v.again && !pending && (
+            <div className="c-again pacts" data-help="cf.again">
+              <button type="button" className="ghost" disabled={busy}
+                      onClick={() => { setPending({ actor: "", action: "order_again", label: w.againLabel(v.again!.skill_word), reason: "", blocked_by: [], payload: ["note"] } as unknown as Turn); setSide("conv"); openNote(); }}>
+                {w.againLabel(v.again.skill_word)}
+              </button>
+              <span className="hint">{w.againHint}</span>
             </div>
           )}
 
