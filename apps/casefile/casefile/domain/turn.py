@@ -161,7 +161,14 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
     elif stage and stage.turn == "claude":
         out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                         reason=config.word("stages", case.stage, lang, case.stage), since=case.since))
+
     return out
+
+
+def stage_run(case: Case):
+    """The last foreground run that worked on this case in the stage it stands in now, or None."""
+    fg = [r for r in case.runs if not r.background and (r.container or "").split("/")[0] == case.stage]
+    return fg[-1] if fg else None
 
 
 ORDER = ("date", "seal", "gate", "gap", "nudge")       # the stack's rule (Chris, 2026-10-29): a date first, then gates with a seal, gates without,

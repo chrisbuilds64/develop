@@ -815,3 +815,9 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .rail-name { display: grid; line-height: 1.15; text-align: left; min-width: 0; }
 .rail-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-name small { font-size: var(--fs-11); color: var(--muted); font-weight: 500; }
+
+/* A helper finished here and the case stayed (SYS-161): send it again, with a note */
+.c-again { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 20px; }
+.c-again .ghost { border: 1px solid var(--hairline); background: var(--surface); box-shadow: var(--shadow-card); }
+.c-again .ghost:hover { background: var(--hover); }
+.c-again .hint { font-size: var(--fs-12-5); color: var(--muted); max-width: 52ch; }

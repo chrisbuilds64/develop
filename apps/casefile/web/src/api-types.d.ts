@@ -983,6 +983,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AgainView
+         * @description A helper finished in this stage and the case did not move on: the viewer may send it again (SYS-161). An offer on
+         *     the case, not a move — it never counts in anybody's stack.
+         */
+        AgainView: {
+            /** Skill */
+            skill: string;
+            /** Skill Word */
+            skill_word: string;
+            /**
+             * Finished
+             * @default
+             */
+            finished: string;
+        };
         /** AnchorIn */
         AnchorIn: {
             /** Text */
@@ -1254,6 +1270,7 @@ export interface components {
              */
             released: boolean;
             helper?: components["schemas"]["HelperView"] | null;
+            again?: components["schemas"]["AgainView"] | null;
         };
         /** ChapterIn */
         ChapterIn: {

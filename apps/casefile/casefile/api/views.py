@@ -215,6 +215,25 @@ def helper(config: DomainConfig, case: Case, lang: str, store=None) -> HelperVie
                       expected_s=expected_seconds(store, run.skill))
 
 
+class AgainView(BaseModel):
+    """A helper finished in this stage and the case did not move on: the viewer may send it again (SYS-161). An offer on
+    the case, not a move — it never counts in anybody's stack."""
+    skill: str
+    skill_word: str
+    finished: str = ""
+
+
+def again(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> AgainView | None:
+    from ..domain.runs import may_order
+    from ..domain.turn import stage_run
+    last = stage_run(case)
+    busy = case.last_run is not None and case.last_run.status in ("queued", "running")
+    person = config.person(viewer) if viewer else None
+    if last is None or last.status != "done" or busy or person is None or may_order(config, last.skill, person):
+        return None
+    return AgainView(skill=last.skill, skill_word=config.word("skills", last.skill, lang, last.skill), finished=last.finished or "")
+
+
 class CaseView(CaseCard):
     meta: dict = Field(default_factory=dict)
     stations: list[StationView]
@@ -237,6 +256,7 @@ class CaseView(CaseCard):
     waits: list[Dependency] = Field(default_factory=list) # the cases this one waits for, each found or not and closed or not (REQ-005 DP-02)
     released: bool = False                                # it waits, and all of it is closed: free to go on, but it does not move by itself (DP-03)
     helper: HelperView | None = None                      # a helper at work: phases, what it does now, how long it usually takes
+    again: AgainView | None = None                        # a helper finished here, the case stayed: the viewer may send it again
 
 
 class ListEntryView(BaseModel):
@@ -368,6 +388,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                     meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     helper=helper(config, case, lang, store),
+                    again=again(config, case, viewer, lang),
                     data={k: localized(v, lang) for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
 

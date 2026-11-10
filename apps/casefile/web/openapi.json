@@ -2039,6 +2039,30 @@
   },
   "components": {
     "schemas": {
+      "AgainView": {
+        "properties": {
+          "skill": {
+            "type": "string",
+            "title": "Skill"
+          },
+          "skill_word": {
+            "type": "string",
+            "title": "Skill Word"
+          },
+          "finished": {
+            "type": "string",
+            "title": "Finished",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "skill",
+          "skill_word"
+        ],
+        "title": "AgainView",
+        "description": "A helper finished in this stage and the case did not move on: the viewer may send it again (SYS-161). An offer on\nthe case, not a move \u2014 it never counts in anybody's stack."
+      },
       "AnchorIn": {
         "properties": {
           "text": {
@@ -2509,6 +2533,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/HelperView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "again": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgainView"
               },
               {
                 "type": "null"

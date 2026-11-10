@@ -289,6 +289,16 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
             </div>
           )}
 
+          {v.again && !pending && (
+            <div className="c-again pacts" data-help="cf.again">
+              <button type="button" className="ghost" disabled={busy}
+                      onClick={() => { setPending({ actor: "", action: "order_again", label: w.againLabel(v.again!.skill_word), reason: "", blocked_by: [], payload: ["note"] } as unknown as Turn); setSide("conv"); openNote(); }}>
+                {w.againLabel(v.again.skill_word)}
+              </button>
+              <span className="hint">{w.againHint}</span>
+            </div>
+          )}
+
           <div className="c-desk" data-help="cf.desk">
             <div className="deskh">{w.onDesk}</div>
             <div className="docs">

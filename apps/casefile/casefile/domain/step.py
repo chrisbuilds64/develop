@@ -134,6 +134,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _hand_on(store, config, j, case, person, req)
         if req.action == "retry":
             return _retry(store, config, j, case, person)
+        if req.action == "order_again":
+            return _order_again(store, config, j, case, person, req)
 
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
@@ -506,6 +508,35 @@ def _retry(store: FsStore, config: DomainConfig, j: Journal, case, person) -> St
                            lang=raw.get("lang"), extra=extra)
     title = config.word("texts", "retry_title", None, "{skill} started again").format(skill=config.word("skills", last.skill, None, last.skill))
     e = {"author": person.name, "status": "info", "title": title[:120], "text": (last.result or "").strip()[:600], "step": j.step_id}
+    j.entry = _append_entry(store, config, j.case, case.stage, e)
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def _order_again(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """A helper finished in this stage and the case did not move on (it handed a decision back): order the same skill
+    again for this case, with the person's note on top of the original one (SYS-161)."""
+    from .turn import stage_run
+    last = stage_run(case)
+    active = case.last_run is not None and case.last_run.status in ("queued", "running")
+    if last is None or last.status != "done" or active:
+        return _refuse(store, j, "no helper finished in this stage, or one is at work — nothing to send again")
+    refusal = ordering.may_order(config, last.skill, person)
+    if refusal:
+        return _refuse(store, j, refusal)
+    try:
+        raw = store.read_json(f"_runs/{last.id}.json")
+    except (OSError, ValueError):
+        raw = {}
+    extra = {k: v for k, v in raw.items() if k not in RUN_OWN and k not in ("skill", "container", "requested_by", "runner", "lang", "note")}
+    extra["again_after"] = last.id
+    said = str(req.payload.get("note") or req.payload.get("text") or "").strip()
+    note = "\n\n".join(x for x in (raw.get("note") or last.note or "", f"{person.name}: {said}" if said else "") if x)
+    _write_journal(store, j)
+    j.run = ordering.order(store, config, j.case, case.stage, last.skill, person.id, note, request_id=j.step_id, lang=raw.get("lang"), extra=extra)
+    title = config.word("texts", "again_title", None, "{skill} sent again").format(skill=config.word("skills", last.skill, None, last.skill))
+    e = {"author": person.name, "status": "info", "title": title[:120], "text": said[:1200], "step": j.step_id}
     j.entry = _append_entry(store, config, j.case, case.stage, e)
     j.status, j.finished = "done", _now()
     _write_journal(store, j)

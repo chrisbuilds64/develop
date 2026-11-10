@@ -280,3 +280,27 @@ def test_a_running_build_shows_its_phases_what_it_does_now_and_how_long_it_usual
     assert h.skill == "shipyard-build" and h.started.startswith("2026-11-10")
     f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done"}))
     assert views.helper(config, reading.load(store, config, CID), "de", store) is None    # nothing at work, nothing shown
+
+
+def test_after_a_hand_back_the_product_owner_sends_the_helper_again_with_a_note(tmp_path):
+    """SYS-161: the build helper finished but left the case in the build (it handed a decision back). Whoever may order the
+    build sends it again with a note; the offer is on the case, never a move in anybody's stack."""
+    from casefile.api import views
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    f = root / "_runs" / f"{r.run}.json"
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done", "finished": "2026-11-10T20:09:20+01:00", "duration_s": 1300}))
+    case = reading.load(store, config, CID)
+    assert views.again(config, case, "chris", "de").skill == "shipyard-build"
+    assert all(t.action != "order_again" for t in whose(case, config))          # not a move: it never counts in a stack
+    sent = stepping.step(store, config, CID, StepRequest(action="order_again", step_id="ag-1", payload={"note": "CI is green now, go on to the checks"}), "chris")
+    assert sent.ok and sent.run
+    new = json.loads((root / "_runs" / f"{sent.run}.json").read_text())
+    assert (new["skill"], new["status"], new["again_after"]) == ("shipyard-build", "queued", r.run)
+    assert new["note"].endswith("Chris: CI is green now, go on to the checks")
+    case = reading.load(store, config, CID)
+    assert views.again(config, case, "chris", "de") is None                  # at work again: nothing to offer
+    twice = stepping.step(store, config, CID, StepRequest(action="order_again", step_id="ag-2", payload={"note": "x"}), "chris")
+    assert not twice.ok
