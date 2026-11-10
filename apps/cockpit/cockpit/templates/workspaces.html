@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="module-page setup" data-help="shell.workspace-admin">
+  <a class="back" href="/">← {{ t('app.back') }}</a>
+  <h2>{{ t('sp.title') }}</h2>
+  <p class="stamp">{{ t('sp.lead') }}</p>
+  {% if err %}<p class="notice err">{{ err }}</p>{% endif %}
+  {% if ok %}<p class="notice">{{ t('sp.done', what=ok) }}</p>{% endif %}
+  {% if not v2 %}<p class="notice">{{ t('sp.format1') }}</p>{% endif %}
+
+  {% for sp in shown %}
+  <section class="block" id="ws-{{ sp.id }}">
+    <h3>{{ sp.label }} <span class="dim mono">{{ sp.id }}</span></h3>
+    {% if admin %}
+    <form class="sp-members" method="post" action="/workspaces/members">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="workspace" value="{{ sp.id }}">
+      <label>{{ t('sp.members') }} <input type="text" name="members" value="{{ (sp.members or [])|join(', ') }}" autocapitalize="off" spellcheck="false"></label>
+      <label class="row"><input type="checkbox" name="open" value="1" {% if sp.open %}checked{% endif %}> {{ t('sp.open') }}</label>
+      <button type="submit" class="btn small">{{ t('sp.save') }}</button>
+    </form>
+    {% else %}
+    <p>{{ t('sp.members') }}: {{ (sp.members or [])|join(', ') or '—' }}{% if sp.open %} · {{ t('sp.open') }}{% endif %}</p>
+    {% endif %}
+
+    <h4>{{ t('sp.instances') }}</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>{{ t('sp.instances') }}</th><th>{{ t('sp.application') }}</th><th>{{ t('sp.mode') }}</th><th>{{ t('sp.data_points') }}</th><th>{{ t('sp.members') }}</th>{% if admin %}<th>{{ t('sp.move') }}</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for i in sp.instances or [] %}
+      {% set cases = i.bind.cases if i.bind.cases is not string else [i.bind.cases] %}
+      <tr>
+        <td><a href="/w/{{ i.id }}/"><b>{{ i.label or i.id }}</b></a><br><span class="dim mono">/w/{{ i.id }}/</span></td>
+        <td>{{ applications[i.application].label if i.application in applications else i.application }}</td>
+        <td>{{ i.mode or 'live' }}</td>
+        <td class="mono">{% for c in cases %}{{ c.point if c is mapping else c }}{% if c is mapping and c['as'] %} <span class="dim">({{ c['as'] }})</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% if i.bind.home %}<br><span class="dim">home: {{ i.bind.home }}</span>{% endif %}</td>
+        <td>{% if i.members %}{{ i.members|join(', ') }}{% else %}<span class="dim">{{ t('sp.everyone') if sp.open else t('sp.as_members') }}</span>{% endif %}</td>
+        {% if admin %}
+        <td><form class="sp-move" method="post" action="/workspaces/move">
+          <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="instance" value="{{ i.id }}">
+          <select name="to" aria-label="{{ t('sp.move') }}">{% for o in all_spaces %}<option value="{{ o.id }}" {% if o.id == sp.id %}selected{% endif %}>{{ o.label }}</option>{% endfor %}</select>
+          <button type="submit" class="btn small">{{ t('sp.move_do') }}</button>
+        </form></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+      </tbody></table></div>
+
+    <h4>{{ t('sp.data_points') }}</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>{{ t('sp.data_points') }}</th><th>{{ t('sp.connector') }}</th><th>{{ t('sp.place') }}</th><th>{{ t('sp.rights') }}</th><th>{{ t('sp.seed') }}</th></tr></thead>
+      <tbody>
+      {% for d in sp.data_points or [] %}
+      <tr><td><b>{{ d.name }}</b>{% if d.label %}<br><span class="dim">{{ d.label }}</span>{% endif %}</td><td>{{ d.connector }}</td>
+          <td class="mono dim">{{ d.place }}</td>
+          <td>{% if d.readers or d.writers %}{{ (d.readers or [])|join(', ') or '—' }} / {{ (d.writers or [])|join(', ') or '—' }}{% else %}<span class="dim">{{ t('sp.as_members') }}</span>{% endif %}</td>
+          <td class="mono dim">{{ d.seed or '—' }}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+  </section>
+  {% endfor %}
+
+  {% if admin and connectors %}
+  <section class="block" id="connectors">
+    <h3>{{ t('sp.connectors') }}</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>{{ t('sp.connector') }}</th><th>{{ t('sp.kind') }}</th><th>{{ t('sp.root') }}</th></tr></thead>
+      <tbody>
+      {% for cid, con in connectors.items() %}
+      <tr><td><b>{{ cid }}</b><br><span class="dim">{{ con.label }}</span></td><td>{{ con.kind }}</td>
+          <td class="mono dim">{{ con.root or '—' }}{% if con.write_root %}<br>writes via {{ con.write_root }}{% endif %}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+  </section>
+  {% endif %}
+  <p class="quiet-links"><a href="/workspaces/new">{{ t('ws.new_short') }}</a></p>
+</div>
+{% endblock %}

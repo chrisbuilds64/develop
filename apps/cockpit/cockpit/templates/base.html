@@ -55,6 +55,18 @@
   {%- endmacro %}
   {# The cockpit holds tools. Casefile is one of them, once; its workspaces (Schadenakte, PressRoom…) are switched inside Casefile. #}
   {% set first_ws = (live + samples)|first %}
+  {# ADR-032: the workspaces above the tools — each opens Casefile on its first application; the tools stay as Akhil set them (one Casefile, 2026-11-05). #}
+  {% if spaces %}
+  <details class="nav-sec" data-key="spaces" data-help="shell.workspaces" open>
+    <summary class="section"><span class="tx">{{ t('sp.title') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
+    {% for sp in spaces %}{% set lead = (sp['items']|selectattr('mode', 'equalto', 'live')|list + sp['items'])|first %}
+    <a href="{{ ('/w/' ~ lead.id ~ '/') if lead else '/workspaces#ws-' ~ sp.id }}" class="nav-row ws-row{% if lead and route.startswith('/w/') and route.split('/')[2] in sp['items']|map(attribute='id')|list %} on{% endif %}" data-help-skip="explained by shell.workspaces" title="{{ sp.label }}">
+      <span class="ic">{{ glyph('folder', 18) }}</span><span class="tx">{{ sp.label }}</span>
+    </a>
+    {% endfor %}
+    <a href="/workspaces" class="nav-row quiet{% if route == '/workspaces' %} on{% endif %}" data-help="shell.workspace-admin" title="{{ t('sp.manage') }}"><span class="ic">{{ glyph('grid', 18) }}</span><span class="tx">{{ t('sp.manage') }}</span></a>
+  </details>
+  {% endif %}
   <details class="nav-sec" data-key="tools" data-help="shell.tools" open>
     <summary class="section"><span class="tx">{{ t('app.tools') }}</span><span class="chev">{{ glyph('chev', 14) }}</span></summary>
     {% if first_ws %}

@@ -28,7 +28,7 @@
   {% if v2 %}
   <label>{{ t('ws.space') }}
     <select name="workspace" required>
-      {% for sp in spaces %}<option value="{{ sp.id }}" {% if sp.id == picked %}selected{% endif %}>{{ sp.label }}</option>{% endfor %}
+      {% for sp in space_choices %}<option value="{{ sp.id }}" {% if sp.id == picked %}selected{% endif %}>{{ sp.label }}</option>{% endfor %}
     </select>
   </label>
   {% endif %}

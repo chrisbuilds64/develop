@@ -586,11 +586,11 @@
       "key": "cf.workspaces",
       "since": "0.22.0",
       "title": {
-        "de": "Arbeitsbereiche",
+        "de": "Workspaces",
         "en": "Workspaces"
       },
       "text": {
-        "de": "Die Anwendungen, nach Arbeitsbereich gruppiert (etwa Betrieb und Muster). Jede hat ihre eigenen Akten, Stufen und Regeln und ihre Farbe; dieselbe Anwendung kann in mehreren Arbeitsbereichen laufen, jeweils auf anderen Daten. Die Zahl sagt, wie viel dort auf dich wartet. Ein Klick auf den Namen eines Arbeitsbereichs klappt ihn auf oder zu, ein Klick auf eine Anwendung öffnet ihre Akten.",
+        "de": "Die Anwendungen, nach Workspace gruppiert (etwa Betrieb und Muster). Jede hat ihre eigenen Akten, Stufen und Regeln und ihre Farbe; dieselbe Anwendung kann in mehreren Workspaces laufen, jeweils auf anderen Daten. Die Zahl sagt, wie viel dort auf dich wartet. Ein Klick auf den Namen eines Workspace klappt ihn auf oder zu, ein Klick auf eine Anwendung öffnet ihre Akten.",
         "en": "The applications, grouped by workspace (for instance operations and samples). Each has its own cases, stages and rules and its colour; the same application can run in several workspaces, each on other data. The number says how much waits for you there. A click on a workspace's name opens or closes it, a click on an application opens its cases."
       }
     },
@@ -754,12 +754,12 @@
       "key": "cf.new-workspace",
       "since": "0.22.0",
       "title": {
-        "de": "Neuer Arbeitsbereich",
+        "de": "Neuer Workspace",
         "en": "New workspace"
       },
       "text": {
-        "de": "Legt im Cockpit einen weiteren Arbeitsbereich an, für eine neue Art von Fällen.",
-        "en": "Creates another workspace in the cockpit, for a new kind of case."
+        "de": "Legt im Cockpit einen weiteren Workspace an oder nimmt eine Anwendung in einen Workspace auf.",
+        "en": "Creates another workspace in the cockpit, or adds an application to a workspace."
       }
     },
     {
@@ -770,7 +770,7 @@
         "en": "AI team"
       },
       "text": {
-        "de": "Deine Helfer. Jeder hat ein Berufsprofil, arbeitet nur in Sitzungen, die du startest, und jede Sitzung wird protokolliert. Die Helfer gehören dir, nicht einem Arbeitsbereich.",
+        "de": "Deine Helfer. Jeder hat ein Berufsprofil, arbeitet nur in Sitzungen, die du startest, und jede Sitzung wird protokolliert. Die Helfer gehören dir, nicht einem Workspace.",
         "en": "Your helpers. Each has a job profile, works only in sessions you start, and every session is logged. The helpers belong to you, not to one workspace."
       }
     },
@@ -830,8 +830,8 @@
         "en": "Setup"
       },
       "text": {
-        "de": "Woraus dieser Arbeitsbereich besteht: Plugins, Quellen, Module, Rollen, Schemata und Wertelisten. Das meiste kommt aus der Konfiguration; die Wertelisten änderst du hier.",
-        "en": "What this workspace is built from: plugins, sources, modules, roles, schemas and value lists. Most of it comes from the configuration; the value lists you change here."
+        "de": "Woraus diese Anwendung besteht: Plugins, Quellen, Module, Rollen, Schemata und Wertelisten. Das meiste kommt aus der Konfiguration; die Wertelisten änderst du hier.",
+        "en": "What this application is built from: plugins, sources, modules, roles, schemas and value lists. Most of it comes from the configuration; the value lists you change here."
       }
     }
   ]

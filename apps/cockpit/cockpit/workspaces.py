@@ -222,6 +222,59 @@ class Workspaces:
         self._save_v2()
         return sp
 
+    def grouped(self, user: str | None) -> list[dict]:
+        """The workspaces this person sees, each with the application instances in it they may open:
+        [{id, label, open, members, items}] in the registry's order; empty in format 1."""
+        out = []
+        for sp in (self.doc or {}).get("workspaces") or []:
+            items = [w for w in self.items if w.workspace == sp.get("id") and w.visible_to(user)]
+            if items or (user and user in (sp.get("members") or [])):
+                out.append({"id": str(sp["id"]), "label": str(sp.get("label") or sp["id"]), "open": bool(sp.get("open")),
+                            "members": list(sp.get("members") or []), "items": items})
+        return out
+
+    def _space(self, sid: str) -> dict:
+        sp = next((x for x in (self.doc or {}).get("workspaces") or [] if x.get("id") == sid), None)
+        if sp is None:
+            raise WorkspaceError(f"no workspace '{sid}'")
+        return sp
+
+    def move(self, iid: str, to: str) -> None:
+        """An application instance into another workspace, with the data points it binds. Its address stays."""
+        if self.doc is None:
+            raise WorkspaceError("the registry is still in format 1 — `cockpit workspace migrate` first")
+        dst = self._space(to)
+        src = next((x for x in self.doc.get("workspaces") or [] if any(i.get("id") == iid for i in x.get("instances") or [])), None)
+        if src is None:
+            raise WorkspaceError(f"no application instance '{iid}'")
+        if src is dst:
+            return
+        inst = next(i for i in src["instances"] if i.get("id") == iid)
+        bind = inst.get("bind") or {}
+        names = {c["point"] for c in registry._binding(bind.get("cases"))} | ({bind["home"]} if bind.get("home") else set())
+        others = {c["point"] for i in src["instances"] if i is not inst for c in registry._binding((i.get("bind") or {}).get("cases"))} | \
+                 {(i.get("bind") or {}).get("home") for i in src["instances"] if i is not inst}
+        if names & others:
+            raise WorkspaceError(f"'{iid}' shares data points with other instances in '{src['id']}': {', '.join(sorted(names & others))}")
+        if names & {p.get("name") for p in dst.get("data_points") or []}:
+            raise WorkspaceError(f"'{to}' has a data point of the same name already: {', '.join(sorted(names))}")
+        dst.setdefault("data_points", []).extend(p for p in src.get("data_points") or [] if p.get("name") in names)
+        src["data_points"] = [p for p in src.get("data_points") or [] if p.get("name") not in names]
+        src["instances"] = [i for i in src["instances"] if i is not inst]
+        dst.setdefault("instances", []).append(inst)
+        self._write_and_reload()
+
+    def set_members(self, sid: str, members: list[str], open_: bool | None = None) -> None:
+        sp = self._space(sid)
+        sp["members"] = [m for m in dict.fromkeys(m.strip() for m in members) if m]
+        if open_ is not None:
+            sp["open"] = bool(open_)
+        self._write_and_reload()
+
+    def _write_and_reload(self) -> None:
+        self.path.write_text(json.dumps(self.doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        self.load()
+
     def spaces_for(self, user: str | None, any_: bool = False) -> list[dict]:
         """The workspaces this person may add an application to: their own, or every one for an administrator."""
         return [{"id": str(w.get("id")), "label": str(w.get("label") or w.get("id"))} for w in (self.doc or {}).get("workspaces") or []
