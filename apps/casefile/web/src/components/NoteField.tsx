@@ -2,7 +2,7 @@
 // new line, ⌘Enter sends, Esc closes and keeps the draft. A task or an idea does not fit in one line. The draft is kept
 // per case in local storage, so switching cases does not mix drafts and a reload does not lose one. Every application's
 // case screen uses this one component.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BASE } from "../api";
 import { Send } from "./Icons";
 import type { words } from "../words";
@@ -27,7 +27,8 @@ export function NoteField({ caseId, chip, onChip, placeholder, busy, onSend, w }
   const area = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { setDraft(load(caseId)); setOpen(false); }, [caseId]);
   useEffect(() => { const on = () => setOpen(true); window.addEventListener("cf:note", on); return () => window.removeEventListener("cf:note", on); }, []);
-  useEffect(() => { if (open) { const a = area.current; if (a) { a.focus(); a.setSelectionRange(a.value.length, a.value.length); } } }, [open]);
+  // before the paint, not after: once the sheet can be seen, the cursor is in it (an Esc right after ⌘J is the editor's)
+  useLayoutEffect(() => { if (open) { const a = area.current; if (a) { a.focus(); a.setSelectionRange(a.value.length, a.value.length); } } }, [open]);
 
   const current = useRef(caseId);
   current.current = caseId;
@@ -47,6 +48,22 @@ export function NoteField({ caseId, chip, onChip, placeholder, busy, onSend, w }
     }, () => undefined);
   };
   const mod = mac ? "⌘" : "Ctrl ";
+  // While the editor is open, Esc is the editor's — wherever the focus is. Opened with ⌘J the focus reaches the textarea a
+  // moment later; an Esc in that moment went to the case screen, which left the case (SYS-154, found by the note walk).
+  // A capture listener on window runs before the screen's own keydown listener and ends the event there; registered before
+  // the paint (useLayoutEffect), so it is in place as soon as the sheet can be seen — useEffect came after the paint, and on a
+  // slow first load the walk's Esc fell into that gap.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [open]);
 
   return (
     <>

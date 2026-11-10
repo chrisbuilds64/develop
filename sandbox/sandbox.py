@@ -5,6 +5,10 @@
     python3 sandbox/sandbox.py up         start: http://127.0.0.1:8200, sign in as designer / sandbox-local; the surface rebuilds on save
     python3 sandbox/sandbox.py reset      every workspace back to its sample world
     python3 sandbox/sandbox.py check      the design guard, then every sample flow and walk headless; screenshots per step in sandbox/.state/check/
+    python3 sandbox/sandbox.py check ID…  only these flows or walks (CI plays one per machine, in parallel)
+    python3 sandbox/sandbox.py ids        every flow and walk id as JSON — the CI matrix
+
+    In CI, SANDBOX_PREBUILT=1 takes the committed web/dist and skips the guards: the `guards` job holds both already.
 
 The worlds in `sandbox/worlds/` are exported from the private demo builder (`demo.py sandbox`), with a name scan as the gate.
 The PressRoom here is casefile's built-in fictional one. Nothing in this folder talks to a server; `.state/` is yours to break.
@@ -73,7 +77,8 @@ def setup() -> None:
     sh([PY, "-m", "pip", "install", "-q", "--upgrade", "pip"])
     sh([PY, "-m", "pip", "install", "-q", "-e", CASEFILE, "-e", COCKPIT])
     sh(["npm", "ci", "--silent"], cwd=WEB)
-    sh(["npm", "run", "build", "--silent"], cwd=WEB)
+    if os.environ.get("SANDBOX_PREBUILT") != "1":           # CI plays the committed build; the guards job proved it is the build of src
+        sh(["npm", "run", "build", "--silent"], cwd=WEB)
     sh(["npx", "playwright", "install", "chromium"], cwd=WEB)
     print("\nReady. Start with: python3 sandbox/sandbox.py up")
 
@@ -234,14 +239,19 @@ def check(only: list[str]) -> int:
     out.mkdir(parents=True)
     if not (STATE / "worlds" / "pressroom").exists():
         build_pressroom()
-    # the design guard first: colour, type and radius from the tokens (the same gate the deploy holds)
-    guard = subprocess.run([str(PY), str(REPO / "tools" / "design_guard.py")])
-    if guard.returncode == 0:
-        guard = subprocess.run([str(PY), str(REPO / "tools" / "arch_guard.py")])
-    if guard.returncode != 0:
-        print("\nA guard failed, so the flows were not played. `python3 tools/design_guard.py --list` shows what is left.")
+    prebuilt = os.environ.get("SANDBOX_PREBUILT") == "1"     # CI: the guards job built the surface and ran the guards
+    if not prebuilt:
+        # the design guard first: colour, type and radius from the tokens (the same gate the deploy holds)
+        guard = subprocess.run([str(PY), str(REPO / "tools" / "design_guard.py")])
+        if guard.returncode == 0:
+            guard = subprocess.run([str(PY), str(REPO / "tools" / "arch_guard.py")])
+        if guard.returncode != 0:
+            print("\nA guard failed, so the flows were not played. `python3 tools/design_guard.py --list` shows what is left.")
+            return 1
+        sh(["npm", "run", "build", "--silent"], cwd=WEB, stdout=subprocess.DEVNULL)
+    elif not (WEB / "dist" / "index.html").exists():
+        print("SANDBOX_PREBUILT=1 but web/dist has no build")
         return 1
-    sh(["npm", "run", "build", "--silent"], cwd=WEB, stdout=subprocess.DEVNULL)
     port = free_port()
     server = subprocess.Popen([str(PY), __file__, "_stage", str(port)], stdout=open(out / "stage.log", "w"), stderr=subprocess.STDOUT)
     results = []
@@ -285,6 +295,8 @@ if __name__ == "__main__":
     cmd, rest = (sys.argv[1] if len(sys.argv) > 1 else ""), sys.argv[2:]
     if cmd == "setup":
         setup()
+    elif cmd == "ids":
+        print(json.dumps([f["id"] for f in flows()] + [w[0] for w in WALKS]))
     elif cmd in ("up", "reset", "check", "_stage"):
         in_venv()
         if cmd == "up":
