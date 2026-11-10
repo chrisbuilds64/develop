@@ -815,3 +815,18 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .rail-name { display: grid; line-height: 1.15; text-align: left; min-width: 0; }
 .rail-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-name small { font-size: var(--fs-11); color: var(--muted); font-weight: 500; }
+
+/* Two versions compared (SYS-162): added lines green, removed ones struck through, unchanged stretches folded */
+.versions-cap { margin-right: 6px; color: var(--muted); }
+.diff-toggle { margin-left: 8px; }
+.diff { display: grid; gap: 8px; min-width: 0; }
+.diff-sum { margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+.diff-n { font-variant-numeric: tabular-nums; font-weight: 600; }
+.diff-n.add { color: var(--ok-ink); }
+.diff-n.del { color: var(--bad-ink); }
+.diff-body { margin: 0; font-family: var(--mono); font-size: var(--fs-12-5); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; display: grid; border-radius: var(--r-s); overflow: hidden; border: 1px solid var(--hairline); }
+.diff-line { display: block; padding: 0 10px 0 6px; }
+.diff-line i { display: inline-block; width: 1.2em; font-style: normal; color: var(--muted); user-select: none; }
+.diff-line.add { background: var(--ok-soft); }
+.diff-line.del { background: var(--bad-soft); text-decoration: line-through; text-decoration-color: var(--bad-ink); color: var(--ink-2); }
+.diff-fold { display: block; padding: 2px 10px; color: var(--muted); background: var(--tint-6); font-style: italic; }
