@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
 from ..domain import depends
+from ..domain import facets
 from ..domain import lists as value_lists
 from ..domain.depends import Dependency
 from ..domain import seen as reads
@@ -64,6 +65,7 @@ class CaseCard(BaseModel):
     party: str = ""                                       # who the case is from, for the first column of a row: reported_by, client, the mail's sender
     unread: bool = False                                  # new to the viewer: never opened, or somebody else wrote since (domain/seen.py)
     data_point: str = ""                                  # an instance over several data points: where this case lies ("Private", "Team"), REQ-005 PV-05
+    values: dict[str, str] = {}                           # what the case carries for each facet (domain/facets.py): filter, sort, card
 
 
 class StationView(BaseModel):
@@ -191,6 +193,22 @@ class ListView(BaseModel):
     entries: list[ListEntryView] = []
 
 
+class FacetValue(BaseModel):
+    key: str
+    word: str
+    color: str = ""
+
+
+class FacetView(BaseModel):
+    key: str                                              # the meta field (or "data_point")
+    word: str
+    kind: str                                             # list | person | date | text | point
+    filter: bool = False
+    sort: bool = False
+    card: bool = False
+    values: list[FacetValue] = []
+
+
 class ConfigView(BaseModel):
     product: str
     lang: str
@@ -201,6 +219,7 @@ class ConfigView(BaseModel):
     words: dict                                           # the vocabulary for the language, flat
     videos: list[dict] = []                               # explainers for this language: key, where, title, url, poster, seconds
     lists: list[ListView] = []                            # the value lists (SYS-105), words in this language
+    facets: list[FacetView] = []                          # what the surface filters by, sorts by and shows on a card (domain/facets.py)
 
 
 def by_word(config: DomainConfig, by: str, lang: str) -> str:
@@ -243,6 +262,7 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: 
     tpl = str(config.theme.get("external_url") or "")
     tint = value_lists.tint(config.lists, config.theme, case.meta)
     party = next((str(case.meta.get(k)).split(",")[0].strip() for k in ("reported_by", "customer", "client", "from_name", "from") if case.meta.get(k)), "")
+    point = _point(store, case.id)
     return CaseCard(id=case.id, party=party, number=str(case.meta.get("number") or ""), tint=tint, title=str(localized(case.meta, lang).get("title") or case.meta.get("working_title") or case.id), label=case.label,
                     external_id=ext, external_url=(tpl.replace("{external_id}", ext) if ext and tpl else ""),
                     label_word=value_lists.value_word(config.lists, "label", case.label, lang, config.word("labels", case.label, lang, case.label)), stage=case.stage,
@@ -250,12 +270,12 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: 
                     group_word=config.word("groups", g, lang, g), since=case.since, date=str(case.meta.get("publishDate") or "")[:10],
                     turn=main, mine=bool(main and viewer and (main.actor == viewer or config.may_act(viewer, main.actor))),
                     unread=reads.unread(config, case, viewer, seen) if seen is not None else False,
-                    data_point=_point_word(store, case.id))
+                    data_point=(point.label or point.name) if point else "",
+                    values=facets.values_of(case, facets.keys(config), point.name if point else ""))
 
 
-def _point_word(store, case_id: str) -> str:
-    point = store.point_of(case_id) if store is not None and hasattr(store, "point_of") else None
-    return (point.label or point.name) if point else ""
+def _point(store, case_id: str):
+    return store.point_of(case_id) if store is not None and hasattr(store, "point_of") else None
 
 
 def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_url, seen: dict[str, str] | None = None, store=None) -> CaseView:
@@ -296,7 +316,7 @@ def list_views(config: DomainConfig, lang: str, counts: dict | None = None) -> l
     return out
 
 
-def config_view(config: DomainConfig, lang: str) -> ConfigView:
+def config_view(config: DomainConfig, lang: str, points: list | None = None) -> ConfigView:
     v = config.vocabulary.get(lang) or config.vocabulary.get("en") or {}
     groups_order = ["you", "claude", "others", "date", "planned", "out", "ideas", "archive"]
     return ConfigView(product=str(v.get("product") or config.name),
@@ -304,6 +324,7 @@ def config_view(config: DomainConfig, lang: str) -> ConfigView:
                       groups=[GroupView(key=g, word=config.word("groups", g, lang, g)) for g in groups_order],
                       people=[PersonView(id=p.id, name=p.name, kind=p.kind, roles=p.roles) for p in config.people],
                       theme=config.theme, words=v, lists=list_views(config, lang),
+                      facets=[FacetView(**f) for f in facets.facets(config, lang, points)],
                       videos=[{"key": x["key"], "where": list(x.get("where", [])), "title": (x.get("title") or {}).get(lang) or (x.get("title") or {}).get("en") or x["key"],
                                "url": f"/api/videos/{x['file']}", "poster": f"/api/videos/{x['poster']}" if x.get("poster") else "", "seconds": int(x.get("seconds", 0))}
                               for x in config.videos if not x.get("lang") or x.get("lang") == lang] or

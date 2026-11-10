@@ -2240,6 +2240,14 @@
             "type": "string",
             "title": "Data Point",
             "default": ""
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Values",
+            "default": {}
           }
         },
         "type": "object",
@@ -2358,6 +2366,14 @@
             "type": "string",
             "title": "Data Point",
             "default": ""
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Values",
+            "default": {}
           },
           "meta": {
             "additionalProperties": true,
@@ -2585,6 +2601,14 @@
             },
             "type": "array",
             "title": "Lists",
+            "default": []
+          },
+          "facets": {
+            "items": {
+              "$ref": "#/components/schemas/FacetView"
+            },
+            "type": "array",
+            "title": "Facets",
             "default": []
           }
         },
@@ -2980,6 +3004,75 @@
           "meta"
         ],
         "title": "ExportOut"
+      },
+      "FacetValue": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word"
+        ],
+        "title": "FacetValue"
+      },
+      "FacetView": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "filter": {
+            "type": "boolean",
+            "title": "Filter",
+            "default": false
+          },
+          "sort": {
+            "type": "boolean",
+            "title": "Sort",
+            "default": false
+          },
+          "card": {
+            "type": "boolean",
+            "title": "Card",
+            "default": false
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/FacetValue"
+            },
+            "type": "array",
+            "title": "Values",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "word",
+          "kind"
+        ],
+        "title": "FacetView"
       },
       "FinishIn": {
         "properties": {

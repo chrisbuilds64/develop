@@ -107,6 +107,7 @@ def merge(*docs: dict) -> dict:
 
 def _norm(lid: str, lst: dict) -> dict:
     return {"id": lid, "word": dict(lst.get("word") or {}), "field": str(lst.get("field") or lid), "on_create": bool(lst.get("on_create", False)),
+            "view": dict(lst.get("view") or {}) if isinstance(lst.get("view"), dict) else {},
             "entries": [{"key": str(e["key"]), "word": dict(e.get("word") or {}), "color": str(e.get("color") or ""),
                          "description": e.get("description") or "", "status": e.get("status") if e.get("status") in STATUSES else "active"}
                         for e in lst.get("entries", [])]}

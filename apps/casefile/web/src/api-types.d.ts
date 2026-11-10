@@ -1097,6 +1097,13 @@ export interface components {
              * @default
              */
             data_point: string;
+            /**
+             * Values
+             * @default {}
+             */
+            values: {
+                [key: string]: string;
+            };
         };
         /** CaseView */
         CaseView: {
@@ -1168,6 +1175,13 @@ export interface components {
              * @default
              */
             data_point: string;
+            /**
+             * Values
+             * @default {}
+             */
+            values: {
+                [key: string]: string;
+            };
             /** Meta */
             meta?: {
                 [key: string]: unknown;
@@ -1279,6 +1293,11 @@ export interface components {
              * @default []
              */
             lists: components["schemas"]["ListView"][];
+            /**
+             * Facets
+             * @default []
+             */
+            facets: components["schemas"]["FacetView"][];
         };
         /** DecideIn */
         DecideIn: {
@@ -1459,6 +1478,47 @@ export interface components {
              * @default
              */
             data_point: string;
+        };
+        /** FacetValue */
+        FacetValue: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /**
+             * Color
+             * @default
+             */
+            color: string;
+        };
+        /** FacetView */
+        FacetView: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Filter
+             * @default false
+             */
+            filter: boolean;
+            /**
+             * Sort
+             * @default false
+             */
+            sort: boolean;
+            /**
+             * Card
+             * @default false
+             */
+            card: boolean;
+            /**
+             * Values
+             * @default []
+             */
+            values: components["schemas"]["FacetValue"][];
         };
         /** FinishIn */
         FinishIn: {
