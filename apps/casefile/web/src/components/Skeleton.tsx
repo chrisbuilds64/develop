@@ -53,15 +53,3 @@ export function HomeSkeleton() {
     </>
   );
 }
-
-// The rail while the shell learns who you are (SYS-163): the brand row, the search, a few places — so the frame is there at
-// once and plainly loading, not an empty page.
-export function RailSkeleton() {
-  return (
-    <div className="rail-skel" aria-hidden="true">
-      <div className="rail-skel-head"><i className="skel-box" /><Bar w="96px" /></div>
-      <Bar w="100%" />
-      {["70%", "54%", "62%", "48%", "58%"].map((x, i) => <span key={i} className="rail-skel-row"><i className="skel-dot" /><Bar w={x} /></span>)}
-    </div>
-  );
-}

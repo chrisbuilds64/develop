@@ -1,6 +1,5 @@
 // The shell: menu and one of three views on the same folders — the cases (list + case), the board, the stacked list.
 // Routes, read from the location: /, /case/<id>, /group/<key> (cases), /board, /list, and /doc/<id>/<name> as the reader in its own window.
-import { HomeSkeleton, RailSkeleton } from "./components/Skeleton";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, BASE, type PlaceOut } from "./api";
@@ -155,11 +154,8 @@ export function App() {
     if (route.name === "doc") return null;
     return (
       <div className={`app ${side}`} aria-busy="true">
-        <nav className="cf-rail" aria-hidden="true"><RailSkeleton /></nav>
-        <div className="main-col">
-          <span className="sr">{words(navigator.language.slice(0, 2)).loading}</span>
-          {route.name === "home" && <main className="home-wrap"><div className="home"><section className="home-main"><HomeSkeleton /></section></div></main>}
-        </div>
+        <nav className="cf-rail" aria-hidden="true" />
+        <div className="main-col"><span className="sr">{words(navigator.language.slice(0, 2)).loading}</span></div>
       </div>
     );
   }
