@@ -103,6 +103,11 @@ def load_runs(store: FsStore, case_ref: str) -> list[Run]:
         except (OSError, json.JSONDecodeError):
             continue
         if doc.get("container") == case_ref or doc.get("container", "").split("/")[-1] == case_ref.split("/")[-1]:
+            if doc.get("status") in ("queued", "running"):
+                try:
+                    doc["progress"] = store.read_json(f"_runs/{doc.get('id')}.progress")
+                except Exception:                         # no progress yet, or a runner that does not write it
+                    pass
             try:
                 out.append(Run.model_validate(doc))
             except Exception:

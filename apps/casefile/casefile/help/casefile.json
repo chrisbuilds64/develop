@@ -833,6 +833,18 @@
         "de": "Woraus diese Anwendung besteht: Plugins, Quellen, Module, Rollen, Schemata und Wertelisten. Das meiste kommt aus der Konfiguration; die Wertelisten änderst du hier.",
         "en": "What this application is built from: plugins, sources, modules, roles, schemas and value lists. Most of it comes from the configuration; the value lists you change here."
       }
+    },
+    {
+      "key": "cf.run-progress",
+      "since": "0.23.0",
+      "title": {
+        "de": "Ein Helfer arbeitet",
+        "en": "A helper at work"
+      },
+      "text": {
+        "de": "Was der Helfer gerade tut: die Phasen seines Auftrags (eine füllt sich, sobald ein Schritt dieser Art passiert ist), darunter der Schritt dieser Sekunde und die letzten davor. Rechts die Laufzeit und wie lange solche Läufe hier meist dauern.",
+        "en": "What the helper is doing: the phases of its order (one fills once a step of that kind has happened), below it the step of this second and the ones before. On the right the time so far and how long such runs usually take here."
+      }
     }
   ]
 }

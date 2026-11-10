@@ -772,3 +772,31 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .su-code .tm-fin { flex: none; width: 110px; text-transform: uppercase; }
 .su-code span { font-size: var(--fs-12-5); color: var(--muted); }
 .su-gap { margin-top: 14px; }
+
+/* A helper at work (REQ-001 W-08): phases as segments, the current one alive, the tool call of this second below. */
+.rp { display: grid; gap: 10px; }
+.rp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: var(--fs-13); }
+.rp-who { color: var(--ai-deep); font-weight: 600; }
+.rp-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.rp-phases { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.rp-phases li { display: grid; gap: 6px; min-width: 0; }
+.rp-bar { display: block; height: 6px; border-radius: var(--r-pill); background: var(--tint-6); overflow: hidden; position: relative; }
+.rp-bar i { position: absolute; inset: 0; width: 0; background: var(--ai); border-radius: inherit; transition: width .6s ease; }
+.rp-phases li.done .rp-bar i { width: 100%; }
+.rp-phases li.now .rp-bar i { width: 100%; background: linear-gradient(90deg, var(--ai-soft) 0%, var(--ai) 45%, var(--ai-soft) 90%); background-size: 220% 100%; animation: rp-flow 1.6s linear infinite; }
+.rp-word { font-size: var(--fs-12); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-phases li.done .rp-word { color: var(--ink-2); }
+.rp-phases li.now .rp-word { color: var(--ai-deep); font-weight: 600; }
+.rp-single { height: 6px; border-radius: var(--r-pill); background: var(--tint-6); overflow: hidden; }
+.rp-single i { display: block; height: 100%; background: var(--ai); border-radius: inherit; transition: width 1s linear; }
+.rp-single.waiting i { width: 30% !important; background: var(--ai-soft); animation: crawl-ai 1.8s ease-in-out infinite alternate; }
+.rp-now { margin: 0; font-size: var(--fs-13); color: var(--ink); animation: rp-in .35s ease-out; min-width: 0; overflow-wrap: anywhere; }
+.rp-now code, .rp-recent code { font-family: var(--mono); font-size: var(--fs-12); }
+.rp-recent { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rp-recent li { color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-recent li:nth-child(2) { opacity: .75; }
+.rp-recent li:nth-child(3) { opacity: .5; }
+.rp-steps { margin: 0; font-size: var(--fs-11); color: var(--muted); }
+@keyframes rp-flow { from { background-position: 100% 0; } to { background-position: -120% 0; } }
+@keyframes rp-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rp-phases li.now .rp-bar i, .rp-single.waiting i, .rp-now { animation: none; } }

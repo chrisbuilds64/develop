@@ -151,6 +151,70 @@ def with_actors(config: DomainConfig, entries: list[Entry]) -> list[Entry]:
     return [e.model_copy(update={"actor": actor_of(config, e.author), "corrected_by": later.get(e.id, [])}) for e in entries]
 
 
+class PhaseView(BaseModel):
+    key: str
+    word: str
+
+
+class HelperView(BaseModel):
+    """A helper at work on this case, as far as anybody can know: the phases its skill declares (run-policy `phases`), the
+    one it reached, what it does right now and just did — and how long such a run usually takes."""
+    run: str
+    skill: str
+    skill_word: str
+    status: str                                           # queued | running
+    created: str = ""
+    started: str = ""
+    phases: list[PhaseView] = Field(default_factory=list)
+    phase: int = -1                                       # index into phases; -1 = none reached yet
+    now: str = ""                                         # the tool call going on ("Edit web/look.css")
+    recent: list[str] = Field(default_factory=list)
+    steps: int = 0
+    expected_s: float | None = None                       # the median of this skill's finished runs here; None without history
+
+
+_EXPECTED: dict[tuple, tuple[int, float | None]] = {}
+
+
+def expected_seconds(store, skill: str) -> float | None:
+    """The median duration of this skill's finished runs in this tree. Read again only when the queue changed."""
+    if store is None or not hasattr(store, "runs"):
+        return None
+    names = store.runs()
+    key = (str(getattr(store, "root", "")), skill)
+    hit = _EXPECTED.get(key)
+    if hit and hit[0] == len(names):
+        return hit[1]
+    durations = []
+    for name in names:
+        if f"_{skill}_" not in name:
+            continue
+        try:
+            doc = store.read_json(f"_runs/{name}")
+        except Exception:
+            continue
+        if doc.get("skill") == skill and doc.get("status") == "done" and isinstance(doc.get("duration_s"), (int, float)):
+            durations.append(float(doc["duration_s"]))
+    durations.sort()
+    value = durations[len(durations) // 2] if durations else None
+    _EXPECTED[key] = (len(names), value)
+    return value
+
+
+def helper(config: DomainConfig, case: Case, lang: str, store=None) -> HelperView | None:
+    run = case.last_run
+    if run is None or run.status not in ("queued", "running"):
+        return None
+    from ..domain.runs import policy_for
+    phases = [PhaseView(key=str(ph.get("key")), word=str((ph.get("words") or {}).get(lang) or (ph.get("words") or {}).get("en") or ph.get("key")))
+              for ph in policy_for(config, run.skill).get("phases") or [] if isinstance(ph, dict) and ph.get("key")]
+    pr = run.progress or {}
+    return HelperView(run=run.id, skill=run.skill, skill_word=config.word("skills", run.skill, lang, run.skill), status=run.status,
+                      created=run.created, started=run.started or "", phases=phases, phase=min(int(pr.get("phase", -1)), len(phases) - 1),
+                      now=str(pr.get("now") or ""), recent=[str(x) for x in pr.get("recent") or []][-6:], steps=int(pr.get("steps") or 0),
+                      expected_s=expected_seconds(store, run.skill))
+
+
 class CaseView(CaseCard):
     meta: dict = Field(default_factory=dict)
     stations: list[StationView]
@@ -172,6 +236,7 @@ class CaseView(CaseCard):
     data: dict = Field(default_factory=dict)              # small JSON deliverables (a helper's reading, what was done), for the surface's cards
     waits: list[Dependency] = Field(default_factory=list) # the cases this one waits for, each found or not and closed or not (REQ-005 DP-02)
     released: bool = False                                # it waits, and all of it is closed: free to go on, but it does not move by itself (DP-03)
+    helper: HelperView | None = None                      # a helper at work: phases, what it does now, how long it usually takes
 
 
 class ListEntryView(BaseModel):
@@ -302,6 +367,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                     translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
                     meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
+                    helper=helper(config, case, lang, store),
                     data={k: localized(v, lang) for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
 

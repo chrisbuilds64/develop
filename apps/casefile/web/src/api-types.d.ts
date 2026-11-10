@@ -1253,6 +1253,7 @@ export interface components {
              * @default false
              */
             released: boolean;
+            helper?: components["schemas"]["HelperView"] | null;
         };
         /** ChapterIn */
         ChapterIn: {
@@ -1557,6 +1558,52 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HelperView
+         * @description A helper at work on this case, as far as anybody can know: the phases its skill declares (run-policy `phases`), the
+         *     one it reached, what it does right now and just did — and how long such a run usually takes.
+         */
+        HelperView: {
+            /** Run */
+            run: string;
+            /** Skill */
+            skill: string;
+            /** Skill Word */
+            skill_word: string;
+            /** Status */
+            status: string;
+            /**
+             * Created
+             * @default
+             */
+            created: string;
+            /**
+             * Started
+             * @default
+             */
+            started: string;
+            /** Phases */
+            phases?: components["schemas"]["PhaseView"][];
+            /**
+             * Phase
+             * @default -1
+             */
+            phase: number;
+            /**
+             * Now
+             * @default
+             */
+            now: string;
+            /** Recent */
+            recent?: string[];
+            /**
+             * Steps
+             * @default 0
+             */
+            steps: number;
+            /** Expected S */
+            expected_s?: number | null;
         };
         /**
          * HomePlace
@@ -2026,6 +2073,13 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /** PhaseView */
+        PhaseView: {
+            /** Key */
+            key: string;
+            /** Word */
+            word: string;
+        };
         /**
          * PlaceOut
          * @description A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one.
@@ -2407,6 +2461,10 @@ export interface components {
              * @default false
              */
             background: boolean;
+            /** Progress */
+            progress?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** RunIn */
         RunIn: {

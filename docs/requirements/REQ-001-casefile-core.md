@@ -121,6 +121,7 @@ Asked for by the product owner while accepting this list (2026-11-08). Not yet i
 | W-05 | The documentation audit as a built-in function: finds orphans, rule violations and logical gaps. | S-03 |
 | W-06 | Demo reset and demo flows get their evidence. | P-04 |
 | W-07 | Saved views (a named facet choice per person) and a stage facet that hides closed stages by default. | S-11 |
+| W-08 | A helper at work shows the phases its skill declares (run-policy `phases`), the one reached, the tool call going on and the ones before, the time so far and the usual duration of that skill; a failed run offers "run again" to whoever may order the skill. | `test_a_running_build_shows_its_phases_what_it_does_now_and_how_long_it_usually_takes`, `test_a_failed_run_is_run_again_by_whoever_may_order_its_skill` (test_shipyard.py), `test_a_running_helper_reports_its_steps_and_phase_as_it_goes` (cockpit) |
 
 ## Findings and decisions
 
