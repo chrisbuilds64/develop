@@ -29,7 +29,9 @@ export function Queue({ tab, openId, go, w, lang, place, views, onMenu }: { tab:
   place: string; views?: ReactNode; onMenu?: () => void }) {
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
   const color = me.data?.places?.find((p) => p.current)?.color;
-  const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
+  // while a case in the list has a helper at work, ask often: "is running" must not outlive the run on screen
+  const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups,
+    refetchInterval: (query) => ((query.state.data ?? []).some((g) => g.cases.some((c) => c.group === "claude" || c.turn?.actor === "claude")) ? 3000 : 25_000) });
   const n = (t: Tab) => casesOf(groups.data, t).length;
   const list = casesOf(groups.data, tab);
   const open = (c: CaseCard) => go(`/case/${encodeURIComponent(c.id)}?g=${tab}`);

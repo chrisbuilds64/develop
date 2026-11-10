@@ -304,3 +304,19 @@ def test_after_a_hand_back_the_product_owner_sends_the_helper_again_with_a_note(
     assert views.again(config, case, "chris", "de") is None                  # at work again: nothing to offer
     twice = stepping.step(store, config, CID, StepRequest(action="order_again", step_id="ag-2", payload={"note": "x"}), "chris")
     assert not twice.ok
+
+
+def test_a_person_s_move_waits_while_a_helper_is_at_work_and_the_helper_s_own_steps_go_on(tmp_path):
+    """While the build helper runs, the product owner cannot move the case (even with the button in an old page); the
+    helper itself still files and moves; once its run is done, the person's moves are theirs again."""
+    root, store, config = world(tmp_path)
+    go = Steps(store, config)
+    go.deliver(root, "task.md", "axel")
+    r = go("accept_task", "chris")
+    f = root / "_runs" / f"{r.run}.json"
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "running"}))
+    held = go("send_back", "chris")
+    assert not held.ok and "helper is at work" in held.reason
+    go.deliver(root, "pr.md", "axel", "https://example.org/pull/4")
+    assert go("open_pr", "axel").ok                                         # the helper's own step
+    f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done"}))

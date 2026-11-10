@@ -142,6 +142,12 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _builtin(store, config, j, case, person.id, req)
 
         # ---- a configured action
+        # While a helper is at work on the case, a person's move waits: the case is not theirs until the helper is done
+        # (Chris, 2026-11-10 — the surface hides the buttons, the core refuses the move). The helper's own steps go on.
+        run = case.last_run
+        # running, not queued: a run that waits for a runner which never comes must not lock a case for good
+        if person.kind == "human" and run is not None and run.status == "running":
+            return _refuse(store, j, config.word("reasons", "helper_at_work", None, "a helper is at work on this case — your move comes when it is done"))
         stage = config.stage(case.stage)
         action = config.action(case.stage, req.action)
         if stage is None or action is None:
