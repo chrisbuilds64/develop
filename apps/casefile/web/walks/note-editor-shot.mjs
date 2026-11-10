@@ -64,7 +64,9 @@ try {
   await page.keyboard.press("ControlOrMeta+j");
   await sheet.waitFor({ timeout: 3000 });
   must((await area.inputValue()) === DRAFT, "⌘J reopened the editor without the draft");
-  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");                     // at once, before the focus may have reached the textarea
+  await sheet.waitFor({ state: "hidden", timeout: 3000 });
+  must(page.url().includes("/case/"), "Esc right after ⌘J left the case");
 
   at = "⌘J after reload";
   await page.reload({ waitUntil: "networkidle" });
