@@ -15,7 +15,8 @@ const cache = join(homedir(), "Library/Caches/ms-playwright");
 const shell = existsSync(cache) && readdirSync(cache).find((d) => d.startsWith("chromium_headless_shell"));
 const pinned = shell && join(cache, shell, "chrome-headless-shell-mac-arm64", "chrome-headless-shell");
 const browser = await chromium.launch(pinned && existsSync(pinned) ? { executablePath: pinned } : {});
-const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "de-DE" })).newPage();
+// wide enough that the case column reaches its own maximum of 780 px beside the thread and the details
+const page = await (await browser.newContext({ viewport: { width: 1920, height: 1000 }, locale: "de-DE" })).newPage();
 const issues = [];
 page.on("pageerror", (e) => { if (!/ViewTransition/.test(e.message)) issues.push(`pageerror: ${e.message}`); });
 const must = (ok, what) => { if (!ok) throw new Error(what); };
@@ -45,7 +46,7 @@ try {
       at = `${id} at ${width} px`;
       await page.goto(`${base}/w/${ws}/case/${encodeURIComponent(id)}`, { waitUntil: "networkidle" });
       await page.locator(".sline").waitFor({ timeout: 5000 });
-      await page.addStyleTag({ content: `.sline { width: ${width}px; max-width: ${width}px; }` });
+      await page.addStyleTag({ content: `.case > * { max-width: ${width}px; }` });     // the case column, as a narrower screen sets it
       const m = await measure();
       must(Math.abs(m.width - width) < 1, `the line is ${m.width} px wide, not ${width}`);
       must(m.st.map((s) => s.word).join(",") === WORDS.join(","), `the stations read ${m.st.map((s) => s.word).join(", ")}`);
