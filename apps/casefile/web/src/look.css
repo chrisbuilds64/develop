@@ -844,3 +844,13 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .diff-line.add { background: var(--ok-soft); }
 .diff-line.del { background: var(--bad-soft); text-decoration: line-through; text-decoration-color: var(--bad-ink); color: var(--ink-2); }
 .diff-fold { display: block; padding: 2px 10px; color: var(--muted); background: var(--tint-6); font-style: italic; }
+
+/* SYS-163: the frame at once while the shell loads — the rail's shape, softly breathing (still under reduced motion) */
+.rail-skel { display: grid; gap: 14px; padding: 18px 16px; }
+.rail-skel-head { display: flex; align-items: center; gap: 10px; }
+.rail-skel-row { display: flex; align-items: center; gap: 10px; }
+.skel-box { width: 28px; height: 28px; border-radius: var(--r-7); background: var(--tint-8); flex: none; }
+.skel-dot { width: 8px; height: 8px; border-radius: var(--r-2); background: var(--tint-8); flex: none; }
+.rail-skel .skel-box, .rail-skel .skel-dot { animation: skel-breathe 1.6s ease-in-out infinite; }
+@keyframes skel-breathe { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .rail-skel .skel-box, .rail-skel .skel-dot { animation: none; } }
