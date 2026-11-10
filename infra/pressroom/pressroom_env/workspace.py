@@ -182,6 +182,13 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int, space_ids: dic
         }
         reg.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"); _own(reg, s.runner_user)
     data = json.loads(reg.read_text(encoding="utf-8"))
+    if data.get("format") == 2:
+        # ADR-032: in format 2 the cockpit keeps the registry — workspaces, data points and instances are set up there
+        # (`cockpit workspace …`), not seeded here. What stays is the stage's part: the inboxes' targets.
+        entries = _registry(d).instances(data)
+        _connect_targets({"workspaces": entries}, cp, cfg, s)
+        log.info("%s: registry format 2 — instances: %s", env.name, ", ".join(w["id"] for w in entries))
+        return reg
     if "agents" in (data.get("defaults") or {}):      # ADR-020: agents left the workspace for the person's account
         data["defaults"].pop("agents")
         if not data["defaults"]:
@@ -245,6 +252,17 @@ def seed_workspaces(settings: Settings, env: Env, folder_id: int, space_ids: dic
     _connect_targets(data, cp, cfg, s)
     log.info("%s: workspaces: %s", env.name, ", ".join(w["id"] for w in data["workspaces"]))
     return reg
+
+
+def _registry(stage_dir: Path):
+    """cockpit.workspace_registry from the stage's checkout (standard library only), so pressroom-env reads format 2 the one way
+    the cockpit and the runner read it."""
+    import importlib.util
+    src = stage_dir / "develop" / "apps" / "cockpit" / "cockpit" / "workspace_registry.py"
+    spec = importlib.util.spec_from_file_location("cockpit_workspace_registry", src)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _seed_spaces(data: dict, env: Env, cfg: Path, s, space_ids: dict[str, int]) -> bool:

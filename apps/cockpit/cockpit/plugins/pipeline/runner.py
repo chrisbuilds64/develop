@@ -422,6 +422,17 @@ def _cockpit():
     return Workspaces
 
 
+def _entries(doc: dict) -> list[dict]:
+    """The registry's entries, one per application instance, in either format (ADR-032 format 2 is read through
+    cockpit.workspace_registry, so the runner has one way of reading)."""
+    try:
+        from cockpit import workspace_registry as registry
+    except ImportError:                                   # run from the source tree, outside the cockpit's interpreter
+        sys.path.insert(0, str(HERE.parents[2]))
+        from cockpit import workspace_registry as registry
+    return registry.instances(doc) if registry.is_v2(doc) else list(doc.get("workspaces") or [])
+
+
 def _templates(args):
     try:
         from cockpit.agents import Catalog
@@ -1059,7 +1070,7 @@ def poll_mailboxes(args, roots: list[tuple[str, Path]]) -> None:
     except (OSError, ValueError):
         return
     apps = reg.get("applications", {})
-    by_id = {str(w.get("id")): w for w in reg.get("workspaces", [])}
+    by_id = {str(w.get("id")): w for w in _entries(reg)}
     for wid, data in roots:
         conf_path = data / "mailbox.json"
         if not conf_path.is_file():
@@ -1112,7 +1123,12 @@ def queues(args) -> list[tuple[str, Path]]:
             return [("default", args.data)] if args.data else []
         base = args.workspaces.parent
         out = []
-        for w in doc.get("workspaces", []):
+        try:
+            entries = _entries(doc)
+        except Exception as exc:                          # noqa: BLE001 — a broken registry serves nothing, it never stops the runner
+            log.warning("workspaces registry unreadable: %s", exc)
+            return []
+        for w in entries:
             if w.get("mode", "live") != "live":            # replay worlds are served by their own app, never by Claude
                 continue
             raw = w.get("write_root") or w.get("root")

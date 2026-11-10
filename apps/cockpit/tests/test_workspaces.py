@@ -165,3 +165,32 @@ def test_a_workspace_carries_its_data_points_and_writes_them_back(tmp_path):
     (tmp_path / "workspaces.json").write_text(json.dumps(reg))
     with pytest.raises(WorkspaceError):
         Workspaces(tmp_path / "workspaces.json", tmp_path)
+
+
+def test_in_format_2_a_workspace_is_created_without_an_application_and_takes_one_after(world):
+    """ADR-032: the form makes a workspace (name, members) first; an application instance joins it after, in its group."""
+    from cockpit import workspace_registry as registry
+    doc1 = json.loads((world / "workspaces.json").read_text())
+    plan = {"connectors": {"server": {"kind": "directory", "label": "Server", "root": ""}},
+            "workspaces": [{"id": "samples", "label": "Samples", "open": True, "members": [], "instances": ["shared"]}]}
+    (world / "workspaces.json").write_text(json.dumps(registry.migrate(doc1, plan)))
+    users = json.loads((world / "users.json").read_text())
+    users["users"]["chris"] = dict(users["users"]["alex"], display="Chris", context="home/chris/context")
+    (world / "users.json").write_text(json.dumps(users))
+    client = TestClient(create_app(load(world / "cockpit.toml")), follow_redirects=False)
+    sign_in(client, "chris")
+    page = client.get("/workspaces/new").text
+    assert 'action="/workspaces/space"' in page and 'name="workspace"' in page
+    r = client.post("/workspaces/space", data={"id": "party", "label": "Party", "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 303 and r.headers["location"] == "/workspaces/new?space=party"
+    assert 'value="party" selected' in client.get("/workspaces/new?space=party").text
+    r = client.post("/workspaces/new", data={"id": "party-list", "application": "pressroom", "label": "Party list", "workspace": "party",
+                                             "_csrf": client.cookies["csrf"]})
+    assert r.status_code == 303 and r.headers["location"] == "/w/party-list/"
+    places = {p["id"]: p for p in client.get("/w/party-list/api/me").json()["places"]}
+    assert places["party-list"]["workspace_label"] == "Party" and places["shared"]["workspace_label"] == "Samples"
+    doc = json.loads((world / "workspaces.json").read_text())
+    party = next(w for w in doc["workspaces"] if w["id"] == "party")
+    assert party["members"] == ["chris"] and [i["id"] for i in party["instances"]] == ["party-list"]
+    sign_in(client, "alex")                                              # not a member of the party
+    assert client.get("/w/party-list/api/me").status_code in (302, 303, 403, 404)

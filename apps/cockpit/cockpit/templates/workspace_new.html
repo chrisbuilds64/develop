@@ -4,8 +4,34 @@
   <h1>{{ t('ws.new') }}</h1>
 </div>
 {% if err %}<p class="notice err">{{ err }}</p>{% endif %}
-<form class="form-card" method="post" action="/workspaces/new">
+{% if v2 %}
+{# ADR-032: a workspace is created on its own — a name and its members; applications are added to it after. #}
+<form class="form-card" method="post" action="/workspaces/space">
+  <h2>{{ t('ws.space_new') }}</h2>
   <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <label>{{ t('ws.id') }}
+    <input type="text" name="id" required pattern="[a-z0-9][a-z0-9_-]{1,47}" placeholder="party" autocapitalize="off" spellcheck="false">
+  </label>
+  <label>{{ t('ws.label') }}
+    <input type="text" name="label" placeholder="{{ t('ws.label_hint') }}">
+  </label>
+  {% if may_share %}
+  <label class="row" style="flex-direction:row;align-items:center"><input type="checkbox" name="open" value="1" style="width:auto"> {{ t('ws.space_open') }}</label>
+  {% endif %}
+  <button type="submit">{{ t('ws.space_create') }}</button>
+  <p class="hint">{{ t('ws.space_hint') }}</p>
+</form>
+{% endif %}
+<form class="form-card" method="post" action="/workspaces/new">
+  {% if v2 %}<h2>{{ t('ws.instance_new') }}</h2>{% endif %}
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  {% if v2 %}
+  <label>{{ t('ws.space') }}
+    <select name="workspace" required>
+      {% for sp in spaces %}<option value="{{ sp.id }}" {% if sp.id == picked %}selected{% endif %}>{{ sp.label }}</option>{% endfor %}
+    </select>
+  </label>
+  {% endif %}
   <label>{{ t('ws.application') }}
     <select name="application" id="ws-app" onchange="for (const o of document.querySelectorAll('#ws-source option[data-app]')) o.hidden = o.dataset.app !== this.value; document.querySelector('#ws-source').value = ''">
       {% for aid, a in applications.items() %}<option value="{{ aid }}">{{ a.label }}</option>{% endfor %}
@@ -24,10 +50,10 @@
       {% for s in sources %}<option value="{{ s.id }}" data-app="{{ s.application }}" {% if s.application != first %}hidden{% endif %}>{{ s.label }} ({{ s.id }})</option>{% endfor %}
     </select>
   </label>
-  {% if may_share %}
+  {% if may_share and not v2 %}
   <label class="row" style="flex-direction:row;align-items:center"><input type="checkbox" name="shared" value="1" style="width:auto"> {{ t('ws.make_shared') }}</label>
   {% endif %}
   <button type="submit">{{ t('ws.create') }}</button>
-  <p class="hint">{{ t('ws.create_hint') }}</p>
+  <p class="hint">{{ v2 and t('ws.instance_hint') or t('ws.create_hint') }}</p>
 </form>
 {% endblock %}

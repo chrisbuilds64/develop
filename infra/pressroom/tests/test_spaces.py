@@ -95,3 +95,17 @@ def test_a_space_whose_team_folder_is_not_there_yet_is_not_seeded(tmp_path):
     data = {"applications": {}, "workspaces": []}
     workspace._seed_spaces(data, st.env("prod"), Path("/cfg"), st.server, {})
     assert data["workspaces"] == []
+
+
+def test_format_2_is_read_from_the_stage_s_checkout(tmp_path):
+    """ADR-032: pressroom-env reads the cockpit's format 2 through the checkout's own module, not a copy of its rules."""
+    import shutil
+    src = Path(__file__).resolve().parents[3] / "apps" / "cockpit" / "cockpit" / "workspace_registry.py"
+    dst = tmp_path / "develop" / "apps" / "cockpit" / "cockpit"
+    dst.mkdir(parents=True)
+    shutil.copy(src, dst / "workspace_registry.py")
+    reg = workspace._registry(tmp_path)
+    doc = {"format": 2, "applications": {"a": {"config_dir": "x"}}, "connectors": {"server": {"kind": "directory", "root": ""}},
+           "workspaces": [{"id": "ops", "members": ["ana"], "data_points": [{"name": "p", "connector": "server", "place": "trees/p"}],
+                           "instances": [{"id": "p", "application": "a", "bind": {"cases": "p"}}]}]}
+    assert [(w["id"], w["root"]) for w in reg.instances(doc)] == [("p", "trees/p")]

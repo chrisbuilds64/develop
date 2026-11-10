@@ -590,8 +590,8 @@
         "en": "Workspaces"
       },
       "text": {
-        "de": "Jeder Arbeitsbereich ist eine Anwendung mit eigenen Akten, Stufen und Regeln, mit seiner Farbe. Die Zahl sagt, wie viel dort auf dich wartet. Ein Klick öffnet seine Akten.",
-        "en": "Each workspace is an application with its own cases, stages and rules, in its own colour. The number says how much waits for you there. A click opens its cases."
+        "de": "Die Anwendungen, nach Arbeitsbereich gruppiert (etwa Betrieb und Muster). Jede hat ihre eigenen Akten, Stufen und Regeln und ihre Farbe; dieselbe Anwendung kann in mehreren Arbeitsbereichen laufen, jeweils auf anderen Daten. Die Zahl sagt, wie viel dort auf dich wartet. Ein Klick auf den Namen eines Arbeitsbereichs klappt ihn auf oder zu, ein Klick auf eine Anwendung öffnet ihre Akten.",
+        "en": "The applications, grouped by workspace (for instance operations and samples). Each has its own cases, stages and rules and its colour; the same application can run in several workspaces, each on other data. The number says how much waits for you there. A click on a workspace's name opens or closes it, a click on an application opens its cases."
       }
     },
     {
