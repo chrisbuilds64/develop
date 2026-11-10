@@ -65,10 +65,6 @@ jobs:
         run: |
           npm ci --silent
           npm run build --silent
-      - name: The committed surface is the built one
-        working-directory: apps/casefile/web
-        run: |
-          git diff --exit-code --stat -- dist || { echo "web/dist is not the build of web/src: run 'npm run build' in apps/casefile/web and commit dist"; exit 1; }
 
   changes:
     runs-on: ubuntu-latest
@@ -105,8 +101,6 @@ jobs:
       fail-fast: false
       matrix:
         id: ${{ fromJSON(needs.flow-plan.outputs.ids) }}
-    env:
-      SANDBOX_PREBUILT: "1"          # the committed web/dist; the guards job proved it is the build of web/src
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

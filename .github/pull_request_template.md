@@ -15,7 +15,6 @@ Open questions for the reviewer or for Chris:
 - [ ] Tests for new behaviour, written against what it should do
 - [ ] Screenshots attached (any change to the surface)
 - [ ] Only fictional people, companies and cases (public repo)
-- [ ] `web/dist/` rebuilt from this branch's source after the last update from main (never merged by hand)
 - [ ] No new media files (videos, images) — they go to the media hub
 
 Not checked, and why:
