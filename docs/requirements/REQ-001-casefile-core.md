@@ -92,6 +92,7 @@ Suite on 2026-11-08: 164 tests, all green.
 | S-10 | Facets: every application gets filter, sort and card values from its own configuration — each value list, each declared field (person, date, list), the data points of an instance and the stages; defaults by kind, a list or field overrides them with `view` (`filter`, `sort`, `card`). No facet names a domain. *(Added 2026-11-10.)* | `domain/facets.py`, `/api/config` `facets`, card `values` | yes — `test_facets` |
 | S-11 | Board and table carry one facet bar: title search, a multiple choice per filter facet, "mine", "overdue" (the first date facet), an order by any sort facet, and how many of how many show. The choice lives in the address, so a view survives a reload and can be sent as a link. *(Added 2026-11-10.)* | `web/src/components/Facets.tsx`, `screens/Board.tsx` | end-to-end — walk `facets-shot` (`web/walks/facets-shot.mjs`), not yet in CI `flows` |
 | S-12 | A card shows its card facets as chips: a list value with its colour, the person, the date (marked when past and the case is still open), the data point. *(Added 2026-11-10.)* | `web/src/components/Facets.tsx` | end-to-end — walk `facets-shot` |
+| S-13 | While a workspace loads, the frame shows at once and the list shows placeholder rows; they respect reduced motion and both themes. *(Added with SW-2026-003, 2026-11-10.)* | `web/src/components/Skeleton.tsx`, `App.tsx`, `screens/Queue.tsx`, `screens/Home.tsx` | end-to-end yes — walk `loading-state` in CI `flows` (`web/walks/loading-state-shot.mjs`) |
 
 ## Public demo (ADR-016)
 

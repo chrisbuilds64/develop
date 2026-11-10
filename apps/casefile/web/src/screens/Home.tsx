@@ -8,6 +8,7 @@ import { openKeys } from "../components/Keys";
 import { api, type ConfigView, type MeOut, type TurnOut, type CaseCard, type PlaceOut } from "../api";
 import { ago, type words } from "../words";
 import { Seal } from "../components/Icons";
+import { HomeSkeleton, useLate } from "../components/Skeleton";
 
 type W = ReturnType<typeof words>;
 
@@ -49,6 +50,7 @@ export function Home({ config, me, go, open, w }: { config: ConfigView; me: MeOu
   // inside a shell, every other workspace answers for itself at its own address
   const peers = (me.shell ? (me.places ?? []).filter((p) => !p.current && p.url) : []);
   const others = useQueries({ queries: peers.map((p) => ({ queryKey: ["home-at", p.url, lang], queryFn: () => api.homeAt(p.url), refetchInterval: 25_000 })) });
+  const late = useLate(home.isLoading);
   const parts = [...(home.data ?? []), ...others.flatMap((q) => q.data ?? [])];
 
   // the action without the case's own title, which the row already shows ("Approve: Hail damage" → "Approve")
@@ -82,8 +84,15 @@ export function Home({ config, me, go, open, w }: { config: ConfigView; me: MeOu
     return () => window.removeEventListener("keydown", onKey);
   }, [next?.place.id, next?.card.id]);                                        // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (home.isLoading) return <main className="home-wrap" />;
   const today = new Date().toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", { weekday: "long", day: "numeric", month: "long" });
+  if (home.isLoading) {
+    return (
+      <main className="home-wrap" aria-busy="true">
+        <span className="sr">{w.loading}</span>
+        {late && <div className="home"><section className="home-main"><div className="home-date">{today}</div><HomeSkeleton /></section></div>}
+      </main>
+    );
+  }
   const ai = working[0];
 
   return (

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, type CaseCard, type GroupOut } from "../api";
 import { ago, type words } from "../words";
+import { QueueSkeleton, useLate } from "../components/Skeleton";
 
 export type Tab = "you" | "others" | "done";
 const OTHERS = ["claude", "others", "date", "planned", "ideas"];
@@ -32,6 +33,7 @@ export function Queue({ tab, openId, go, w, lang, place, views, onMenu }: { tab:
   // while a case in the list has a helper at work, ask often: "is running" must not outlive the run on screen
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups,
     refetchInterval: (query) => ((query.state.data ?? []).some((g) => g.cases.some((c) => c.group === "claude" || c.turn?.actor === "claude")) ? 3000 : 25_000) });
+  const late = useLate(groups.isPending);
   const n = (t: Tab) => casesOf(groups.data, t).length;
   const list = casesOf(groups.data, tab);
   const open = (c: CaseCard) => go(`/case/${encodeURIComponent(c.id)}?g=${tab}`);
@@ -51,8 +53,9 @@ export function Queue({ tab, openId, go, w, lang, place, views, onMenu }: { tab:
           </button>
         ))}
       </div>
-      <div className="q-list">
-        {!groups.data ? null : list.length === 0 ? <p className="q-empty">{tab === "you" ? w.nothing : "—"}</p> : list.map((c) => {
+      <div className="q-list" aria-busy={groups.isPending || undefined}>
+        {groups.isPending && <span className="sr">{w.loading}</span>}
+        {!groups.data ? (late && <QueueSkeleton />) : list.length === 0 ? <p className="q-empty">{tab === "you" ? w.nothing : "—"}</p> : list.map((c) => {
           const working = c.turn?.actor === "claude";
           return (
             <a key={c.id} className={`q${c.id === openId ? " on" : ""}`} href={`?`} aria-current={c.id === openId ? "true" : undefined}

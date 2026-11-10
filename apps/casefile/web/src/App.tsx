@@ -148,7 +148,17 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [config.data, me.data?.open_identity, qc]);
 
-  if (me.isLoading || config.isLoading) return null;
+  // the frame at once, in its final place, while the shell waits for who you are and how this workspace is set up; the
+  // rail's content and the words follow with the configuration (SW-2026-003)
+  if (me.isLoading || config.isLoading) {
+    if (route.name === "doc") return null;
+    return (
+      <div className={`app ${side}`} aria-busy="true">
+        <nav className="cf-rail" aria-hidden="true" />
+        <div className="main-col"><span className="sr">{words(navigator.language.slice(0, 2)).loading}</span></div>
+      </div>
+    );
+  }
   if (!config.data) return <div className="gate"><p className="empty">The core is not reachable.</p></div>;
   const lang = config.data.lang;
   if (!me.data?.person) {
