@@ -46,6 +46,17 @@ task → branch from main → small commits → pull request → checks → revi
 A new capability, a new interface, a change to rights, to how data is stored on disk, or to who may do what. The
 ADR comes with the pull request, status *Proposed*; the product owner sets *Accepted*.
 
+**Every ADR states its prior art.** casefile starts from its own abstraction and keeps it; other systems are brought
+in where a domain calls for them (Git in software, never in a content workspace). So each new mechanism is held
+against BPM, Git and its code hosts, and comparable systems, and placed in one of three kinds:
+
+- **Stand apart** — nothing comparable exists; this is where the product is.
+- **Use alongside** — the other system is the source for these facts; the case reads and links them, never copies them.
+- **Duplicate on purpose** — a counterpart exists and we build our own anyway, with the reason written down. Bringing
+  in another system is not always wanted.
+
+An ADR without the section *Prior art* is not accepted. Template: [`docs/adr/TEMPLATE.md`](docs/adr/TEMPLATE.md).
+
 ## Places that conflict, and the rule for each
 
 | Place | Rule |
