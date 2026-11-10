@@ -13,6 +13,9 @@ found, not listed, not numbered over by anyone who could learn its title.
 
 A case lives in exactly one data point; a case id twice across data points is a broken binding and refused. Numbers
 count over all data points (`everything`), so a private SYS-148 and a shared SYS-148 cannot both come into being.
+
+Where each case lies is read once per store — one listing of every stage of every data point — and kept until a case
+moves, opens or changes data point. The store lives for one request, so the index never outlives what it saw.
 """
 
 from __future__ import annotations
@@ -49,6 +52,21 @@ class MultiStore:
         self.points = points if unscoped else [p for p in points if p.may_read(viewer)]
         self.create_in = create_in
         self.root, self.write_root = home.root, home.write_root
+        self._index: dict[str, list[tuple[DataPoint, str]]] | None = None
+
+    def _where(self) -> dict[str, list[tuple[DataPoint, str]]]:
+        """case id -> [(data point, stage)], from one listing of every readable data point."""
+        if self._index is None:
+            idx: dict[str, list[tuple[DataPoint, str]]] = {}
+            for p in self.points:
+                for stage in p.store.stages():
+                    for case in p.store.cases(stage):
+                        idx.setdefault(case, []).append((p, stage))
+            self._index = idx
+        return self._index
+
+    def _forget(self) -> None:
+        self._index = None
 
     # ------------------------------------------------------------------ scopes
     @property
@@ -62,21 +80,17 @@ class MultiStore:
             raise StoreError(f"no data point '{name}'")
         return p
 
-    def point_of(self, case_id: str) -> DataPoint | None:
-        here = []
-        for p in self.points:
-            stage = p.store.find(case_id)
-            if stage is not None:
-                here.append(p)
+    def _located(self, case_id: str) -> tuple[DataPoint, str] | None:
+        here = self._where().get(case_id) or []
+        if len({p.name for p, _ in here}) > 1:
+            raise StoreError(f"'{case_id}' exists in more than one data point: {', '.join(sorted({p.name for p, _ in here}))}")
         if len(here) > 1:
-            raise StoreError(f"'{case_id}' exists in more than one data point: {', '.join(p.name for p in here)}")
+            raise StoreError(f"'{case_id}' exists in more than one stage: {', '.join(s for _, s in here)} — fix that by hand first")
         return here[0] if here else None
 
-    def _owner(self, case_id: str) -> FsStore:
-        p = self.point_of(case_id)
-        if p is None:
-            raise StoreError(f"case '{case_id}' not found in any stage")
-        return p.store
+    def point_of(self, case_id: str) -> DataPoint | None:
+        at = self._located(case_id)
+        return at[0] if at else None
 
     def _writable(self, case_id: str) -> FsStore:
         p = self.point_of(case_id)
@@ -107,25 +121,25 @@ class MultiStore:
         return sorted(out)
 
     def cases(self, stage: str) -> list[str]:
-        out: list[str] = []
-        for p in self.points:
-            out += p.store.cases(stage)
-        return sorted(out)
+        return sorted(c for c, at in self._where().items() if any(s == stage for _, s in at))
 
     def find(self, case_id: str) -> str | None:
         if "/" in case_id or case_id.startswith("."):
             raise StoreError(f"'{case_id}' is not a case name")
-        p = self.point_of(case_id)
-        return p.store.find(case_id) if p else None
+        at = self._located(case_id)
+        return at[1] if at else None
 
     def case_dir(self, case_id: str) -> Path:
-        return self._owner(case_id).case_dir(case_id)
+        at = self._located(case_id)
+        if at is None:
+            raise StoreError(f"case '{case_id}' not found in any stage")
+        return at[0].store.root / at[1] / case_id
 
     def files(self, case_id: str) -> list[str]:
-        return self._owner(case_id).files(case_id)
+        return sorted(p.name for p in self.case_dir(case_id).iterdir() if p.is_file() and not p.name.startswith("."))
 
     def size(self, case_id: str, name: str) -> int:
-        return self._owner(case_id).size(case_id, name)
+        return (self.case_dir(case_id) / name).stat().st_size
 
     # ------------------------------------------------------------------ reading
     def read_text(self, rel: str) -> str:
@@ -141,10 +155,11 @@ class MultiStore:
         return st.exists(r)
 
     def case_text(self, case_id: str, name: str) -> str:
-        return self._owner(case_id).case_text(case_id, name)
+        return (self.case_dir(case_id) / name).read_text(encoding="utf-8")
 
     def case_json(self, case_id: str, name: str) -> dict:
-        return self._owner(case_id).case_json(case_id, name)
+        import json
+        return json.loads(self.case_text(case_id, name))
 
     # ------------------------------------------------------------------ writing
     def write_atomic(self, rel: str, text: str) -> None:
@@ -171,7 +186,10 @@ class MultiStore:
             (st.root / to_stage).mkdir(exist_ok=True)               # a data point may not hold every stage folder yet
             if st.write_root != st.root:
                 (st.write_root / to_stage).mkdir(exist_ok=True)
-        return st.move(case_id, to_stage)
+        try:
+            return st.move(case_id, to_stage)
+        finally:
+            self._forget()
 
     def mkcase(self, stage: str, case_id: str) -> Path:
         if self.everything.find(case_id) is not None:
@@ -182,7 +200,10 @@ class MultiStore:
         if not p.may_write(self.viewer):
             raise StoreError(f"{self.viewer or 'nobody'} may not write in '{p.name}'")
         (p.store.write_root / stage).mkdir(exist_ok=True)
-        return p.store.mkcase(stage, case_id)
+        try:
+            return p.store.mkcase(stage, case_id)
+        finally:
+            self._forget()
 
     def transfer(self, case_id: str, to_point: str) -> tuple[str, str]:
         """The case moves, folder and all, into another data point (share, REQ-005 PV-04): the viewer must be able to
@@ -203,6 +224,7 @@ class MultiStore:
         target.parent.mkdir(parents=True, exist_ok=True)
         import shutil
         shutil.move(str(src.store.write_root / stage / case_id), str(target))
+        self._forget()
         return src.name, dst.name
 
     # ------------------------------------------------------------------ journals and runs: the instance's

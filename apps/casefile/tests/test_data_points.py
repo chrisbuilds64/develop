@@ -144,3 +144,25 @@ def test_export_gives_every_readable_case_as_data(tmp_path):
     who["name"] = "chris"
     rows = client.get("/api/export").json()
     assert [(r["id"], r["stage"], r["meta"]["due"], r["data_point"], bool(r["closed"])) for r in rows] == [(a, "90-done", "2026-11-14", "chris", True)]
+
+
+def test_one_store_lists_every_stage_once_and_follows_its_own_moves(tmp_path):
+    """Where each case lies is read once per store (a page asked thousands of times, 2026-11-10) and stays true when a
+    case opens, moves or changes data point through that same store."""
+    points(tmp_path)                                   # the data point trees
+    tree(tmp_path / "home")
+    first, _ = scoped(tmp_path, "chris")
+    first.mkcase("10-backlog", "SYS-1")
+    (first.case_dir("SYS-1") / "meta.json").write_text("{}", encoding="utf-8")
+    store, _ = scoped(tmp_path, "chris")
+    listed = []
+    for p in store.points:
+        orig = p.store.stages
+        p.store.stages = lambda orig=orig: listed.append(1) or orig()
+    for _ in range(50):
+        assert store.find("SYS-1") == "10-backlog" and store.point_of("SYS-1").name == "chris"
+    assert len(listed) == len(store.points)
+    store.move("SYS-1", "20-next")
+    assert store.find("SYS-1") == "20-next" and store.cases("20-next") == ["SYS-1"] and store.cases("10-backlog") == []
+    store.transfer("SYS-1", "team")
+    assert store.point_of("SYS-1").name == "team" and store.case_json("SYS-1", "meta.json") == {}
