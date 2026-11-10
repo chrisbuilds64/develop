@@ -50,7 +50,8 @@
       "list": "priority"
     },
     "origin_kind": {
-      "list": "origin"
+      "list": "origin",
+      "view": {"card": false}
     },
     "origin_ref": {
       "kind": "text"

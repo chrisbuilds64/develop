@@ -15,6 +15,8 @@ const W = {
     newCaseShort: "+ Neuer Fall", newWorkspace: "+ Neuer Arbeitsbereich", ndotRules: (n: number) => (n === 1 ? "1 neue Regel zu prüfen" : `${n} neue Regeln zu prüfen`), ndotSignals: (n: number) => `${n} zu prüfen`,
     aiReading: "Liest…", tblFilter: "Filtern", withName: (n: string) => `Bei ${n}`, nothingHere: "Hier ist nichts", colCase: "Fall", colCustomer: "Kunde",
     colStage: "Station", colAge: "Alter", noMatch: (q: string) => `Kein Fall passt zu „${q}“.`,
+    fcMine: "Meine", fcLate: "Überfällig", fcSort: "Sortieren", fcSortNone: "Sortierung: Stufe", fcSortBy: (f: string) => `Sortierung: ${f}`,
+    fcReset: "Zurücksetzen", fcCount: (n: number, m: number) => `${n} von ${m}`,
     // Setup: what this workspace is built from
     setup: "Einrichtung", suLead: "Woraus dieser Arbeitsbereich besteht. Das meiste ändert deine Administration in der Konfiguration.",
     suListsLead: "Wertelisten sind die Auswahl, aus der man beim Ausfüllen eines Falls wählt.",
@@ -219,6 +221,8 @@ const W = {
     newCaseShort: "+ New case", newWorkspace: "+ New workspace", ndotRules: (n: number) => (n === 1 ? "1 new rule to review" : `${n} new rules to review`), ndotSignals: (n: number) => `${n} to check`,
     aiReading: "Reading…", tblFilter: "Filter", withName: (n: string) => `With ${n}`, nothingHere: "Nothing here", colCase: "Case", colCustomer: "Customer",
     colStage: "Stage", colAge: "Age", noMatch: (q: string) => `No case matches “${q}”.`,
+    fcMine: "Mine", fcLate: "Overdue", fcSort: "Sort", fcSortNone: "Order: stage", fcSortBy: (f: string) => `Order: ${f}`,
+    fcReset: "Reset", fcCount: (n: number, m: number) => `${n} of ${m}`,
     // Setup: what this workspace is built from
     setup: "Setup", suLead: "What this workspace is built from. Most of it is changed in the configuration by your administrator.",
     suListsLead: "Value lists are the choices you pick from when you fill in a case.",

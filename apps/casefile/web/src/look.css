@@ -589,6 +589,26 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .wb-w.you { color: var(--your-move); font-weight: 500; }
 .wb-filter { margin-left: 16px; height: 28px; width: 220px; border: 1px solid var(--tint-12); border-radius: var(--r-s); padding: 0 10px; font: inherit; font-size: var(--fs-13); background: var(--surface); color: var(--ink); outline: none; }
 .wb-filter:focus { border-color: var(--your-move); }
+/* facets (components/Facets.tsx): the bar over board and table, the chips on a card */
+.fc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 20px 0; }
+.fc-bar .wb-filter { margin-left: 0; }
+.fc-pick { position: relative; }
+.fc-btn { height: 28px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--tint-12); border-radius: var(--r-s); padding: 0 10px; font: inherit; font-size: var(--fs-12-5); background: var(--surface); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.fc-btn i { font-style: normal; font-size: var(--fs-10); color: var(--muted); }
+.fc-btn:hover { background: var(--hover); }
+.fc-btn.on, .fc-pick.on > .fc-btn { border-color: var(--your-move); color: var(--your-move-ink); background: var(--your-move-soft); }
+.fc-menu { position: absolute; top: 32px; left: 0; z-index: 30; min-width: 200px; max-height: 340px; overflow: auto; display: flex; flex-direction: column; padding: 6px; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-m); box-shadow: var(--pop-shadow); }
+.fc-opt { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--r-s); font-size: var(--fs-13); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.fc-opt:hover { background: var(--hover); }
+.fc-clear { align-self: flex-end; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; padding: 2px 8px; }
+.fc-sort { height: 28px; border: 1px solid var(--tint-12); border-radius: var(--r-s); padding: 0 8px; font: inherit; font-size: var(--fs-12-5); background: var(--surface); color: var(--ink-2); }
+.fc-reset { color: var(--muted); }
+.fc-count { font-size: var(--fs-12); color: var(--muted); white-space: nowrap; }
+.fc-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.wb-tbl .fc-chips { margin-top: 4px; }
+.fc-chip { display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: var(--r-pill); background: var(--chip); color: var(--sub); font-size: var(--fs-11-5); white-space: nowrap; }
+.fc-chip.fc-k-date.late { background: var(--bad-soft); color: var(--bad-ink); }
+.fc-dot { display: inline-block; width: 8px; height: 8px; border-radius: var(--r-pill); flex: none; }
 .wb-tblw { flex: 1; overflow: auto; padding: 12px 20px 24px; }
 .wb-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-13-5); }
 .wb-tbl th { position: sticky; top: 0; background: var(--ground); text-align: left; font-weight: 500; font-size: var(--fs-12); color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--hairline); }
