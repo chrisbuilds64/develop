@@ -1,0 +1,37 @@
+{
+  "id": "merge",
+  "title": {
+    "de": "Code-Review vor dem Merge",
+    "en": "Code review before the merge"
+  },
+  "include": [
+    "dod-software"
+  ],
+  "items": [
+    {
+      "id": "scope",
+      "question": {
+        "de": "Der Umfang passt zum Auftrag — nichts fehlt, nichts kam dazu",
+        "en": "The scope matches the task — nothing missing, nothing added"
+      },
+      "type": "yesno"
+    },
+    {
+      "id": "ci",
+      "question": {
+        "de": "CI ist grün auf dem letzten Stand des Pull Requests",
+        "en": "CI is green on the pull request's last commit"
+      },
+      "type": "yesno",
+      "agent": true
+    },
+    {
+      "id": "read",
+      "question": {
+        "de": "Was du dir angesehen hast (Dateien, Stellen)",
+        "en": "What you looked at (files, places)"
+      },
+      "type": "evidence"
+    }
+  ]
+}

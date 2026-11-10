@@ -29,15 +29,45 @@ def world(tmp_path: Path):
     return root, store, DomainConfig.load(CFG, root)
 
 
+TASK_MD = """# Task: split the API
+
+## Acceptance criteria
+
+- AC-1 · ENTW · yes/no — The API answers on its new path.
+- AC-2 · TEST · evidence — A case opened through the new path.
+"""
+GATES = {"merge": "merge", "approve_test": "entw", "approve_prod": "test", "close": "prod"}
+
+
+def pass_protocol(store, config, tid, by="chris"):
+    """The gate's protocol, every item answered as passed by the person, sealed — for tests about what comes after a gate."""
+    from casefile.domain import protocol as P
+    P.start(store, config, CID, tid, by)
+    case = reading.load(store, config, CID)
+    doc = case.data[f"protocol-{tid}.json"]
+    for it in P.live(doc):
+        if it["id"] in doc["answers"]:
+            continue
+        value = {"yesno": True, "number": 0, "choice": (it.get("criterion") or {}).get("allowed", [""])[0], "evidence": "seen"}[it["type"]]
+        P.answer(store, config, CID, tid, by, it["id"], f"pp-{tid}-{it['id']}", value=value)
+    P.seal(store, config, CID, tid, by, f"pp-{tid}-seal")
+
+
 class Steps:
-    def __init__(self, store, config):
-        self.store, self.config, self.n = store, config, 0
+    def __init__(self, store, config, protocols=True):
+        self.store, self.config, self.n, self.protocols = store, config, 0, protocols
 
     def __call__(self, action, by, **payload):
         self.n += 1
+        if self.protocols and action in GATES:
+            case = reading.load(self.store, self.config, CID)
+            if not (case.data or {}).get(f"protocol-{GATES[action]}.json", {}).get("sealed"):
+                pass_protocol(self.store, self.config, GATES[action], "chris")      # a person seals; the move may be an agent's
         return stepping.step(self.store, self.config, CID, StepRequest(action=action, step_id=f"s{self.n}", payload=payload), by)
 
     def deliver(self, root, name, by, text="x"):
+        if name == "task.md" and text == "x":
+            text = TASK_MD
         (root / reading.load(self.store, self.config, CID).stage / CID / name).write_text(text, encoding="utf-8")
         r = self("deliver", by, files=[name])
         assert r.ok, r.reason
@@ -320,3 +350,36 @@ def test_a_person_s_move_waits_while_a_helper_is_at_work_and_the_helper_s_own_st
     go.deliver(root, "pr.md", "axel", "https://example.org/pull/4")
     assert go("open_pr", "axel").ok                                         # the helper's own step
     f.write_text(json.dumps({**json.loads(f.read_text()), "status": "done"}))
+
+
+def test_every_gate_waits_for_its_protocol_and_the_task_for_its_criteria(tmp_path):
+    """ADR-029 in Shipyard: the task is confirmed only with readable acceptance criteria; merge, ENTW, TEST and the close
+    each wait for their sealed protocol; a failed must-item on ENTW offers the way back to the build."""
+    from casefile.domain import protocol as P
+    root, store, config = world(tmp_path)
+    go = Steps(store, config, protocols=False)
+    go.deliver(root, "task.md", "axel", "# Task\n\nno criteria yet\n")
+    assert not go("accept_task", "chris").ok
+    go.deliver(root, "task.v2.md", "axel", TASK_MD)
+    assert go("accept_task", "chris").ok
+    go.deliver(root, "pr.md", "axel", "https://example.org/pull/4")
+    assert go("open_pr", "axel").ok
+    go.deliver(root, "checks.md", "axel")
+    assert go("checks_green", "axel").ok
+    held = go("merge", "chris")
+    assert not held.ok and "protocol:merge" in held.reason
+    pass_protocol(store, config, "merge")
+    assert go("merge", "chris").ok
+    go.deliver(root, "release.md", "axel")
+    assert go("deploy_entw", "axel").ok
+    name = P.start(store, config, CID, "entw", "chris")
+    doc = reading.load(store, config, CID).data["protocol-entw.json"]
+    assert any(i["origin"] == "task:AC-1" for i in doc["items"])                     # the task's ENTW criterion is an item
+    P.answer(store, config, CID, "entw", "chris", "errors", "e1", value=4, note="four 500s after the deploy")
+    for it in P.live(doc):
+        if it["id"] != "errors":
+            P.answer(store, config, CID, "entw", "chris", it["id"], f"e-{it['id']}", value={"yesno": True, "evidence": "tried it"}.get(it["type"], True))
+    P.seal(store, config, CID, "entw", "chris", "e-seal")
+    assert not go("approve_test", "chris").ok
+    back = go("entw_failed", "chris")
+    assert back.ok and stage(store, config) == "20-build"

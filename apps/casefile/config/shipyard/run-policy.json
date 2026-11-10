@@ -213,6 +213,22 @@
       ],
       "timeout": 900,
       "rules": []
+    },
+    "shipyard-task": {
+      "does": "Writes the task from the request: what, why, which requirement lines, and the acceptance criteria as 'AC-n · STAGE · how — statement' (ADR-029 d. 9).",
+      "never": "Builds, branches, merges or deploys.",
+      "rules": [],
+      "write": [
+        "{container}"
+      ],
+      "tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "Write",
+        "Edit"
+      ],
+      "timeout": 600
     }
   },
   "agents": []

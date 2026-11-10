@@ -1,0 +1,28 @@
+{
+  "id": "test",
+  "title": {
+    "de": "Fachliche Abnahme auf TEST",
+    "en": "Business acceptance on TEST"
+  },
+  "criteria": {
+    "stage": "TEST"
+  },
+  "items": [
+    {
+      "id": "works",
+      "question": {
+        "de": "Die Fachseite kann damit arbeiten",
+        "en": "The business can work with it"
+      },
+      "type": "yesno"
+    },
+    {
+      "id": "seen",
+      "question": {
+        "de": "Was du gesehen hast (Fall, Bildschirm, Ergebnis)",
+        "en": "What you saw (case, screen, result)"
+      },
+      "type": "evidence"
+    }
+  ]
+}

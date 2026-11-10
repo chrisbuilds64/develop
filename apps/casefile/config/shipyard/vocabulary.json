@@ -61,7 +61,10 @@
       "checks_red": "Prüfungen rot, zurück in die Umsetzung",
       "retry_release": "Release erneut anstoßen",
       "deploy_refused": "Einspielen abgelehnt, zurück in die Stufe davor",
-      "retry_checks": "Prüfung erneut anstoßen"
+      "retry_checks": "Prüfung erneut anstoßen",
+      "draft_task": "Auftrag mit Akzeptanzkriterien ausarbeiten lassen",
+      "entw_failed": "Zurück in die Umsetzung (ENTW nicht bestanden)",
+      "test_failed": "Zurück in die Umsetzung (TEST nicht bestanden)"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -114,7 +117,8 @@
       "shipyard-build": "Umsetzung",
       "shipyard-checks": "Prüfung",
       "shipyard-release": "Release",
-      "shipyard-verify": "Nachweis"
+      "shipyard-verify": "Nachweis",
+      "shipyard-task": "Auftrag"
     }
   },
   "en": {
@@ -178,7 +182,10 @@
       "checks_red": "Checks red, back to the build",
       "retry_release": "Release again",
       "deploy_refused": "Deploy refused, back to the stage before",
-      "retry_checks": "Check again"
+      "retry_checks": "Check again",
+      "draft_task": "Have the task written with acceptance criteria",
+      "entw_failed": "Back to the build (ENTW failed)",
+      "test_failed": "Back to the build (TEST failed)"
     },
     "reasons": {
       "running": "running",
@@ -231,7 +238,8 @@
       "shipyard-build": "Build",
       "shipyard-checks": "Checks",
       "shipyard-release": "Release",
-      "shipyard-verify": "Verification"
+      "shipyard-verify": "Verification",
+      "shipyard-task": "Task"
     }
   }
 }

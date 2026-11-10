@@ -82,6 +82,21 @@ def load_data(store: FsStore, config: DomainConfig, case_id: str, label: str, fi
                 out[base] = json.loads(store.case_text(case_id, newest[base]))
             except (OSError, ValueError):
                 continue
+    crit = (config.theme.get("criteria") or {}) if isinstance(config.theme.get("criteria"), dict) else {}
+    cfile = str(crit.get("file") or "task.md")
+    if cfile in newest:                                   # acceptance criteria of the task (ADR-029 d. 9): read for the gate's Definition of Ready
+        from .criteria import parse
+        try:
+            found, bad = parse(store.case_text(case_id, newest[cfile]))
+            out["_criteria"] = {"file": cfile, "found": found, "bad": bad}
+        except (OSError, ValueError):
+            pass
+    for base in newest:                                   # gate protocols (ADR-029): always read, the gate depends on them
+        if base.startswith("protocol-") and base.endswith(".json") and base not in out:
+            try:
+                out[base] = json.loads(store.case_text(case_id, newest[base]))
+            except (OSError, ValueError):
+                continue
     return out
 
 

@@ -1,0 +1,38 @@
+{
+  "id": "prod",
+  "title": {
+    "de": "Produktionsprüfung",
+    "en": "Production check"
+  },
+  "items": [
+    {
+      "id": "installed",
+      "question": {
+        "de": "Der Tag läuft auf PROD, die Oberfläche ist neu gebaut",
+        "en": "The tag runs on PROD, the surface is rebuilt"
+      },
+      "type": "yesno",
+      "agent": true
+    },
+    {
+      "id": "errors",
+      "question": {
+        "de": "Neue Fehler im Log seit dem Deploy",
+        "en": "New errors in the log since the deploy"
+      },
+      "type": "number",
+      "criterion": {
+        "max": 0
+      },
+      "agent": true
+    },
+    {
+      "id": "back",
+      "question": {
+        "de": "Der Weg zurück ist bekannt (vorheriger Tag)",
+        "en": "The way back is known (the previous tag)"
+      },
+      "type": "yesno"
+    }
+  ]
+}

@@ -424,6 +424,31 @@ class ChapterIn(BaseModel):
     step_id: str
 
 
+class ProtocolStartIn(BaseModel):
+    template: str
+    items: list[dict] = []                                # case items (a helper's, from the task's acceptance criteria)
+
+
+class ProtocolAnswerIn(BaseModel):
+    item: str
+    step_id: str
+    value: bool | float | int | str | None = None
+    na: bool = False
+    note: str = ""
+    evidence: list[str] = []
+
+
+class ProtocolShapeIn(BaseModel):
+    step_id: str
+    item: dict | None = None                              # add: the new item
+    strike: str = ""                                      # strike: the item's id
+    reason: str = ""
+
+
+class ProtocolSealIn(BaseModel):
+    step_id: str
+
+
 class FinishIn(BaseModel):
     step_id: str
 
@@ -1826,6 +1851,69 @@ def create_app(settings: Settings) -> FastAPI:
                 stepping._append_entry(c.store, c.config, case_id, stage, {"author": p.name if p else who, "status": "info",
                                        "title": c.config.word("texts", "interview_done", c.lang, "Done with the conversation"), "text": c.config.word("texts", "interview_done_text", c.lang, "My answers are in."), "step": body.step_id})
         return {"ok": True, "first": first}
+
+    # ------------------------------------------------------------ gate protocols (ADR-029, REQ-003)
+    from ..domain import protocol as gate
+
+    def _protocol_view(c: Ctx, case_id: str) -> list[dict]:
+        case = reading.load(c.store, c.config, case_id)
+        out = []
+        for base, doc in sorted((case.data or {}).items()):
+            if base.startswith("protocol-") and isinstance(doc, dict):
+                out.append({"template": doc.get("template"), "file": gate.file_of(case, doc.get("template", "")), "doc": doc, "state": gate.state(doc)})
+        return out
+
+    @app.get("/api/cases/{case_id}/protocols")
+    def get_protocols(case_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            return {"protocols": _protocol_view(c, case_id)}
+        except KeyError:
+            raise HTTPException(404, case_id)
+
+    @app.post("/api/cases/{case_id}/protocols/start")
+    def post_protocol_start(case_id: str, body: ProtocolStartIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            return {"ok": True, "file": gate.start(c.store, c.config, case_id, body.template, who, body.items)}
+        except gate.ProtocolError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases/{case_id}/protocols/{tid}/answer")
+    def post_protocol_answer(case_id: str, tid: str, body: ProtocolAnswerIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            doc = gate.answer(c.store, c.config, case_id, tid, who, body.item, body.step_id, value=body.value, na=body.na, note=body.note, evidence=body.evidence)
+            return {"ok": True, "state": gate.state(doc)}
+        except gate.ProtocolError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases/{case_id}/protocols/{tid}/shape")
+    def post_protocol_shape(case_id: str, tid: str, body: ProtocolShapeIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            doc = (gate.strike_item(c.store, c.config, case_id, tid, who, body.strike, body.reason, body.step_id) if body.strike
+                   else gate.add_item(c.store, c.config, case_id, tid, who, body.item or {}, body.step_id))
+            return {"ok": True, "state": gate.state(doc)}
+        except gate.ProtocolError as exc:
+            return _refuse(exc)
+
+    @app.post("/api/cases/{case_id}/protocols/{tid}/seal")
+    def post_protocol_seal(case_id: str, tid: str, body: ProtocolSealIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        try:
+            doc = gate.seal(c.store, c.config, case_id, tid, who, body.step_id, c.lang)
+        except gate.ProtocolError as exc:
+            return _refuse(exc)
+        st = gate.state(doc)
+        p = c.config.person(who)
+        de = (c.lang or c.config.lang) == "de"
+        title = ((doc.get("title") or {}).get(c.lang) or (doc.get("title") or {}).get("en") or tid)
+        with c.store.lock(case_id):
+            stage = c.store.find(case_id)
+            failed = ", ".join(st["failed_must"])
+            stepping._append_entry(c.store, c.config, case_id, stage, {
+                "author": p.name if p else who, "status": "info", "step": body.step_id,
+                "title": (c.config.word("texts", "protocol_sealed", c.lang, "Fragebogen versiegelt: {title}" if de else "Protocol sealed: {title}").format(title=title))[:120],
+                "text": ((("Tor offen: jeder Muss-Punkt bestanden." if de else "Gate open: every must-item passed.") if st["gate_open"]
+                         else (f"Tor zu — Muss-Punkte nicht bestanden: {failed}." if de else f"Gate closed — failed must-items: {failed}."))
+                         + ((f" Soll-Punkte nicht bestanden: {', '.join(st['failed_should'])}." if de else f" Should-items failed: {', '.join(st['failed_should'])}.") if st["failed_should"] else ""))})
+        return {"ok": True, "state": st}
 
     @app.get("/api/cases/{case_id}/outcome", response_model=OutcomeOut)
     def get_outcome(case_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

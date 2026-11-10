@@ -164,6 +164,16 @@ export const talk = {
   create: (title: string, step_id: string, values: Record<string, string> = {}) => call<{ id: string; stage: string }>("POST", "/api/cases", { title, step_id, values }),
 };
 
+// gate protocols (ADR-029): start, answer, shape (strike/add), seal — every write carries a step id, replayed safely
+export const gate = {
+  start: (id: string, template: string) => call<{ ok: boolean; file: string }>("POST", `/api/cases/${cid(id)}/protocols/start`, { template }),
+  answer: (id: string, tid: string, body: { item: string; step_id: string; value?: boolean | number | string | null; na?: boolean; note?: string; evidence?: string[] }) =>
+    call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/protocols/${encodeURIComponent(tid)}/answer`, body),
+  strike: (id: string, tid: string, item: string, reason: string, step_id: string) =>
+    call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/protocols/${encodeURIComponent(tid)}/shape`, { strike: item, reason, step_id }),
+  seal: (id: string, tid: string, step_id: string) => call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/protocols/${encodeURIComponent(tid)}/seal`, { step_id }),
+};
+
 export const sample = (id: string, slot: string, step_id: string, source?: string) =>
   call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/samples`, { slot, step_id, source: source ?? null });
 

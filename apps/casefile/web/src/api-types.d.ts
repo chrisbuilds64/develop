@@ -925,6 +925,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/protocols": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Protocols */
+        get: operations["get_protocols_api_cases__case_id__protocols_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/protocols/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Protocol Start */
+        post: operations["post_protocol_start_api_cases__case_id__protocols_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/protocols/{tid}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Protocol Answer */
+        post: operations["post_protocol_answer_api_cases__case_id__protocols__tid__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/protocols/{tid}/shape": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Protocol Shape */
+        post: operations["post_protocol_shape_api_cases__case_id__protocols__tid__shape_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/protocols/{tid}/seal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Protocol Seal */
+        post: operations["post_protocol_seal_api_cases__case_id__protocols__tid__seal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/outcome": {
         parameters: {
             query?: never;
@@ -1271,6 +1356,10 @@ export interface components {
             released: boolean;
             helper?: components["schemas"]["HelperView"] | null;
             again?: components["schemas"]["AgainView"] | null;
+            /** Protocols */
+            protocols?: {
+                [key: string]: unknown;
+            }[];
         };
         /** ChapterIn */
         ChapterIn: {
@@ -2141,6 +2230,66 @@ export interface components {
              * @default
              */
             workspace_label: string;
+        };
+        /** ProtocolAnswerIn */
+        ProtocolAnswerIn: {
+            /** Item */
+            item: string;
+            /** Step Id */
+            step_id: string;
+            /** Value */
+            value?: boolean | number | string | null;
+            /**
+             * Na
+             * @default false
+             */
+            na: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Evidence
+             * @default []
+             */
+            evidence: string[];
+        };
+        /** ProtocolSealIn */
+        ProtocolSealIn: {
+            /** Step Id */
+            step_id: string;
+        };
+        /** ProtocolShapeIn */
+        ProtocolShapeIn: {
+            /** Step Id */
+            step_id: string;
+            /** Item */
+            item?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Strike
+             * @default
+             */
+            strike: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** ProtocolStartIn */
+        ProtocolStartIn: {
+            /** Template */
+            template: string;
+            /**
+             * Items
+             * @default []
+             */
+            items: {
+                [key: string]: unknown;
+            }[];
         };
         /** RejectIn */
         RejectIn: {
@@ -4361,6 +4510,180 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["FinishIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_protocols_api_cases__case_id__protocols_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_protocol_start_api_cases__case_id__protocols_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolStartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_protocol_answer_api_cases__case_id__protocols__tid__answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                tid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_protocol_shape_api_cases__case_id__protocols__tid__shape_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                tid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolShapeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_protocol_seal_api_cases__case_id__protocols__tid__seal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                tid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolSealIn"];
             };
         };
         responses: {
