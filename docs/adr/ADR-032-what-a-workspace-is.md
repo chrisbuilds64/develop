@@ -26,11 +26,14 @@ all records (2026-11-09) found where the old notion is assumed; the ranked list 
 
 ## Decision
 
-1. **Seven terms, one meaning each.**
-   - **Tenant** — owns workspaces, people, agent instances and billing. Today there is one, ChrisBuilds64.
+1. **Eight terms, one meaning each** (the connector added 2026-11-10, see below).
+   - **Tenant** — owns workspaces, people, agent instances, connectors and billing. Today there is one, ChrisBuilds64.
    - **Workspace** — a set of data points, the application instances running on them, and members.
-   - **Data point** — a named, typed access to data: a folder (team folder), a database, a mailbox, a repository, an
-     API. It carries its location per stage, its credentials, and who may read or write it.
+   - **Connector** — a technical access the tenant sets up once: a Nextcloud server, a directory on a host, a database
+     server, a mail server, a repository host. It carries the kind, the address per stage and the credentials. It
+     holds no data of its own and grants no rights to anybody.
+   - **Data point** — a named place reached through one connector: a team folder, a directory, a schema, a mailbox,
+     a repository. It belongs to one workspace and carries who may read or write it.
    - **Application** — configuration only: stages, words, documents, roles, skills (ADR-015). It holds no data and is
      never stored in data.
    - **Application instance** — an application running in a workspace under a name of its own, with its slots bound to
@@ -85,6 +88,34 @@ separate plan; nothing in this record is built by accepting it.
 - **Billing:** the tenant pays (decision 6).
 - **Set-up:** the tenant's administrator sets up data points, application instances and members.
 - **Order:** the worklist (ADR-031) is the first application built on this model; the rest follows case by case.
+
+## Amended 2026-11-10: connectors
+
+Decision 1 had the data point carry its location, its credentials and its rights at once. The product owner separates
+them (2026-11-10): **connectors** are a pool of the tenant; a workspace takes **data points** from that pool; the
+application instances of the workspace bind their slots to those data points.
+
+    tenant ── connectors (kind, address per stage, credentials)
+                 │ one connector, many data points
+    workspace ── data points (place on a connector, readers, writers)
+                 │ bound by slots
+                 └─ application instances (application, name, house rules, mode)
+
+- Credentials live once, on the connector; a data point names its connector and a place on it.
+- Rights stay on the data point (decision 2) and are enforced through the connector where it can (Nextcloud folder
+  rights, database grants); where it cannot (a plain directory), by the scoped store alone.
+- Stages (decision 7) are an address per stage on the connector, so a data point needs no copy of its own description
+  per stage.
+- The words are English in configuration and code: `connector`, `data point` (`data_points`), `workspace`,
+  `application`, `instance`, `slot`, `binding`, `member`, `tenant`.
+
+**Today's registry read in these terms (PROD, 2026-11-10).** Every entry of `workspaces.json` is an application
+instance with exactly one data point; the shell's "Casefile" entry lists all of them. Two entries over the same
+application differ only in their data point: `pressroom` (live, a Nextcloud team folder) and `pressroom-muster`
+(replay, a directory seeded from `worlds/pressroom-muster`). The registry also lists "PressRoom · Muster" as an
+application of its own, although it points at the same configuration — the sample is in the wrong place there; it is a
+data point with a seed, not an application. The steps from this shape to the one above are planned in
+`control/planning/2026-11-10_workspaces-connectors-case-tree.md` (private).
 
 ## Alternatives considered
 
