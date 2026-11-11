@@ -1399,6 +1399,12 @@ export interface components {
             /** Held By */
             held_by?: string[];
             /**
+             * Held By Helper
+             * @default false
+             */
+            held_by_helper: boolean;
+            outside?: components["schemas"]["OutsideView"] | null;
+            /**
              * Take Back To
              * @default
              */
@@ -2295,6 +2301,24 @@ export interface components {
             canon_map?: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * OutsideView
+         * @description Work for the case that runs outside it, in the application's words (REQ-001 T-08).
+         */
+        OutsideView: {
+            /** Word */
+            word: string;
+            /**
+             * Since
+             * @default
+             */
+            since: string;
+            /**
+             * By
+             * @default
+             */
+            by: string;
         };
         /** PersonView */
         PersonView: {

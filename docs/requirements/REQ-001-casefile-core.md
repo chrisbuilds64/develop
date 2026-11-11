@@ -38,6 +38,8 @@ Suite on 2026-11-08: 164 tests, all green.
 | T-05 | A case somebody else holds can be reminded or taken back. | `domain/step.py` | yes — `test_demo` |
 | T-06 | The stack (my desk) is ordered by rule; a date puts a case first; order is configurable. | `domain/turn.py`, `domain/cases.py` | yes — `test_stack` |
 | T-07 | Rhythm: what a person did today and this week. | `api/app.py` `/api/me/rhythm` | **no** |
+| T-08 | Work for a case that runs outside it is recorded in the case by whoever hands it out and ended by the report that comes back; while it stands, the case shows it like a helper at work, with its words and start time, and nobody holds the case. *(Added with SW-2026-014, 2026-11-11.)* | `domain/outside.py`, `domain/turn.py`, `domain/step.py` `outside`, `cli/step.py --what` | yes — `test_outside_work` |
+| T-09 | When a stage's work is a helper's, the case names the helper as its holder, never the only person who shares the helper's role; a reminder never goes to an agent. *(Added with SW-2026-014, 2026-11-11.)* | `domain/step.py` `holders`, `_remind` | yes — `test_outside_work` |
 
 ## Configuration instead of code (ADR-015)
 
@@ -101,6 +103,7 @@ Suite on 2026-11-08: 164 tests, all green.
 | S-16 | In the file that carries acceptance criteria (theme `criteria.file`, default `task.md`), the lines the gate could not read are named in the editor with their line and the gate's reason, before saving. *(Added with SW-2026-004, 2026-11-11.)* | `domain/criteria.py` `unreadable`, `web/src/components/Editor.tsx` | yes — `test_edit`; end-to-end — walk `text-editor` |
 | S-17 | Every case may hold free Markdown notes under `notes/`, created, edited and versioned in the editor; they count for no gate. An application switches them off with `"notes": false` in theme.json; the default is on. *(Added with SW-2026-006, 2026-11-11.)* | `domain/notes.py`, `store` `sub_files`, `POST /api/cases/{id}/notes`, `web/src/screens/Case.tsx` `Notes` | yes — `test_notes`, `test_data_points` (note in a data point); end-to-end — walk `notes` in CI `flows` (`web/walks/notes-shot.mjs`) |
 | S-18 | A new case is started from a visible button in the bar of the application the person is in (`theme.create`, for its roles, worded by the vocabulary's `texts.new_case`); it opens the editor with title, the value lists that ask on creation, a Markdown description with the S-15 toolbar, and files by drop or paste. The case is made in that application, never another; the files become files of the case, the description is the first thread entry and shows them as `![](name)`. The rail opens the same editor. *(Added with SW-2026-007, 2026-11-11.)* | `POST /api/cases` (JSON or multipart), `web/src/components/NewCase.tsx`, `Md.tsx` | yes — `test_new_case`; end-to-end — walk `new-case` in CI `flows` (`web/walks/new-case-shot.mjs`) |
+| S-19 | "Take it back" and "Move back" name the target stage with its station word, not its status sentence. *(Added with SW-2026-014, 2026-11-11.)* | `api/views.py` `stage_name`, `web/src/screens/Case.tsx` | yes — `test_outside_work`; end-to-end — walk `held-case` in CI `flows` (`web/walks/held-case-shot.mjs`) |
 
 ## Public demo (ADR-016)
 

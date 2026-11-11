@@ -234,7 +234,8 @@ def again(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> Ag
     from ..domain.runs import may_order
     from ..domain.turn import stage_run
     last = stage_run(case)
-    busy = case.last_run is not None and case.last_run.status in ("queued", "running")
+    from ..domain.outside import standing
+    busy = (case.last_run is not None and case.last_run.status in ("queued", "running")) or standing(case) is not None
     person = config.person(viewer) if viewer else None
     if last is None or last.status != "done" or busy or person is None or may_order(config, last.skill, person):
         return None
@@ -271,6 +272,20 @@ def protocols(config: DomainConfig, case: Case, store, lang: str, viewer: str | 
     return out
 
 
+class OutsideView(BaseModel):
+    """Work for the case that runs outside it, in the application's words (REQ-001 T-08)."""
+    word: str                                             # "Deploy auf ENTW läuft"
+    since: str = ""
+    by: str = ""                                          # who handed it out, by name
+
+
+def stage_name(config: DomainConfig, folder: str, lang: str) -> str:
+    """A stage by its short name — the station's word — and by its status sentence only where it has no station
+    (REQ-001 S-19)."""
+    st = config.stage(folder)
+    return (config.word("stations", st.key, lang, "") if st and st.key else "") or config.word("stages", folder, lang, folder)
+
+
 class CaseView(CaseCard):
     meta: dict = Field(default_factory=dict)
     stations: list[StationView]
@@ -284,6 +299,8 @@ class CaseView(CaseCard):
     reopen_to: str = ""                                   # a closed case: the stage "Move back" (action `reopen`) returns it to; empty while it is in the work
     reopen_word: str = ""                                 # that stage in words
     held_by: list[str] = Field(default_factory=list)      # somebody else holds the case: their names; "Send a reminder" (action `remind`) goes to them
+    held_by_helper: bool = False                          # …a helper holds it (REQ-001 T-09): no reminder, "send the helper again" instead
+    outside: OutsideView | None = None                    # work handed out of the case runs (REQ-001 T-08)
     take_back_to: str = ""                                # the viewer's own stage it came from: "Take it back" (action `take_back`) returns it there
     take_back_word: str = ""
     undo_step: str = ""                                   # the viewer's newest move, while nothing happened since: "Undo" (action `undo`) takes it back (ADR-025)
@@ -416,13 +433,19 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     back = stepping.reopen_target(config, case) or ""
     if back and not stepping.may_reopen(config, viewer, back):
         back = ""                                          # offered only to whom it is allowed (review S4)
-    held = [p.name for p in stepping.holders(config, case, viewer)] if viewer else []
+    holding = stepping.holders(config, case, viewer) if viewer else []
+    held = [p.name for p in holding]
     pull = stepping.take_back_target(config, case, viewer) or ""
+    from ..domain import outside as away
+    doc = away.standing(case)
+    who = config.person(str(doc.get("by") or "")) if doc else None
+    out = OutsideView(word=away.words(config, doc, lang), since=str(doc.get("since") or ""), by=who.name if who else str(doc.get("by") or "")) if doc else None
     undo = stepping.undoable(store, config, case, viewer) if store is not None else None
     undo_action = config.action(undo.from_, undo.action) if undo else None
     deps = depends.waits(case.meta, depends.resolver_for(store, config), lang) if store is not None else []
-    return CaseView(**c.model_dump(), waits=deps, released=depends.released(deps), reopen_to=back, reopen_word=config.word("stages", back, lang, back) if back else "",
-                    held_by=held, take_back_to=pull, take_back_word=config.word("stages", pull, lang, pull) if pull else "",
+    return CaseView(**c.model_dump(), waits=deps, released=depends.released(deps), reopen_to=back, reopen_word=stage_name(config, back, lang) if back else "",
+                    held_by=held, held_by_helper=bool(holding) and all(p.kind == "agent" for p in holding), outside=out,
+                    take_back_to=pull, take_back_word=stage_name(config, pull, lang) if pull else "",
                     translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
                     meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
