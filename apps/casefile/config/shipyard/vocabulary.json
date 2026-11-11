@@ -64,7 +64,8 @@
       "retry_checks": "Prüfung erneut anstoßen",
       "draft_task": "Auftrag mit Akzeptanzkriterien ausarbeiten lassen",
       "entw_failed": "Zurück in die Umsetzung (ENTW nicht bestanden)",
-      "test_failed": "Zurück in die Umsetzung (TEST nicht bestanden)"
+      "test_failed": "Zurück in die Umsetzung (TEST nicht bestanden)",
+      "record_done": "Nachgetragen: außerhalb gebaut, abgeschlossen"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -186,7 +187,8 @@
       "retry_checks": "Check again",
       "draft_task": "Have the task written with acceptance criteria",
       "entw_failed": "Back to the build (ENTW failed)",
-      "test_failed": "Back to the build (TEST failed)"
+      "test_failed": "Back to the build (TEST failed)",
+      "record_done": "Recorded afterwards: built outside, closed"
     },
     "reasons": {
       "running": "running",

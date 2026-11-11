@@ -456,3 +456,27 @@ def test_the_task_writer_still_comes_first_when_only_the_criteria_are_missing(tm
     acts = [t for t in enrich(case, whose(case, config, "en"), config, "en") if t.action in ("draft_task", "accept_task")]
     assert [t.action for t in acts] == ["draft_task", "accept_task"]
     assert acts[0].unblocks == "accept_task"
+
+
+def test_an_agent_opens_a_case_and_a_change_built_outside_is_recorded_afterwards(tmp_path, monkeypatch, capsys):
+    """REQ-001 C-10: an agent opens a case through the core, under its own name, as the surface does. REQ-002 SW-14: a
+    change built outside the way is recorded afterwards — task and pull request in the case, then filed as done by the
+    developer; a case without a pull request record never offers it."""
+    from casefile.cli import case as cli
+    root, store, config = world(tmp_path)
+    assert "record_done" not in [t.action for t in whose(reading.load(store, config, CID), config)]
+    monkeypatch.setenv("COCKPIT_DATA_DIR", str(root))
+    monkeypatch.setenv("PRESSROOM_AGENT", "axel")
+    assert cli.main(["new", "--config", str(CFG), "--title", "Producing action first", "--description", "Built in a terminal; PR #48."]) == 0
+    out = json.loads(capsys.readouterr().out)
+    cid = out["case"]
+    assert out["stage"] == "10-task" and cid.startswith("SW-")
+    opened = reading.load(store, config, cid)
+    assert opened.meta["created_by"] == "axel" and opened.entries[0].text.startswith("Built in a terminal")
+    assert cli.main(["new", "--config", str(CFG), "--title", "Producing action first", "--description", "Built in a terminal; PR #48."]) == 0
+    assert json.loads(capsys.readouterr().out)["case"] == cid                     # the same request twice is the same case
+    for name, text in (("task.md", TASK_MD), ("pr.md", "https://example.org/pull/48")):
+        (root / "10-task" / cid / name).write_text(text, encoding="utf-8")
+        assert stepping.step(store, config, cid, StepRequest(action="deliver", step_id=f"d-{name.replace('.', '-')}", payload={"files": [name]}), "axel").ok
+    assert stepping.step(store, config, cid, StepRequest(action="record_done", step_id="rd", payload={}), "axel").ok
+    assert reading.load(store, config, cid).stage == "90-closed"

@@ -50,6 +50,7 @@ The stages are the way of a change in [CONTRIBUTING.md](../../CONTRIBUTING.md), 
 | SW-13 | A secret reaches only the skill whose policy names it; an agent's runs are billed to the person it belongs to. | `apps/cockpit/tests/test_runner_secrets.py` |
 | SW-14 | A deploy happens only when the case stands in the stage that deploys it, only for a tag on `main`, and never above the requesting space's stage; the outcome goes back to the case. | `infra/pressroom/tests/test_requests.py` |
 | SW-15 | After a new change is created, the case offers the configured first action (`theme.create.next`; Shipyard: `draft_task`) while it stands in its first stage, no helper has worked on it and nothing that action produces is there yet. An application without the key keeps its order. *(Added with SW-2026-007, 2026-11-11.)* | `apps/casefile/tests/test_new_case.py`; walk `new-case` |
+| SW-16 | A change built outside the way and already merged is recorded afterwards: with the task and the pull request record in the case, the developer files it as done (`record_done`); a case without a pull request record never offers it. | `test_an_agent_opens_a_case_and_a_change_built_outside_is_recorded_afterwards` |
 
 ## Not in this version
 
