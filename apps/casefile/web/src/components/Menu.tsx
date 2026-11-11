@@ -192,7 +192,7 @@ function Search({ w, cases, go }: { w: ReturnType<typeof words>; cases: CaseCard
     const t = q.trim().toLowerCase();
     if (!t) return [];
     const seen = new Set<string>();
-    return cases.filter((c) => !seen.has(c.id) && seen.add(c.id) && [c.title, c.number, c.party, c.external_id, c.label_word].some((x) => (x ?? "").toLowerCase().includes(t))).slice(0, 8);
+    return cases.filter((c) => !seen.has(c.id) && seen.add(c.id) && [c.title, c.ref, c.number, c.party, c.external_id, c.label_word].some((x) => (x ?? "").toLowerCase().includes(t))).slice(0, 8);
   }, [q, cases]);
   const mac = /Mac|iPhone|iPad/.test(navigator.platform);
   return (
@@ -205,7 +205,7 @@ function Search({ w, cases, go }: { w: ReturnType<typeof words>; cases: CaseCard
         <div className="search-pop" role="listbox">
           {hits.length === 0 ? <p className="search-none">{w.searchNone}</p> : hits.map((c) => (
             <button key={c.id} type="button" role="option" onMouseDown={(e) => e.preventDefault()} onClick={() => { setQ(""); go(`/case/${encodeURIComponent(c.id)}`); }}>
-              <span className="sq" style={{ background: c.tint || undefined }} /><b>{c.title}</b><small>{c.party || c.number}</small>
+              <span className="sq" style={{ background: c.tint || undefined }} /><b>{c.title}</b><small>{c.party || c.ref}</small>
             </button>
           ))}
         </div>

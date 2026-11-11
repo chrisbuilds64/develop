@@ -1,5 +1,14 @@
 [
   {
+    "id": "case-ref",
+    "script": "walks/case-ref-shot.mjs",
+    "workspaces": [
+      "shipyard-muster",
+      "pressroom-muster"
+    ],
+    "proves": "REQ-001 S-20, SW-2026-023"
+  },
+  {
     "id": "held-case",
     "script": "walks/held-case-shot.mjs",
     "workspaces": [

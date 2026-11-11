@@ -1260,6 +1260,11 @@ export interface components {
              */
             number: string;
             /**
+             * Ref
+             * @default
+             */
+            ref: string;
+            /**
              * Tint
              * @default
              */
@@ -1337,6 +1342,11 @@ export interface components {
              * @default
              */
             number: string;
+            /**
+             * Ref
+             * @default
+             */
+            ref: string;
             /**
              * Tint
              * @default
@@ -1494,6 +1504,11 @@ export interface components {
              * @default []
              */
             facets: components["schemas"]["FacetView"][];
+            /**
+             * Case Ref
+             * @default []
+             */
+            case_ref: string[];
         };
         /** DecideIn */
         DecideIn: {

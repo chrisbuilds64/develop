@@ -12,8 +12,7 @@ export function Card({ c, go, w, lang, quiet, on, from }: { c: CaseCard; go: (p:
   const t = c.turn;
   const running = t?.actor === "claude";
   const state = t ? (c.mine ? c.stage_word : t.actor === "claude" ? `${t.reason}${c.since ? ` · ${w.since} ${ago(c.since, lang)}` : ""}` : `${c.stage_word}`) : c.stage_word;
-  // the short identifier: the external number, label and number, or the id without its slug — never number and slug twice
-  const num = c.external_id || (c.number ? `${c.label}-${c.number}` : c.id.replace(/-[a-z][a-z0-9]*(-.*)?$/, ""));
+  const num = c.ref || c.id;                            // the reference, spelled once by the core (REQ-001 S-20)
   const yours = c.mine && !quiet;                       // colour only where the group is "you"; elsewhere the row stays quiet
   return (
     <a className={`card${yours ? " mine" : ""}${quiet ? " quiet" : ""}${on ? " on" : ""}`} aria-current={on ? "true" : undefined} href={`${BASE}${to}`} onClick={(e) => { e.preventDefault(); go(to); }}>

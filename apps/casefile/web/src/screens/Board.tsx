@@ -45,8 +45,9 @@ export function Board({ config, go, w, views }: { config: ConfigView; go: (p: st
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
   const lang = config.lang;
   const facets = config.facets ?? [];
+  const showRef = config.case_ref.includes("board");
   const [fs, setFs] = useFacets();
-  const all = (stages.data ?? []).flatMap((s) => s.cases);
+  const all =(stages.data ?? []).flatMap((s) => s.cases);
   const shownIds = new Set(apply(all, facets, fs).map((c) => c.id));
   return (
     <main className="main view-board wide" data-help="cf.views">
@@ -66,7 +67,8 @@ export function Board({ config, go, w, views }: { config: ConfigView; go: (p: st
                 return (
                   <button key={c.id} type="button" className={`wb-card${done ? " fade" : ""}`} data-help-skip="opens the case" onClick={() => go(`/case/${encodeURIComponent(c.id)}`)}>
                     <b>{c.unread && c.mine && <span className="wb-dot" aria-label={w.isNew} />}{c.title}</b>
-                    {(c.party || c.external_id) && <span className="wb-m">{c.party || c.external_id}</span>}
+                    {showRef ? <span className="wb-m">{c.party || c.label_word}{c.ref && <span className="cref">{c.ref}</span>}</span>
+                      : (c.party || c.external_id) && <span className="wb-m">{c.party || c.external_id}</span>}
                     <Chips c={c} facets={facets} lang={lang} />
                     <span className="wb-f"><span className={`wb-w${st.you ? " you" : ""}`}>{st.text}</span><span>{c.since ? short(c.since, lang) : ""}</span></span>
                   </button>

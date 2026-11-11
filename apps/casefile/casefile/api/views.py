@@ -68,6 +68,7 @@ class CaseCard(BaseModel):
     external_id: str = ""                                 # the number the house's own system knows this case by
     external_url: str = ""                                # a link into that system, from the theme's url template
     number: str = ""                                      # the short number on the cover (meta.number)
+    ref: str = ""                                         # what people call the case by, one spelling for every place (reference(), REQ-001 S-20)
     tint: str = ""                                        # the cover's colour, from theme.covers (by one meta key)
     party: str = ""                                       # who the case is from, for the first column of a row: reported_by, client, the mail's sender
     unread: bool = False                                  # new to the viewer: never opened, or somebody else wrote since (domain/seen.py)
@@ -361,6 +362,7 @@ class ConfigView(BaseModel):
     videos: list[dict] = []                               # explainers for this language: key, where, title, url, poster, seconds
     lists: list[ListView] = []                            # the value lists (SYS-105), words in this language
     facets: list[FacetView] = []                          # what the surface filters by, sorts by and shows on a card (domain/facets.py)
+    case_ref: list[str] = []                              # where the surface shows a case's reference: list, board, head (theme case_ref.show, REQ-001 S-20)
 
 
 def by_word(config: DomainConfig, by: str, lang: str) -> str:
@@ -374,6 +376,24 @@ def by_word(config: DomainConfig, by: str, lang: str) -> str:
         return agent.name if agent else by
     p = config.person(by)
     return p.name if p else by
+
+
+REF_PLACES = ("list", "board", "head")
+
+
+def reference(case_id: str, label: str, number: str, external_id: str) -> str:
+    """The one spelling of a case's reference: the external number, else label-number, else the id without its slug."""
+    if external_id:
+        return external_id
+    if label and number:
+        return f"{label}-{number}"
+    return re.sub(r"-[a-z][a-z0-9]*(-.*)?$", "", case_id)
+
+
+def ref_places(config: DomainConfig) -> list[str]:
+    """The theme's `case_ref.show`, kept to the places the surface knows; without the key, every place."""
+    show = (config.theme.get("case_ref") or {}).get("show")
+    return list(REF_PLACES) if show is None else [p for p in REF_PLACES if p in show]
 
 
 def station_of(config: DomainConfig, stage: str) -> tuple[str, int]:
@@ -404,7 +424,8 @@ def card(config: DomainConfig, case: Case, viewer: str | None, lang: str, seen: 
     tint = value_lists.tint(config.lists, config.theme, case.meta)
     party = next((str(case.meta.get(k)).split(",")[0].strip() for k in ("reported_by", "customer", "client", "from_name", "from") if case.meta.get(k)), "")
     point = _point(store, case.id)
-    return CaseCard(id=case.id, party=party, number=str(case.meta.get("number") or ""), tint=tint, title=str(localized(case.meta, lang).get("title") or case.meta.get("working_title") or case.id), label=case.label,
+    number = str(case.meta.get("number") or "")
+    return CaseCard(id=case.id, party=party, number=number, ref=reference(case.id, case.label, number, ext), tint=tint, title=str(localized(case.meta, lang).get("title") or case.meta.get("working_title") or case.id), label=case.label,
                     external_id=ext, external_url=(tpl.replace("{external_id}", ext) if ext and tpl else ""),
                     label_word=value_lists.value_word(config.lists, "label", case.label, lang, config.word("labels", case.label, lang, case.label)), stage=case.stage,
                     stage_word=config.word("stages", case.stage, lang, case.stage), station=key, station_index=idx, group=g,
@@ -476,7 +497,7 @@ def config_view(config: DomainConfig, lang: str, points: list | None = None) -> 
                       groups=[GroupView(key=g, word=config.word("groups", g, lang, g)) for g in groups_order],
                       people=[PersonView(id=p.id, name=p.name, kind=p.kind, roles=p.roles) for p in config.people],
                       theme=config.theme, words=v, lists=list_views(config, lang),
-                      facets=[FacetView(**f) for f in facets.facets(config, lang, points)],
+                      facets=[FacetView(**f) for f in facets.facets(config, lang, points)], case_ref=ref_places(config),
                       videos=[{"key": x["key"], "where": list(x.get("where", [])), "title": (x.get("title") or {}).get(lang) or (x.get("title") or {}).get("en") or x["key"],
                                "url": f"/api/videos/{x['file']}", "poster": f"/api/videos/{x['poster']}" if x.get("poster") else "", "seconds": int(x.get("seconds", 0))}
                               for x in config.videos if not x.get("lang") or x.get("lang") == lang] or

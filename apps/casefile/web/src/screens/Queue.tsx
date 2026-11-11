@@ -26,8 +26,8 @@ export function short(iso: string, lang: string): string {
   return ago(iso, lang).replace(/ (Min\.|min)$/, "m").replace(/ (Std\.|h)$/, "h").replace(/ Tage?n?$| days?$/, "d");
 }
 
-export function Queue({ tab, openId, go, w, lang, place, views, onMenu }: { tab: Tab; openId?: string; go: (p: string) => void; w: ReturnType<typeof words>; lang: string;
-  place: string; views?: ReactNode; onMenu?: () => void }) {
+export function Queue({ tab, openId, go, w, lang, place, views, onMenu, showRef }: { tab: Tab; openId?: string; go: (p: string) => void; w: ReturnType<typeof words>; lang: string;
+  place: string; views?: ReactNode; onMenu?: () => void; showRef?: boolean }) {
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
   const color = me.data?.places?.find((p) => p.current)?.color;
   // while a case in the list has a helper at work, ask often: "is running" must not outlive the run on screen
@@ -62,7 +62,7 @@ export function Queue({ tab, openId, go, w, lang, place, views, onMenu }: { tab:
                onClick={(e) => { e.preventDefault(); open(c); }}>
               {c.unread && <i className="q-dot" aria-label={w.isNew} />}
               <span className="qtop"><span className="qt">{c.title}</span><span className="qa">{c.since ? short(c.since, lang) : ""}</span></span>
-              <span className="qn">{c.party || c.external_id || c.label_word}</span>
+              <span className="qn">{c.party || (showRef ? c.label_word : c.external_id || c.label_word)}{showRef && c.ref && <span className="cref">{c.ref}</span>}</span>
               {working && <span className="qp q-working">{c.turn?.reason}</span>}
               {tab === "others" && !working && c.turn && <span className="qp">{c.stage_word}</span>}
             </a>
