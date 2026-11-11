@@ -70,7 +70,13 @@
     "reasons": {
       "running": "es läuft gerade",
       "failed": "der letzte Lauf ist gescheitert",
-      "missing": "es fehlt noch etwas"
+      "missing": "es fehlt noch etwas",
+      "helper_holds": "ein Helfer hält diese Akte; beauftrage ihn erneut statt zu erinnern"
+    },
+    "outside": {
+      "deploy_entw": "Deploy auf ENTW",
+      "deploy_test": "Deploy auf TEST",
+      "deploy_prod": "Deploy auf PROD"
     },
     "texts": {
       "new_case": "Neuer Fall",
@@ -89,7 +95,8 @@
       "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
       "correction": "Korrektur: {title}",
       "retry_title": "{skill} neu gestartet",
-      "again_title": "{skill} erneut beauftragt"
+      "again_title": "{skill} erneut beauftragt",
+      "outside_running": "{what} läuft"
     },
     "files": {
       "task.md": "Auftrag",
@@ -193,7 +200,13 @@
     "reasons": {
       "running": "running",
       "failed": "the last run failed",
-      "missing": "something is missing"
+      "missing": "something is missing",
+      "helper_holds": "a helper holds this case; send it again instead of a reminder"
+    },
+    "outside": {
+      "deploy_entw": "Deploy to ENTW",
+      "deploy_test": "Deploy to TEST",
+      "deploy_prod": "Deploy to PROD"
     },
     "texts": {
       "new_case": "New case",
@@ -212,7 +225,8 @@
       "undone_text": "Taken back before the next step started.",
       "correction": "Correction: {title}",
       "retry_title": "{skill} started again",
-      "again_title": "{skill} sent again"
+      "again_title": "{skill} sent again",
+      "outside_running": "{what} running"
     },
     "files": {
       "task.md": "Task",

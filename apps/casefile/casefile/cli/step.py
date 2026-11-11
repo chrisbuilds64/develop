@@ -1,6 +1,8 @@
 """One step on a case, from a helper's run — through the core, like every other writer (ADR-013, ADR-027).
 
     python -m casefile.cli.step <case-id> <action> --config <domain-dir> [--file F ...] [--note TEXT] [--text TEXT]
+    python -m casefile.cli.step <case-id> outside --what <key> --config <domain-dir>     # work handed out (REQ-001 T-08)
+    python -m casefile.cli.step <case-id> outside_end --config <domain-dir>
 
 The pipeline root is COCKPIT_DATA_DIR, which the runner sets for every run. The step is made as the run's agent
 (PRESSROOM_AGENT) and as nobody else: the name must be a person of kind "agent" in the domain's people, so a helper
@@ -48,6 +50,7 @@ def main(argv=None) -> int:
     p.add_argument("--text", default="", help="the text of a note or a delivery")
     p.add_argument("--title", default="")
     p.add_argument("--for", dest="for_", default="", help="the person a note is for (their move until they answer)")
+    p.add_argument("--what", default="", help="outside: the work handed out of the case, as a word key of the application")
     a = p.parse_args(argv)
 
     root = os.environ.get("COCKPIT_DATA_DIR", "").strip()
@@ -73,6 +76,8 @@ def main(argv=None) -> int:
         payload["title"] = a.title
     if a.for_:
         payload["for"] = a.for_
+    if a.what:
+        payload["what"] = a.what
     run = os.environ.get("PRESSROOM_RUN_ID", "").strip() or "cli"
     digest = hashlib.sha1(json.dumps([a.case, a.action, payload], sort_keys=True).encode()).hexdigest()[:8]
     step_id = re.sub(r"[^A-Za-z0-9_-]", "-", f"{run}"[-60:] + f"-{a.action}-{digest}")[-80:]

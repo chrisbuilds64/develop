@@ -1,5 +1,14 @@
 [
   {
+    "id": "held-case",
+    "script": "walks/held-case-shot.mjs",
+    "workspaces": [
+      "shipyard-muster",
+      "schadenakte-muster"
+    ],
+    "proves": "REQ-001 T-08, S-19, T-05, SW-2026-014"
+  },
+  {
     "id": "note-editor",
     "script": "walks/note-editor-shot.mjs",
     "workspaces": [

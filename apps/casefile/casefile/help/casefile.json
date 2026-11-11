@@ -626,8 +626,8 @@
         "en": "With someone else"
       },
       "text": {
-        "de": "„Erinnern“ schreibt der Person eine Notiz in den Verlauf; die Akte wird für sie neu, ohne dass sie eine Aufgabe mehr hat. „Zurücknehmen“ holt die Akte auf deine Stufe zurück, wenn sie von dort kam. Beides steht im Verlauf.",
-        "en": "“Send a reminder” writes the person a note in the conversation; the case becomes new to them without giving them another task. “Take it back” returns the case to your stage when it came from there. Both are recorded."
+        "de": "„Erinnern“ schreibt der Person eine Notiz in den Verlauf; die Akte wird für sie neu, ohne dass sie eine Aufgabe mehr hat. „Zurücknehmen“ holt die Akte auf deine Stufe zurück, wenn sie von dort kam; der Knopf nennt die Stufe. Beides steht im Verlauf. Hat ein Helfer auf dieser Stufe gearbeitet, liegt die Akte bei ihm: Statt zu erinnern, beauftragst du ihn erneut. Läuft Arbeit außerhalb der Akte, etwa ein Deploy, liegt sie bei niemandem, bis die Rückmeldung kommt.",
+        "en": "“Send a reminder” writes the person a note in the conversation; the case becomes new to them without giving them another task. “Take it back” returns the case to your stage when it came from there; the button names the stage. Both are recorded. When a helper worked on this stage, the case is with the helper: instead of a reminder, you send the helper again. While work for the case runs outside it, such as a deploy, it is with nobody until the report comes back."
       }
     },
     {

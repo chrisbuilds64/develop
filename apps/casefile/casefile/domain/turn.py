@@ -1,7 +1,7 @@
 """Whose move is it. One pure function; surface, CLI and agents all call this one.
 
 The rule, in order (Bauplan §4, from the operating concept §7):
-1. a run is running → Claude's move, nobody else's;
+1. a run is running → Claude's move, nobody else's; work handed out of the case runs → the same wait (domain/outside.py);
 2. the last run failed → the operator's move: see what went wrong;
 3. open thread entries addressed to a person, not resolved → that person's move, one turn per entry;
 4. otherwise by stage: whose turn, which action, which deliverables it needs;
@@ -122,6 +122,13 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
         agent = config.agent
         return [Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                      reason=config.word("reasons", "running", lang, "a helper is working on it"), since=run.started or run.created)]
+
+    # 1b. work for the case runs outside it (REQ-001 T-08): a wait like a helper's, in the application's words
+    from .outside import standing, words
+    away = standing(case)
+    if away:
+        return [Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
+                     reason=words(config, away, lang), since=str(away.get("since") or ""))]
 
     # 2. the last run failed
     if run and run.status == "failed":

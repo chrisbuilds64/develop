@@ -2935,6 +2935,21 @@
             "type": "array",
             "title": "Held By"
           },
+          "held_by_helper": {
+            "type": "boolean",
+            "title": "Held By Helper",
+            "default": false
+          },
+          "outside": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OutsideView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "take_back_to": {
             "type": "string",
             "title": "Take Back To",
@@ -4733,6 +4748,30 @@
         ],
         "title": "OutcomeOut",
         "description": "The outcome: the findings, the draft with each line's decision, and the compiled canon when there is one."
+      },
+      "OutsideView": {
+        "properties": {
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "since": {
+            "type": "string",
+            "title": "Since",
+            "default": ""
+          },
+          "by": {
+            "type": "string",
+            "title": "By",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "word"
+        ],
+        "title": "OutsideView",
+        "description": "Work for the case that runs outside it, in the application's words (REQ-001 T-08)."
       },
       "PersonView": {
         "properties": {

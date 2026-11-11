@@ -240,9 +240,11 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const party = v.party || "";
   const initials = (party || v.title).split(/[\s,]+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
   const urgent = main?.kind === "date" || r?.urgency === "high";
+  // work handed out of the case (a deploy): its words and the time it started (REQ-001 T-08)
+  const outside = v.outside ? `${v.outside.word}${v.outside.since ? ` · ${w.since} ${new Date(v.outside.since).toLocaleTimeString(lang === "de" ? "de-DE" : "en-GB", { hour: "2-digit", minute: "2-digit" })}` : ""}` : "";
   const stub = main
     ? mine ? `${w.forYou} · ${primaryTurn?.reason && primaryTurn.reason !== v.stage_word ? primaryTurn.reason : v.stage_word}`
-      : main.actor === "claude" ? `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
+      : main.actor === "claude" ? outside || `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
       : `${v.stage_word} · ${w.waitingFor(roleWord(main.actor))}`
     : `${v.stage_word}${v.date ? ` · ${dateWords(v.date, lang)}` : ""}`;
   // the core's sentence for the move, without the case's own title, which the head already shows
@@ -330,10 +332,10 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
               {v.reopen_to ? (
                 <><p>{w.closedNote}</p><div className="pacts"><button type="button" className="primary" data-help="cf.move-back" disabled={busy} onClick={() => step.mutate({ action: "reopen", label: w.moveBack })}>{w.moveBack} · {v.reopen_word}</button></div></>
               ) : (v.held_by ?? []).length > 0 ? (
-                <><p>{w.heldBy((v.held_by ?? []).join(", "))}</p>
+                <><p>{(v.held_by_helper ? w.heldByHelper : w.heldBy)((v.held_by ?? []).join(", "))}</p>
                   {primaryTurn && <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(waitWords(primaryTurn).join(", "))}</span>}</div>}
                   <div className="pacts" data-help="cf.held">
-                    <button type="button" className={primaryTurn ? "ghost" : "primary"} disabled={busy} onClick={() => step.mutate({ action: "remind" })}>{w.remind}</button>
+                    {!v.held_by_helper && <button type="button" className={primaryTurn ? "ghost" : "primary"} disabled={busy} onClick={() => step.mutate({ action: "remind" })}>{w.remind}</button>}
                     {v.take_back_to && <button type="button" className="ghost" disabled={busy} onClick={() => step.mutate({ action: "take_back", label: w.takeBack })}>{w.takeBack} · {v.take_back_word}</button>}
                   </div>
                   {primaryTurn && (secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
@@ -346,6 +348,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                   <div className="pacts"><button type="button" className="primary" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .mbtn")?.click(), 0); }}>{w.answer}</button></div></>
               ) : (
                 main?.actor === "claude" && v.helper ? <RunProgress h={v.helper} agent={v.agent} w={w} />
+                  : main?.actor === "claude" && outside ? <p className="c-outside">{outside}</p>
                   : <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
               )}
             </div>

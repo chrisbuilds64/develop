@@ -136,6 +136,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _retry(store, config, j, case, person)
         if req.action == "order_again":
             return _order_again(store, config, j, case, person, req)
+        if req.action in ("outside", "outside_end"):
+            return _outside(store, config, j, case, person, req)
 
         # ---- built-in moves: answer, note, done, deliver (an entry, never a move)
         if req.action in BUILTIN:
@@ -185,19 +187,60 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
 
 
 def holders(config: DomainConfig, case, viewer: str | None) -> list:
-    """The people who hold the case right now: the actors of its main move, when that is not the viewer's own and
-    not a helper at work. Empty for a closed case or when it waits for the viewer."""
-    from .turn import turn as whose
+    """Who holds the case right now: the actors of its main move, when that is not the viewer's own and not a helper
+    at work. When a helper with the move's role worked in this stage, the stage's work is the helper's and the helper
+    holds it, not the only person who shares its role (REQ-001 T-09). Empty for a closed case or when it waits for
+    the viewer."""
+    from .turn import stage_run, turn as whose
     here = config.stage(case.stage)
     if here is None or here.group in CLOSED:
         return []
     moves = whose(case, config)
     if not moves or moves[0].actor == "claude":
         return []
-    people = [p for p in config.persons_for(moves[0].actor) if p.kind == "human"]
-    if viewer and any(p.id == viewer for p in people):
+    if viewer and config.may_act(viewer, moves[0].actor):
         return []
-    return people
+    actors = config.persons_for(moves[0].actor)
+    helpers = [p for p in actors if p.kind == "agent"]
+    run = stage_run(case)
+    ordered = {a.run for s in config.stages for a in s.actions if a.run} | {r.skill for s in config.stages for r in s.auto}
+    if helpers and run is not None and run.skill in ordered:     # a configured helper's stretch, not a free question
+        return helpers[:1]
+    return [p for p in actors if p.kind == "human"]
+
+
+def _outside(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Record work handed out of the case, or end it (REQ-001 T-08). Whoever hands work out does it: a helper, or a
+    person who may act in the stage. The record is `meta.json` → `outside`; starting it is a thread entry."""
+    from . import outside as away
+    from .turn import actor_of
+    stage = config.stage(case.stage)
+    mover = actor_of(stage.turn, case) if stage else None
+    if not (person.kind == "agent" or config.may_act(person.id, "role:operator") or (mover and config.may_act(person.id, mover))):
+        return _refuse(store, j, f"{person.name} may not hand work out of this case")
+    rel = f"{case.stage}/{j.case}/meta.json"
+    if req.action == "outside_end":
+        if away.standing(case) is None and away.KEY not in case.meta:
+            return _refuse(store, j, "no work runs outside this case")
+        _write_journal(store, j)
+        store.write_json(rel, {k: v for k, v in case.meta.items() if k != away.KEY})
+        j.status, j.finished = "done", _now()
+        _write_journal(store, j)
+        return _result(j)
+    what = str(req.payload.get("what") or "").strip()
+    if not away.WHAT.match(what):
+        return _refuse(store, j, "say what runs outside: a word key of the application (letters, digits, '_' or '-')")
+    if away.standing(case) is not None:
+        return _refuse(store, j, "work already runs outside this case; it ends with its report")
+    _write_journal(store, j)
+    doc = {"what": what, "since": _now(), "by": person.id}
+    store.write_json(rel, {**case.meta, away.KEY: doc})
+    j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
+                                                               "title": away.words(config, doc, None)[:120],
+                                                               "text": str(req.payload.get("text") or "").strip() or away.words(config, doc, None)})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
 
 
 def take_back_target(config: DomainConfig, case, viewer: str | None) -> str | None:
@@ -220,9 +263,12 @@ def _remind(store: FsStore, config: DomainConfig, j: Journal, case, person, req:
     them (domain/seen.py), which is the nudge."""
     if person.kind != "human":
         return _refuse(store, j, f"{person.name} may not send reminders; a person does that")
-    who = holders(config, case, person.id)
-    if not who:
+    held = holders(config, case, person.id)
+    if not held:
         return _refuse(store, j, "nobody else holds this case right now")
+    who = [p for p in held if p.kind == "human"]
+    if not who:                                              # a reminder never goes to an agent (REQ-001 T-09)
+        return _refuse(store, j, config.word("reasons", "helper_holds", None, "a helper holds this case; send the helper again instead of a reminder"))
     names = ", ".join(p.name for p in who)
     text = str(req.payload.get("text") or "").strip() or config.word("texts", "reminder_text", None, "Could you take a look at this case?")
     _write_journal(store, j)
@@ -525,7 +571,8 @@ def _order_again(store: FsStore, config: DomainConfig, j: Journal, case, person,
     again for this case, with the person's note on top of the original one (SYS-161)."""
     from .turn import stage_run
     last = stage_run(case)
-    active = case.last_run is not None and case.last_run.status in ("queued", "running")
+    from .outside import standing
+    active = (case.last_run is not None and case.last_run.status in ("queued", "running")) or standing(case) is not None
     if last is None or last.status != "done" or active:
         return _refuse(store, j, "no helper finished in this stage, or one is at work — nothing to send again")
     refusal = ordering.may_order(config, last.skill, person)
