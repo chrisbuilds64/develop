@@ -143,7 +143,7 @@ jobs:
           # mirrors, and when those cannot be reached it hung every flow for ten minutes (2026-11-11). Try it
           # briefly; if it fails, warn and go on: a library that is really missing fails the walk itself, visibly.
           (cd apps/casefile/web && timeout 180 npx playwright install-deps chromium) \
-            || echo "::warning::Could not top up Chromium's system packages (package mirrors unreachable); using the runner image as it is.
+            || echo "::warning::Could not top up the system packages for Chromium (package mirrors unreachable); using the runner image as it is."
       - name: ${{ matrix.id }}
         run: python3 sandbox/sandbox.py check ${{ matrix.id }}
       - name: Screenshots
