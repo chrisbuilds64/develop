@@ -108,6 +108,7 @@ export const api = {
   editPreview: (id: string, file: string, text: string) => call<PreviewOut>("POST", `/api/cases/${encodeURIComponent(id)}/edit/preview`, { file, text }),
   editSave: (id: string, file: string, text: string, step_id: string) =>
     call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/edit`, { file, text, step_id }),
+  noteNew: (id: string, title: string) => call<{ file: string; word: string }>("POST", `/api/cases/${encodeURIComponent(id)}/notes`, { title }),
 };
 
 // A conversation (Gatehouse): the pack, my answers, the helper's file for me, how far everyone is.

@@ -321,6 +321,12 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .doc.missing { background: transparent; border: 1px dashed var(--tint-14); box-shadow: none; color: var(--sub); }
 .doc.missing.mine { border-color: var(--your-move); }
 .doc.missing.over { background: var(--your-move-soft); }
+.c-notes { margin-top: 18px; }
+.doc.nn-open { background: transparent; border: 1px dashed var(--tint-14); box-shadow: none; color: var(--sub); }
+.doc.nn-form { cursor: default; }
+.doc.nn-form:hover { transform: none; }
+.nn-form input { font: inherit; padding: 6px 8px; border-radius: var(--r-7); border: 1px solid var(--tint-14); background: var(--surface); color: inherit; }
+.nn-form .primary { align-self: flex-start; }
 .d-sample { align-self: flex-start; margin-top: 4px; font: inherit; font-size: var(--fs-12); border: none; background: var(--tint-6); color: var(--ink); border-radius: var(--r-7); padding: 3px 8px; cursor: pointer; }
 .c-keys { display: flex; gap: 16px; align-items: center; height: 34px; padding: 0 24px; border-top: 1px solid var(--tint-8); font-size: var(--fs-12); color: var(--muted); flex: none; overflow: hidden; white-space: nowrap; }
 

@@ -823,6 +823,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Note
+         * @description The file a new note with this title goes to (REQ-001 S-17). Writes nothing: the editor opens empty, and its first
+         *     save through /edit creates the note. Refused when the application does not offer notes.
+         */
+        post: operations["post_note_api_cases__case_id__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/samples": {
         parameters: {
             query?: never;
@@ -1401,6 +1422,8 @@ export interface components {
             protocols?: {
                 [key: string]: unknown;
             }[];
+            /** Notes */
+            notes?: components["schemas"]["NoteView"][];
         };
         /** ChapterIn */
         ChapterIn: {
@@ -2121,6 +2144,27 @@ export interface components {
             id: string;
             /** Stage */
             stage: string;
+        };
+        /** NoteNewIn */
+        NoteNewIn: {
+            /** Title */
+            title: string;
+        };
+        /** NoteNewOut */
+        NoteNewOut: {
+            /** File */
+            file: string;
+            /** Word */
+            word: string;
+        };
+        /** NoteView */
+        NoteView: {
+            /** File */
+            file: string;
+            /** Word */
+            word: string;
+            /** Versions */
+            versions: components["schemas"]["VersionView"][];
         };
         /**
          * OnsiteIn
@@ -4397,6 +4441,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_note_api_cases__case_id__notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteNewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteNewOut"];
                 };
             };
             /** @description Validation Error */

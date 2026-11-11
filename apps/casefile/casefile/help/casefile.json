@@ -869,6 +869,18 @@
         "de": "Was vor diesem Tor geprüft wird, Punkt für Punkt: Muss oder Soll, das Kriterium, woher der Punkt stammt (Vorlage, Definition of Done, Akzeptanzkriterium) und wer ihn beantwortet. Nichts ist vorausgefüllt; Nein braucht, was du gesehen hast, „nicht zutreffend“ einen Grund. Vor dem ersten Urteil kannst du Punkte streichen. Ist nichts mehr offen, versiegelst du ihn — das Tor öffnet, wenn jeder Muss-Punkt bestanden ist; sonst bleibt der Weg zurück offen.",
         "en": "What is checked before this gate, item by item: must or should, the criterion, where the item came from (template, Definition of Done, acceptance criterion) and who answers it. Nothing is preset; No needs what you saw, not applicable a reason. Before the first verdict you can strike items. When nothing is open you seal it — the gate opens when every must-item passed; otherwise the way back stays open."
       }
+    },
+    {
+      "key": "cf.notes",
+      "since": "0.23.0",
+      "title": {
+        "de": "Notizen",
+        "en": "Notes"
+      },
+      "text": {
+        "de": "Freie Notizen zum Fall, neben den Dokumenten, die die Anwendung vorsieht. „Neue Notiz“ fragt nach einem Titel und öffnet den Editor; jedes Speichern ist eine neue Fassung, die alten bleiben. Notizen zählen für kein Tor: Sie ersetzen kein Dokument und ändern nicht, welcher Schritt offen ist.",
+        "en": "Free notes on the case, beside the documents the application asks for. \"New note\" asks for a title and opens the editor; every save is a new version, the older ones stay. Notes count for no gate: they stand in for no document and change no open move."
+      }
     }
   ]
 }

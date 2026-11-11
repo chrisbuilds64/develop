@@ -166,3 +166,19 @@ def test_one_store_lists_every_stage_once_and_follows_its_own_moves(tmp_path):
     assert store.find("SYS-1") == "20-next" and store.cases("20-next") == ["SYS-1"] and store.cases("10-backlog") == []
     store.transfer("SYS-1", "team")
     assert store.point_of("SYS-1").name == "team" and store.case_json("SYS-1", "meta.json") == {}
+
+
+def test_a_note_is_written_where_its_case_lies_and_only_by_who_may_write_there(tmp_path):
+    """REQ-001 S-17 over several data points: the note goes into the case's own data point; nobody else writes one."""
+    client = app(tmp_path, {"name": "chris"})
+    mine = new(client, "Private", 1, label="SYS", assignee="chris")
+    r = client.post(f"/api/cases/{mine}/edit", json={"file": "notes/idea.md", "text": "# Idea", "step_id": "n1"})
+    assert r.status_code == 200, r.text
+    assert next((tmp_path / "dp-chris").glob(f"*/{mine}/notes/idea.md")).read_text() == "# Idea"
+    assert [n["file"] for n in client.get(f"/api/cases/{mine}").json()["notes"]] == ["notes/idea.md"]
+    store, _ = scoped(tmp_path, "akhil")
+    try:
+        store.put_bytes(mine, "notes/x.md", b"x")
+        raise AssertionError("wrote a note into somebody else's private data point")
+    except StoreError:
+        pass

@@ -79,6 +79,11 @@ class FsStore:
         d = self.case_dir(case_id)
         return sorted(p.name for p in d.iterdir() if p.is_file() and not p.name.startswith("."))
 
+    def sub_files(self, case_id: str, folder: str) -> list[str]:
+        """The files of one subfolder of a case (`notes/`), as `folder/name`; none when it is not there."""
+        d = self.case_dir(case_id) / folder
+        return sorted(f"{folder}/{p.name}" for p in d.iterdir() if p.is_file() and not p.name.startswith(".")) if d.is_dir() else []
+
     def size(self, case_id: str, name: str) -> int:
         return (self.case_dir(case_id) / name).stat().st_size
 
@@ -123,6 +128,7 @@ class FsStore:
         target = self.case_dir(case_id) / name
         if target.exists():
             raise StoreError(f"{target.name} already exists — nothing overwritten")
+        self._w(target).parent.mkdir(exist_ok=True)                 # a subfolder of the case (`notes/`) starts with its first file
         shutil.copyfile(src, self._w(target))
         return self._w(target).stat().st_size
 
@@ -130,6 +136,7 @@ class FsStore:
         target = self.case_dir(case_id) / name
         if target.exists():
             raise StoreError(f"{target.name} already exists — nothing overwritten")
+        self._w(target).parent.mkdir(exist_ok=True)
         self._w(target).write_bytes(data)
         return len(data)
 

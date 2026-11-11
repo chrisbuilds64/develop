@@ -31,5 +31,14 @@
       "pressroom-muster"
     ],
     "proves": "REQ-001 S-14 – S-16, SW-2026-004"
+  },
+  {
+    "id": "notes",
+    "script": "walks/notes-shot.mjs",
+    "workspaces": [
+      "shipyard-muster",
+      "pressroom-muster"
+    ],
+    "proves": "REQ-001 S-17, SW-2026-006"
   }
 ]

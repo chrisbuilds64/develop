@@ -138,6 +138,10 @@ class MultiStore:
     def files(self, case_id: str) -> list[str]:
         return sorted(p.name for p in self.case_dir(case_id).iterdir() if p.is_file() and not p.name.startswith("."))
 
+    def sub_files(self, case_id: str, folder: str) -> list[str]:
+        d = self.case_dir(case_id) / folder
+        return sorted(f"{folder}/{p.name}" for p in d.iterdir() if p.is_file() and not p.name.startswith(".")) if d.is_dir() else []
+
     def size(self, case_id: str, name: str) -> int:
         return (self.case_dir(case_id) / name).stat().st_size
 

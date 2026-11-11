@@ -1639,6 +1639,56 @@
         }
       }
     },
+    "/api/cases/{case_id}/notes": {
+      "post": {
+        "summary": "Post Note",
+        "description": "The file a new note with this title goes to (REQ-001 S-17). Writes nothing: the editor opens empty, and its first\nsave through /edit creates the note. Refused when the application does not offer notes.",
+        "operationId": "post_note_api_cases__case_id__notes_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteNewIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteNewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}/samples": {
       "post": {
         "summary": "Post Sample",
@@ -2908,6 +2958,13 @@
             },
             "type": "array",
             "title": "Protocols"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteView"
+            },
+            "type": "array",
+            "title": "Notes"
           }
         },
         "type": "object",
@@ -4404,6 +4461,63 @@
           "stage"
         ],
         "title": "NewCaseOut"
+      },
+      "NoteNewIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "NoteNewIn"
+      },
+      "NoteNewOut": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "word"
+        ],
+        "title": "NoteNewOut"
+      },
+      "NoteView": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/VersionView"
+            },
+            "type": "array",
+            "title": "Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "word",
+          "versions"
+        ],
+        "title": "NoteView"
       },
       "OnsiteIn": {
         "properties": {
