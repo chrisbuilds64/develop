@@ -478,6 +478,11 @@ class ProtocolSealIn(BaseModel):
     step_id: str
 
 
+class ProtocolSkipIn(BaseModel):
+    step_id: str
+    reason: str = ""
+
+
 class FinishIn(BaseModel):
     step_id: str
 
@@ -2004,6 +2009,25 @@ def create_app(settings: Settings) -> FastAPI:
                          else (f"Tor zu — Muss-Punkte nicht bestanden: {failed}." if de else f"Gate closed — failed must-items: {failed}."))
                          + ((f" Soll-Punkte nicht bestanden: {', '.join(st['failed_should'])}." if de else f" Should-items failed: {', '.join(st['failed_should'])}.") if st["failed_should"] else ""))})
         return {"ok": True, "state": st}
+
+    @app.post("/api/cases/{case_id}/protocols/{tid}/skip")
+    def post_protocol_skip(case_id: str, tid: str, body: ProtocolSkipIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        before = (reading.load(c.store, c.config, case_id).data or {}).get(f"protocol-{tid}.json") or {}
+        try:
+            doc = gate.skip(c.store, c.config, case_id, tid, who, body.reason, body.step_id, c.lang)
+        except gate.ProtocolError as exc:
+            return _refuse(exc)
+        if body.step_id in (before.get("steps") or []):
+            return {"ok": True, "state": gate.state(doc)}             # a replay: the thread already says so
+        p = c.config.person(who)
+        de = (c.lang or c.config.lang) == "de"
+        title = ((doc.get("title") or {}).get(c.lang) or (doc.get("title") or {}).get("en") or tid)
+        with c.store.lock(case_id):
+            stepping._append_entry(c.store, c.config, case_id, c.store.find(case_id), {
+                "author": p.name if p else who, "status": "info", "step": body.step_id,
+                "title": (c.config.word("texts", "protocol_skipped", c.lang, "Fragebogen übersprungen: {title}" if de else "Protocol skipped: {title}").format(title=title))[:120],
+                "text": c.config.word("texts", "protocol_skipped_text", c.lang, "Grund: {reason}. Tor offen, ohne Prüfung." if de else "Reason: {reason}. Gate open, nothing checked.").format(reason=doc["skipped"]["reason"])})
+        return {"ok": True, "state": gate.state(doc)}
 
     @app.get("/api/cases/{case_id}/outcome", response_model=OutcomeOut)
     def get_outcome(case_id: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

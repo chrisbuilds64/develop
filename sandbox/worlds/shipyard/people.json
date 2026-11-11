@@ -1,5 +1,5 @@
 {
-  "$comment": "A fictional software workspace, only for the checks: the station line with its nine stations (walk station-line).",
+  "$comment": "A fictional software workspace, only for the checks: the station line with its nine stations (walk station-line); a developer without the product owner's role, who holds no gate (walk protocol-skip).",
   "people": [
     {
       "id": "du",
@@ -7,6 +7,14 @@
       "kind": "human",
       "roles": [
         "product_owner",
+        "developer"
+      ]
+    },
+    {
+      "id": "dev",
+      "name": "Dev",
+      "kind": "human",
+      "roles": [
         "developer"
       ]
     }

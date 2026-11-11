@@ -241,10 +241,10 @@ def again(config: DomainConfig, case: Case, viewer: str | None, lang: str) -> Ag
     return AgainView(skill=last.skill, skill_word=config.word("skills", last.skill, lang, last.skill), finished=last.finished or "")
 
 
-def protocols(config: DomainConfig, case: Case, store, lang: str) -> list[dict]:
+def protocols(config: DomainConfig, case: Case, store, lang: str, viewer: str | None = None) -> list[dict]:
     """The gate protocols this case's stage asks for (an action that requires 'protocol:<id>'), each with its template's
-    title, the actions it opens, and — once started — its items, answers and state (ADR-029). Protocols the case holds
-    from earlier stages follow, read only."""
+    title, the actions it opens, whether the viewer may skip it (GP-43), and — once started — its items, answers and
+    state (ADR-029). Protocols the case holds from earlier stages follow, read only."""
     from ..domain import protocol as gate
     st = config.stage(case.stage)
     wanted: dict[str, list[str]] = {}
@@ -261,7 +261,9 @@ def protocols(config: DomainConfig, case: Case, store, lang: str) -> list[dict]:
             title = (tpl.get("title") or {}).get(lang) or (tpl.get("title") or {}).get("en") or tid
         except gate.ProtocolError:
             title = tid
-        out.append({"template": tid, "title": title, "opens": opens, "here": True, "doc": doc, "state": gate.state(doc) if doc else None})
+        ended = bool(doc) and bool(doc.get("sealed") or doc.get("skipped"))
+        may_skip = not ended and gate.may_skip(config, case, tid, viewer, getattr(store, "root", None))
+        out.append({"template": tid, "title": title, "opens": opens, "here": True, "may_skip": may_skip, "doc": doc, "state": gate.state(doc) if doc else None})
     for base, doc in sorted((case.data or {}).items()):
         if base.startswith("protocol-") and isinstance(doc, dict) and doc.get("template") not in wanted:
             out.append({"template": doc.get("template"), "title": ((doc.get("title") or {}).get(lang) or doc.get("template")), "opens": [],
@@ -426,7 +428,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     helper=helper(config, case, lang, store),
                     again=again(config, case, viewer, lang),
-                    protocols=protocols(config, case, store, lang),
+                    protocols=protocols(config, case, store, lang, viewer),
                     notes=[NoteView(file=n.file, word=n.word, versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in n.versions])
                            for n in case.notes],
                     data={k: localized(v, lang) for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})

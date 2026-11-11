@@ -1,13 +1,14 @@
 // A gate protocol in the case (ADR-029, REQ-003 G2): the items of this gate, each answered by its type — yes/no, a number, a
 // choice, evidence — with what was seen; nothing is preset. Before the first verdict an item can be struck with a reason.
 // When nothing is open the person seals it; the gate reads the sealed protocol. An agent's observations sit under the item.
+// Whoever may skip it (the case view says so) can leave the whole protocol out with a reason: the gate opens, unchecked (GP-43).
 import { useEffect, useState } from "react";
 import { ApiError, gate, stepId } from "../api";
 import type { words } from "../words";
 
 type W = ReturnType<typeof words>;
 // what the case view carries per protocol (views.protocols): typed here, the API types it as plain objects
-export type ProtocolEntry = { template: string; title: string; opens: string[]; here: boolean; doc?: unknown; state?: unknown };
+export type ProtocolEntry = { template: string; title: string; opens: string[]; here: boolean; may_skip?: boolean; doc?: unknown; state?: unknown };
 type P = ProtocolEntry;
 type Item = { id: string; question?: Record<string, string>; type: string; must?: boolean; role?: string; agent?: boolean;
   options?: string[]; criterion?: { eq?: number; min?: number; max?: number; allowed?: string[] }; origin?: string;
@@ -15,7 +16,7 @@ type Item = { id: string; question?: Record<string, string>; type: string; must?
 type Answer = { verdict: "pass" | "fail" | "na"; value?: unknown; note?: string; evidence?: string[]; by: string; at: string };
 type Doc = { template: string; version?: number; items: Item[]; answers: Record<string, Answer>;
   observations?: Record<string, { by: string; note?: string; value?: unknown; suggests?: string; evidence?: string[] }[]>;
-  sealed?: { by: string; at: string } | null };
+  sealed?: { by: string; at: string } | null; skipped?: { by: string; at: string; reason: string } | null };
 
 const mark = { pass: "✓", fail: "✗", na: "–" } as const;
 
@@ -92,6 +93,20 @@ function Row({ it, a, obs, lang, sealed, shaping, w, onAnswer, onStrike, onDirty
   );
 }
 
+// a quiet way past the whole questionnaire: asks why, refuses an empty reason
+function Skip({ w, busy, onSkip }: { w: W; busy: boolean; onSkip: (reason: string) => Promise<void> }) {
+  const [asking, setAsking] = useState(false);
+  const [why, setWhy] = useState("");
+  if (!asking) return <button type="button" className="quiet pc-skip" disabled={busy} onClick={() => setAsking(true)}>{w.pcSkip}</button>;
+  return (
+    <span className="pc-answer">
+      <input className="pc-in wide" autoFocus value={why} onChange={(e) => setWhy(e.target.value)} placeholder={w.pcSkipWhy} aria-label={w.pcSkipWhy} />
+      <button type="button" className="ghost" disabled={busy || !why.trim()} onClick={() => onSkip(why.trim())}>{w.pcSkip}</button>
+      <button type="button" className="quiet" onClick={() => { setAsking(false); setWhy(""); }}>{w.cancel}</button>
+    </span>
+  );
+}
+
 export function ProtocolCard({ p, caseId, lang, w, onChanged }: { p: P; caseId: string; lang: string; w: W; onChanged: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -101,18 +116,23 @@ export function ProtocolCard({ p, caseId, lang, w, onChanged }: { p: P; caseId: 
     setBusy(true); setErr(null);
     try { await f(); onChanged(); } catch (e) { setErr(e instanceof ApiError ? e.message : String(e)); } finally { setBusy(false); }
   };
+  const skip = (reason: string) => run(() => gate.skip(caseId, p.template, reason, stepId("skip")));
   if (!doc) {
     return (
       <section className="pc" data-help="cf.protocol">
         <header className="pc-head"><b>{p.title}</b>{p.opens.length > 0 && <span className="hint">{w.pcOpens(p.opens.join(", "))}</span>}</header>
         <p className="hint">{w.pcNotStarted}</p>
-        <button type="button" className="primary" disabled={busy} onClick={() => run(() => gate.start(caseId, p.template))}>{w.pcStart}</button>
+        <div className="pc-foot">
+          <button type="button" className="primary" disabled={busy} onClick={() => run(() => gate.start(caseId, p.template))}>{w.pcStart}</button>
+          {p.may_skip && <Skip w={w} busy={busy} onSkip={skip} />}
+        </div>
         {err && <p className="c-refused">{err}</p>}
       </section>
     );
   }
   const st = p.state as { open: string[]; failed_must: string[]; failed_should: string[]; passed: string[]; complete: boolean; gate_open: boolean } | null;
-  const sealed = !!doc.sealed;
+  const skipped = !!doc.skipped;
+  const sealed = !!doc.sealed || skipped;
   const shaping = !sealed && Object.keys(doc.answers ?? {}).length === 0;
   const live = doc.items.filter((i) => !i.struck);
   const done = live.length - (st?.open.length ?? 0);
@@ -121,10 +141,12 @@ export function ProtocolCard({ p, caseId, lang, w, onChanged }: { p: P; caseId: 
       <header className="pc-head">
         <b>{p.title}{(doc.version ?? 1) > 1 ? ` · v${doc.version}` : ""}</b>
         <span className="pc-progress">{w.pcProgress(done, live.length)}</span>
-        {sealed ? <span className={`pc-badge ${st?.gate_open ? "pass" : "fail"}`}>{st?.gate_open ? w.pcGateOpen : w.pcGateClosed}</span>
+        {skipped ? <span className="pc-badge should">{w.pcSkippedBadge}</span>
+          : sealed ? <span className={`pc-badge ${st?.gate_open ? "pass" : "fail"}`}>{st?.gate_open ? w.pcGateOpen : w.pcGateClosed}</span>
           : p.opens.length > 0 && <span className="hint">{w.pcOpens(p.opens.join(", "))}</span>}
       </header>
-      {sealed && <p className="hint">{w.pcSealed(doc.sealed!.by, doc.sealed!.at.slice(0, 16).replace("T", " "))}</p>}
+      {skipped ? <p className="hint">{w.pcSkipped(doc.skipped!.by, doc.skipped!.at.slice(0, 16).replace("T", " "), doc.skipped!.reason)}</p>
+        : sealed && <p className="hint">{w.pcSealed(doc.sealed!.by, doc.sealed!.at.slice(0, 16).replace("T", " "))}</p>}
       <ol className="pc-list">
         {doc.items.map((it) => (
           <Row key={it.id} it={it} a={doc.answers?.[it.id]} obs={doc.observations?.[it.id]} lang={lang} sealed={sealed} shaping={shaping} w={w}
@@ -140,6 +162,7 @@ export function ProtocolCard({ p, caseId, lang, w, onChanged }: { p: P; caseId: 
                   title={st?.complete ? "" : w.pcStillOpen(st?.open.length ?? 0)}>{w.pcSeal}</button>
           {!st?.complete && <span className="hint">{w.pcStillOpen(st?.open.length ?? 0)}</span>}
           {Object.values(unsent).some(Boolean) && <span className="pc-warn">{w.pcUnsent}</span>}
+          {p.may_skip && <Skip w={w} busy={busy} onSkip={skip} />}
         </div>
       )}
       {err && <p className="c-refused">{err}</p>}

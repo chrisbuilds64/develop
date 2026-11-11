@@ -37,11 +37,13 @@ before its build, and its test comes with it.
 
 | # | Requirement | Evidence |
 |---|---|---|
-| GP-09 | An action that names a protocol is offered only when every must-item passed or is not applicable with a reason. | planned |
+| GP-09 | An action that names a protocol is offered only when every must-item passed or is not applicable with a reason, or the protocol was skipped where its template allows it (amended 2026-11-11). | `test_protocol.py::test_the_gate_opens_only_on_a_sealed_protocol…`, `…skips_a_protocol_with_a_reason_and_the_gate_opens`; walk `protocol-skip` |
 | GP-10 | A failed must-item offers the way back instead, and the failed item is the reason of that step. | planned |
 | GP-11 | A completed protocol is sealed with the person and the time, and a readable record is compiled beside it. | planned |
 | GP-12 | A case sent back and deployed again gets a new protocol version; the earlier one stays readable. | planned |
 | GP-13 | Each item is a must-item or a should-item. A failed should-item does not block the gate; it is shown at the decision and stays in the sealed record. | planned |
+| GP-43 | The person who holds the gate may skip a whole protocol with a reason; the gate opens, and the protocol, the history and the readable record show it as skipped, with the person, the time and the reason. An agent never skips. (added 2026-11-11, SW-2026-015) | `test_protocol.py::test_the_person_holding_the_gate_skips_a_protocol…`, `…started_by_the_skip`, `…over_the_api_says_so_in_the_thread…`; walk `protocol-skip` |
+| GP-44 | Whether a protocol may be skipped, and by which role, is set in its template; by default the role that holds the gate may. A tenant that must check switches it off there. (added 2026-11-11, SW-2026-015) | `test_protocol.py::test_whether_and_by_whom_a_protocol_may_be_skipped_is_set_in_its_template`; walk `protocol-skip` |
 
 ## Shipyard
 

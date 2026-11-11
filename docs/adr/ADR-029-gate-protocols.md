@@ -95,6 +95,16 @@ while the release helper worked. Shipyard's close requires `prod.md` (the helper
 The `prod` template stays: which gate asks for a protocol is the application's configuration, and a tenant that wants a
 production sign-off adds `protocol:prod` back. The surface offers an unstarted protocol only when no helper is working.
 
+## Amended 2026-11-11: a protocol may be skipped as a whole (SW-2026-015)
+
+The product owner: leaving out a whole questionnaire on purpose took answering every item "not applicable" with its own
+reason, which turns one decision into busywork. A person who holds the gate may now **skip** the protocol with one
+reason. It is recorded like a seal (`"skipped": {by, at, reason, step}` in the protocol, an entry in the thread, a line at
+the top of the readable record, every unanswered item marked "not checked"), the gate opens, and the way back is no
+longer offered; answers already given stay. Whether a protocol may be skipped is set in its template: absent, the role
+that holds the gate may (the actor of the action that requires it, else the stage's turn); `"skip": {"role": r}` names
+another role; `"skip": false` forbids it — a tenant with a duty to check switches it off there. An agent never skips.
+
 ## Consequences
 
 - Every acceptance rests on a person's evidence in their role, not on the report of the agent that deployed. ADR-027's

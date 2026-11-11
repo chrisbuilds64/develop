@@ -184,6 +184,8 @@ export const gate = {
   strike: (id: string, tid: string, item: string, reason: string, step_id: string) =>
     call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/protocols/${encodeURIComponent(tid)}/shape`, { strike: item, reason, step_id }),
   seal: (id: string, tid: string, step_id: string) => call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/protocols/${encodeURIComponent(tid)}/seal`, { step_id }),
+  skip: (id: string, tid: string, reason: string, step_id: string) =>
+    call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/protocols/${encodeURIComponent(tid)}/skip`, { reason, step_id }),
 };
 
 export const sample = (id: string, slot: string, step_id: string, source?: string) =>

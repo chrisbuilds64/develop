@@ -7,7 +7,7 @@ import pytest
 
 from casefile.domain import cases as reading
 from casefile.domain import protocol as P
-from casefile.domain.turn import missing_for
+from casefile.domain.turn import missing_for, offered
 from casefile.models import Action
 
 from .test_shipyard import CID, Steps, world
@@ -103,7 +103,7 @@ def test_the_gate_opens_only_on_a_sealed_protocol_with_every_must_passed_and_a_f
     name = P.start(store, config, CID, "entw", "chris")                    # the case came back: a new version (GP-12)
     assert name == "protocol-entw.v2.json" and missing_for(config, case(), accept) == ["protocol:entw"]
     P.answer(store, config, CID, "entw", "chris", "errors", "v2-1", value=3, note="3 errors after the redeploy")
-    assert missing_for(config, case(), back) == []                         # the way back is offered (GP-10)
+    assert offered(config, case(), back)                                   # the way back is offered (GP-10)
     assert (root / "10-task" / CID / "protocol-entw.json").exists()        # the earlier version stays
 
 
@@ -197,3 +197,94 @@ def test_the_helpers_that_answer_objective_items_may_call_the_protocol_cli():
     for name in ("shipyard-checks", "shipyard-verify"):
         assert "Bash(python -m casefile.cli.protocol:*)" in skills[name]["tools"], name
     assert "Bash(python -m casefile.cli.step:*)" in skills["shipyard-task"]["tools"]
+
+
+# ----------------------------------------------------------------------------- skipping a whole protocol (GP-43, GP-44)
+
+def _at_entw(tmp_path, skip=None):
+    """The case stands at the ENTW gate (60-entw: the product owner's turn, approve_test requires protocol:entw)."""
+    root, store, config = setup(tmp_path)
+    if skip is not None:
+        tpl = json.loads((root / "_protocols" / "entw.json").read_text())
+        tpl["skip"] = skip
+        (root / "_protocols" / "entw.json").write_text(json.dumps(tpl))
+    (root / "10-task" / CID).rename(root / "60-entw" / CID)
+    return root, store, config
+
+
+def test_the_person_holding_the_gate_skips_a_protocol_with_a_reason_and_the_gate_opens(tmp_path):
+    root, store, config = _at_entw(tmp_path)
+    accept = Action(id="approve_test", label="approve", requires=["protocol:entw"])
+    back = Action(id="entw_failed", label="back", when=["failed:entw"])
+    case = lambda: reading.load(store, config, CID)  # noqa: E731
+    assert P.may_skip(config, case(), "entw", "chris", root)                  # the gate's turn: product_owner
+    assert not P.may_skip(config, case(), "entw", "akhil", root)              # not the gate's role
+    assert not P.may_skip(config, case(), "entw", "axel", root)               # an agent never skips
+    with pytest.raises(P.ProtocolError, match="reason"):
+        P.skip(store, config, CID, "entw", "chris", "  ", "k0")
+    with pytest.raises(P.ProtocolError, match="person"):
+        P.skip(store, config, CID, "entw", "axel", "no time", "k0")
+    with pytest.raises(P.ProtocolError, match="product_owner"):
+        P.skip(store, config, CID, "entw", "akhil", "no time", "k0")
+    P.start(store, config, CID, "entw", "chris")
+    P.answer(store, config, CID, "entw", "chris", "errors", "k1", value=2, note="two 500s")   # a failed must-item
+    assert offered(config, case(), back)
+    doc = P.skip(store, config, CID, "entw", "chris", "docs-only change, nothing to try", "k2")
+    assert doc["skipped"]["by"] == "chris" and doc["skipped"]["reason"] == "docs-only change, nothing to try" and doc["skipped"]["at"]
+    assert doc["answers"]["errors"]["verdict"] == "fail"                       # answers already given stay
+    st = P.state(doc)
+    assert st["gate_open"] and st["skipped"]
+    assert missing_for(config, case(), accept) == []                           # the gate opens (GP-09 amended)
+    assert not offered(config, case(), back)                                   # the way back is no longer offered
+    assert P.skip(store, config, CID, "entw", "chris", "again", "k2")["skipped"]["reason"].startswith("docs-only")   # replay-safe
+    with pytest.raises(P.ProtocolError, match="skipped"):
+        P.answer(store, config, CID, "entw", "chris", "installed", "k3", value=True)
+    with pytest.raises(P.ProtocolError, match="skipped"):
+        P.skip(store, config, CID, "entw", "chris", "once more", "k4")
+    record = (root / "60-entw" / CID / "protocol-entw.md").read_text()
+    assert "Skipped by chris" in record and "docs-only change, nothing to try" in record
+    assert record.count("not checked") == 4 and "two 500s" in record           # every unanswered item: not checked
+    assert P.start(store, config, CID, "entw", "chris") == "protocol-entw.v2.json"   # coming back: a new version
+
+
+def test_an_unstarted_protocol_is_started_by_the_skip(tmp_path):
+    root, store, config = _at_entw(tmp_path)
+    doc = P.skip(store, config, CID, "entw", "chris", "hotfix, checked by hand", "s1")
+    assert doc["skipped"] and doc["answers"] == {} and (root / "60-entw" / CID / "protocol-entw.json").exists()
+    assert P.gate_open(reading.load(store, config, CID), "entw")
+
+
+def test_whether_and_by_whom_a_protocol_may_be_skipped_is_set_in_its_template(tmp_path):
+    root, store, config = _at_entw(tmp_path, skip=False)                      # a tenant that must check
+    case = reading.load(store, config, CID)
+    assert not P.may_skip(config, case, "entw", "chris", root)
+    with pytest.raises(P.ProtocolError, match="may not be skipped"):
+        P.skip(store, config, CID, "entw", "chris", "no time", "t1")
+    tpl = json.loads((root / "_protocols" / "entw.json").read_text())
+    tpl["skip"] = {"role": "developer"}
+    (root / "_protocols" / "entw.json").write_text(json.dumps(tpl))
+    case = reading.load(store, config, CID)
+    assert P.may_skip(config, case, "entw", "akhil", root) and not P.may_skip(config, case, "entw", "chris", root)
+    assert P.skip(store, config, CID, "entw", "akhil", "only a typo", "t2")["skipped"]["by"] == "akhil"
+
+
+def test_a_skip_over_the_api_says_so_in_the_thread_and_the_case_view_tells_who_may(tmp_path):
+    from fastapi.testclient import TestClient
+    from casefile.api.app import Settings, create_app
+    from .test_shipyard import CFG
+    root, store, config = _at_entw(tmp_path)
+    client = TestClient(create_app(Settings(root=root, config_dir=CFG, secret="t", open_identity=True)))
+    assert client.post("/api/session", json={"person": "chris"}).status_code == 200
+    entw = next(p for p in client.get(f"/api/cases/{CID}").json()["protocols"] if p["template"] == "entw")
+    assert entw["may_skip"] is True and entw["doc"] is None
+    r = client.post(f"/api/cases/{CID}/protocols/entw/skip", json={"step_id": "sk0", "reason": ""})
+    assert r.status_code == 409 and "reason" in r.json()["reason"]
+    r = client.post(f"/api/cases/{CID}/protocols/entw/skip", json={"step_id": "sk1", "reason": "docs only"})
+    assert r.status_code == 200 and r.json()["state"]["gate_open"]
+    entries = [e for e in reading.load(store, config, CID).entries if "skipped" in e.title or "übersprungen" in e.title]
+    assert len(entries) == 1 and "docs only" in entries[0].text
+    assert client.post(f"/api/cases/{CID}/protocols/entw/skip", json={"step_id": "sk1", "reason": "docs only"}).status_code == 200
+    assert len([e for e in reading.load(store, config, CID).entries if "skipped" in e.title or "übersprungen" in e.title]) == 1   # replay: one entry
+    assert not any(p.get("may_skip") for p in client.get(f"/api/cases/{CID}").json()["protocols"])   # skipped: nothing left to skip
+    assert client.post("/api/session", json={"person": "akhil"}).status_code == 200
+    assert client.post(f"/api/cases/{CID}/protocols/entw/skip", json={"step_id": "sk2", "reason": "x"}).status_code == 409

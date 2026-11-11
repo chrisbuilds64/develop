@@ -5,20 +5,25 @@ comes back to the same gate), written only here, under the case lock, atomically
 application's `protocols/<id>.json`, or the workspace's own `_protocols/<id>.json` in the tree, which wins — plus the
 templates and catalogue entries it includes (the Definition of Done, ADR-029 decision 10), plus case items.
 
-    template:  {"id", "title": {lang: str}, "include": ["<template or catalogue id>", …],
+    template:  {"id", "title": {lang: str}, "include": ["<template or catalogue id>", …], "skip": false | {"role": "<role>"},
                 "items": [{"id", "question": {lang: str}, "type": "yesno|number|choice|evidence",
                            "criterion": {"eq"|"min"|"max": n} | {"allowed": [..]}, "options": [..],
                            "must": true, "role": "<role>", "agent": false, "rule": "<catalogue entry>"}]}
 
     protocol:  {"template", "version", "rules": {item: rule}, "items": [... + "origin", "struck"],
                 "answers": {item: {"verdict": "pass|fail|na", "value", "note", "evidence", "by", "role", "at", "step"}},
-                "observations": {item: [{"by", "note", "evidence", "at"}]}, "steps": [step ids], "sealed": {"by", "at"}}
+                "observations": {item: [{"by", "note", "evidence", "at"}]}, "steps": [step ids], "sealed": {"by", "at"},
+                "skipped": {"by", "at", "reason", "step"}}
 
 **Nothing is preset** (the interview's lesson): an item without a verdict is open, and a verdict exists only when someone in
 the item's role gave it. Not applicable needs a reason; failed needs what was seen. An agent answers for good only an item
 marked `agent` (an objective check); elsewhere its answer is an observation, and the person decides. The gate reads the
 protocol (`requires: ["protocol:<id>"]`): sealed, and every must-item passed or not applicable. `when: ["failed:<id>"]`
 offers the way back while a must-item failed.
+
+**A protocol may be skipped as a whole** (GP-43, GP-44): by a person who holds the gate — or the role the template's `skip`
+names; `"skip": false` forbids it — with a reason. The gate opens, the way back is no longer offered, and the record says
+that nothing was checked here. An agent never skips.
 """
 
 from __future__ import annotations
@@ -119,7 +124,7 @@ def start(store: FsStore, config: DomainConfig, case_id: str, tid: str, by: str,
     current = file_of(case, tid)
     if current:
         doc = _read(store, case_id, current)
-        if not doc.get("sealed"):
+        if not _ended(doc):
             return current
         version = int(doc.get("version", 1)) + 1
         name = f"protocol-{tid}.v{version}.json"
@@ -151,9 +156,13 @@ def _load(store: FsStore, config: DomainConfig, case_id: str, tid: str) -> tuple
     if not name:
         raise ProtocolError(f"no protocol '{tid}' in this case — start it first")
     doc = _read(store, case_id, name)
-    if doc.get("sealed"):
-        raise ProtocolError(f"protocol '{tid}' is sealed; a change starts a new version")
+    if _ended(doc):
+        raise ProtocolError(f"protocol '{tid}' is {'skipped' if doc.get('skipped') else 'sealed'}; a change starts a new version")
     return name, doc
+
+
+def _ended(doc: dict) -> bool:
+    return bool(doc.get("sealed") or doc.get("skipped"))
 
 
 def _item(doc: dict, iid: str) -> dict:
@@ -282,7 +291,8 @@ def live(doc: dict) -> list[dict]:
 
 
 def state(doc: dict) -> dict:
-    """{'open': [...], 'failed_must': [...], 'failed_should': [...], 'passed': [...], 'gate_open': bool, 'complete': bool}"""
+    """{'open': [...], 'failed_must': [...], 'failed_should': [...], 'passed': [...], 'gate_open': bool, 'complete': bool,
+    'skipped': bool} — a skipped protocol opens the gate whatever its answers say."""
     out = {"open": [], "failed_must": [], "failed_should": [], "passed": []}
     for it in live(doc):
         a = (doc.get("answers") or {}).get(it["id"])
@@ -294,7 +304,8 @@ def state(doc: dict) -> dict:
             out["passed"].append(it["id"])
     must_open = [i for i in out["open"] if next(x for x in live(doc) if x["id"] == i).get("must", True)]
     out["complete"] = not out["open"]
-    out["gate_open"] = bool(doc.get("sealed")) and not out["failed_must"] and not must_open
+    out["skipped"] = bool(doc.get("skipped"))
+    out["gate_open"] = out["skipped"] or (bool(doc.get("sealed")) and not out["failed_must"] and not must_open)
     return out
 
 
@@ -318,6 +329,64 @@ def seal(store: FsStore, config: DomainConfig, case_id: str, tid: str, by: str, 
     return doc
 
 
+# ----------------------------------------------------------------------------- skipping it as a whole (GP-43, GP-44)
+
+def skip_actor(config: DomainConfig, case, tid: str, root: Path | None) -> str | None:
+    """Who may skip this protocol: the template's `"skip": {"role": r}` names a role; `false` nobody; absent, whoever holds
+    the gate — the actor of the action that requires the protocol, else its stage's turn (the case's stage first)."""
+    f = _template_file(config, root, tid)
+    rule = json.loads(f.read_text(encoding="utf-8")).get("skip", True) if f else True
+    if rule is False:
+        return None
+    if isinstance(rule, dict) and rule.get("role"):
+        return f"role:{rule['role']}"
+    from .turn import actor_of
+    here = config.stage(case.stage)
+    for st in ([here] if here else []) + [s for s in config.stages if s is not here]:
+        for a in st.actions:
+            if f"protocol:{tid}" in a.requires:
+                return actor_of(a.actor, case) or actor_of(st.turn, case)
+    return None
+
+
+def may_skip(config: DomainConfig, case, tid: str, person_id: str | None, root: Path | None) -> bool:
+    p = config.person(person_id)
+    if p is None or p.kind != "human":
+        return False
+    who = skip_actor(config, case, tid, root)
+    return bool(who) and config.may_act(p.id, who)
+
+
+def skip(store: FsStore, config: DomainConfig, case_id: str, tid: str, by: str, reason: str, step_id: str, lang: str | None = None) -> dict:
+    """The whole protocol left out on purpose: recorded like a seal (who, when, why), answers already given stay, the gate opens."""
+    case = reading.load(store, config, case_id)
+    current = file_of(case, tid)
+    if current:
+        doc = _read(store, case_id, current)
+        if _replayed(doc, step_id):
+            return doc
+    p = config.person(by)
+    if p is None or p.kind != "human":
+        raise ProtocolError("a protocol is skipped by a person, never by an agent")
+    who = skip_actor(config, case, tid, store.root)
+    if who is None:
+        raise ProtocolError(f"protocol '{tid}' may not be skipped here — its template says so")
+    if not config.may_act(p.id, who):
+        raise ProtocolError(f"this protocol is skipped by {who.removeprefix('role:').removeprefix('person:')}")
+    if not reason.strip():
+        raise ProtocolError("skipping a protocol needs a reason")
+    if not current:
+        start(store, config, case_id, tid, by)
+    name, doc = _load(store, config, case_id, tid)
+    doc["skipped"] = {"by": by, "at": _now(), "reason": reason.strip(), "step": step_id}
+    _done(doc, step_id)
+    record = compile_record(config, doc, lang)
+    with store.lock(case_id):
+        _write(store, case_id, name, doc)
+        store.write_atomic(f"{store.find(case_id)}/{case_id}/{name[:-5]}.md", record)
+    return doc
+
+
 def compile_record(config: DomainConfig, doc: dict, lang: str | None = None) -> str:
     lang = lang or config.lang
     pick = lambda d, fb: (d or {}).get(lang) or (d or {}).get("en") or fb  # noqa: E731
@@ -327,6 +396,9 @@ def compile_record(config: DomainConfig, doc: dict, lang: str | None = None) -> 
     if doc.get("sealed"):
         s = doc["sealed"]
         lines += [f"Sealed by {s['by']} · {s['at']} · gate {'open' if st['gate_open'] else 'closed'}", ""]
+    if doc.get("skipped"):
+        s = doc["skipped"]
+        lines += [f"Skipped by {s['by']} · {s['at']} · reason: {s['reason']} · gate open without the check", ""]
     lines += ["| | Item | Must | Answer | By | Evidence |", "|---|---|---|---|---|---|"]
     for it in doc.get("items") or []:
         q = pick(it.get("question"), it["id"]).replace("|", "/")
@@ -335,6 +407,8 @@ def compile_record(config: DomainConfig, doc: dict, lang: str | None = None) -> 
             continue
         a = (doc.get("answers") or {}).get(it["id"]) or {}
         shown = a.get("note") or ("" if a.get("value") is None else str(a.get("value")))
+        if not a and doc.get("skipped"):
+            shown = "not checked"
         lines.append(f"| {sym.get(a.get('verdict'), '·')} | {q} | {'must' if it.get('must', True) else 'should'} | {shown.replace('|', '/')} | "
                      f"{a.get('by', '')} | {', '.join(a.get('evidence') or [])} |")
     obs = doc.get("observations") or {}
@@ -357,4 +431,5 @@ def gate_open(case, tid: str) -> bool:
 
 def failed(case, tid: str) -> bool:
     doc = (case.data or {}).get(f"protocol-{tid}.json")
-    return bool(doc) and bool(state(doc)["failed_must"])
+    st = state(doc) if doc else None
+    return bool(st) and bool(st["failed_must"]) and not st["skipped"]
