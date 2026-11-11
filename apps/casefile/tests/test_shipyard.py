@@ -383,3 +383,20 @@ def test_every_gate_waits_for_its_protocol_and_the_task_for_its_criteria(tmp_pat
     assert not go("approve_test", "chris").ok
     back = go("entw_failed", "chris")
     assert back.ok and stage(store, config) == "20-build"
+
+
+def test_the_move_that_delivers_what_the_gate_waits_for_comes_first(tmp_path):
+    """An action that produces what another waits for (`produces`) is the first move, and names the move it opens;
+    once the task and its criteria are there, confirming is first again. The core's own token reads as a word."""
+    from casefile.domain.turn import enrich
+    root, store, config = world(tmp_path)
+    case = reading.load(store, config, CID)
+    turns = enrich(case, whose(case, config, "de"), config, "de")
+    acts = [t for t in turns if t.action in ("draft_task", "accept_task")]
+    assert [t.action for t in acts] == ["draft_task", "accept_task"]
+    assert acts[0].unblocks == "accept_task" and not acts[0].blocked_by
+    assert "Akzeptanzkriterien" in acts[1].missing and "criteria" not in acts[1].missing
+    Steps(store, config, protocols=False).deliver(root, "task.md", "axel", TASK_MD)
+    case = reading.load(store, config, CID)
+    first = [t for t in whose(case, config, "de") if t.action in ("draft_task", "accept_task")]
+    assert first[0].action == "accept_task" and not first[0].blocked_by and first[1].unblocks == ""

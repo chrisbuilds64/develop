@@ -18,6 +18,7 @@ class Action(BaseModel):
     label: str                                   # vocabulary key or the word itself
     to: str | None = None                        # target stage folder; None = the case stays
     run: str | None = None                       # a skill to order instead of (or besides) moving
+    produces: list[str] = Field(default_factory=list)   # what this action (its helper) delivers — files or requirement tokens ("task.md", "criteria"); a move waiting for them puts this one first
     requires: list[str] = Field(default_factory=list)   # deliverable file names that must be present
     when: list[str] = Field(default_factory=list)       # the action is offered only when these are present (a finding that calls for a decision); absent, it is not a blocked move but none at all
     four_eyes: bool = False                      # the person acting must not be the author of the primary deliverable
@@ -185,6 +186,7 @@ class Turn(BaseModel):
     lock: str = ""                                      # the locked gate as a sentence with its condition, when blocked: "Freigeben … öffnet sich, sobald …"
     date: str = ""                                      # the date that puts this move first, when the case has one
     missing: list[str] = Field(default_factory=list)    # blocked_by as words, in the viewer's language ("Rechnung", "mindestens ein Foto")
+    unblocks: str = ""                                  # the action this move delivers for: it comes first, the waiting one after it
 
 
 # ----------------------------------------------------------------------------- a step

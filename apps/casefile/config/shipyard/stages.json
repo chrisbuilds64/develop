@@ -24,7 +24,11 @@
         {
           "id": "draft_task",
           "label": "draft_task",
-          "run": "shipyard-task"
+          "run": "shipyard-task",
+          "produces": [
+            "task.md",
+            "criteria"
+          ]
         }
       ]
     },
