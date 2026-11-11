@@ -2099,60 +2099,14 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(422, str(exc)[:300])
         if len(attached) > 20 or any(not data or len(data) > settings.max_upload_mb * 1024 * 1024 for _, data in attached):
             raise HTTPException(413, f"at most 20 files, none empty, each up to {settings.max_upload_mb} MB")
-        for name, _ in attached:
-            if assets.free_name(name).rpartition(".")[2] not in assets.FREE:
-                return _refuse(StoreError(f"'{name}' cannot be attached; a case takes {', '.join(assets.FREE)}"))
-        create = c.config.theme.get("create") or {}
-        p = c.config.person(who)
-        if not create:
-            raise HTTPException(404, "new cases are not started here")
-        if not p or not (set(create.get("roles", [])) & set(p.roles)):
-            return _refuse(Exception(c.config.word("texts", "create_refused", c.lang, "You may not start a case here.")))
-        title = body.title.strip()[:120]
-        if not title:
-            return _refuse(Exception(c.config.word("texts", "create_empty", c.lang, "Give it a name.")))
-        from ..domain import fields as declared
-        from ..domain import lists as chosen
-        own, listed = declared.split(c.config, body.values)            # declared fields (domain/fields.py) and the lists that ask on creation
+        from ..domain import opening
         try:
-            values = chosen.validate_choice(c.config.lists, listed)     # what the lists that ask for it gave: field → key
-            values.update({k: v for k, v in declared.validate(c.config, own).items() if v != ""})
-        except (chosen.ListError, declared.FieldError) as exc:
+            cid, first = opening.open_case(c.store, c.config, who, body.title, body.step_id, label=body.label, values=body.values,
+                                           description=body.description, attached=attached, lang=c.lang)
+        except opening.NotHere as exc:
+            raise HTTPException(404, str(exc))
+        except opening.Refused as exc:
             return _refuse(exc)
-        label = values.get("label") or body.label or create.get("label", "X")
-        first = create.get("stage") or next((s.folder for s in c.config.stages if s.group != "archive"), None)   # where a new case starts
-        if not first or first not in {s.folder for s in c.config.stages}:     # declared is enough: the folder comes with its first case
-            return _refuse(Exception("the first stage is not declared"))
-        for prior in c.store.journals():                        # the same step id twice is the same case
-            j = c.store.read_json(f"_steps/{prior}")
-            if j.get("step_id") == body.step_id and j.get("action") == "create":
-                return NewCaseOut(id=j["case"], stage=c.store.find(j["case"]) or first)
-        from ..domain import numbering
-        number = numbering.next_number(getattr(c.store, "everything", c.store), label, create.get("number"), values)   # over every data point   # the domain's own rule: in a year, in a series, or a placeholder
-        slug = re.sub(r"[^a-z0-9]+", "-", title.lower().translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}))).strip("-")[:40] or "akte"
-        cid = f"{label}-{number}-{slug}" if create.get("slug", True) else f"{label}-{number}"   # `slug: false`: the number alone is the name (the worklist's SYS-147)
-        try:
-            c.store.mkcase(first, cid)
-        except StoreError as exc:
-            return _refuse(exc)
-        meta = {"configVersion": c.config.config_version, "label": label, "number": number, "title": title, "created": _now()[:10], "created_by": p.id,
-                **{k: v for k, v in (create.get("meta") or {}).items()}, **values}
-        if create.get("external_id"):                           # the domain's outside reference, from the same number: SN-{year}-{seq:05}
-            from ..domain import handoff
-            m = re.match(r"^(?:(\d{4})-)?\D*?(\d+)$", number)
-            meta["external_id"] = handoff.fill(str(create["external_id"]), {**values, "number": number, "year": (m.group(1) if m and m.group(1) else str(dt.date.today().year)), "seq": (m.group(2) if m else number)})
-        c.store.write_json(f"{first}/{cid}/meta.json", meta)
-        text = body.description.strip()[:20000]
-        names = []
-        for original, data in attached:
-            name = assets.put_free(c.store, c.config, cid, original, data)
-            names.append(name)
-            if name != original and [o for o, _ in attached].count(original) == 1:   # the description points at the name the case keeps
-                text = text.replace(f"]({original})", f"]({name})")
-        text = re.sub(r"^(## REV-\d)", r"\\\1", text, flags=re.M)    # a line the thread would read as an entry of its own
-        c.store.write_json(f"_steps/{body.step_id}.json", {"step_id": body.step_id, "case": cid, "action": "create", "by": p.id, "status": "done", "created": _now(), "payload": {"title": title, "files": names}})
-        stepping._append_entry(c.store, c.config, cid, first, {"author": p.name, "status": "info", "title": c.config.word("texts", "created", c.lang, "Started"),
-                                                               "text": text or title, "step": body.step_id, **({"files": names} if names else {})})
         return NewCaseOut(id=cid, stage=first)
 
     # ------------------------------------------------------------ the surface

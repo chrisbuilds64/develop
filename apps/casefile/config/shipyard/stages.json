@@ -25,6 +25,21 @@
           ]
         },
         {
+          "id": "record_done",
+          "label": "record_done",
+          "$comment": "A change built outside the way (in a terminal) and already merged and deployed is recorded afterwards: with the task and the pull request in the case, the developer files it as done. Offered only when a pull request record is there, so a new case never shows it.",
+          "to": "90-closed",
+          "actor": "role:developer",
+          "when": [
+            "pr.md"
+          ],
+          "requires": [
+            "task.md",
+            "pr.md"
+          ],
+          "entry_status": "info"
+        },
+        {
           "id": "draft_task",
           "label": "draft_task",
           "run": "shipyard-task",
