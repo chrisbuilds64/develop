@@ -222,8 +222,7 @@
           "label": "close",
           "to": "90-closed",
           "requires": [
-            "prod.md",
-            "protocol:prod"
+            "prod.md"
           ],
           "entry_status": "info"
         },

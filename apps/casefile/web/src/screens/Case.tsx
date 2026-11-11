@@ -317,7 +317,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
             </div>
           )}
 
-          {((v.protocols ?? []) as unknown as ProtocolEntry[]).filter((p) => p.here).map((p) => (
+          {((v.protocols ?? []) as unknown as ProtocolEntry[]).filter((p) => p.here && (!!p.doc || main?.actor !== "claude")).map((p) => (
             <ProtocolCard key={p.template} p={p} caseId={id} lang={config.lang} w={w} onChanged={() => { qc.invalidateQueries({ queryKey: ["case", id] }); }} />
           ))}
 
