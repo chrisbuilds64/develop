@@ -400,3 +400,59 @@ def test_the_move_that_delivers_what_the_gate_waits_for_comes_first(tmp_path):
     case = reading.load(store, config, CID)
     first = [t for t in whose(case, config, "de") if t.action in ("draft_task", "accept_task")]
     assert first[0].action == "accept_task" and not first[0].blocked_by and first[1].unblocks == ""
+
+
+# A helper writes in the case only what its action delivers (REQ-001 A-05): the order carries the action's `produces`,
+# the free question carries none, and `produces` names files only — the same for every application.
+
+def order_of(root: Path, run_id: str) -> dict:
+    return json.loads((root / "_runs" / f"{run_id}.json").read_text(encoding="utf-8"))
+
+
+def test_the_free_question_is_ordered_with_no_delivery(tmp_path):
+    root, store, config = world(tmp_path)
+    r = Steps(store, config)("ask", "chris", text="Create an HTML page that lists the stages")
+    assert r.ok, r.reason
+    assert order_of(root, r.run)["produces"] == []
+
+
+def test_an_action_orders_its_helper_with_what_it_delivers(tmp_path):
+    root, store, config = world(tmp_path)
+    steps = Steps(store, config)
+    r = steps("draft_task", "chris")
+    assert r.ok, r.reason
+    assert order_of(root, r.run)["produces"] == ["task.md"]
+    steps.deliver(root, "task.md", "axel")
+    r = steps("accept_task", "chris")
+    assert r.ok, r.reason
+    assert order_of(root, r.run)["produces"] == ["pr.md"]
+
+
+def test_produces_names_files_not_checks():
+    import pytest
+    from pydantic import ValidationError
+    from casefile.models import Action
+    for bad in (["task.md", "criteria"], ["protocol:merge"], ["../other/x.md"]):
+        with pytest.raises(ValidationError):
+            Action(id="draft", label="draft", produces=bad)
+    assert Action(id="draft", label="draft", produces=["task.md"]).produces == ["task.md"]
+
+
+def test_every_application_loads_with_files_in_produces(tmp_path):
+    """A token in `produces` refuses the configuration; every application's stages load."""
+    from casefile.config import DomainConfig as DC
+    root = tmp_path / "flow"
+    root.mkdir()
+    for cfg in sorted(p.parent for p in CFG.parent.glob("*/stages.json")):
+        DC.load(cfg, root)
+
+
+def test_the_task_writer_still_comes_first_when_only_the_criteria_are_missing(tmp_path):
+    """`criteria` left `produces`; a gate waiting for criteria still puts the helper that writes the criteria file first."""
+    from casefile.domain.turn import enrich
+    root, store, config = world(tmp_path)
+    Steps(store, config).deliver(root, "task.md", "axel", "# Task: split the API\n\nNo criteria yet.\n")
+    case = reading.load(store, config, CID)
+    acts = [t for t in enrich(case, whose(case, config, "en"), config, "en") if t.action in ("draft_task", "accept_task")]
+    assert [t.action for t in acts] == ["draft_task", "accept_task"]
+    assert acts[0].unblocks == "accept_task"

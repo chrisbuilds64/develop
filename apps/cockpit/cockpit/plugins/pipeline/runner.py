@@ -51,6 +51,10 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:                                 # the write guard lives beside this file and runs as its hook
+    sys.path.insert(0, str(HERE))
+from write_guard import install as install_guard  # noqa: E402
+
 KIND = "claude-code"
 log = logging.getLogger("pressroom-runner")
 
@@ -70,6 +74,7 @@ def policy_for(policy: dict, skill: str) -> dict:
 
 
 WEB_TOOLS = ["WebFetch", "WebSearch"]
+READ_ONLY_DENY = ["Write", "Edit", "MultiEdit", "NotebookEdit"]
 
 
 def accounting(data: dict) -> dict:
@@ -247,7 +252,9 @@ def command_for(run: dict, rules: dict, args, data: Path, context: Path | None =
                                                         # workspace links to resolve there, and a link outside is refused
     tools = list(rules.get("tools", [])) + (WEB_TOOLS if rules.get("web") else [])
     if tools:
-        cmd += ["--allowedTools", ",".join(tools)]
+        cmd += ["--allowedTools", ",".join(tools)]          # pre-approves; under acceptEdits it forbids nothing
+    if run.get("produces") == []:
+        cmd += ["--disallowedTools", ",".join(READ_ONLY_DENY)]   # a helper that delivers nothing reads and answers (REQ-001 A-05)
     return cmd
 
 
@@ -451,6 +458,19 @@ def _build_home(args, data: Path | None, workspace_id: str, run_id: str) -> tupl
     return home, ws
 
 
+def refusals(log_file: Path | None) -> list[dict]:
+    """The writes the guard refused in this run, one per line of its log; none when the run was not guarded."""
+    if log_file is None or not log_file.is_file():
+        return []
+    out = []
+    for line in log_file.read_text(encoding="utf-8").splitlines():
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            continue
+    return out
+
+
 def refuse(f: Path, run: dict, rules: dict, why: str, env_for_tools: dict) -> None:
     """An order that cannot be billed to anybody does not run. The record says why, and the orderer reads it
     where they look anyway: as a review entry in the container, addressed to them."""
@@ -477,6 +497,7 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
         refuse(f, run, rules, billed_by, env_for_tools=plain_env)
         return
     home, ws = run_home(args, data, workspace_id, run["id"])
+    refused_log = install_guard(home, run, rules, data, sys.executable, HERE)
     env = policy_env(rules, args, env)
     env["HOME"] = str(home)
     context = context_file(run, env, args, ws)
@@ -500,7 +521,10 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
         out.write("\n" + result + ("\n\n[stderr]\n" + stderr if stderr.strip() else "") + "\n")
     run.update(status="done" if code == 0 else "failed", finished=now(), exit=code, log=f"_runs/{transcript.name}",
                result=result.strip()[:4000], stage=env["PRESSROOM_ENV"], billing=billing, workspace=workspace_id)
-    shutil.rmtree(home, ignore_errors=True)                  # the run's HOME was for this run only; the transcript stays in _runs
+    refused = refusals(refused_log)
+    if refused:
+        run["refused"] = refused
+    shutil.rmtree(home, ignore_errors=True)                 # the run's HOME was for this run only; the transcript stays in _runs
     if session:
         run["session"] = session
     run.update(spent)
@@ -512,7 +536,10 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
         return
     title = f"Run /{run['skill']}: {'done' if code == 0 else 'failed'}"
     body = (result.strip() or "(no output)")
-    text = (body[:1800] + (" …" if len(body) > 1800 else "")) + f"\n\n*Run {run['id']}, transcript in `{run['log']}`.*"
+    text = body[:1800] + (" …" if len(body) > 1800 else "")
+    if refused:                                              # the person sees what the helper tried beyond its delivery (REQ-001 A-05)
+        text += "\n\nRefused writes:\n" + "\n".join(f"- {r['why']}" for r in refused[:10])
+    text += f"\n\n*Run {run['id']}, transcript in `{run['log']}`.*"
     subprocess.run([sys.executable, str(HERE / "review_append.py"), run["container"], "--by", rules.get("agent", "agent"), "--title", title,
                     "--status", "info"], input=text, capture_output=True, text=True, env=plain_env)
 

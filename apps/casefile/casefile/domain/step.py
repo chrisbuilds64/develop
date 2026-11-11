@@ -585,7 +585,8 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
         e["status"] = "info"
         if agent:
             e["for"] = agent.name
-        j.run = ordering.order(store, config, j.case, case.stage, skill, person_id, text, request_id=j.step_id, lang=j.payload.get("_lang"))
+        j.run = ordering.order(store, config, j.case, case.stage, skill, person_id, text, request_id=j.step_id, lang=j.payload.get("_lang"),
+                               produces=[] if skill == "ask" else None)     # the free question delivers nothing: it reads and answers
     target = config.person(str(req.payload.get("for", "")))
     if req.action == "answer":
         src = next((x for x in case.entries if x.id == resolves), None)
@@ -646,7 +647,7 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
     if action and action.run and j.run is None:
         # the helper works where the case will stand: the move below takes it there before the runner takes the order
         j.run = ordering.order(store, config, j.case, (j.to or stage_now), action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
-                               lang=j.payload.get("_lang"))
+                               lang=j.payload.get("_lang"), produces=list(action.produces) or None)   # undeclared: not guarded yet
         _write_journal(store, j)
 
     # 4d. a hand-off to another application (the rule matrix's action), once, before the move: if it fails, nothing moved
