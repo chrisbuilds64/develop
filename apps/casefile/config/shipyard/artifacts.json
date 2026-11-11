@@ -22,7 +22,8 @@
           "file": "task.md",
           "stage": "10-task",
           "by": "role:developer",
-          "shape": "text"
+          "shape": "text",
+          "editable": true
         },
         {
           "file": "pr.md",

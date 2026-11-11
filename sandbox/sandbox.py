@@ -196,6 +196,7 @@ WALKS = [
     ("note-editor", "walks/note-editor-shot.mjs", "posteingang-muster"),   # REQ-001 S-09
     ("station-line", "walks/station-line-shot.mjs", "shipyard-muster"),    # REQ-001 S-08, SW-2026-002
     ("loading-state", "walks/loading-state-shot.mjs", "posteingang-muster"),  # REQ-001 S-13, SW-2026-003
+    ("text-editor", "walks/text-editor-shot.mjs", "shipyard-muster"),      # REQ-001 S-14 – S-16, SW-2026-004 (and pressroom-muster)
 ]
 
 

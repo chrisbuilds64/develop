@@ -41,6 +41,7 @@ class SlotView(BaseModel):
     by_word: str
     versions: list[VersionView]
     present: bool
+    editable: bool = False                                # the reader offers "Edit" (REQ-001 S-14)
 
 
 class CaseCard(BaseModel):
@@ -400,7 +401,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                 for i, k in enumerate(config.stations)]
     slots = [SlotView(file=s.file, word=config.word("files", s.file, lang, s.file), shape=s.shape, required=s.required,
                       due_station=station_of(config, s.due_stage)[0] if s.due_stage else "", by=s.by, by_word=by_word(config, s.by, lang),
-                      versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in s.versions], present=s.present)
+                      versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in s.versions], present=s.present, editable=s.editable)
              for s in case.slots]
     agent = config.agent
     back = stepping.reopen_target(config, case) or ""
