@@ -25,6 +25,14 @@ def split_version(name: str) -> tuple[str, int]:
 SHAPES = {".png": "image", ".jpg": "image", ".jpeg": "image", ".webp": "image", ".gif": "image", ".pdf": "pdf", ".mp4": "video", ".mov": "video", ".webm": "video",
           ".md": "text", ".txt": "text", ".json": "text", ".html": "text", ".csv": "text"}
 HIDDEN = {"meta.json", "review.md"}
+EDITABLE_EXT = ("md", "txt")                      # what the editor writes: text a person reads; never HTML, never JSON
+
+
+def editable(d) -> bool:
+    """A deliverable a person may write the next version of in the editor (REQ-001 S-14): the configuration marks it,
+    and it is plain text. The thread and meta.json never are, whatever a configuration says — the thread is append-only
+    and has no versions (C-07), meta.json is the case's state."""
+    return bool(d.editable) and d.file not in HIDDEN and d.file.rpartition(".")[2].lower() in EDITABLE_EXT
 
 
 def shape_of(name: str) -> str:
@@ -44,7 +52,7 @@ def slots_for(config: DomainConfig, label: str, files: list[str], sizes: dict[st
     out, known = [], set()
     for d in config.deliverables(label):
         versions = sorted(present.get(d.file, []), key=lambda x: x.version)
-        out.append(Slot(file=d.file, shape=d.shape, required=d.required, due_stage=d.stage, by=d.by, versions=versions))
+        out.append(Slot(file=d.file, shape=d.shape, required=d.required, due_stage=d.stage, by=d.by, versions=versions, editable=editable(d)))
         known.add(d.file)
     for base, versions in present.items():
         if base in known or base in HIDDEN:

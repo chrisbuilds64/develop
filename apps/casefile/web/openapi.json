@@ -1539,6 +1539,106 @@
         }
       }
     },
+    "/api/cases/{case_id}/edit/preview": {
+      "post": {
+        "summary": "Post Edit Preview",
+        "description": "The draft through the reader's renderer, and in the criteria file the lines the gate would refuse. Writes nothing.",
+        "operationId": "post_edit_preview_api_cases__case_id__edit_preview_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/edit": {
+      "post": {
+        "summary": "Post Edit",
+        "description": "The draft as the next version of the file, delivered as a step. A file the application does not mark editable\n\u2014 and the thread or meta.json, whatever it marks \u2014 is refused.",
+        "operationId": "post_edit_api_cases__case_id__edit_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}/samples": {
       "post": {
         "summary": "Post Sample",
@@ -3063,6 +3163,29 @@
         ],
         "title": "DraftIn"
       },
+      "EditIn": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "text"
+        ],
+        "title": "EditIn"
+      },
       "Entry": {
         "properties": {
           "id": {
@@ -4523,6 +4646,43 @@
         "title": "PlaceOut",
         "description": "A workspace the person can be in, for the menu: its name, its colour and glyph (theme.app), whether it is this one."
       },
+      "PreviewOut": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "html": {
+            "type": "string",
+            "title": "Html"
+          },
+          "unreadable": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Unreadable"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unreadable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "kind",
+          "html"
+        ],
+        "title": "PreviewOut"
+      },
       "ProtocolAnswerIn": {
         "properties": {
           "item": {
@@ -5719,6 +5879,11 @@
           "present": {
             "type": "boolean",
             "title": "Present"
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable",
+            "default": false
           }
         },
         "type": "object",
@@ -6079,6 +6244,29 @@
           "turn"
         ],
         "title": "TurnOut"
+      },
+      "Unreadable": {
+        "properties": {
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "text",
+          "reason"
+        ],
+        "title": "Unreadable"
       },
       "ValidationError": {
         "properties": {

@@ -156,6 +156,25 @@ class RunIn(BaseModel):
     request_id: str
 
 
+class EditIn(BaseModel):
+    file: str                                    # the deliverable's file (`task.md`), not a version
+    text: str
+    step_id: str = ""                            # needed to save; a preview has none
+
+
+class Unreadable(BaseModel):
+    line: int                                    # 1-based, in the draft
+    text: str
+    reason: str
+
+
+class PreviewOut(BaseModel):
+    file: str
+    kind: str                                    # md | plain
+    html: str                                    # the draft as the reader renders it
+    unreadable: list[Unreadable] | None = None   # the criteria file only: the lines the gate could not read
+
+
 class SampleIn(BaseModel):
     slot: str
     step_id: str
@@ -1718,6 +1737,40 @@ def create_app(settings: Settings) -> FastAPI:
         except StoreError as exc:
             raise HTTPException(409, str(exc))
         return AssetOut(name=name, slot=slot, step=_step(c, case_id, StepRequest(action="deliver", step_id=step_id, payload={"files": [name], "title": ""}), who))
+
+    # ------------------------------------------------------------ the editor (REQ-001 S-14 – S-16)
+    from ..domain import edit as editing
+
+    @app.post("/api/cases/{case_id}/edit/preview", response_model=PreviewOut)
+    def post_edit_preview(case_id: str, body: EditIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The draft through the reader's renderer, and in the criteria file the lines the gate would refuse. Writes nothing."""
+        from .text import render
+        try:
+            p = editing.preview(c.store, c.config, case_id, body.file, body.text)
+        except editing.NotEditable as exc:
+            raise HTTPException(403, str(exc))
+        except StoreError as exc:
+            raise HTTPException(404, str(exc))
+        return PreviewOut(file=p["file"], kind=p["kind"], html=render(body.text, p["kind"]), unreadable=p["unreadable"])
+
+    @app.post("/api/cases/{case_id}/edit", response_model=AssetOut)
+    def post_edit(case_id: str, body: EditIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The draft as the next version of the file, delivered as a step. A file the application does not mark editable
+        — and the thread or meta.json, whatever it marks — is refused."""
+        if len(body.text.encode("utf-8")) > settings.max_upload_mb * 1024 * 1024:
+            raise HTTPException(413, f"larger than {settings.max_upload_mb} MB")
+        if not stepping.STEP_ID.match(body.step_id):
+            raise HTTPException(422, "a save needs a step id")
+        prior = stepping.read_journal(c.store, body.step_id)
+        if prior is not None:
+            return AssetOut(name=str(prior.payload.get("files", [""])[0]), slot=body.file, step=_step(c, case_id, StepRequest(action="deliver", step_id=body.step_id), who))
+        try:
+            name = editing.save(c.store, c.config, case_id, body.file, body.text)
+        except editing.NotEditable as exc:
+            raise HTTPException(403, str(exc))
+        except StoreError as exc:
+            raise HTTPException(409, str(exc))
+        return AssetOut(name=name, slot=body.file, step=_step(c, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
 
     @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
     def post_sample(case_id: str, body: SampleIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):

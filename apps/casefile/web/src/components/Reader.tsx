@@ -1,14 +1,16 @@
 // A document, read inside the case: text rendered, PDF embedded, image large. Chips above switch between the documents on the desk,
 // ← → walk them, Escape returns to the desk. Every version of a document stays; small chips below the tabs leaf through them.
-// "Pop out" opens the same reader as its own window, next to the case.
+// "Pop out" opens the same reader as its own window, next to the case. "Edit" on a file the application marks editable
+// opens the editor over the newest version; saving shows the new one (REQ-001 S-14).
 import { useEffect, useRef, useState } from "react";
 import { BASE } from "../api";
 import { Back, Close, Next, PopOut, Prev } from "./Icons";
 import { VersionDiff } from "./Diff";
+import { Editor } from "./Editor";
 import type { words } from "../words";
 
 export type Version = { name: string; version: number; url: string };
-export type Doc = { word: string; shape: string; versions: Version[] };   // versions oldest → newest
+export type Doc = { word: string; shape: string; versions: Version[]; file?: string; editable?: boolean };   // versions oldest → newest
 
 function kindOf(name: string) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
@@ -19,8 +21,8 @@ function kindOf(name: string) {
   return "other";
 }
 
-export function Reader({ docs, index, caseId, onIndex, onClose, standalone, startAt, w }: {
-  docs: Doc[]; index: number; caseId: string; onIndex: (i: number) => void; onClose: () => void; standalone?: boolean; startAt?: string; w: ReturnType<typeof words>;
+export function Reader({ docs, index, caseId, onIndex, onClose, onChanged, standalone, startAt, w }: {
+  docs: Doc[]; index: number; caseId: string; onIndex: (i: number) => void; onClose: () => void; onChanged?: () => void; standalone?: boolean; startAt?: string; w: ReturnType<typeof words>;
 }) {
   const doc = docs[index];
   const [vi, setVi] = useState(() => Math.max(0, doc ? (startAt ? doc.versions.findIndex((v) => v.name === startAt) : -1) : -1));
@@ -28,6 +30,7 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
   const kind = ver ? kindOf(ver.name) : "other";
   const [html, setHtml] = useState<string | null>(null);
   const [compare, setCompare] = useState(false);
+  const [editing, setEditing] = useState(false);
   const at = doc && ver ? doc.versions.indexOf(ver) : -1;
   const before = doc && at > 0 ? doc.versions[at - 1] : undefined;      // the version this one is compared with
   const tabs = useRef<HTMLDivElement>(null);
@@ -36,7 +39,7 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
   const next = () => onIndex((index + 1) % docs.length);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement | null)?.tagName === "INPUT") return;
+      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement | null)?.tagName ?? "")) return;
       if (e.key === "ArrowLeft" && docs.length > 1) { e.preventDefault(); prev(); }
       if (e.key === "ArrowRight" && docs.length > 1) { e.preventDefault(); next(); }
       if (e.key === "Escape" && !standalone) { e.preventDefault(); onClose(); }
@@ -44,7 +47,7 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
-  useEffect(() => { setVi(-1); setCompare(false); }, [index]);     // a new document opens on its newest version, not compared
+  useEffect(() => { setVi(-1); setCompare(false); setEditing(false); }, [index]);     // a new document opens on its newest version, not compared
   useEffect(() => {
     setHtml(null);
     if (!ver || kind !== "text") return;
@@ -71,6 +74,9 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
           ))}
         </div>
         <div className="reader-acts">
+          {doc.editable && doc.file && kind === "text" && !standalone && onChanged && (
+            <button type="button" className="chip small ed-open" onClick={() => setEditing(true)}>{w.edEdit}</button>
+          )}
           {docs.length > 1 && <button type="button" className="swap" onClick={prev} aria-label={w.prev} title={`${w.prev} · ←`}><Prev /></button>}
           {docs.length > 1 && <button type="button" className="swap" onClick={next} aria-label={w.next} title={`${w.next} · →`}><Next /></button>}
           {!standalone && <button type="button" className="swap" onClick={popOut} aria-label={w.popOut} title={w.popOut}><PopOut /></button>}
@@ -98,6 +104,10 @@ export function Reader({ docs, index, caseId, onIndex, onClose, standalone, star
           : kind === "text" && (html === null ? <p className="hint">…</p> : <article className="prose" dangerouslySetInnerHTML={{ __html: html }} />)}
         {kind === "other" && <p className="hint"><a href={BASE + ver.url} target="_blank" rel="noreferrer">{w.openTab}</a></p>}
       </div>
+      {editing && doc.file && (
+        <Editor caseId={caseId} file={doc.file} word={doc.word} url={doc.versions[doc.versions.length - 1].url} w={w}
+                onClose={() => setEditing(false)} onSaved={() => { setEditing(false); setVi(-1); setCompare(false); onChanged?.(); }} />
+      )}
     </section>
   );
 }
