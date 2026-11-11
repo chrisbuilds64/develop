@@ -127,7 +127,8 @@
         "Grep",
         "Write",
         "Bash(gh:*)",
-        "Bash(python -m casefile.cli.step:*)"
+        "Bash(python -m casefile.cli.step:*)",
+        "Bash(python -m casefile.cli.protocol:*)"
       ],
       "secrets": [
         "GH_TOKEN"
@@ -209,7 +210,8 @@
         "Grep",
         "Write",
         "Bash(curl:*)",
-        "Bash(python -m casefile.cli.step:*)"
+        "Bash(python -m casefile.cli.step:*)",
+        "Bash(python -m casefile.cli.protocol:*)"
       ],
       "timeout": 900,
       "rules": []
@@ -226,7 +228,8 @@
         "Glob",
         "Grep",
         "Write",
-        "Edit"
+        "Edit",
+        "Bash(python -m casefile.cli.step:*)"
       ],
       "timeout": 600
     }
