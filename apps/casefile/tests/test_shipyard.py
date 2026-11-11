@@ -36,7 +36,7 @@ TASK_MD = """# Task: split the API
 - AC-1 · ENTW · yes/no — The API answers on its new path.
 - AC-2 · TEST · evidence — A case opened through the new path.
 """
-GATES = {"merge": "merge", "approve_test": "entw", "approve_prod": "test", "close": "prod"}
+GATES = {"merge": "merge", "approve_test": "entw", "approve_prod": "test"}   # PROD: the TEST acceptance was the last check; prod.md is the proof
 
 
 def pass_protocol(store, config, tid, by="chris"):
