@@ -59,6 +59,7 @@ Suite on 2026-11-08: 164 tests, all green.
 | A-03 | The live runner that executes orders is its own application beside casefile and cockpit (decision E1, 2026-11-08). Today it still sits in cockpit (`plugins/pipeline/runner.py`); casefile itself only has the demo replay. | — | n/a — move pending |
 | A-04 | What the AI proposes for the rulebook waits; a person accepts or rejects with a reason. | `domain/rulebook.py` | yes — `test_rulebook` |
 | A-05 | A helper writes in the case only the files its action delivers (`produces`, file names only); a helper without a delivery (the free question) only reads and answers through the thread. The same in every application. An order that names no delivery (an action without `produces`, a follow-up, a mail intake) is not guarded yet. | `domain/runs.py`, `plugins/pipeline/write_guard.py` | yes — `test_shipyard`, `test_runner_write_guard` |
+| A-06 | A helper's question names only what the surface shows (heading, button, place), never a file name, entry number or internal id; its numbered choices are offered as buttons: one in the words of a move the case offers the viewer makes that move, any other sends the same helper again with that choice (where no helper can be sent, it is the answer); each resolves the question. The same in every application. | `domain/choices.py`, `plugins/pipeline/runner.py` (writing rule) | yes — `test_choices`, `test_runner_prompt`, walk `choices` |
 
 ## Deterministic work (by the core, never by the AI)
 

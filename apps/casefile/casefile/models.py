@@ -210,6 +210,16 @@ class Turn(BaseModel):
     unblocks: str = ""                                  # the action this move delivers for: it comes first, the waiting one after it
 
 
+class Choice(BaseModel):
+    """One numbered choice of an open question, as a button (domain/choices.py, REQ-001 A-06)."""
+    n: int                                       # its number in the list: what `choose` sends
+    label: str                                   # the button's words
+    text: str                                    # the whole line, explanation included
+    kind: str                                    # move | again | answer
+    action: str = ""                             # the move it makes (kind move)
+    skill: str = ""                              # the helper it sends again (kind again)
+
+
 # ----------------------------------------------------------------------------- a step
 
 class StepRequest(BaseModel):

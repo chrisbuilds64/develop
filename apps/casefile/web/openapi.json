@@ -3027,6 +3027,16 @@
               }
             ]
           },
+          "choices": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/Choice"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Choices"
+          },
           "protocols": {
             "items": {
               "additionalProperties": true,
@@ -3081,6 +3091,45 @@
           "step_id"
         ],
         "title": "ChapterIn"
+      },
+      "Choice": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "title": "N"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "default": ""
+          },
+          "skill": {
+            "type": "string",
+            "title": "Skill",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "n",
+          "label",
+          "text",
+          "kind"
+        ],
+        "title": "Choice",
+        "description": "One numbered choice of an open question, as a button (domain/choices.py, REQ-001 A-06)."
       },
       "ConfigView": {
         "properties": {

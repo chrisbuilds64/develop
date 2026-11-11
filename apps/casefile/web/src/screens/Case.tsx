@@ -204,6 +204,9 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
 
   const mine = v.mine;
   const main: Turn | undefined = v.my_turns[0] ?? v.turns[0];
+  // the viewer's open question with numbered choices: its buttons take the place of "Answer" and "send the helper again" (REQ-001 A-06)
+  const asked = v.my_turns.filter((t) => t.action === "answer" && t.entry && v.choices?.[t.entry]?.length)
+    .map((t) => ({ e: v.entries.find((x) => x.id === t.entry)!, c: v.choices?.[t.entry!] ?? [] })).find((x) => x.e);
   const docs = docsOf(v);
   const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((x) => x.name === reading));
   const fileUrl = (name: string) => `${BASE}/api/cases/${encodeURIComponent(id)}/files/${encodeURIComponent(name)}`;
@@ -345,12 +348,22 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                   {(secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
               ) : mine && main?.action === "answer" ? (
                 <><p>{cap(main.reason)}</p>
-                  <div className="pacts"><button type="button" className="primary" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .mbtn")?.click(), 0); }}>{w.answer}</button></div></>
+                  {!asked && <div className="pacts"><button type="button" className="primary" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .mbtn")?.click(), 0); }}>{w.answer}</button></div>}</>
               ) : (
                 main?.actor === "claude" && v.helper ? <RunProgress h={v.helper} agent={v.agent} w={w} />
                   : main?.actor === "claude" && outside ? <p className="c-outside">{outside}</p>
                   : <p>{main ? (main.actor === "claude" ? w.isWorking(v.agent) : w.waitingFor(roleWord(main.actor))) : v.stage_word}</p>
               )}
+            </div>
+          )}
+
+          {asked && !pending && (
+            <div className="c-choices" data-help="cf.choices">
+              {primaryTurn && <p>{cap(asked.e.title || "")}</p>}
+              <div className="pacts choices">{asked.c.map((c, i) => (
+                <button key={c.n} type="button" className={i === 0 && !primaryTurn ? "primary" : "ghost"} data-choice={c.kind} title={c.text} disabled={busy}
+                        onClick={() => step.mutate({ action: "choose", label: c.label, payload: { resolves: asked.e.id, choice: c.n } })}>{c.label}</button>))}</div>
+              <button type="button" className="tlink" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .m-else")?.click(), 0); }}><u>{w.somethingElse}</u></button>
             </div>
           )}
 
@@ -414,6 +427,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
             <Conversation entries={v.entries} meName={me.name ?? ""} lang={lang} w={w} busy={busy} stageWord={stageWord} onFile={openFile} fileUrl={fileUrl}
                           onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
                           onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })}
+                          choices={v.choices ?? {}} onChoose={(e, c) => step.mutate({ action: "choose", label: c.label, payload: { resolves: e.id, choice: c.n } })}
                           canCorrect={canCorrect} onCorrect={(e, text, amt) => step.mutate({ action: "correct", label: w.correct, payload: { corrects: e.id, text, ...(amt ? { amount: amt } : {}) } })} />
           </div>
         ) : side === "docs" ? (

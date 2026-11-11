@@ -16,6 +16,7 @@ export type StepResult = components["schemas"]["StepResult"];
 export type MeOut = components["schemas"]["MeOut"];
 export type ConfigView = components["schemas"]["ConfigView"];
 export type Entry = components["schemas"]["Entry"];
+export type Choice = components["schemas"]["Choice"];
 export type SlotView = components["schemas"]["SlotView"];
 export type RhythmOut = components["schemas"]["RhythmOut"];
 export type ListView = components["schemas"]["ListView"];
