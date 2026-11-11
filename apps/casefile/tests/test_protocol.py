@@ -186,3 +186,14 @@ def test_a_helper_answers_objective_items_from_its_run_and_only_observes_the_res
     assert json.loads(capsys.readouterr().out.splitlines()[-1])["observed"]      # a judgement item: observed only
     monkeypatch.setenv("PRESSROOM_AGENT", "Chris")
     assert cli.main([CID, "entw", "answer", "--config", str(CFG), "--item", "installed", "--yes"]) == 2   # a person answers in the surface
+
+
+def test_the_helpers_that_answer_objective_items_may_call_the_protocol_cli():
+    """shipyard-checks and shipyard-verify answer the objective items of a protocol; the runner must let them call it."""
+    import json
+    from pathlib import Path
+    policy = json.loads((Path(__file__).resolve().parents[1] / "config" / "shipyard" / "run-policy.json").read_text())
+    skills = policy.get("skills", policy)
+    for name in ("shipyard-checks", "shipyard-verify"):
+        assert "Bash(python -m casefile.cli.protocol:*)" in skills[name]["tools"], name
+    assert "Bash(python -m casefile.cli.step:*)" in skills["shipyard-task"]["tools"]
