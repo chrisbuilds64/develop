@@ -378,6 +378,34 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .nf-sheet textarea { min-height: 40vh; max-height: 60vh; resize: vertical; margin: 0 20px; padding: 10px 0; border: none; outline: none; background: transparent; font: inherit; font-size: var(--fs-15); line-height: 1.55; color: var(--ink); }
 .nf-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px 16px; border-top: 1px solid var(--hairline); }
 .nf-hint { font-size: var(--fs-12-5); color: var(--muted); }
+/* the editor over a text file (REQ-001 S-14 – S-16): the note's sheet, wider, text and preview side by side */
+.nf-scrim:has(.ed-sheet) { padding-top: 4vh; }
+.ed-sheet { width: min(1240px, calc(100% - 32px)); max-height: 92vh; }
+.ed-file { font-size: var(--fs-12-5); color: var(--muted); }
+.ed-panes { display: none; gap: 6px; margin-left: auto; }
+.ed-close { margin-left: auto; }
+.ed-panes + .ed-close { margin-left: 4px; }
+.ed-tools { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 16px 8px; border-bottom: 1px solid var(--hairline); }
+.ed-tool { min-width: 34px; height: 30px; padding: 0 8px; border: 1px solid var(--hairline); border-radius: var(--r-s); background: var(--surface); color: var(--ink-2); font: inherit; font-weight: 600; cursor: pointer; }
+.ed-tool:hover { background: var(--hover); color: var(--ink); }
+.ed-body { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; flex: 1; }
+.ed-write { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--hairline); }
+.ed-sheet .ed-write textarea { flex: 1; min-height: 52vh; max-height: none; resize: none; margin: 0; padding: 14px 20px; font-family: var(--mono); font-size: var(--fs-13); }
+.ed-preview { overflow: auto; max-height: 70vh; padding: 14px 24px; }
+.ed-preview .prose { font-size: var(--fs-15); }
+.ed-bad { display: flex; flex-direction: column; gap: 2px; padding: 8px 20px 10px; border-top: 1px solid var(--hairline); background: var(--bad-soft); color: var(--bad-ink); font-size: var(--fs-12-5); }
+.ed-bad-line { text-align: left; border: none; background: transparent; color: inherit; font: inherit; padding: 2px 0; cursor: pointer; }
+.ed-bad-line:hover { text-decoration: underline; }
+.ed-ask { background: var(--bad-soft); color: var(--bad-ink); }
+.ed-ask-acts { display: flex; gap: 8px; }
+.ed-discard { color: var(--bad-ink); }
+@media (max-width: 900px) {
+  .ed-panes { display: inline-flex; }
+  .ed-body { grid-template-columns: 1fr; }
+  .ed-write { border-right: none; }
+  .ed-body.show-write .ed-preview, .ed-body.show-preview .ed-write { display: none; }
+  .ed-sheet .ed-write textarea { min-height: 50vh; }
+}
 .ask-i { color: var(--ai); }
 .ask-chip { font: inherit; font-size: var(--fs-12); border: none; background: var(--your-move-soft); color: var(--your-move-ink); border-radius: var(--r-7); padding: 2px 8px; cursor: pointer; white-space: nowrap; }
 .ask-send { width: 28px; height: 28px; border: none; border-radius: var(--r-7); background: var(--your-move); color: var(--your-move-on); display: grid; place-items: center; cursor: pointer; }

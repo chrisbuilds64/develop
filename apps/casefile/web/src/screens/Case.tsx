@@ -23,7 +23,7 @@ type W = ReturnType<typeof words>;
 export function docsOf(v: CaseView): Doc[] {
   const present = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
   const ordered = v.primary ? [...present.filter((s) => s.file === v.primary), ...present.filter((s) => s.file !== v.primary)] : present;
-  return ordered.map((s) => ({ word: s.word, shape: s.shape, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) }));
+  return ordered.map((s) => ({ word: s.word, shape: s.shape, file: s.file, editable: s.editable, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) }));
 }
 
 type Reading = { kind?: string; rule?: string; urgency?: string; summary?: string; fields?: Record<string, string>; labels?: Record<string, string>; reasons?: string[] };
@@ -244,7 +244,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
           {at >= 0 && <span className="c-of">{w.ofN(at + 1, list.length)}</span>}
         </div>
         {readingIndex >= 0 ? (
-          <div className="c-reader"><Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].versions[docs[i].versions.length - 1].name)} onClose={() => setReading(null)} w={w} /></div>
+          <div className="c-reader"><Reader docs={docs} index={readingIndex} caseId={id} onIndex={(i) => setReading(docs[i].versions[docs[i].versions.length - 1].name)} onClose={() => setReading(null)} onChanged={refresh} w={w} /></div>
         ) : (
         <div className="case">
           <header className="c-head" data-help="cf.case-head">

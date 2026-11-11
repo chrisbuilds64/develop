@@ -55,32 +55,44 @@ def _how(text: str) -> dict:
     raise ValueError(f"how a criterion is checked is yes/no, number …, choice … or evidence, not '{t}'")
 
 
-def parse(text: str) -> tuple[list[dict], list[str]]:
-    """The criteria of a task text, and the lines under the heading that could not be read (with why)."""
+def _scan(text: str) -> tuple[list[dict], list[dict]]:
+    """The criteria, and the unreadable lines as {line (1-based in the whole text), text, reason}."""
     m = HEADING.search(text or "")
     if not m:
         return [], []
+    first = text.count("\n", 0, m.end()) + 1                    # the heading's line; the body starts on the line after it
     body = text[m.end():]
     nxt = re.search(r"^#{1,3}\s", body, re.M)
     if nxt:
         body = body[:nxt.start()]
     out, bad = [], []
-    for raw in body.splitlines():
+    for n, raw in enumerate(body.split("\n")[1:], start=first + 1):
         if not raw.strip():
             continue
         lm = LINE.match(raw)
         if not lm:
             if raw.strip().startswith(("-", "*")):
-                bad.append(f"{raw.strip()} — not 'AC-n · STAGE · how — statement'")
+                bad.append({"line": n, "text": raw.strip(), "reason": "not 'AC-n · STAGE · how — statement'"})
             continue
         aid, where, how, statement = lm.groups()
         try:
             spec = _how(how)
         except ValueError as exc:
-            bad.append(f"{aid}: {exc}")
+            bad.append({"line": n, "text": raw.strip(), "reason": f"{aid}: {exc}"})
             continue
         out.append({"id": aid, "stages": ["ENTW", "TEST"] if where.lower() in BOTH else [where.upper()], "statement": statement, **spec})
     return out, bad
+
+
+def parse(text: str) -> tuple[list[dict], list[str]]:
+    """The criteria of a task text, and the lines under the heading that could not be read (with why)."""
+    out, bad = _scan(text)
+    return out, [f"{b['text']} — {b['reason']}" if b["reason"].startswith("not ") else b["reason"] for b in bad]
+
+
+def unreadable(text: str) -> list[dict]:
+    """The lines the gate could not read, where they stand: what an editor marks before the text is saved (REQ-001 S-16)."""
+    return _scan(text)[1]
 
 
 def items_for(criteria: list[dict], stage: str, lang: str = "en") -> list[dict]:

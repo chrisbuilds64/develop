@@ -782,6 +782,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/edit/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Edit Preview
+         * @description The draft through the reader's renderer, and in the criteria file the lines the gate would refuse. Writes nothing.
+         */
+        post: operations["post_edit_preview_api_cases__case_id__edit_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Edit
+         * @description The draft as the next version of the file, delivered as a step. A file the application does not mark editable
+         *     — and the thread or meta.json, whatever it marks — is refused.
+         */
+        post: operations["post_edit_api_cases__case_id__edit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/samples": {
         parameters: {
             query?: never;
@@ -1483,6 +1524,18 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /** EditIn */
+        EditIn: {
+            /** File */
+            file: string;
+            /** Text */
+            text: string;
+            /**
+             * Step Id
+             * @default
+             */
+            step_id: string;
         };
         /**
          * Entry
@@ -2231,6 +2284,17 @@ export interface components {
              */
             workspace_label: string;
         };
+        /** PreviewOut */
+        PreviewOut: {
+            /** File */
+            file: string;
+            /** Kind */
+            kind: string;
+            /** Html */
+            html: string;
+            /** Unreadable */
+            unreadable?: components["schemas"]["Unreadable"][] | null;
+        };
         /** ProtocolAnswerIn */
         ProtocolAnswerIn: {
             /** Item */
@@ -2823,6 +2887,11 @@ export interface components {
             versions: components["schemas"]["VersionView"][];
             /** Present */
             present: boolean;
+            /**
+             * Editable
+             * @default false
+             */
+            editable: boolean;
         };
         /** StageOut */
         StageOut: {
@@ -2972,6 +3041,15 @@ export interface components {
         TurnOut: {
             case: components["schemas"]["CaseCard"];
             turn: components["schemas"]["Turn"];
+        };
+        /** Unreadable */
+        Unreadable: {
+            /** Line */
+            line: number;
+            /** Text */
+            text: string;
+            /** Reason */
+            reason: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -4239,6 +4317,76 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_post_asset_api_cases__case_id__assets_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_edit_preview_api_cases__case_id__edit_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_edit_api_cases__case_id__edit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditIn"];
             };
         };
         responses: {
