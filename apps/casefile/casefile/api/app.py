@@ -2121,8 +2121,8 @@ def create_app(settings: Settings) -> FastAPI:
             return _refuse(exc)
         label = values.get("label") or body.label or create.get("label", "X")
         first = create.get("stage") or next((s.folder for s in c.config.stages if s.group != "archive"), None)   # where a new case starts
-        if not first or first not in c.store.stages():
-            return _refuse(Exception("the first stage folder is missing"))
+        if not first or first not in {s.folder for s in c.config.stages}:     # declared is enough: the folder comes with its first case
+            return _refuse(Exception("the first stage is not declared"))
         for prior in c.store.journals():                        # the same step id twice is the same case
             j = c.store.read_json(f"_steps/{prior}")
             if j.get("step_id") == body.step_id and j.get("action") == "create":

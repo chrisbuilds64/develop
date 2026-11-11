@@ -98,7 +98,13 @@ try {
   await page.waitForURL(new RegExp(`/w/${ship}/case/SW-`), { timeout: 8000 });
   const first = page.locator(".msg").first();
   await first.locator(".md-img").first().waitFor({ timeout: 5000 });
-  must(await first.locator(".md-img").first().evaluate((img) => img.complete && img.naturalWidth > 0), "the picture in the first entry does not load");
+  // the thread loads pictures lazily: wait for it to arrive instead of reading it at once
+  must(await first.locator(".md-img").first().evaluate((img) => new Promise((ok) => {
+    if (img.complete) return ok(img.naturalWidth > 0);
+    img.addEventListener("load", () => ok(img.naturalWidth > 0), { once: true });
+    img.addEventListener("error", () => ok(false), { once: true });
+    setTimeout(() => ok(img.complete && img.naturalWidth > 0), 5000);
+  })), "the picture in the first entry does not load");
   must((await first.locator(".m-files").innerText()).includes("screenshot-2.png"), "the first entry does not list the files");
   const cid = decodeURIComponent(page.url().split("/case/")[1].split("?")[0]);
   const files = (await (await page.request.get(`${base}/w/${ship}/api/cases/${encodeURIComponent(cid)}`)).json()).entries[0].files;

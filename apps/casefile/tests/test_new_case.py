@@ -51,6 +51,15 @@ def test_a_case_starts_with_a_description_and_files_and_the_first_entry_shows_th
     assert client.get(f"/api/cases/{cid}/files/screen.png").content == PNG
 
 
+def test_a_first_stage_without_a_folder_yet_gets_one_with_its_first_case(tmp_path):
+    """A tree holds the stages it has cases in (a team folder, a sample world): the declared first stage is enough."""
+    root, client = shipyard(tmp_path)
+    (root / "10-task").rmdir()
+    r = create(client, [("screen.png", PNG)])
+    assert r.status_code == 200, r.text
+    assert (root / "10-task" / r.json()["id"] / "screen.png").read_bytes() == PNG
+
+
 def test_without_a_description_the_title_is_the_first_entry_as_before(tmp_path):
     _, client = shipyard(tmp_path)
     r = client.post("/api/cases", json={"title": "Only a title", "step_id": "n-1"})
