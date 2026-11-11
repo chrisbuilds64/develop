@@ -238,12 +238,12 @@
       "key": "cf.new-case",
       "since": "0.18.0",
       "title": {
-        "de": "Neue Erhebung",
-        "en": "New elicitation"
+        "de": "Neuer Fall",
+        "en": "New case"
       },
       "text": {
-        "de": "Legt eine neue Erhebung an: ein Name genügt. Der Fragenkanon kommt aus der Konfiguration des Workspace; die Befragten bestimmst du in der Akte.",
-        "en": "Starts a new elicitation: a name is enough. The question pack comes from the workspace's configuration; you name the respondents in the case."
+        "de": "Öffnet den Editor für einen neuen Fall: Titel, Beschreibung in Markdown, Screenshots per ⌘V oder Ablegen. Der Fall entsteht in dieser Anwendung und öffnet sich danach mit dem Schritt, den die Anwendung als ersten anbietet.",
+        "en": "Opens the editor for a new case: title, Markdown description, screenshots by ⌘V or drop. The case is made in this application and opens with the step the application offers first."
       }
     },
     {

@@ -493,18 +493,8 @@
       },
       "post": {
         "summary": "Post Case",
-        "description": "A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the meta carries).",
+        "description": "A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the\nmeta carries). JSON, or multipart with `body` (the same JSON) and `files`: what the person attached, stored beside\nthe deliverables (REQ-001 S-18, C-09). Always in the workspace the request comes from \u2014 nothing picks another.",
         "operationId": "post_case_api_cases_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewCaseIn"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -515,14 +505,19 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCaseIn"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCaseForm"
               }
             }
           }
@@ -4408,11 +4403,32 @@
         ],
         "title": "ModuleVersion"
       },
+      "NewCaseForm": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "files": {
+            "items": {
+              "format": "binary",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "NewCaseForm",
+        "type": "object"
+      },
       "NewCaseIn": {
         "properties": {
           "title": {
-            "type": "string",
-            "title": "Title"
+            "title": "Title",
+            "type": "string"
           },
           "label": {
             "anyOf": [
@@ -4426,23 +4442,28 @@
             "title": "Label"
           },
           "step_id": {
-            "type": "string",
-            "title": "Step Id"
+            "title": "Step Id",
+            "type": "string"
           },
           "values": {
             "additionalProperties": {
               "type": "string"
             },
-            "type": "object",
-            "title": "Values"
+            "title": "Values",
+            "type": "object"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
           "title",
           "step_id"
         ],
-        "title": "NewCaseIn"
+        "title": "NewCaseIn",
+        "type": "object"
       },
       "NewCaseOut": {
         "properties": {

@@ -171,6 +171,7 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
             out.append(Turn(actor=actor, action=action.id, label=_rule_label(config, case, lang) if action.compile == "handoff" else _label(config, action.label, lang), payload=list(action.payload), seal=action.seal,
                             reason=config.word("stages", case.stage, lang, case.stage), blocked_by=blocked, since=case.since))
         _producers_first(config, stage, out)
+        _next_after_create(config, case, out)
     elif stage and stage.turn == "claude":
         out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                         reason=config.word("stages", case.stage, lang, case.stage), since=case.since))
@@ -198,6 +199,22 @@ def _producers_first(config: DomainConfig, stage, out: list[Turn]) -> None:
             if j > i:
                 out.insert(i, out.pop(j))
             break
+
+
+def _next_after_create(config: DomainConfig, case: Case, out: list[Turn]) -> None:
+    """A case just started offers the action its application names first (`theme.create.next`, REQ-002 SW-15): while it
+    stands in the stage it started in, no helper has worked on it, and nothing the action produces is there yet (a task
+    written by hand makes confirming first again). Without the key nothing changes."""
+    create = config.theme.get("create") or {}
+    nxt = create.get("next")
+    start = create.get("stage") or next((s.folder for s in config.stages if s.group != "archive"), None)
+    stage = config.stage(case.stage)
+    action = next((a for a in stage.actions if a.id == nxt), None) if stage else None
+    if not action or case.runs or case.stage != start or any((s := case.slot(f)) and s.present for f in action.produces):
+        return
+    i = next((k for k, t in enumerate(out) if t.action == nxt), None)
+    if i:
+        out.insert(0, out.pop(i))
 
 
 def stage_run(case: Case):

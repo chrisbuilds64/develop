@@ -24,6 +24,7 @@ Suite on 2026-11-08: 164 tests, all green.
 | C-06 | Deliverables are versioned upward (`.v2`, `.v3`), never replaced. | `domain/assets.py` | yes — `test_entries_assets_store` |
 | C-07 | The thread (`review.md`) is data: one format, read and written in one place; old entries still parse. | `domain/entries.py` | yes — `test_entries_assets_store` |
 | C-08 | A new case gets its number from the domain's rule (per year, per series, placeholder). | `domain/numbering.py` | yes — `test_numbering` |
+| C-09 | A free file attached at creation is stored beside the deliverables, never as one, never overwriting another file: a taken name, or one a deliverable of the label would read as its own (`task.md`, `task.v2.md`), gets `-2`, `-3`; only images, PDF, text and video, never HTML. *(Added with SW-2026-007, 2026-11-11.)* | `domain/assets.py` `put_free` | yes — `test_new_case` |
 
 ## Whose move
 
@@ -98,6 +99,7 @@ Suite on 2026-11-08: 164 tests, all green.
 | S-15 | The editor has a Markdown toolbar (bold, italic, heading, list, checklist, link, code) and ⌘B/⌘I/⌘K — ⌘K is the link there, not the search; a preview from the reader's renderer beside the text, or behind a switch on a narrow screen; Esc with unsaved text asks before discarding, without changes it closes at once. *(Added with SW-2026-004, 2026-11-11.)* | `web/src/components/Editor.tsx`, `POST /api/cases/{id}/edit/preview` | yes — `test_edit` (preview); end-to-end — walk `text-editor` |
 | S-16 | In the file that carries acceptance criteria (theme `criteria.file`, default `task.md`), the lines the gate could not read are named in the editor with their line and the gate's reason, before saving. *(Added with SW-2026-004, 2026-11-11.)* | `domain/criteria.py` `unreadable`, `web/src/components/Editor.tsx` | yes — `test_edit`; end-to-end — walk `text-editor` |
 | S-17 | Every case may hold free Markdown notes under `notes/`, created, edited and versioned in the editor; they count for no gate. An application switches them off with `"notes": false` in theme.json; the default is on. *(Added with SW-2026-006, 2026-11-11.)* | `domain/notes.py`, `store` `sub_files`, `POST /api/cases/{id}/notes`, `web/src/screens/Case.tsx` `Notes` | yes — `test_notes`, `test_data_points` (note in a data point); end-to-end — walk `notes` in CI `flows` (`web/walks/notes-shot.mjs`) |
+| S-18 | A new case is started from a visible button in the bar of the application the person is in (`theme.create`, for its roles, worded by the vocabulary's `texts.new_case`); it opens the editor with title, the value lists that ask on creation, a Markdown description with the S-15 toolbar, and files by drop or paste. The case is made in that application, never another; the files become files of the case, the description is the first thread entry and shows them as `![](name)`. The rail opens the same editor. *(Added with SW-2026-007, 2026-11-11.)* | `POST /api/cases` (JSON or multipart), `web/src/components/NewCase.tsx`, `Md.tsx` | yes — `test_new_case`; end-to-end — walk `new-case` in CI `flows` (`web/walks/new-case-shot.mjs`) |
 
 ## Public demo (ADR-016)
 

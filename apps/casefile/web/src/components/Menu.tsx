@@ -3,7 +3,8 @@
 // It carries what the old menu carried; only the places changed. On a phone it slides in over the page.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api, BASE, stepId, talk, ApiError, type ConfigView, type MeOut, type CaseCard } from "../api";
+import { api, BASE, type ConfigView, type MeOut, type CaseCard } from "../api";
+import { createSpec, newCaseWord, openNewCase } from "./NewCase";
 import type { Route } from "../App";
 import type { words } from "../words";
 import { Book, TeamIcon, SetupIcon, RulebookIcon, Pulse, SearchIcon, HomeIcon, Updown, Globe, Swap, Restart, Close, Speaker } from "./Icons";
@@ -45,16 +46,9 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
   const [sound, setSoundState] = useState(soundOn());
   const goClose = (p: string) => { setPop(false); onClose(); go(p); };
 
-  // a new case, as the old menu offered it: the domain's create spec, the value lists it asks for
-  const create = (config.theme as { create?: { label?: string; roles?: string[]; meta?: Record<string, unknown> } }).create;
-  const mayCreate = !!create && (create.roles ?? []).some((r) => me.roles.includes(r));
-  const [making, setMaking] = useState(false);
-  const [name, setName] = useState("");
+  // a new case: the rail opens the same editor as the bar's button (REQ-001 S-18), one way in
+  const mayCreate = !!createSpec(config, me);
   const [madeError, setMadeError] = useState<string | null>(null);
-  const asking = (config.lists ?? []).filter((l) => l.on_create && l.entries.some((e) => e.status !== "retired"));
-  const [values, setValues] = useState<Record<string, string>>({});
-  const defaults: Record<string, string> = { ...Object.fromEntries(Object.entries(create?.meta ?? {}).map(([k, v]) => [k, String(v)])), ...(create?.label ? { label: create.label } : {}) };
-  const labelWord = create?.label ? ((config.words as { labels?: Record<string, string> }).labels?.[create.label] ?? create.label) : "";
   const mailDrop = !!(config.theme as { mail_drop?: boolean }).mail_drop && me.roles.includes("operator");
   const dropMail = async (f: File | undefined) => {
     if (!f) return;
@@ -128,22 +122,9 @@ export function Menu({ config, me, route, go, side, onSwap, onSignOut, onFresh, 
       {mailDrop ? (
         <label className="nav quiet rail-drop" data-help="cf.drop-in"><span className="tx">{w.dropMail}</span>
           <input type="file" accept=".eml,message/rfc822" hidden onChange={(e) => dropMail(e.target.files?.[0])} /></label>
-      ) : mayCreate ? (making ? (
-        <form className="rail-new" data-help="cf.new-case" onSubmit={async (e) => { e.preventDefault(); if (!name.trim()) return; try { const r = await talk.create(name.trim(), stepId("new"), values); setMaking(false); setName(""); setValues({}); setMadeError(null); goClose(`/case/${encodeURIComponent(r.id)}`); } catch (err) { setMadeError(err instanceof ApiError ? err.message : String(err)); } }}>
-          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={w.newCasePlaceholder} maxLength={120} onKeyDown={(e) => { if (e.key === "Escape") setMaking(false); }} />
-          {asking.map((l) => (
-            <label key={l.id}><span>{l.word}</span>
-              <select value={values[l.field] ?? defaults[l.field] ?? ""} onChange={(e) => setValues({ ...values, [l.field]: e.target.value })}>
-                {!defaults[l.field] && <option value="">{w.pick}</option>}
-                {l.entries.filter((x) => x.status !== "retired").map((x) => <option key={x.key} value={x.key}>{x.word}{x.status === "planned" ? ` · ${w.entryStatus("planned")}` : ""}</option>)}
-              </select>
-            </label>
-          ))}
-          <button type="submit" className="btn small" disabled={!name.trim()}>{w.create}</button>
-        </form>
-      ) : (
-        <button type="button" className="nav quiet" data-help="cf.drop-in" onClick={() => setMaking(true)}><span className="tx">{w.newCaseShort}</span></button>
-      )) : null}
+      ) : mayCreate ? (
+        <button type="button" className="nav quiet" data-help="cf.new-case" onClick={() => { onClose(); openNewCase(); }}><span className="tx">+ {newCaseWord(config, w)}</span></button>
+      ) : null}
       {madeError && <span className="talk-error">{madeError}</span>}
 
       <div className="rail-cap">{w.admin}</div>

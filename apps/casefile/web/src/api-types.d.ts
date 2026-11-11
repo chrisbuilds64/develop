@@ -295,7 +295,9 @@ export interface paths {
         put?: never;
         /**
          * Post Case
-         * @description A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the meta carries).
+         * @description A new case in the first stage, when the domain says how one starts (`theme.create`: label, roles, and what the
+         *     meta carries). JSON, or multipart with `body` (the same JSON) and `files`: what the person attached, stored beside
+         *     the deliverables (REQ-001 S-18, C-09). Always in the workspace the request comes from — nothing picks another.
          */
         post: operations["post_case_api_cases_post"];
         delete?: never;
@@ -2125,6 +2127,13 @@ export interface components {
              */
             reason: string;
         };
+        /** NewCaseForm */
+        NewCaseForm: {
+            /** Body */
+            body: string;
+            /** Files */
+            files?: string[];
+        };
         /** NewCaseIn */
         NewCaseIn: {
             /** Title */
@@ -2137,6 +2146,11 @@ export interface components {
             values?: {
                 [key: string]: string;
             };
+            /**
+             * Description
+             * @default
+             */
+            description: string;
         };
         /** NewCaseOut */
         NewCaseOut: {
@@ -3584,6 +3598,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["NewCaseIn"];
+                "multipart/form-data": components["schemas"]["NewCaseForm"];
             };
         };
         responses: {
@@ -3594,15 +3609,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NewCaseOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -16,7 +16,7 @@
     noDictation: 'Dieser Browser diktiert hier nicht. In Safari: Systemeinstellungen → Tastatur → Diktieren einschalten; in Chrome geht es direkt. Sonst zweimal fn drücken: Das Diktieren von macOS schreibt in jedes Feld.',
     dictate: 'Diktieren', close: 'Schließen', stale: 'Die Seite ist veraltet — bitte neu laden.',
     help: 'Hilfe zu dieser Seite', tour: 'Tour starten', next: 'Weiter', prev: 'Zurück', done: 'Fertig', isNew: 'neu',
-    askHelp: 'Frag nach — z. B. „Wie lege ich einen neuen Fall an?“', askWho: 'Wen fragen?', noTopics: 'Zu dieser Seite gibt es noch keine Hilfe.',
+    askHelp: 'Frag nach — z. B. „Was passiert in diesem Schritt?“', askWho: 'Wen fragen?', noTopics: 'Zu dieser Seite gibt es noch keine Hilfe.',
     ref: 'Bezug', refOff: 'Ohne Bezug — allgemeine Frage', refOn: 'Bezug einschalten', refNone: 'Kein Fall geöffnet — allgemeine Frage'
   } : {
     team: 'My team', start: 'Start session', topic: 'Topic — one line', send: 'Send', end: 'End session',
@@ -26,7 +26,7 @@
     noDictation: 'This browser does not dictate here. In Safari: System Settings → Keyboard → turn Dictation on; Chrome works as is. Otherwise press fn twice: macOS dictation writes into any field.',
     dictate: 'Dictate', close: 'Close', stale: 'The page is stale — please reload.',
     help: 'Help for this page', tour: 'Start the tour', next: 'Next', prev: 'Back', done: 'Done', isNew: 'new',
-    askHelp: 'Ask — e.g. “How do I start a new case?”', askWho: 'Ask whom?', noTopics: 'There is no help for this page yet.',
+    askHelp: 'Ask — e.g. “What happens at this step?”', askWho: 'Ask whom?', noTopics: 'There is no help for this page yet.',
     ref: 'About', refOff: 'No reference — a general question', refOn: 'Switch the reference on', refNone: 'No case open — a general question'
   };
   function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }

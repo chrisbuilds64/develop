@@ -56,9 +56,6 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .rail-cap-toggle:hover { color: var(--ink); }
 .rail-cap-toggle i { font-style: normal; }
 .rail-drop { cursor: pointer; }
-.rail-new { display: flex; flex-direction: column; gap: 6px; padding: 6px 4px; }
-.rail-new input, .rail-new select { font: inherit; font-size: var(--fs-13); border: 1px solid var(--tint-12); border-radius: var(--r-s); padding: 6px 9px; background: var(--surface); color: var(--ink); }
-.rail-new label { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-11-5); color: var(--muted); }
 
 .cf-rail .me { margin-top: auto; display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none; cursor: pointer; border-radius: var(--r-10);
   padding: 10px 8px; color: inherit; font: inherit; text-align: left; }
@@ -411,6 +408,30 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
   .ed-write { border-right: none; }
   .ed-body.show-write .ed-preview, .ed-body.show-preview .ed-write { display: none; }
   .ed-sheet .ed-write textarea { min-height: 50vh; }
+}
+/* a new case (REQ-001 S-18): the button in the application's bar, and its editor on the editor's sheet */
+.nc-open { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; margin-left: 6px; flex: none; border: none; border-radius: var(--r-7); background: var(--your-move); color: var(--your-move-on); font: inherit; font-size: var(--fs-13); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.nc-open:hover { filter: brightness(1.08); }
+.nc-open > span[aria-hidden] { font-size: var(--fs-16); line-height: 1; }
+.nc-sheet { position: relative; }
+.nc-sheet .ed-write textarea { min-height: 34vh; }
+.nc-fields { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 0 20px 8px; }
+.nc-title { flex: 1 1 280px; min-width: 0; border: none; border-bottom: 1px solid var(--hairline); outline: none; background: transparent; padding: 6px 0; font: inherit; font-size: var(--fs-18); font-weight: 600; color: var(--ink); }
+.nc-title:focus { border-bottom-color: var(--ink-2); }
+.nc-list { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-12-5); color: var(--muted); }
+.nc-files { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 20px; border-top: 1px solid var(--hairline); }
+.nc-file { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 4px 0 6px; border: 1px solid var(--hairline); border-radius: var(--r-s); font-size: var(--fs-12-5); }
+.nc-file img { width: 22px; height: 22px; object-fit: cover; border-radius: var(--r-3); }
+.nc-file button { width: 22px; height: 22px; border: none; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; border-radius: var(--r-4); }
+.nc-file button:hover { background: var(--hover); color: var(--ink); }
+.nc-file button svg { width: 12px; height: 12px; }
+.nc-attach { font-size: var(--fs-12-5); color: var(--ink-2); text-decoration: underline; cursor: pointer; padding: 0 4px; }
+.nc-drop { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; background: var(--ai-soft); border: 2px dashed var(--ai-line); border-radius: var(--r-l); color: var(--ai); font-weight: 600; font-size: var(--fs-16); }
+.nc-error { color: var(--bad-ink); }
+.md-img { display: block; max-width: 100%; max-height: 360px; margin: 4px 0; border: 1px solid var(--hairline); border-radius: var(--r-s); }
+@media (max-width: 480px) {
+  .nc-open { padding: 0 9px; }
+  .nc-open .tx { display: none; }
 }
 .ask-i { color: var(--ai); }
 .ask-chip { font: inherit; font-size: var(--fs-12); border: none; background: var(--your-move-soft); color: var(--your-move-ink); border-radius: var(--r-7); padding: 2px 8px; cursor: pointer; white-space: nowrap; }

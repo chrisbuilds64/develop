@@ -68,6 +68,7 @@
       "missing": "something is still missing"
     },
     "texts": {
+      "new_case": "New idea",
       "done": "Done.",
       "deliver": "Delivered.",
       "detected": "Moved by hand",
@@ -228,6 +229,7 @@
       "missing": "es fehlt noch etwas"
     },
     "texts": {
+      "new_case": "Neue Idee",
       "done": "Erledigt.",
       "deliver": "Abgelegt.",
       "detected": "Von Hand verschoben",
