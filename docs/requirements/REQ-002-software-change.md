@@ -36,12 +36,12 @@ The stages are the way of a change in [CONTRIBUTING.md](../../CONTRIBUTING.md), 
 | SW-05 | A change sent back from approval carries the reason. | same test |
 | SW-06 | A developer may be a person or an agent; while the change is built, whose move it is names the developers, at each gate the product owner. | `test_whose_move_names_the_agent_while_it_builds_and_the_owner_at_each_gate` |
 | SW-07 | Every stage, action and record has its word in German and English. | `test_both_languages_name_every_stage_action_and_file` |
-| SW-08 | *(proposed, ADR-032 decision 10)* A repository is a data point on a git connector; it names its main branch and its required checks. | — |
-| SW-09 | *(proposed, decision 11)* With several repositories bound, a case names its repository at creation; with one, it is preset. | — |
-| SW-10 | *(proposed, decision 11)* A change across repositories is a case with one part per repository; the parent closes when every part is closed. | — |
-| SW-11 | *(proposed, decision 12)* A helper works in a working tree of the case's repository that the runner prepared; no helper instruction names a path. | — |
-| SW-12 | *(proposed, decision 13)* The merge gate reads the required checks of the case's repository. | — |
-| SW-13 | *(proposed, decision 14)* A deploy goes through the stage's target data point and its command. | — |
+| SW-17 | *(proposed, ADR-032 decision 10)* A repository is a data point on a git connector; it names its main branch and its required checks. | — |
+| SW-18 | *(proposed, decision 11)* With several repositories bound, a case names its repository at creation; with one, it is preset. | — |
+| SW-19 | *(proposed, decision 11)* A change across repositories is a case with one part per repository; the parent closes when every part is closed. | — |
+| SW-20 | *(proposed, decision 12)* A helper works in a working tree of the case's repository that the runner prepared; no helper instruction names a path. | — |
+| SW-21 | *(proposed, decision 13)* The merge gate reads the required checks of the case's repository. | — |
+| SW-22 | *(proposed, decision 14)* A deploy goes through the stage's target data point and its command. | — |
 | SW-08 | A new change is numbered within its year: `SW-2026-001`. | configuration (`theme.create`), numbering covered by REQ-001 C-08 |
 | SW-09 | The live workspace sits in its own folder, apart from content. | operations, not a test |
 | SW-10 | Each gate orders the helper's next stretch: the confirmed task the build, the pull request the checks, the merge and each acceptance the release (ADR-028). | `test_each_gate_orders_the_helper_for_the_next_stretch` |
