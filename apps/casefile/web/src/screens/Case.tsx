@@ -285,7 +285,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     <div className="ws-case">
       <main className="center">
         <div className="c-bar">
-          <span className="cid" title={v.id}>{v.external_id ? (v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.external_id}</a> : v.external_id) : v.number ? `${v.label}-${v.number}` : v.id}</span>
+          <span className="cid" title={v.id}>{v.external_id && v.external_url ? <a href={v.external_url} target="_blank" rel="noreferrer">{v.ref}</a> : v.ref}</span>
           <span className="c-meta">· {v.label_word}{v.meta?.created ? ` · ${dateWords(String(v.meta.created), lang)}` : ""}</span>
           {at >= 0 && <span className="c-of">{w.ofN(at + 1, list.length)}</span>}
         </div>
@@ -297,7 +297,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
             <span className="hav" aria-hidden="true">{initials}</span>
             <div className="hmain">
               <h1 className="title">{v.title}</h1>
-              <div className="hsub">{party && <span>{party}</span>}{urgent && <span className="hurg">{w.urgent}</span>}</div>
+              <div className="hsub">{party && <span>{party}</span>}{config.case_ref.includes("head") && <span className="hkind">{v.label_word}<span className="cref">{v.ref}</span></span>}{urgent && <span className="hurg">{w.urgent}</span>}</div>
             </div>
           </header>
           <Stations stations={v.stations} caseId={v.id} />

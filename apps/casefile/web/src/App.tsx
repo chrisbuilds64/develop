@@ -243,7 +243,7 @@ export function App() {
             <TeamSessionScreen id={route.id} me={me.data} go={go} w={w} />
           ) : (
             <div className="ws">
-              {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} place={here} views={bar} onMenu={() => setRailOpen(true)} />}
+              {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} place={here} views={bar} onMenu={() => setRailOpen(true)} showRef={config.data.case_ref.includes("list")} />}
               {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} tab={tab} />}
               {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} tab={tab} /> : <div className="ws-case"><main className="center" /></div>)}
             </div>

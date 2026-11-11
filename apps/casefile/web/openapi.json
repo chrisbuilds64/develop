@@ -2698,6 +2698,11 @@
             "title": "Number",
             "default": ""
           },
+          "ref": {
+            "type": "string",
+            "title": "Ref",
+            "default": ""
+          },
           "tint": {
             "type": "string",
             "title": "Tint",
@@ -2822,6 +2827,11 @@
           "number": {
             "type": "string",
             "title": "Number",
+            "default": ""
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref",
             "default": ""
           },
           "tint": {
@@ -3136,6 +3146,14 @@
             },
             "type": "array",
             "title": "Facets",
+            "default": []
+          },
+          "case_ref": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Case Ref",
             "default": []
           }
         },
