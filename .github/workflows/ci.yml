@@ -98,11 +98,22 @@ jobs:
       ids: ${{ steps.ids.outputs.ids }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - id: ids
-        run: echo "ids=$(python3 sandbox/sandbox.py ids)" >> "$GITHUB_OUTPUT"
+        name: The checks this change needs (its applications' flows and walks; all when the core changed)
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ids=$(python3 sandbox/sandbox.py ids "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}")
+          else
+            ids=$(python3 sandbox/sandbox.py ids)
+          fi
+          echo "$ids"
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"
 
   flow:
     needs: flow-plan
+    if: needs.flow-plan.outputs.ids != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -140,12 +151,14 @@ jobs:
           retention-days: 7
 
   flows:
-    needs: [changes, flow]
+    needs: [changes, flow-plan, flow]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Every flow green, or none to play
         run: |
-          echo "code changed: ${{ needs.changes.outputs.code }} · flows: ${{ needs.flow.result }}"
+          echo "code changed: ${{ needs.changes.outputs.code }} · planned: ${{ needs.flow-plan.outputs.ids }} · flows: ${{ needs.flow.result }}"
           if [ "${{ needs.changes.outputs.code }}" != "true" ]; then exit 0; fi
+          [ "${{ needs.flow-plan.result }}" = "success" ] || exit 1
+          if [ "${{ needs.flow-plan.outputs.ids }}" = "[]" ]; then exit 0; fi
           [ "${{ needs.flow.result }}" = "success" ]

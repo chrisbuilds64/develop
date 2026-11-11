@@ -1,0 +1,35 @@
+[
+  {
+    "id": "note-editor",
+    "script": "walks/note-editor-shot.mjs",
+    "workspaces": [
+      "posteingang-muster"
+    ],
+    "proves": "REQ-001 S-09"
+  },
+  {
+    "id": "station-line",
+    "script": "walks/station-line-shot.mjs",
+    "workspaces": [
+      "shipyard-muster"
+    ],
+    "proves": "REQ-001 S-08, SW-2026-002"
+  },
+  {
+    "id": "loading-state",
+    "script": "walks/loading-state-shot.mjs",
+    "workspaces": [
+      "posteingang-muster"
+    ],
+    "proves": "REQ-001 S-13, SW-2026-003"
+  },
+  {
+    "id": "text-editor",
+    "script": "walks/text-editor-shot.mjs",
+    "workspaces": [
+      "shipyard-muster",
+      "pressroom-muster"
+    ],
+    "proves": "REQ-001 S-14 – S-16, SW-2026-004"
+  }
+]

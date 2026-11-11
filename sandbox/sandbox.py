@@ -7,6 +7,8 @@
     python3 sandbox/sandbox.py check      the design guard, then every sample flow and walk headless; screenshots per step in sandbox/.state/check/
     python3 sandbox/sandbox.py check ID…  only these flows or walks (CI plays one per machine, in parallel)
     python3 sandbox/sandbox.py ids        every flow and walk id as JSON — the CI matrix
+    python3 sandbox/sandbox.py ids B H    only the checks the change B..H needs: its applications' flows and walks, all of them
+                                          when the core changed, none for docs or unit tests (the rules: `touched`)
 
     SANDBOX_PREBUILT=1 plays an existing web/dist and skips the guards (when both were just done by another step).
 
@@ -18,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -191,13 +194,10 @@ def up() -> None:
 
 # ----------------------------------------------------------------------------- check
 
-# surface behaviour no demo flow presses, walked on its own after the flows: id → script in web/walks, workspace
-WALKS = [
-    ("note-editor", "walks/note-editor-shot.mjs", "posteingang-muster"),   # REQ-001 S-09
-    ("station-line", "walks/station-line-shot.mjs", "shipyard-muster"),    # REQ-001 S-08, SW-2026-002
-    ("loading-state", "walks/loading-state-shot.mjs", "posteingang-muster"),  # REQ-001 S-13, SW-2026-003
-    ("text-editor", "walks/text-editor-shot.mjs", "shipyard-muster"),      # REQ-001 S-14 – S-16, SW-2026-004 (and pressroom-muster)
-]
+# surface behaviour no demo flow presses, walked on its own after the flows — declared in walks.json, not here:
+# id, script in web/walks, the workspaces it plays (passed to the script in this order), the requirement lines it proves
+def walks() -> list[dict]:
+    return json.loads((HERE / "walks.json").read_text(encoding="utf-8"))
 
 
 def flows() -> list[dict]:
@@ -227,6 +227,58 @@ def stage_app(trees: Path):
             root=trees / ws, config_dir=CFG / conf, label=ws, open_identity=True, secret="sandbox", stage="check", shell="/",
             web_dist=WEB / "dist", demo=True, template=world_dir(world), samples_dir=pkg / "demo" / "samples", replies_dir=pkg / "demo" / "replies")))
     return shell
+
+
+# ----------------------------------------------------------------------------- which checks a change needs
+
+# A check (flow or walk) names the workspaces it plays; a workspace names its world and its configuration. A change touches
+# applications through their configuration or their world, or it touches the core — and then every check runs. Paths that
+# no check plays (documentation, unit tests, the cockpit shell, deploy tooling, guards) select nothing.
+NO_CHECK = ("docs/", "apps/casefile/tests/", "apps/cockpit/", "infra/", "tools/")
+BY_CONFIG = re.compile(r"^apps/casefile/config/([^/]+)/")
+BY_WORLD = re.compile(r"^sandbox/worlds/([^/]+)/")
+BY_WALK = re.compile(r"^apps/casefile/web/(walks/[^/]+)$")
+
+
+def touched(files: list[str]) -> tuple[bool, set[str], set[str]]:
+    """(everything, configurations, walk scripts) a list of changed paths reaches."""
+    spaces = {**SPACES, **CHECK_SPACES}
+    confs: set[str] = set()
+    scripts: set[str] = set()
+    for f in files:
+        if not f or f.endswith(".md") or f.startswith(NO_CHECK):
+            continue
+        if m := BY_CONFIG.match(f):
+            confs.add(m.group(1))
+        elif m := BY_WORLD.match(f):
+            confs |= {conf for world, conf, _ in spaces.values() if world == m.group(1)}
+        elif m := BY_WALK.match(f):
+            scripts.add(m.group(1))
+        elif f == "sandbox/walks.json":
+            continue                                            # a walk's declaration: the walk's own script decides
+        else:
+            return True, set(), set()                           # the core, the surface, the sandbox, CI: every check
+    return False, confs, scripts
+
+
+def selected(files: list[str] | None) -> list[str]:
+    """The ids of the checks a change needs; every id when no change is given."""
+    spaces = {**SPACES, **CHECK_SPACES}
+    conf_of = lambda ws: spaces[ws][1] if ws in spaces else None
+    every = [f["id"] for f in flows()] + [w["id"] for w in walks()]
+    if files is None:
+        return every
+    allof, confs, scripts = touched(files)
+    if allof:
+        return every
+    out = [f["id"] for f in flows() if any(conf_of(ws) in confs for ws in f["workspaces"])]
+    out += [w["id"] for w in walks() if w["script"] in scripts or any(conf_of(ws) in confs for ws in w["workspaces"])]
+    return out
+
+
+def changed(base: str, head: str) -> list[str]:
+    r = subprocess.run(["git", "-C", str(REPO), "diff", "--name-only", base, head], capture_output=True, text=True, check=True)
+    return [x for x in r.stdout.splitlines() if x.strip()]
 
 
 def free_port() -> int:
@@ -270,11 +322,12 @@ def check(only: list[str]) -> int:
             ok = r.returncode == 0 and tail == "clean"
             results.append((f["id"], ok, "" if ok else (r.stdout + r.stderr).strip().splitlines()[-3:]))
             print(f"{'green' if ok else 'RED  '}  {f['suite']['id']:10} {f['id']:24} {round(time.time() - t0):>4} s", flush=True)
-        for wid, script, ws in WALKS:
+        for wk in walks():
+            wid = wk["id"]
             if only and wid not in only:
                 continue
             t0 = time.time()
-            r = subprocess.run(["node", script, f"http://127.0.0.1:{port}", str(out / wid), ws], cwd=WEB, capture_output=True, text=True)
+            r = subprocess.run(["node", wk["script"], f"http://127.0.0.1:{port}", str(out / wid), *wk["workspaces"]], cwd=WEB, capture_output=True, text=True)
             tail = (r.stdout.strip().splitlines() or ["(no output)"])[-1]
             ok = r.returncode == 0 and tail == "clean"
             results.append((wid, ok, "" if ok else (r.stdout + r.stderr).strip().splitlines()[-3:]))
@@ -298,7 +351,15 @@ if __name__ == "__main__":
     if cmd == "setup":
         setup()
     elif cmd == "ids":
-        print(json.dumps([f["id"] for f in flows()] + [w[0] for w in WALKS]))
+        # ids                  every check
+        # ids BASE HEAD        the checks the change BASE..HEAD needs
+        # ids --files P …      the checks these paths need (to try the rules)
+        if rest[:1] == ["--files"]:
+            print(json.dumps(selected(rest[1:])))
+        elif len(rest) == 2:
+            print(json.dumps(selected(changed(rest[0], rest[1]))))
+        else:
+            print(json.dumps(selected(None)))
     elif cmd in ("up", "reset", "check", "_stage"):
         in_venv()
         if cmd == "up":
