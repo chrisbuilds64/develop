@@ -12,6 +12,7 @@ import { Conversation } from "../components/Conversation";
 import { Seal, DocIcon, PenIcon, PhotoIcon } from "../components/Icons";
 import { NoteField, openNote } from "../components/NoteField";
 import { Reader, type Doc } from "../components/Reader";
+import { Editor } from "../components/Editor";
 import { MetaList } from "../components/MetaSheet";
 import { casesOf, type Tab } from "./Queue";
 import { ago, dateWords, type words } from "../words";
@@ -23,7 +24,46 @@ type W = ReturnType<typeof words>;
 export function docsOf(v: CaseView): Doc[] {
   const present = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
   const ordered = v.primary ? [...present.filter((s) => s.file === v.primary), ...present.filter((s) => s.file !== v.primary)] : present;
-  return ordered.map((s) => ({ word: s.word, shape: s.shape, file: s.file, editable: s.editable, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) }));
+  const notes = (v.notes ?? []).map((n) => ({ word: n.word, shape: "text", file: n.file, editable: true, versions: n.versions.map((x) => ({ name: x.name, version: x.version, url: x.url })) }));
+  return [...ordered.map((s) => ({ word: s.word, shape: s.shape, file: s.file, editable: s.editable, versions: s.versions.map((v) => ({ name: v.name, version: v.version, url: v.url })) })), ...notes];
+}
+
+// Free notes beside the documents (REQ-001 S-17): their own group on the desk, each opening in the reader; "New note" asks
+// for a title, the core names the file, and the editor opens empty — its first save creates the note. Shown only while
+// the application offers notes (theme `notes`, on unless false).
+function Notes({ v, w, onOpen, onNew }: { v: CaseView; w: W; onOpen: (name: string) => void; onNew: (file: string, word: string) => void }) {
+  const [title, setTitle] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const create = () => {
+    const t = (title ?? "").trim();
+    if (!t) return;
+    api.noteNew(v.id, t).then((r) => { setTitle(null); setError(null); onNew(r.file, r.word); }, (e) => setError(e instanceof ApiError ? e.message : String(e)));
+  };
+  return (
+    <div className="c-desk c-notes" data-help="cf.notes">
+      <div className="deskh">{w.notes}</div>
+      <div className="docs">
+        {(v.notes ?? []).map((n) => {
+          const last = n.versions[n.versions.length - 1];
+          return (
+            <button key={n.file} type="button" className="doc" data-file={n.file} onClick={() => onOpen(last.name)}>
+              <span className="dn"><PenIcon />{n.word}</span><span className="dm">{w.version(Math.max(1, last.version))}</span>
+            </button>
+          );
+        })}
+        {title === null ? (
+          <button type="button" className="doc nn-open" onClick={() => setTitle("")}><span className="dn">+ {w.newNote}</span></button>
+        ) : (
+          <form className="doc nn-form" onSubmit={(e) => { e.preventDefault(); create(); }}>
+            <input autoFocus value={title} placeholder={w.newNoteTitle} aria-label={w.newNoteTitle} maxLength={80}
+                   onChange={(e) => { setTitle(e.target.value); setError(null); }} onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setTitle(null); setError(null); } }} />
+            <button type="submit" className="primary" disabled={!title.trim()}>{w.noteCreate}</button>
+            {error && <span className="hint">{error}</span>}
+          </form>
+        )}
+      </div>
+    </div>
+  );
 }
 
 type Reading = { kind?: string; rule?: string; urgency?: string; summary?: string; fields?: Record<string, string>; labels?: Record<string, string>; reasons?: string[] };
@@ -92,6 +132,8 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const [pending, setPending] = useState<Turn | null>(null);
   const [reading, setReading] = useState<string | null>(null);
   const [side, setSide] = useState<"conv" | "docs" | "details">("conv");
+  const [fresh, setFresh] = useState<{ file: string; word: string } | null>(null);     // a new note in the editor, not saved yet
+  const notesOn = (config.theme as { notes?: boolean }).notes !== false;
   const threadRef = useRef<HTMLDivElement>(null);
   const refresh = () => { qc.invalidateQueries({ queryKey: ["case", id] }); qc.invalidateQueries({ queryKey: ["groups"] }); qc.invalidateQueries({ queryKey: ["turns"] }); qc.invalidateQueries({ queryKey: ["rhythm"] }); };
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
@@ -116,7 +158,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const entryCount = q.data?.entries.length ?? 0;
   useEffect(() => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }, [entryCount, id, side]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 7000); return () => clearTimeout(t); }, [toast]);
-  useEffect(() => { setReading(null); setPending(null); setRefused(null); }, [id]);
+  useEffect(() => { setReading(null); setPending(null); setRefused(null); setFresh(null); }, [id]);
 
   const v = q.data;
   const list = casesOf(groups.data, tab);
@@ -347,6 +389,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
               {desk.length === 0 && missing.length === 0 && !talkSlot && <span className="c-empty">{w.deskEmpty}</span>}
             </div>
           </div>
+          {notesOn && <Notes v={v} w={w} onOpen={setReading} onNew={(file, word) => setFresh({ file, word })} />}
         </div>
         )}
         <div className="c-keys" aria-hidden="true">
@@ -384,6 +427,11 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                      ? step.mutateAsync({ action: pending.action, label: pending.label, payload: { note: text, text } }).then(() => setPending(null))
                      : run.mutateAsync(text)} />
       </aside>
+
+      {fresh && (
+        <Editor caseId={id} file={fresh.file} word={fresh.word} w={w} onClose={() => setFresh(null)}
+                onSaved={(name) => { setFresh(null); refresh(); setReading(name); }} />
+      )}
 
       {toast && (
         <div className={`c-toast${toast.sealed ? " sealed" : ""}`} role="status">

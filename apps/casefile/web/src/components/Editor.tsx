@@ -2,7 +2,7 @@
 // preview from the reader's own renderer beside it (or behind a switch on a narrow screen). Saving writes the next version;
 // the older ones stay. Esc with unsaved text asks first. In the file that carries the acceptance criteria, the lines the
 // gate could not read are listed under the text with their line and reason, before anything is saved. No editor library:
-// a textarea, and insertText so the browser's own undo keeps working.
+// a textarea, and insertText so the browser's own undo keeps working. A new note (REQ-001 S-17) opens it empty, without a url.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, BASE, stepId, type PreviewOut } from "../api";
 import { Close } from "./Icons";
@@ -12,7 +12,7 @@ type W = ReturnType<typeof words>;
 const mac = /Mac|iPhone|iPad/.test(navigator.platform);
 
 export function Editor({ caseId, file, word, url, onClose, onSaved, w }: {
-  caseId: string; file: string; word: string; url: string; onClose: () => void; onSaved: (name: string) => void; w: W;
+  caseId: string; file: string; word: string; url?: string; onClose: () => void; onSaved: (name: string) => void; w: W;   // no url: a new note, empty
 }) {
   const [base, setBase] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -25,6 +25,7 @@ export function Editor({ caseId, file, word, url, onClose, onSaved, w }: {
   const dirty = base !== null && text !== base;
 
   useEffect(() => {
+    if (!url) { setBase(""); setText(""); return; }
     let alive = true;
     fetch(BASE + url, { credentials: "same-origin" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))
       .then((t) => { if (alive) { setBase(t); setText(t); } })

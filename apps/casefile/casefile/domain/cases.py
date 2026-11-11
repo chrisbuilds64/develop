@@ -155,8 +155,10 @@ def load(store: FsStore, config: DomainConfig, case_id: str) -> Case:
             break
     if not since:
         since = entries[-1].date if entries else str(meta.get("created") or "")
+    from . import notes
     return Case(id=case_id, stage=stage, meta=meta, files=files, slots=slots_for(config, label, files, sizes),
-                entries=entries, runs=runs, since=since, data=load_data(store, config, case_id, label, files))
+                entries=entries, runs=runs, since=since, data=load_data(store, config, case_id, label, files),
+                notes=notes.load(store, case_id) if notes.enabled(config) else [])
 
 
 def load_all(store: FsStore, config: DomainConfig) -> list[Case]:

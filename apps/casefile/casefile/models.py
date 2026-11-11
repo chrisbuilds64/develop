@@ -155,6 +155,13 @@ class Run(BaseModel):
     progress: dict | None = None                 # while it runs: what the helper is doing (the runner's `<id>.progress`: steps, phase, now, recent)
 
 
+class Note(BaseModel):
+    """A free note of the case (`notes/<slug>.md`, REQ-001 S-17): versioned like a document, counted by no gate."""
+    file: str                                    # the note's name, its first version
+    word: str                                    # its first heading, else its name
+    versions: list[FileVersion] = Field(default_factory=list)
+
+
 class Case(BaseModel):
     """A case as the core reads it: everything `turn()` needs, nothing more."""
     id: str                                      # the folder name
@@ -166,6 +173,7 @@ class Case(BaseModel):
     runs: list[Run] = Field(default_factory=list)
     since: str = ""                              # ISO time the case entered its stage, as far as the thread knows
     data: dict = Field(default_factory=dict)     # small JSON deliverables (shape interview | data), newest version each, read with the case: the turn rule may look inside
+    notes: list[Note] = Field(default_factory=list)   # free notes beside the slots, never among them (domain/notes.py)
 
     @property
     def label(self) -> str:

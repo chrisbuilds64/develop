@@ -44,6 +44,12 @@ class SlotView(BaseModel):
     editable: bool = False                                # the reader offers "Edit" (REQ-001 S-14)
 
 
+class NoteView(BaseModel):
+    file: str                                             # notes/<slug>.md — what the editor saves to
+    word: str
+    versions: list[VersionView]
+
+
 class CaseCard(BaseModel):
     id: str
     title: str
@@ -287,6 +293,7 @@ class CaseView(CaseCard):
     helper: HelperView | None = None                      # a helper at work: phases, what it does now, how long it usually takes
     again: AgainView | None = None                        # a helper finished here, the case stayed: the viewer may send it again
     protocols: list[dict] = Field(default_factory=list)   # the gate protocols of this stage and earlier ones (ADR-029)
+    notes: list[NoteView] = Field(default_factory=list)   # free notes, beside the slots and never among them (REQ-001 S-17)
 
 
 class ListEntryView(BaseModel):
@@ -420,6 +427,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                     helper=helper(config, case, lang, store),
                     again=again(config, case, viewer, lang),
                     protocols=protocols(config, case, store, lang),
+                    notes=[NoteView(file=n.file, word=n.word, versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in n.versions])
+                           for n in case.notes],
                     data={k: localized(v, lang) for k, v in case.data.items() if k.endswith(".json") and not k.startswith(("gespraech", "nachfragen"))})
 
 

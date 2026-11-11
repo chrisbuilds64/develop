@@ -39,6 +39,7 @@ from .. import __version__
 from ..config import DomainConfig
 from ..domain import assets, cases as reading, step as stepping
 from ..domain import runs as runs_
+from ..domain import notes
 from ..domain import seen as reads
 from ..domain import turn as whose
 from ..models import Case, StepRequest, StepResult, Turn
@@ -166,6 +167,15 @@ class Unreadable(BaseModel):
     line: int                                    # 1-based, in the draft
     text: str
     reason: str
+
+
+class NoteNewIn(BaseModel):
+    title: str
+
+
+class NoteNewOut(BaseModel):
+    file: str                                    # notes/<slug>.md — not written yet
+    word: str
 
 
 class PreviewOut(BaseModel):
@@ -1316,9 +1326,13 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(404, str(exc) or case_id)
         return views.view(c.config, case, who, c.lang, file_url, reads.load(c.store, who), c.store)
 
-    @app.get("/api/cases/{case_id}/files/{name}")
+    def _plain_or_note(name: str) -> bool:
+        """A file of the case's top level, or a version of one of its notes (`notes/<slug>.md`) — nothing else of the folder."""
+        return ("/" not in name and not name.startswith(".")) or notes.is_note_version(name)
+
+    @app.get("/api/cases/{case_id}/files/{name:path}")
     def get_file(case_id: str, name: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
-        if "/" in name or name.startswith("."):
+        if not _plain_or_note(name):
             raise HTTPException(404, name)
         try:
             p = c.store.case_dir(case_id) / name
@@ -1328,11 +1342,11 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(404, name)
         return FileResponse(p)
 
-    @app.get("/api/cases/{case_id}/read/{name}")
+    @app.get("/api/cases/{case_id}/read/{name:path}")
     def read_file(case_id: str, name: str, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
         """A text file rendered for the viewer: {kind, html}. Images and PDFs come from /files."""
         from .text import render
-        if "/" in name or name.startswith("."):
+        if not _plain_or_note(name):
             raise HTTPException(404, name)
         try:
             p = c.store.case_dir(case_id) / name
@@ -1771,6 +1785,22 @@ def create_app(settings: Settings) -> FastAPI:
         except StoreError as exc:
             raise HTTPException(409, str(exc))
         return AssetOut(name=name, slot=body.file, step=_step(c, case_id, StepRequest(action="deliver", step_id=body.step_id, payload={"files": [name]}), who))
+
+    @app.post("/api/cases/{case_id}/notes", response_model=NoteNewOut)
+    def post_note(case_id: str, body: NoteNewIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
+        """The file a new note with this title goes to (REQ-001 S-17). Writes nothing: the editor opens empty, and its first
+        save through /edit creates the note. Refused when the application does not offer notes."""
+        try:
+            file = notes.new(c.store, c.config, case_id, body.title)
+        except notes.NotesOff as exc:
+            raise HTTPException(403, str(exc))
+        except StoreError as exc:
+            raise HTTPException(404, str(exc))
+        except FileExistsError as exc:
+            raise HTTPException(409, str(exc))
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+        return NoteNewOut(file=file, word=body.title.strip()[:80])
 
     @app.post("/api/cases/{case_id}/samples", response_model=AssetOut)
     def post_sample(case_id: str, body: SampleIn, c: Ctx = Depends(ctx), who: str = Depends(viewer)):
