@@ -1,7 +1,7 @@
 // A gate protocol in the case (ADR-029, REQ-003 G2): the items of this gate, each answered by its type — yes/no, a number, a
 // choice, evidence — with what was seen; nothing is preset. Before the first verdict an item can be struck with a reason.
 // When nothing is open the person seals it; the gate reads the sealed protocol. An agent's observations sit under the item.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError, gate, stepId } from "../api";
 import type { words } from "../words";
 
@@ -27,10 +27,11 @@ function criterionText(it: Item, w: W): string {
   return "";
 }
 
-function Row({ it, a, obs, lang, sealed, shaping, w, onAnswer, onStrike }: {
+function Row({ it, a, obs, lang, sealed, shaping, w, onAnswer, onStrike, onDirty }: {
   it: Item; a?: Answer; obs?: Doc["observations"] extends infer O ? O extends Record<string, infer V> ? V : never : never; lang: string; sealed: boolean; shaping: boolean; w: W;
   onAnswer: (body: { value?: boolean | number | string | null; na?: boolean; note?: string; evidence?: string[] }) => Promise<void>;
   onStrike: (reason: string) => Promise<void>;
+  onDirty: (dirty: boolean) => void;
 }) {
   const q = it.question?.[lang] ?? it.question?.en ?? it.id;
   const [val, setVal] = useState<string>("");
@@ -38,6 +39,11 @@ function Row({ it, a, obs, lang, sealed, shaping, w, onAnswer, onStrike }: {
   const [mode, setMode] = useState<"" | "na" | "strike">("");
   const open = !a && !it.struck && !sealed;
   const send = (value?: boolean | number | string | null) => onAnswer({ value, note: note.trim() || undefined }).then(() => { setVal(""); setNote(""); });
+  // text typed but not sent is reported up, so sealing can say so instead of silently staying shut
+  const dirty = open && (!!val.trim() || !!note.trim());
+  useEffect(() => { onDirty(dirty); }, [dirty]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sendEvidence = () => val.trim() && onAnswer({ value: val.trim(), evidence: [val.trim()], note: note.trim() || undefined }).then(() => { setVal(""); setNote(""); });
+  const enter = (f: () => unknown) => (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); f(); } };
   return (
     <li className={`pc-item${it.struck ? " struck" : ""}${a ? ` ${a.verdict}` : ""}`}>
       <div className="pc-q">
@@ -52,12 +58,14 @@ function Row({ it, a, obs, lang, sealed, shaping, w, onAnswer, onStrike }: {
       {(obs ?? []).map((o, i) => <div key={i} className="pc-obs">{w.pcObserved(o.by)}: {o.note || String(o.value ?? "")}{o.suggests ? ` (${o.suggests})` : ""}</div>)}
       {open && (
         <div className="pc-answer">
+          {mode === "" && it.type !== "evidence" && <input className="pc-in wide pc-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={w.pcNotePh} aria-label={w.pcNotePh}
+                                                 onKeyDown={it.type === "number" ? enter(() => val !== "" && send(Number(val))) : undefined} />}
           {mode === "" && it.type === "yesno" && (
             <><button type="button" className="ghost pc-yes" onClick={() => send(true)}>{w.yes}</button>
               <button type="button" className="ghost pc-no" onClick={() => send(false)} title={w.pcNoNeedsNote}>{w.no}</button></>
           )}
           {mode === "" && it.type === "number" && (
-            <><input className="pc-in" type="number" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} aria-label={q} />
+            <><input className="pc-in" type="number" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} aria-label={q} onKeyDown={enter(() => val !== "" && send(Number(val)))} />
               <button type="button" className="ghost" disabled={val === ""} onClick={() => send(Number(val))}>{w.pcSet}</button></>
           )}
           {mode === "" && it.type === "choice" && (
@@ -67,10 +75,10 @@ function Row({ it, a, obs, lang, sealed, shaping, w, onAnswer, onStrike }: {
             </select>
           )}
           {mode === "" && it.type === "evidence" && (
-            <><input className="pc-in wide" value={val} onChange={(e) => setVal(e.target.value)} placeholder={w.pcEvidencePh} aria-label={q} />
-              <button type="button" className="ghost" disabled={!val.trim()} onClick={() => onAnswer({ value: val.trim(), evidence: [val.trim()], note: note.trim() || undefined }).then(() => setVal(""))}>{w.pcSet}</button></>
+            <><input className="pc-in wide" value={val} onChange={(e) => setVal(e.target.value)} placeholder={w.pcEvidencePh} aria-label={q} onKeyDown={enter(sendEvidence)} />
+              <input className="pc-in wide pc-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={w.pcNotePh} aria-label={w.pcNotePh} onKeyDown={enter(sendEvidence)} />
+              <button type="button" className="ghost" disabled={!val.trim()} onClick={sendEvidence}>{w.pcSet}</button></>
           )}
-          {mode === "" && <input className="pc-in wide pc-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={w.pcNotePh} aria-label={w.pcNotePh} />}
           {mode === "" && <button type="button" className="quiet" onClick={() => setMode("na")}>{w.pcNa}</button>}
           {mode === "" && shaping && <button type="button" className="quiet" onClick={() => setMode("strike")}>{w.pcStrike}</button>}
           {mode !== "" && (
@@ -87,6 +95,7 @@ function Row({ it, a, obs, lang, sealed, shaping, w, onAnswer, onStrike }: {
 export function ProtocolCard({ p, caseId, lang, w, onChanged }: { p: P; caseId: string; lang: string; w: W; onChanged: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [unsent, setUnsent] = useState<Record<string, boolean>>({});
   const doc = p.doc as Doc | null | undefined;
   const run = async (f: () => Promise<unknown>) => {
     setBusy(true); setErr(null);
@@ -120,7 +129,8 @@ export function ProtocolCard({ p, caseId, lang, w, onChanged }: { p: P; caseId: 
         {doc.items.map((it) => (
           <Row key={it.id} it={it} a={doc.answers?.[it.id]} obs={doc.observations?.[it.id]} lang={lang} sealed={sealed} shaping={shaping} w={w}
                onAnswer={(body) => run(() => gate.answer(caseId, p.template, { item: it.id, step_id: stepId("pc"), ...body }))}
-               onStrike={(reason) => run(() => gate.strike(caseId, p.template, it.id, reason, stepId("pc")))} />
+               onStrike={(reason) => run(() => gate.strike(caseId, p.template, it.id, reason, stepId("pc")))}
+               onDirty={(d) => setUnsent((u) => (u[it.id] === d ? u : { ...u, [it.id]: d }))} />
         ))}
       </ol>
       {!sealed && (
@@ -129,6 +139,7 @@ export function ProtocolCard({ p, caseId, lang, w, onChanged }: { p: P; caseId: 
           <button type="button" className="primary" disabled={busy || !st?.complete} onClick={() => run(() => gate.seal(caseId, p.template, stepId("seal")))}
                   title={st?.complete ? "" : w.pcStillOpen(st?.open.length ?? 0)}>{w.pcSeal}</button>
           {!st?.complete && <span className="hint">{w.pcStillOpen(st?.open.length ?? 0)}</span>}
+          {Object.values(unsent).some(Boolean) && <span className="pc-warn">{w.pcUnsent}</span>}
         </div>
       )}
       {err && <p className="c-refused">{err}</p>}
