@@ -19,15 +19,17 @@
             "criteria"
           ],
           "entry_status": "approved",
-          "run": "shipyard-build"
+          "run": "shipyard-build",
+          "produces": [
+            "pr.md"
+          ]
         },
         {
           "id": "draft_task",
           "label": "draft_task",
           "run": "shipyard-task",
           "produces": [
-            "task.md",
-            "criteria"
+            "task.md"
           ]
         }
       ]
@@ -46,7 +48,10 @@
             "pr.md"
           ],
           "entry_status": "info",
-          "run": "shipyard-checks"
+          "run": "shipyard-checks",
+          "produces": [
+            "checks.md"
+          ]
         }
       ]
     },
@@ -70,6 +75,9 @@
           "label": "checks_red",
           "to": "20-build",
           "run": "shipyard-build",
+          "produces": [
+            "pr.md"
+          ],
           "payload": [
             "note"
           ],
@@ -83,6 +91,9 @@
           "label": "retry_checks",
           "actor": "role:product_owner",
           "run": "shipyard-checks",
+          "produces": [
+            "checks.md"
+          ],
           "entry_status": "info"
         }
       ]
@@ -105,7 +116,10 @@
           "four_eyes": true,
           "seal": true,
           "entry_status": "approved",
-          "run": "shipyard-release"
+          "run": "shipyard-release",
+          "produces": [
+            "release.md"
+          ]
         },
         {
           "id": "send_back",
@@ -115,7 +129,10 @@
             "note"
           ],
           "entry_status": "info",
-          "run": "shipyard-build"
+          "run": "shipyard-build",
+          "produces": [
+            "pr.md"
+          ]
         }
       ]
     },
@@ -139,6 +156,9 @@
           "label": "retry_release",
           "actor": "role:product_owner",
           "run": "shipyard-release",
+          "produces": [
+            "release.md"
+          ],
           "entry_status": "info"
         }
       ],
@@ -160,7 +180,10 @@
           ],
           "seal": true,
           "entry_status": "approved",
-          "run": "shipyard-release"
+          "run": "shipyard-release",
+          "produces": [
+            "release.md"
+          ]
         },
         {
           "id": "entw_failed",
@@ -188,7 +211,10 @@
           ],
           "seal": true,
           "entry_status": "approved",
-          "run": "shipyard-release"
+          "run": "shipyard-release",
+          "produces": [
+            "release.md"
+          ]
         },
         {
           "id": "deploy_refused",

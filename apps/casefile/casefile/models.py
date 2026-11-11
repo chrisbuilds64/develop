@@ -7,10 +7,12 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ----------------------------------------------------------------------------- configuration
+
+REQUIRE_TOKENS = ("answered", "criteria", "primary", "required")    # the core's checks in `requires` that are not files
 
 class Action(BaseModel):
     """One thing a person can do with a case while it stands in a stage."""
@@ -18,8 +20,17 @@ class Action(BaseModel):
     label: str                                   # vocabulary key or the word itself
     to: str | None = None                        # target stage folder; None = the case stays
     run: str | None = None                       # a skill to order instead of (or besides) moving
-    produces: list[str] = Field(default_factory=list)   # what this action (its helper) delivers — files or requirement tokens ("task.md", "criteria"); a move waiting for them puts this one first
+    produces: list[str] = Field(default_factory=list)   # the files this action's helper delivers ("task.md"): the only files it may write in the case (REQ-001 A-05); a move waiting for them puts this one first
     requires: list[str] = Field(default_factory=list)   # deliverable file names that must be present
+
+    @field_validator("produces")
+    @classmethod
+    def _files_only(cls, v: list[str]) -> list[str]:
+        """A requirement token is a check, not a delivery: the runner's write guard knows files and nothing else."""
+        bad = [p for p in v if p in REQUIRE_TOKENS or any(c in p for c in ":|*") or p.startswith("/") or ".." in p.split("/")]
+        if bad:
+            raise ValueError(f"produces names files only, not {', '.join(bad)} — a check belongs in requires")
+        return v
     when: list[str] = Field(default_factory=list)       # the action is offered only when these are present (a finding that calls for a decision); absent, it is not a blocked move but none at all
     four_eyes: bool = False                      # the person acting must not be the author of the primary deliverable
     four_eyes_of: str | None = None              # the person acting must not be the one who did this earlier action on the case (TEST released → PROD by somebody else)
