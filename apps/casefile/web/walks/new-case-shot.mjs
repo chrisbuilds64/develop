@@ -89,7 +89,8 @@ try {
   must(v.includes("![](screenshot.png)") && v.includes("![](screenshot-2.png)"), `the pasted pictures are not in the text: ${v}`);
   must(await page.locator(".nc-file").count() === 2, "two pasted pictures are not two files");
   await page.locator(".ed-preview .md-img").first().waitFor({ timeout: 3000 });
-  must(await page.locator(".ed-preview strong").first().innerText() === "twice", "the preview does not render the Markdown");
+  // the preview is the thread's renderer (Md), which writes bold as <b>, not the file editor's <strong>
+  must(await page.locator(".ed-preview .md b").first().innerText() === "twice", "the preview does not render the Markdown");
   await shot("editor-with-pictures");
 
   at = "create in Shipyard";
