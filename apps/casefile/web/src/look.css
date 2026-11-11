@@ -936,3 +936,8 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .pc-warn { font-size: var(--fs-13); color: var(--bad-ink); }
 .pc-answer .quiet { border: none; background: none; font: inherit; font-size: var(--fs-12-5); color: var(--muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; padding: 4px 2px; }
 .pc-answer .quiet:hover { color: var(--ink); }
+/* Skipping a whole protocol: a calm, outlined secondary button. Without its own look it fell back to the browser's
+   default and showed as a black bar with dark text (2026-11-11). */
+.pc-skip { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: var(--r-s); background: var(--surface); color: var(--sub); font: inherit; font-size: var(--fs-13); cursor: pointer; }
+.pc-skip:hover { color: var(--ink); background: var(--tint-6); }
+.pc-skip:disabled { opacity: .5; }
