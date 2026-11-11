@@ -2308,6 +2308,62 @@
         }
       }
     },
+    "/api/cases/{case_id}/protocols/{tid}/skip": {
+      "post": {
+        "summary": "Post Protocol Skip",
+        "operationId": "post_protocol_skip_api_cases__case_id__protocols__tid__skip_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "tid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolSkipIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}/outcome": {
       "get": {
         "summary": "Get Outcome",
@@ -4921,6 +4977,24 @@
           "step_id"
         ],
         "title": "ProtocolShapeIn"
+      },
+      "ProtocolSkipIn": {
+        "properties": {
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "step_id"
+        ],
+        "title": "ProtocolSkipIn"
       },
       "ProtocolStartIn": {
         "properties": {

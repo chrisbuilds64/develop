@@ -1074,6 +1074,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/protocols/{tid}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Protocol Skip */
+        post: operations["post_protocol_skip_api_cases__case_id__protocols__tid__skip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/outcome": {
         parameters: {
             query?: never;
@@ -2395,6 +2412,16 @@ export interface components {
              * @default
              */
             strike: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** ProtocolSkipIn */
+        ProtocolSkipIn: {
+            /** Step Id */
+            step_id: string;
             /**
              * Reason
              * @default
@@ -4922,6 +4949,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ProtocolSealIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_protocol_skip_api_cases__case_id__protocols__tid__skip_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                tid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolSkipIn"];
             };
         };
         responses: {

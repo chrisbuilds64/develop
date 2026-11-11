@@ -50,5 +50,13 @@
       "schadenakte-muster"
     ],
     "proves": "REQ-001 S-18, C-09, REQ-002 SW-15, SW-2026-007"
+  },
+  {
+    "id": "protocol-skip",
+    "script": "walks/protocol-skip-shot.mjs",
+    "workspaces": [
+      "shipyard-muster"
+    ],
+    "proves": "REQ-003 GP-09, GP-43, GP-44, SW-2026-015"
   }
 ]
