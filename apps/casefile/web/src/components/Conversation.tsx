@@ -9,11 +9,11 @@ import { Send, Seal } from "./Icons";
 
 type Props = {
   entries: Entry[]; meName: string; lang: string; w: ReturnType<typeof words>; busy: boolean; stageWord: (folder: string) => string;
-  onAnswer: (e: Entry, text: string) => void; onDone: (e: Entry) => void; onFile: (name: string) => void;
+  onAnswer: (e: Entry, text: string) => void; onDone: (e: Entry) => void; onFile: (name: string) => void; fileUrl: (name: string) => string;
   canCorrect: (e: Entry) => boolean; onCorrect: (e: Entry, text: string, amount: string) => void;
 };
 
-export function Conversation({ entries, meName, lang, w, busy, stageWord, onAnswer, onDone, onFile, canCorrect, onCorrect }: Props) {
+export function Conversation({ entries, meName, lang, w, busy, stageWord, onAnswer, onDone, onFile, fileUrl, canCorrect, onCorrect }: Props) {
   const resolved = new Set(entries.filter((e) => e.resolves).map((e) => e.resolves));
   const [answering, setAnswering] = useState<string | null>(null);
   const [correcting, setCorrecting] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export function Conversation({ entries, meName, lang, w, busy, stageWord, onAnsw
               <span>{[e.for && !mine && !open ? `→ ${e.for}` : "", open ? w.youOnIt : "", ago(e.date, lang)].filter(Boolean).join(" · ")}</span>
             </div>
             {e.title && e.title !== e.text && <p className="m-title">{e.title}{undone ? ` · ${w.undoneWord}` : corrected ? ` · ${w.corrected}` : ""}</p>}
-            {e.text && <Md text={e.text} />}
+            {e.text && <Md text={e.text} img={(n) => (e.files?.includes(n) ? fileUrl(n) : undefined)} />}
             {(e.amount || e.to) && <p className="m-fact">{[e.amount, e.to ? `→ ${stageWord(e.to)}` : ""].filter(Boolean).join(" · ")}</p>}
             {e.files && e.files.length > 0 && <span className="m-files">{e.files.map((f) => <button key={f} type="button" onClick={() => onFile(f)}>{f}</button>)}</span>}
             {open && answering !== e.id && (

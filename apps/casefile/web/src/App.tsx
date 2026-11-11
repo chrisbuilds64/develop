@@ -7,6 +7,7 @@ import { Keys } from "./components/Keys";
 import { Gate } from "./screens/Gate";
 import { Menu } from "./components/Menu";
 import { TopBar } from "./components/TopBar";
+import { NewCase, NewCaseButton } from "./components/NewCase";
 import { CaseScreen } from "./screens/Case";
 import { Setup, SETUP_TABS, type SetupTab } from "./screens/Setup";
 import { Team, TeamSessionScreen } from "./screens/Team";
@@ -199,6 +200,8 @@ export function App() {
       <button type="button" role="tab" aria-selected={view === "list"} className={view === "list" ? "on" : ""} onClick={() => go("/list")} title={w.stacked}><ViewCases /></button>
     </span>
   ) : null;
+  // every bar of the application carries the views and, where a case may be started here, the button for it (REQ-001 S-18)
+  const bar = inWorkspace ? <>{views}<NewCaseButton config={config.data} me={me.data} w={w} /></> : null;
 
   return (
     <div className={`app ${side}`} style={{ viewTransitionName: (/\/w\/([^/]+)/.exec(BASE)?.[1] ? `ws-${/\/w\/([^/]+)/.exec(BASE)![1]}` : undefined) }}>
@@ -206,9 +209,10 @@ export function App() {
             onSignOut={async () => { await api.signOut(); if (me.data?.shell) { window.location.href = `${me.data.shell.replace(/\/?$/, "/")}logout`; return; } qc.invalidateQueries(); }} onFresh={onFresh} onPerson={onPerson}
             theme={theme} onTheme={setTheme} onLang={onLang} open={railOpen} onClose={() => setRailOpen(false)} />
       <Keys w={w} onTheme={() => setTheme(dark ? "light" : "dark")} />
+      <NewCase config={config.data} me={me.data} w={w} go={go} />
       <div className="main-col">
         {!(route.name === "group" || route.name === "board" || route.name === "list" || route.name === "teamSession" || (route.name === "case" && !isPhone)) && <TopBar config={config.data} me={me.data} w={w} crumb={crumb} canAsk={route.name === "case"} dark={dark}
-                onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={views} />}
+                onTheme={() => setTheme(dark ? "light" : "dark")} onMenu={() => setRailOpen(true)} views={bar} />}
         {route.name === "home" ? (
           <Home config={config.data} me={me.data} go={go} open={onPlace} w={w} />
         ) : (
@@ -222,9 +226,9 @@ export function App() {
           ) : route.name === "onsite" ? (
             <OnSiteScreen id={route.id} config={config.data} go={go} w={w} />
           ) : route.name === "board" ? (
-            <Board config={config.data} go={go} w={w} views={views} />
+            <Board config={config.data} go={go} w={w} views={bar} />
           ) : route.name === "list" ? (
-            <Table config={config.data} go={go} w={w} views={views} />
+            <Table config={config.data} go={go} w={w} views={bar} />
           ) : route.name === "rules" ? (
             <Rules config={config.data} w={w} lang={lang} />
           ) : route.name === "house" ? (
@@ -239,7 +243,7 @@ export function App() {
             <TeamSessionScreen id={route.id} me={me.data} go={go} w={w} />
           ) : (
             <div className="ws">
-              {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} place={here} views={views} onMenu={() => setRailOpen(true)} />}
+              {showList && <Queue tab={tab} openId={route.name === "case" ? route.id : first} go={go} w={w} lang={lang} place={here} views={bar} onMenu={() => setRailOpen(true)} />}
               {showMain && route.name === "case" && <CaseScreen id={route.id} config={config.data} me={me.data} go={go} w={w} tab={tab} />}
               {showMain && route.name !== "case" && !isPhone && (first ? <CaseScreen id={first} config={config.data} me={me.data} go={go} w={w} tab={tab} /> : <div className="ws-case"><main className="center" /></div>)}
             </div>

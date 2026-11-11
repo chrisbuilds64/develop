@@ -206,7 +206,9 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const main: Turn | undefined = v.my_turns[0] ?? v.turns[0];
   const docs = docsOf(v);
   const readingIndex = reading === null ? -1 : docs.findIndex((d) => d.versions.some((x) => x.name === reading));
-  const openFile = (name: string) => { const d = docs.find((x) => x.versions.some((y) => y.name === name || name.endsWith(y.name))); if (d) setReading(d.versions[d.versions.length - 1].name); };
+  const fileUrl = (name: string) => `${BASE}/api/cases/${encodeURIComponent(id)}/files/${encodeURIComponent(name)}`;
+  // a deliverable opens in the reader; a file attached at the start (REQ-001 C-09) is no deliverable and opens as it is
+  const openFile = (name: string) => { const d = docs.find((x) => x.versions.some((y) => y.name === name || name.endsWith(y.name))); if (d) setReading(d.versions[d.versions.length - 1].name); else window.open(fileUrl(name), "_blank", "noopener"); };
   const data = ((v as unknown as { data?: Record<string, unknown> }).data ?? {});
   const r = data["einordnung.json"] as Reading | undefined;
   const done = data["aktion.json"] as Done | undefined;
@@ -406,7 +408,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
         </div>
         {side === "conv" ? (
           <div className="i-thread" ref={threadRef} data-help="cf.thread">
-            <Conversation entries={v.entries} meName={me.name ?? ""} lang={lang} w={w} busy={busy} stageWord={stageWord} onFile={openFile}
+            <Conversation entries={v.entries} meName={me.name ?? ""} lang={lang} w={w} busy={busy} stageWord={stageWord} onFile={openFile} fileUrl={fileUrl}
                           onAnswer={(e, text) => entry.mutate({ kind: "answer", step_id: stepId("answer"), resolves: e.id, text })}
                           onDone={(e) => entry.mutate({ kind: "done", step_id: stepId("done"), resolves: e.id })}
                           canCorrect={canCorrect} onCorrect={(e, text, amt) => step.mutate({ action: "correct", label: w.correct, payload: { corrects: e.id, text, ...(amt ? { amount: amt } : {}) } })} />

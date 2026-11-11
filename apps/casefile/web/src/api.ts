@@ -166,8 +166,15 @@ export const talk = {
   finish: (id: string, step_id: string) => call<{ ok: boolean; first: boolean }>("POST", `/api/cases/${cid(id)}/interview/finish`, { step_id }),
   outcome: (id: string) => call<Outcome>("GET", `/api/cases/${cid(id)}/outcome`),
   decide: (id: string, line: string, verdict: string, text: string, step_id: string) => call<{ ok: boolean }>("POST", `/api/cases/${cid(id)}/outcome/decide`, { line, verdict, text, step_id }),
-  create: (title: string, step_id: string, values: Record<string, string> = {}) => call<{ id: string; stage: string }>("POST", "/api/cases", { title, step_id, values }),
 };
+
+/** A new case (REQ-001 S-18): the title, the Markdown description and the attached files in one request. */
+export function createCase(body: { title: string; step_id: string; values: Record<string, string>; description: string }, files: File[]) {
+  const form = new FormData();
+  form.append("body", JSON.stringify(body));
+  for (const f of files) form.append("files", f, f.name);
+  return call<{ id: string; stage: string }>("POST", "/api/cases", undefined, form);
+}
 
 // gate protocols (ADR-029): start, answer, shape (strike/add), seal — every write carries a step id, replayed safely
 export const gate = {

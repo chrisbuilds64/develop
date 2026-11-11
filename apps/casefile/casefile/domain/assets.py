@@ -6,6 +6,7 @@ version counter only goes up. Images and videos do the same (`thumbnail-16x9.v2.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from ..config import DomainConfig
@@ -48,4 +49,44 @@ def put(store: FsStore, config: DomainConfig, case_id: str, slot_file: str, data
         if not data:
             raise StoreError("the file is empty")
         store.put_bytes(case_id, name, data)
+    return name
+
+
+# A file a person attaches when starting a case (REQ-001 C-09): a screenshot, a PDF, a note. Never HTML — the case's files
+# are served from the surface's own origin.
+FREE = ("png", "jpg", "jpeg", "webp", "gif", "pdf", "txt", "md", "mp4", "mov", "webm")
+RESERVED = ("meta.json", "review.md")
+
+
+def free_name(original: str) -> str:
+    """A safe file name from what the browser said: no path, letters, digits, '.', '-' and '_' only, a lower-case extension."""
+    base = re.split(r"[\\/]", original or "")[-1]
+    stem, dot, ext = base.rpartition(".")
+    if not dot:
+        stem, ext = base, ""
+    stem = re.sub(r"[^A-Za-z0-9_-]+", "-", stem).strip("-_") or "file"
+    return f"{stem[:60]}.{ext.lower()}" if ext else stem[:60]
+
+
+def put_free(store: FsStore, config: DomainConfig, case_id: str, original: str, data: bytes) -> str:
+    """Store an attached file beside the deliverables, never as one and never over another file: a name that is taken, or
+    that a deliverable of the case's label would read as its own (`task.md`, `task.v2.md`), gets `-2`, `-3`. Returns the name."""
+    name = free_name(original)
+    stem, _, ext = name.rpartition(".")
+    if ext not in FREE:
+        raise StoreError(f"'{original}' cannot be attached; a case takes {', '.join(FREE)}")
+    if not data:
+        raise StoreError(f"'{original}' is empty")
+    stage = store.find(case_id)
+    if stage is None:
+        raise StoreError(f"case '{case_id}' not found")
+    meta = store.case_json(case_id, "meta.json") if store.exists(f"{stage}/{case_id}/meta.json") else {}
+    label = str(meta.get("label") or case_id.split("-", 1)[0])
+    slots = {d.file for d in config.deliverables(label)} | set(RESERVED)
+    taken = set(store.files(case_id))
+    n = 1
+    while name in taken or split_version(name)[0] in slots:
+        n += 1
+        name = f"{stem}-{n}.{ext}"
+    store.put_bytes(case_id, name, data)
     return name

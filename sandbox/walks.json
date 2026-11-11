@@ -40,5 +40,15 @@
       "pressroom-muster"
     ],
     "proves": "REQ-001 S-17, SW-2026-006"
+  },
+  {
+    "id": "new-case",
+    "script": "walks/new-case-shot.mjs",
+    "workspaces": [
+      "shipyard-muster",
+      "pressroom-muster",
+      "schadenakte-muster"
+    ],
+    "proves": "REQ-001 S-18, C-09, REQ-002 SW-15, SW-2026-007"
   }
 ]

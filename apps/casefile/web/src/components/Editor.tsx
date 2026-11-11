@@ -1,15 +1,15 @@
-// The editor over a text file of the case (REQ-001 S-14 – S-16): the note's sheet with a Markdown toolbar, ⌘B ⌘I ⌘K, and a
-// preview from the reader's own renderer beside it (or behind a switch on a narrow screen). Saving writes the next version;
-// the older ones stay. Esc with unsaved text asks first. In the file that carries the acceptance criteria, the lines the
-// gate could not read are listed under the text with their line and reason, before anything is saved. No editor library:
-// a textarea, and insertText so the browser's own undo keeps working. A new note (REQ-001 S-17) opens it empty, without a url.
+// The editor over a text file of the case (REQ-001 S-14 – S-16): the note's sheet with the Markdown toolbar (MdTools),
+// ⌘B ⌘I ⌘K, and a preview from the reader's own renderer beside it (or behind a switch on a narrow screen). Saving writes
+// the next version; the older ones stay. Esc with unsaved text asks first. In the file that carries the acceptance
+// criteria, the lines the gate could not read are listed under the text with their line and reason, before anything is saved.
+// A new note (REQ-001 S-17) opens it empty, without a url.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, BASE, stepId, type PreviewOut } from "../api";
 import { Close } from "./Icons";
+import { mdTools, MdToolbar } from "./MdTools";
 import type { words } from "../words";
 
 type W = ReturnType<typeof words>;
-const mac = /Mac|iPhone|iPad/.test(navigator.platform);
 
 export function Editor({ caseId, file, word, url, onClose, onSaved, w }: {
   caseId: string; file: string; word: string; url?: string; onClose: () => void; onSaved: (name: string) => void; w: W;   // no url: a new note, empty
@@ -41,39 +41,7 @@ export function Editor({ caseId, file, word, url, onClose, onSaved, w }: {
     return () => { alive = false; clearTimeout(t); };
   }, [text, base, caseId, file]);
 
-  // Replace the selection the way typing would: the browser's undo stack keeps it, and React hears the input event.
-  const replace = (s: number, e: number, insert: string, selFrom: number, selTo: number) => {
-    const a = area.current;
-    if (!a) return;
-    a.focus();
-    a.setSelectionRange(s, e);
-    if (!document.execCommand("insertText", false, insert)) setText(a.value.slice(0, s) + insert + a.value.slice(e));
-    requestAnimationFrame(() => a.setSelectionRange(selFrom, selTo));
-  };
-  const wrap = (before: string, after: string, empty: string) => {
-    const a = area.current; if (!a) return;
-    const s = a.selectionStart, e = a.selectionEnd, sel = a.value.slice(s, e) || empty;
-    replace(s, e, before + sel + after, s + before.length, s + before.length + sel.length);
-  };
-  const link = () => {
-    const a = area.current; if (!a) return;
-    const s = a.selectionStart, e = a.selectionEnd, sel = a.value.slice(s, e) || w.edLink, href = "https://";
-    replace(s, e, `[${sel}](${href})`, s + sel.length + 3, s + sel.length + 3 + href.length);   // the address is selected, ready to be typed over
-  };
-  const lines = (prefix: string) => {
-    const a = area.current; if (!a) return;
-    const v = a.value, s0 = a.selectionStart, e0 = a.selectionEnd;
-    const s = s0 > 0 ? v.lastIndexOf("\n", s0 - 1) + 1 : 0;                      // from the start of the first selected line
-    const end = v.indexOf("\n", e0 > s0 && v[e0 - 1] === "\n" ? e0 - 1 : e0);    // to the end of the last (a selection ending on a line break stops before it)
-    const e = end < 0 ? v.length : end;
-    const out = v.slice(s, e).split("\n").map((l) => (l.startsWith(prefix) ? l : prefix + l)).join("\n");
-    replace(s, e, out, s, s + out.length);
-  };
-  const code = () => {
-    const a = area.current; if (!a) return;
-    if (a.value.slice(a.selectionStart, a.selectionEnd).includes("\n")) wrap("```\n", "\n```", "");
-    else wrap("`", "`", w.edCode.toLowerCase());
-  };
+  const { wrap, link, tools, mod } = mdTools(area, setText, w);
   const jump = (line: number) => {
     const a = area.current; if (!a) return;
     const at = a.value.split("\n").slice(0, line - 1).reduce((n, l) => n + l.length + 1, 0);
@@ -112,17 +80,7 @@ export function Editor({ caseId, file, word, url, onClose, onSaved, w }: {
     return () => window.removeEventListener("keydown", onKey, true);
   }, [w]);
 
-  const mod = mac ? "⌘" : "Ctrl ";
   const bad = preview?.unreadable ?? [];
-  const tools: [string, string, () => void][] = [
-    ["B", `${w.edBold} · ${mod}B`, () => wrap("**", "**", w.edBold.toLowerCase())],
-    ["I", `${w.edItalic} · ${mod}I`, () => wrap("_", "_", w.edItalic.toLowerCase())],
-    ["H", w.edHeading, () => lines("## ")],
-    ["•", w.edList, () => lines("- ")],
-    ["☐", w.edCheck, () => lines("- [ ] ")],
-    ["↗", `${w.edLink} · ${mod}K`, link],
-    ["</>", w.edCode, code],
-  ];
   return (
     <div className="nf-scrim" role="presentation" onClick={leave}>
       <div className="nf-sheet ed-sheet" role="dialog" aria-modal="true" aria-label={w.edTitle(word)} onClick={(e) => e.stopPropagation()}>
@@ -134,11 +92,7 @@ export function Editor({ caseId, file, word, url, onClose, onSaved, w }: {
           </span>
           <button type="button" className="swap ed-close" onClick={leave} aria-label={w.close} title={`${w.close} · Esc`}><Close /></button>
         </div>
-        <div className="ed-tools" role="toolbar" aria-label={w.edEdit}>
-          {tools.map(([label, title, act]) => (
-            <button key={title} type="button" className="ed-tool" title={title} aria-label={title} onMouseDown={(e) => e.preventDefault()} onClick={act}>{label}</button>
-          ))}
-        </div>
+        <MdToolbar tools={tools} w={w} />
         <div className={`ed-body show-${pane}`}>
           <div className="ed-write">
             <textarea ref={area} value={text} disabled={base === null} spellCheck onChange={(e) => setText(e.target.value)} aria-label={w.edWrite} />
