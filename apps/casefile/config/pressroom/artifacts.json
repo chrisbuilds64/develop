@@ -8,42 +8,50 @@
           "file": "script.md",
           "stage": "20-produce",
           "by": "interpret",
-          "required": true
+          "required": true,
+          "editable": true
         },
         {
           "file": "teleprompter.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "show-notes.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "linkedin-post.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "first-comment.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "edit-instructions.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "reel-hooks.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "visual-brief.md",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "thumbnail-16x9.png",
@@ -78,7 +86,8 @@
           "file": "substack.md",
           "stage": "20-produce",
           "by": "interpret",
-          "required": true
+          "required": true,
+          "editable": true
         },
         {
           "file": "substack.html",
@@ -88,17 +97,20 @@
         {
           "file": "linkedin-post.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "first-comment.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "visual-brief.md",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "header-16x9.png",
@@ -133,7 +145,8 @@
           "file": "substack.md",
           "stage": "20-produce",
           "by": "interpret",
-          "required": true
+          "required": true,
+          "editable": true
         },
         {
           "file": "substack.html",
@@ -143,17 +156,20 @@
         {
           "file": "linkedin-post.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "first-comment.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "visual-brief.md",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "header-16x9.png",
@@ -182,17 +198,20 @@
           "file": "linkedin-post.txt",
           "stage": "20-produce",
           "by": "interpret",
-          "required": true
+          "required": true,
+          "editable": true
         },
         {
           "file": "first-comment.txt",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "visual-brief.md",
           "stage": "20-produce",
-          "by": "interpret"
+          "by": "interpret",
+          "editable": true
         },
         {
           "file": "linkedin-image.png",
@@ -207,7 +226,8 @@
     {
       "file": "source.md",
       "stage": "10-ideas",
-      "by": "human"
+      "by": "human",
+      "editable": true
     },
     {
       "file": "meta.json",
@@ -217,7 +237,8 @@
     {
       "file": "interpretation.md",
       "stage": "15-interpretation",
-      "by": "interpret"
+      "by": "interpret",
+      "editable": true
     },
     {
       "file": "review.md",

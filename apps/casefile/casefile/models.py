@@ -55,6 +55,7 @@ class Deliverable(BaseModel):
     shape: str = "text"                          # text | image-16x9 | image-4x5 | video-9x16 | pdf | money | interview | data
     required: bool = False
     collects: str | None = None                  # a glob of helper files that belong to this deliverable and are not slots of their own ("nachfragen-*.json")
+    editable: bool = False                       # a person may write its next version in the surface's editor (domain/edit.py)
 
 
 class Person(BaseModel):
@@ -108,6 +109,7 @@ class Slot(BaseModel):
     due_stage: str
     by: str
     versions: list[FileVersion] = Field(default_factory=list)
+    editable: bool = False                       # the configuration marks it and the core allows it (domain/edit.py)
 
     @property
     def present(self) -> bool:

@@ -26,6 +26,7 @@ export type PlaceOut = components["schemas"]["PlaceOut"];
 export type SetupOut = components["schemas"]["SetupOut"];
 export type HomePlace = components["schemas"]["HomePlace"];
 export type SetupItem = components["schemas"]["SetupItem"];
+export type PreviewOut = components["schemas"]["PreviewOut"];
 
 export class ApiError extends Error {
   status: number;
@@ -104,6 +105,9 @@ export const api = {
     fd.append("file", file);
     return call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/assets`, undefined, fd);
   },
+  editPreview: (id: string, file: string, text: string) => call<PreviewOut>("POST", `/api/cases/${encodeURIComponent(id)}/edit/preview`, { file, text }),
+  editSave: (id: string, file: string, text: string, step_id: string) =>
+    call<{ name: string; slot: string; step: StepResult }>("POST", `/api/cases/${encodeURIComponent(id)}/edit`, { file, text, step_id }),
 };
 
 // A conversation (Gatehouse): the pack, my answers, the helper's file for me, how far everyone is.
