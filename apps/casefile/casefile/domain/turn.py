@@ -170,11 +170,30 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
                 blocked.append(fe)
             out.append(Turn(actor=actor, action=action.id, label=_rule_label(config, case, lang) if action.compile == "handoff" else _label(config, action.label, lang), payload=list(action.payload), seal=action.seal,
                             reason=config.word("stages", case.stage, lang, case.stage), blocked_by=blocked, since=case.since))
+        _producers_first(stage, out)
     elif stage and stage.turn == "claude":
         out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                         reason=config.word("stages", case.stage, lang, case.stage), since=case.since))
 
     return out
+
+
+def _producers_first(stage, out: list[Turn]) -> None:
+    """A move that waits for something another offered action delivers (`produces`) is not the first thing to do: the
+    producing action is. It moves before the waiting one and says which move it opens — for every application alike."""
+    by_id = {a.id: a for a in stage.actions}
+    for t in list(out):
+        if not t.blocked_by:
+            continue
+        for p in out:
+            act = by_id.get(p.action)
+            if p is t or p.actor != t.actor or p.blocked_by or not act or not set(act.produces) & set(t.blocked_by):
+                continue
+            p.unblocks = t.action
+            i, j = out.index(t), out.index(p)
+            if j > i:
+                out.insert(i, out.pop(j))
+            break
 
 
 def stage_run(case: Case):
@@ -195,6 +214,13 @@ def _lookup(config: DomainConfig, kind: str, key: str, lang: str | None) -> str 
     return section.get(key) if isinstance(section, dict) and section.get(key) else None
 
 
+# Words for the tokens the core itself defines; an application's vocabulary (`requires`) overrides them.
+CORE_REQUIRES = {
+    "de": {"criteria": "Akzeptanzkriterien"},
+    "en": {"criteria": "acceptance criteria"},
+}
+
+
 def missing_words(config: DomainConfig, tokens: list[str], lang: str | None) -> list[str]:
     """The words for what is missing: a file name through `files`, a token (`shape:image`, `answered`, `decided:…`) through `requires`."""
     out = []
@@ -205,7 +231,9 @@ def missing_words(config: DomainConfig, tokens: list[str], lang: str | None) -> 
         if t.startswith("decided:"):
             key = "decided:"
         # the whole token first ("shape:image" is its own word), then the family ("decided:"), then the file's word
-        out.append(_lookup(config, "requires", t, lang) or _lookup(config, "requires", key, lang) or config.word("files", t, lang, t))
+        core = CORE_REQUIRES.get(lang or config.lang) or CORE_REQUIRES["en"]
+        out.append(_lookup(config, "requires", t, lang) or _lookup(config, "requires", key, lang) or core.get(t)
+                   or config.word("files", t, lang, t))
     return out
 
 

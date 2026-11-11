@@ -67,7 +67,7 @@ const W = {
     // the case screen of the design hand-back (2026-11-05)
     forYou: "Für dich", withOthers: "Bei anderen", doneTab: "Erledigt", ofN: (i: number, n: number) => `${i} von ${n}`,
     aiSummary: "KI-Zusammenfassung", readAs: "Erkannt als", fromMail: "Aus der Mail", aiSuggestion: "KI-Vorschlag", confirmCarry: "Bestätigen und ausführen",
-    waitingOn: (x: string) => `Wartet auf: ${x}`, missingDrop: "Fehlt · Datei ablegen", useSample: "Beispiel nehmen", documents: "Dokumente", details: "Details",
+    waitingOn: (x: string) => `Wartet auf: ${x}`, thenOpens: (x: string) => `Danach: ${x}`, missingDrop: "Fehlt · Datei ablegen", useSample: "Beispiel nehmen", documents: "Dokumente", details: "Details",
     askAiPh: "Notiz, oder frag die KI", keyNext: "nächste", keyPrev: "vorige", keyConfirm: "bestätigen", keyHome: "zurück zum Start",
     noteTitle: "Notiz", noteSend: "Senden", noteHint: (mod: string) => `${mod}⏎ sendet · Esc schließt, der Entwurf bleibt`,
     heldBy: (who: string) => `Liegt bei ${who}. Du kannst erinnern oder die Akte zurückholen.`, closedNote: "Abgeschlossen. Du kannst die Akte jederzeit zurückholen.",
@@ -283,7 +283,7 @@ const W = {
     // the case screen of the design hand-back (2026-11-05)
     forYou: "For you", withOthers: "With others", doneTab: "Done", ofN: (i: number, n: number) => `${i} of ${n}`,
     aiSummary: "AI summary", readAs: "Read as", fromMail: "From the mail", aiSuggestion: "AI suggestion", confirmCarry: "Confirm and carry out",
-    waitingOn: (x: string) => `Waiting for: ${x}`, missingDrop: "Missing · drop a file", useSample: "Use a sample", documents: "Documents", details: "Details",
+    waitingOn: (x: string) => `Waiting for: ${x}`, thenOpens: (x: string) => `Then: ${x}`, missingDrop: "Missing · drop a file", useSample: "Use a sample", documents: "Documents", details: "Details",
     askAiPh: "Note, or ask the AI", keyNext: "next", keyPrev: "previous", keyConfirm: "confirm", keyHome: "back to Home",
     noteTitle: "Note", noteSend: "Send", noteHint: (mod: string) => `${mod}⏎ sends · Esc closes and keeps the draft`,
     heldBy: (who: string) => `With ${who}. You can send a reminder or take the case back.`, closedNote: "Closed. You can bring the case back at any time.",

@@ -176,6 +176,10 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     if (b.startsWith("protocol:")) { const pr = ((v.protocols ?? []) as unknown as ProtocolEntry[]).find((x) => x.template === b.slice(9)); return w.pcBlocked(pr?.title ?? b.slice(9)); }
     return ((config.words as { files?: Record<string, string> }).files?.[b]) ?? b;
   };
+  // what a move waits for, as words: the surface's own reading first, the core's words (`missing`) where it has none
+  const waitWords = (t: Turn) => t.blocked_by.filter((b) => !b.startsWith("four eyes:")).map((b, i) => { const x = blockedWord(b); return x === b && t.missing?.[i] ? t.missing[i] : x; });
+  // the move the first one opens (`unblocks`): it stands after it, and the first says so
+  const opens = primaryTurn?.unblocks ? actionTurns.find((t) => t.action === primaryTurn.unblocks) : undefined;
   const byHelper = (s: { by: string; by_word: string }) => s.by === "claude" || (!!s.by_word && s.by_word === v.agent);
   const seriesOf = (f: string) => /^(.+)-\d+\.(\w+)$/.exec(f)?.slice(1).join(".");
   const firstFree = new Set<string>();
@@ -221,8 +225,10 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     <>
       {secondary.map((t) => (
         <button key={t.action} type="button" className="ghost" disabled={busy || t.blocked_by.length > 0} data-action={t.action}
+                title={t.blocked_by.length > 0 ? w.waitingOn(waitWords(t).join(", ")) : undefined}
                 onClick={() => { if (!(t.payload ?? []).includes("note")) { step.mutate({ action: t.action, label: t.label }); return; } setPending(t); setSide("conv"); openNote(); }}>{t.label}</button>
       ))}
+      {opens && opens.blocked_by.length > 0 && <span className="p-wait">{w.waitingOn(waitWords(opens).join(", "))}</span>}
       {special && primaryTurn && (
         <button type="button" className="ghost" onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : undefined}>{primaryTurn.label} →</button>
       )}
@@ -270,7 +276,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                 <div className="proposal">
                   <div className="p-what"><span className="plab"><span>✦</span> {w.aiSuggestion}</span>
                     <b>{row ? `${row.action_word}${row.target_word ? ` · ${row.target_word}` : ""}` : primaryTurn.label}</b></div>
-                  <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{primaryTurn.lock || w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>
+                  <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{primaryTurn.lock || w.waitingOn(waitWords(primaryTurn).join(", "))}</span>}</div>
                 </div>
               ) : null}
               <div className="acts2">{otherActs}</div>
@@ -281,7 +287,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                 <><p>{w.closedNote}</p><div className="pacts"><button type="button" className="primary" data-help="cf.move-back" disabled={busy} onClick={() => step.mutate({ action: "reopen", label: w.moveBack })}>{w.moveBack} · {v.reopen_word}</button></div></>
               ) : (v.held_by ?? []).length > 0 ? (
                 <><p>{w.heldBy((v.held_by ?? []).join(", "))}</p>
-                  {primaryTurn && <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>}
+                  {primaryTurn && <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(waitWords(primaryTurn).join(", "))}</span>}</div>}
                   <div className="pacts" data-help="cf.held">
                     <button type="button" className={primaryTurn ? "ghost" : "primary"} disabled={busy} onClick={() => step.mutate({ action: "remind" })}>{w.remind}</button>
                     {v.take_back_to && <button type="button" className="ghost" disabled={busy} onClick={() => step.mutate({ action: "take_back", label: w.takeBack })}>{w.takeBack} · {v.take_back_word}</button>}
@@ -289,7 +295,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                   {primaryTurn && (secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
               ) : primaryTurn ? (
                 <><p>{cap(headline || primaryTurn.reason || primaryTurn.label)}</p>
-                  <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(blocked.map(blockedWord).join(", "))}</span>}</div>
+                  <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(waitWords(primaryTurn).join(", "))}</span>}{opens && <span className="p-wait">{w.thenOpens(opens.label)}</span>}</div>
                   {(secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
               ) : mine && main?.action === "answer" ? (
                 <><p>{cap(main.reason)}</p>
