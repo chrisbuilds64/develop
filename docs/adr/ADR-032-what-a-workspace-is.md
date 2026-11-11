@@ -143,6 +143,48 @@ Consequences:
   worklist application), the content pipeline (by PressRoom; its runner and tools stay), the canon elicitation (the
   standalone Gatehouse it read is archived; ADR-021).
 
+## Amended 2026-11-11 (proposed): repositories and deploy targets are data points
+
+**Status of this amendment:** Proposed (2026-11-11), for the product owner's acceptance; built after 2026-11-20.
+
+Shipyard knows its repository today only as a fixed path in its helpers' instructions, and its servers as a fixed
+deploy command. A developer who works in several repositories cannot say so anywhere. The product owner (2026-11-11):
+a repository is a data point like a folder on Nextcloud, and a case names the repository it changes.
+
+    tenant ── connectors
+                 ├─ git     (a forge: address, credentials)        → data points: repositories
+                 └─ server  (a host per stage: address, credentials) → data points: deploy targets
+    workspace ── Shipyard instance
+                 ├─ slot cases    → a folder (as today)
+                 ├─ slot code     → one or more repositories
+                 └─ slot targets  → one deploy target per stage
+
+Decisions:
+
+10. **A repository is a data point on a `git` connector.** The connector holds the forge's address and the credentials
+    (in the tenant's secret store, handed to a run for its duration, never kept by an agent). The data point names the
+    repository, its main branch and its **required checks** — the names the forge reports and the gate reads. Readers
+    and writers map to the forge's permissions where it has them.
+11. **A Shipyard instance binds its slot `code` to one or more repositories.** With one, every case uses it; with
+    several, a case names its repository when it is created (a field of the case, preset when there is only one), and
+    the task shows it. A case changes one repository. A change across repositories is a case with parts (ADR-033), one
+    part per repository, each with its own pull request and protocols; the parent closes when every part is closed.
+12. **The runner prepares the place to work, the instructions do not name it.** Per case it checks out the case's
+    repository in a working tree of its own, on the case's branch, and hands the helper its path and the repository's
+    facts (name, main branch, required checks) as the run's environment. A helper's instructions say what to do in "the
+    repository of the case", never where it is. Two cases no longer share one checkout.
+13. **The boundary between Shipyard and a repository is its checks.** Shipyard reads which required checks passed on the
+    pull request; how a repository decides which checks a change needs, and what they run, belongs to the repository
+    and travels with it (in this repository: `sandbox/sandbox.py ids`, `sandbox/walks.json`). The merge protocol's
+    item "CI is green" reads the required checks of the case's repository.
+14. **A deploy target is a data point on a `server` connector**, one per stage, and carries the deploy command for its
+    stage. The release helper deploys through the target, not through a command written into its instructions.
+
+Consequences: the deployed shape today — one repository, one server — becomes the first data points, and existing
+cases keep working with the preset. Open for the build: a repository with several applications (a path scope on the
+data point, or the check selection of decision 13 alone); credentials per tenant or per member (merging under the
+product owner's own name, SYS-126); disk use of a working tree per case.
+
 ## Alternatives considered
 
 - **Keep ADR-018 and add a second application by a second workspace.** What we do today; it multiplies workspaces,
