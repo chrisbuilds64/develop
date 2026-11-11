@@ -170,7 +170,7 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
                 blocked.append(fe)
             out.append(Turn(actor=actor, action=action.id, label=_rule_label(config, case, lang) if action.compile == "handoff" else _label(config, action.label, lang), payload=list(action.payload), seal=action.seal,
                             reason=config.word("stages", case.stage, lang, case.stage), blocked_by=blocked, since=case.since))
-        _producers_first(stage, out)
+        _producers_first(config, stage, out)
     elif stage and stage.turn == "claude":
         out.append(Turn(actor="claude", action="wait", label=_label(config, "wait", lang), blocked_by=[],
                         reason=config.word("stages", case.stage, lang, case.stage), since=case.since))
@@ -178,16 +178,20 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
     return out
 
 
-def _producers_first(stage, out: list[Turn]) -> None:
+def _producers_first(config: DomainConfig, stage, out: list[Turn]) -> None:
     """A move that waits for something another offered action delivers (`produces`) is not the first thing to do: the
-    producing action is. It moves before the waiting one and says which move it opens — for every application alike."""
+    producing action is. It moves before the waiting one and says which move it opens — for every application alike.
+    `produces` names files; a missing `criteria` check waits for the file the criteria are read from."""
+    from .edit import criteria_file
     by_id = {a.id: a for a in stage.actions}
+    cfile = criteria_file(config)
     for t in list(out):
         if not t.blocked_by:
             continue
+        waits = {cfile if b == "criteria" or b.startswith("criteria:") else b for b in t.blocked_by}
         for p in out:
             act = by_id.get(p.action)
-            if p is t or p.actor != t.actor or p.blocked_by or not act or not set(act.produces) & set(t.blocked_by):
+            if p is t or p.actor != t.actor or p.blocked_by or not act or not set(act.produces) & waits:
                 continue
             p.unblocks = t.action
             i, j = out.index(t), out.index(p)
