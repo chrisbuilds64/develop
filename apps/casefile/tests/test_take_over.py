@@ -47,6 +47,16 @@ def test_the_visual_stage_is_akhils_until_somebody_takes_it_over(tmp_path):
     assert case.entries[-1].title == "Taken over" and case.stage == "40-asset-generation"   # recorded, and nothing moved
     again = stepping.step(store, config, "FN-080-a-piece", StepRequest(action="take_over", step_id="t-2"), "chris")
     assert not again.ok and "already" in again.reason
+    back = stepping.step(store, config, "FN-080-a-piece", StepRequest(action="take_over", step_id="t-3", payload={"to": "akhil"}), "chris")
+    assert back.ok, back.reason                                                      # and it can be handed back
+
+
+def test_the_one_who_holds_a_stage_by_its_role_is_not_offered_the_case_again(tmp_path):
+    root, store, config = world(tmp_path)
+    case = reading.load(store, config, "FN-080-a-piece")
+    chris, akhil = config.person("chris"), config.person("akhil")
+    assert "already" in stepping.take_over_refusal(config, case, chris, akhil)        # Akhil is the visual role, alone
+    assert stepping.take_over_refusal(config, case, chris, chris) is None             # Chris can take it: the emergency
 
 
 def test_a_case_is_handed_to_somebody_and_only_to_a_person(tmp_path):

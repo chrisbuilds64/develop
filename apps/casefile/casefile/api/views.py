@@ -305,7 +305,7 @@ class CaseView(CaseCard):
     take_back_to: str = ""                                # the viewer's own stage it came from: "Take it back" (action `take_back`) returns it there
     take_back_word: str = ""
     take_over: bool = False                               # the viewer may take the case's move in this stage over (action `take_over`); with `to`, hand it to somebody
-    hand_to: list[str] = Field(default_factory=list)      # the persons the viewer may hand the case to: ids, the surface has their names
+    hand_to: list[str] = Field(default_factory=list)      # the persons the viewer may hand the case to, the viewer included and first: ids, the surface has their names
     undo_step: str = ""                                   # the viewer's newest move, while nothing happened since: "Undo" (action `undo`) takes it back (ADR-025)
     undo_word: str = ""                                   # that move in words
     translations: dict[str, dict[str, str]] = Field(default_factory=dict)   # an original file → {language: the translation beside it}
@@ -461,7 +461,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     pull = stepping.take_back_target(config, case, viewer) or ""
     me = config.person(viewer) if viewer else None
     may_take = bool(me) and stepping.take_over_refusal(config, case, me, me) is None
-    hand = [p.id for p in config.people if me and p.kind == "human" and p.id != me.id and stepping.take_over_refusal(config, case, me, p) is None]
+    hand = [p.id for p in sorted(config.people, key=lambda p: p.id != viewer)       # the viewer first: "to me" is the emergency, and one list says it all
+            if me and p.kind == "human" and stepping.take_over_refusal(config, case, me, p) is None]
     from ..domain import outside as away
     doc = away.standing(case)
     who = config.person(str(doc.get("by") or "")) if doc else None
