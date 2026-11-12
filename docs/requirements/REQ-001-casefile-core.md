@@ -26,6 +26,7 @@ Suite on 2026-11-08: 164 tests, all green.
 | C-08 | A new case gets its number from the domain's rule (per year, per series, placeholder). | `domain/numbering.py` | yes — `test_numbering` |
 | C-09 | A free file attached at creation is stored beside the deliverables, never as one, never overwriting another file: a taken name, or one a deliverable of the label would read as its own (`task.md`, `task.v2.md`), gets `-2`, `-3`; only images, PDF, text and video, never HTML. *(Added with SW-2026-007, 2026-11-11.)* | `domain/assets.py` `put_free` | yes — `test_new_case` |
 | C-10 | A case is opened one way, through the core: the surface and an agent (`python -m casefile.cli.case new`, under the agent's own name and roles) alike; the same step id twice is the same case. | `domain/opening.py`, `test_an_agent_opens_a_case_and_a_change_built_outside_is_recorded_afterwards` |
+| C-11 | A step can give a case its number: an action names the numbering (`number`, the templates of `theme.create.number`), and a case whose name still carries the application's fixed waiting number gets the next free one in the same move, under its new name, in its meta and in the order for the helper; a case that has its number keeps it; the same step twice is the same case, and a step interrupted after the move is completed under the new name. A helper's own moves are steps like anybody's (`casefile.cli.step`), never a folder it moves. (added 2026-11-12, PressRoom on the core) | `domain/step.py`, `test_number_at_a_step.py` |
 
 ## Whose move
 

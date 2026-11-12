@@ -1,5 +1,5 @@
 {
-  "$comment": "The content pipeline as configuration (ADR-015). Folder = status; key = the station on the line; turn = whose move; actions = the one button per stage, with what it needs. Words live in vocabulary.json under 'actions' and 'stages'.",
+  "$comment": "The content pipeline as configuration (ADR-015). Folder = status; key = the station on the line; turn = whose move; actions = the one button per stage, with what it needs. Words live in vocabulary.json under 'actions' and 'stages'. From 2026-11-12 every move is a step through the core, as in every other application: working an idea out moves the case into the draft and gives it its number (`number`), and the helper's own two moves — interpreted, draft ready — are its steps (casefile.cli.step), never a folder it moves itself. The text gate asks its questions in a protocol (protocols/text.json): the fixed ones, plus the ones this one piece raises.",
   "name": "PressRoom",
   "lang": "en",
   "configVersion": "1",
@@ -19,7 +19,11 @@
           "id": "work_out",
           "label": "work_out",
           "run": "interpret",
-          "entry_status": "info"
+          "entry_status": "info",
+          "to": "15-interpretation",
+          "number": [
+            "{seq:03}"
+          ]
         }
       ]
     },
@@ -33,7 +37,11 @@
           "id": "work_out",
           "label": "work_out",
           "run": "interpret",
-          "entry_status": "info"
+          "entry_status": "info",
+          "to": "15-interpretation",
+          "number": [
+            "{seq:03}"
+          ]
         }
       ]
     },
@@ -41,13 +49,45 @@
       "folder": "15-interpretation",
       "key": "draft",
       "group": "claude",
-      "turn": "claude"
+      "turn": "claude",
+      "actions": [
+        {
+          "id": "interpreted",
+          "label": "interpreted",
+          "to": "20-produce",
+          "requires": [
+            "interpretation.md"
+          ],
+          "entry_status": "info"
+        },
+        {
+          "id": "draft_ready",
+          "label": "draft_ready",
+          "$comment": "A piece that came with its material has no interpretation: its checks done, it goes to the person from here.",
+          "to": "30-review-human",
+          "requires": [
+            "primary"
+          ],
+          "entry_status": "info"
+        }
+      ]
     },
     {
       "folder": "20-produce",
       "key": "draft",
       "group": "claude",
-      "turn": "claude"
+      "turn": "claude",
+      "actions": [
+        {
+          "id": "draft_ready",
+          "label": "draft_ready",
+          "to": "30-review-human",
+          "requires": [
+            "primary"
+          ],
+          "entry_status": "info"
+        }
+      ]
     },
     {
       "folder": "30-review-human",
@@ -60,11 +100,13 @@
           "label": "approve_to_visual",
           "to": "40-asset-generation",
           "requires": [
-            "primary"
+            "primary",
+            "protocol:text"
           ],
           "four_eyes": false,
           "entry_status": "approved",
-          "seal": true
+          "seal": true,
+          "protocol_on_demand": true
         },
         {
           "id": "rework",

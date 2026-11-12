@@ -140,16 +140,22 @@ class FsStore:
         self._w(target).write_bytes(data)
         return len(data)
 
-    def move(self, case_id: str, to_stage: str) -> tuple[str, str]:
-        """Rename the case folder into another stage. Returns (from, to)."""
+    def move(self, case_id: str, to_stage: str, as_id: str | None = None) -> tuple[str, str]:
+        """Rename the case folder into another stage. Returns (from, to). `as_id`: the case gets its number in the same
+        move and stands there under its new name (domain/step.py, an action's `number`)."""
         if to_stage not in self.stages():
             raise StoreError(f"stage '{to_stage}' does not exist")
+        new_id = as_id or case_id
+        if "/" in new_id or new_id.startswith("."):
+            raise StoreError(f"'{new_id}' is not a case name")
+        if new_id != case_id and self.find(new_id) is not None:
+            raise StoreError(f"'{new_id}' already exists")
         src = self.case_dir(case_id)
-        dst = self.root / to_stage / case_id
+        dst = self.root / to_stage / new_id
         if src == dst:
             raise StoreError(f"'{case_id}' is already in {to_stage}")
         if dst.exists():
-            raise StoreError(f"{to_stage}/{case_id} already exists — nothing overwritten")
+            raise StoreError(f"{to_stage}/{new_id} already exists — nothing overwritten")
         self._w(src).rename(self._w(dst))
         return src.parent.name, to_stage
 

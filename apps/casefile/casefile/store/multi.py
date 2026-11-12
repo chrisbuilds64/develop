@@ -184,14 +184,16 @@ class MultiStore:
     def put_bytes(self, case_id: str, name: str, data: bytes) -> int:
         return self._writable(case_id).put_bytes(case_id, name, data)
 
-    def move(self, case_id: str, to_stage: str) -> tuple[str, str]:
+    def move(self, case_id: str, to_stage: str, as_id: str | None = None) -> tuple[str, str]:
         st = self._writable(case_id)
         if to_stage not in st.stages():
             (st.root / to_stage).mkdir(exist_ok=True)               # a data point may not hold every stage folder yet
             if st.write_root != st.root:
                 (st.write_root / to_stage).mkdir(exist_ok=True)
         try:
-            return st.move(case_id, to_stage)
+            if as_id and as_id != case_id and self.everything.find(as_id) is not None:
+                raise StoreError(f"'{as_id}' already exists")
+            return st.move(case_id, to_stage, as_id=as_id)
         finally:
             self._forget()
 

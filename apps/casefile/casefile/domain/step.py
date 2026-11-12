@@ -181,9 +181,30 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             if refusal:
                 return _refuse(store, j, refusal)
 
+        if action.number:
+            numbered = _numbered(store, config, case, action.number)
+            if numbered:
+                if getattr(store, "everything", store).find(numbered["id"]) is not None:
+                    return _refuse(store, j, f"'{numbered['id']}' already exists")
+                j.payload = {**j.payload, "_number": numbered}
+
         j.to = action.to
         _write_journal(store, j)                                                   # 3. intent
         return _complete(store, config, j, action=action, case_meta=case.meta)
+
+
+def _numbered(store: FsStore, config: DomainConfig, case, rule: list[str]) -> dict | None:
+    """The number a waiting case gets with this step, and the name it stands under from then on — or None when it has
+    its number already. A case waits while its name still carries a fixed number of the application's own rule
+    (`theme.create.number`: a template without a field, PressRoom's `xxx`). Nothing here names a domain."""
+    from . import numbering
+    waiting = [t for t in ((config.theme.get("create") or {}).get("number") or []) if "{" not in t]
+    for mark in waiting:
+        head = f"{case.label}-{mark}"
+        if case.id == head or case.id.startswith(head + "-"):
+            number = numbering.next_number(getattr(store, "everything", store), case.label, rule, case.meta)
+            return {"id": f"{case.label}-{number}{case.id[len(head):]}", "number": number, "was": case.id}
+    return None
 
 
 def holders(config: DomainConfig, case, viewer: str | None) -> list:
@@ -655,6 +676,10 @@ def _builtin(store: FsStore, config: DomainConfig, j: Journal, case, person_id: 
 
 def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action | None = None, case_meta: dict | None = None) -> StepResult:
     """Steps 4 to 6 for a journal in `intent`; safe to call again after a crash."""
+    numbered = j.payload.get("_number") or {}
+    if numbered and j.case != numbered["id"] and store.find(j.case) is None and store.find(numbered["id"]) is not None:
+        j.case = numbered["id"]                                  # the move below happened, its journal line did not
+        _write_journal(store, j)
     stage_now = store.find(j.case)
     if stage_now is None:
         return _refuse(store, j, f"case '{j.case}' vanished")
@@ -690,10 +715,16 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
         if changed:
             store.write_json(f"{stage_now}/{j.case}/meta.json", meta)
 
+    # 4b'. the number a waiting case gets with this step — into its meta before the folder takes the name
+    if numbered and j.case != numbered["id"] and store.exists(f"{stage_now}/{j.case}/meta.json"):
+        meta = store.case_json(j.case, "meta.json")
+        if meta.get("number") != numbered["number"]:
+            store.write_json(f"{stage_now}/{j.case}/meta.json", {**meta, "number": numbered["number"]})
+
     # 4c. a run, once
     if action and action.run and j.run is None:
         # the helper works where the case will stand: the move below takes it there before the runner takes the order
-        j.run = ordering.order(store, config, j.case, (j.to or stage_now), action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
+        j.run = ordering.order(store, config, numbered.get("id") or j.case, (j.to or stage_now), action.run, j.by, str(j.payload.get("note") or j.payload.get("text") or ""), request_id=j.step_id,
                                lang=j.payload.get("_lang"), produces=list(action.produces) or None)   # undeclared: not guarded yet
         _write_journal(store, j)
 
@@ -724,8 +755,17 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
             return _refuse(store, j, str(exc))
         _write_journal(store, j)
 
-    # 5. the move, once
-    if j.to and stage_now != j.to:
+    # 5. the move, once — a case that gets its number takes its new name in the same move
+    if numbered and j.case != numbered["id"]:
+        if stage_now != j.from_:
+            return _refuse(store, j, f"case moved meanwhile: stands in {stage_now}, expected {j.from_}")
+        try:
+            store.move(j.case, j.to or stage_now, as_id=numbered["id"])
+        except StoreError as exc:
+            return _refuse(store, j, str(exc))
+        j.case = numbered["id"]
+        _write_journal(store, j)
+    elif j.to and stage_now != j.to:
         if stage_now != j.from_:
             return _refuse(store, j, f"case moved meanwhile: stands in {stage_now}, expected {j.from_}")
         try:
