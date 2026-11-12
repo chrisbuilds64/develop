@@ -1,0 +1,36 @@
+{
+  "$comment": "What the approver settles before the text goes on (ADR-029). Two items the helper can state as facts, one that is the approver's alone; the questions a single piece raises (a title choice, a line that shows too much) come with the draft as case items. Skipping it as a whole is for whoever holds the gate.",
+  "id": "text",
+  "title": {
+    "de": "Text freigeben",
+    "en": "Approve the text"
+  },
+  "items": [
+    {
+      "id": "facts",
+      "question": {
+        "de": "Der Faktencheck ist durch: Jede Zahl, jedes Zitat und jeder Name im Text ist belegt",
+        "en": "The fact-check is through: every number, quote and name in the text has its source"
+      },
+      "type": "yesno",
+      "agent": true
+    },
+    {
+      "id": "boundaries",
+      "question": {
+        "de": "Die Grenzen sind eingehalten: keine Kunden, keine Dritten, kein Ort in Echtzeit",
+        "en": "The boundaries hold: no clients, no third parties, no live location"
+      },
+      "type": "yesno",
+      "agent": true
+    },
+    {
+      "id": "voice",
+      "question": {
+        "de": "Ich habe den Text gelesen, und er klingt nach mir",
+        "en": "I have read the text and it sounds like me"
+      },
+      "type": "yesno"
+    }
+  ]
+}

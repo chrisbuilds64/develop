@@ -44,6 +44,7 @@ before its build, and its test comes with it.
 | GP-13 | Each item is a must-item or a should-item. A failed should-item does not block the gate; it is shown at the decision and stays in the sealed record. | planned |
 | GP-43 | The person who holds the gate may skip a whole protocol with a reason; the gate opens, and the protocol, the history and the readable record show it as skipped, with the person, the time and the reason. An agent never skips. (added 2026-11-11, SW-2026-015) | `test_protocol.py::test_the_person_holding_the_gate_skips_a_protocol…`, `…started_by_the_skip`, `…over_the_api_says_so_in_the_thread…`; walk `protocol-skip` |
 | GP-44 | Whether a protocol may be skipped, and by which role, is set in its template; by default the role that holds the gate may. A tenant that must check switches it off there. (added 2026-11-11, SW-2026-015) | `test_protocol.py::test_whether_and_by_whom_a_protocol_may_be_skipped_is_set_in_its_template`; walk `protocol-skip` |
+| GP-45 | An action can ask for its protocol on demand (`protocol_on_demand`): the gate waits for the protocol once somebody started it for the case, and a case nobody started one for passes without. PressRoom's text gate uses it: a helper's run starts "Approve the text" and answers the fact-check and boundaries items; the pieces that stood in review before stay free. (added 2026-11-12) | `test_number_at_a_step.py::test_the_text_gate_waits_for_the_questions_the_helper_brought`, `::test_a_piece_nobody_raised_a_question_about_passes_the_text_gate` |
 
 ## Shipyard
 

@@ -14,7 +14,7 @@ def test_every_move_has_a_kind(store, config):
     assert main(store, config, "FN-108-missing-draft").kind == "gap"                     # the same gate, but the draft is missing
     assert main(store, config, "FN-111-the-boring-win").kind == "gate"                   # schedule moves the stage, no seal
     assert main(store, config, "FN-106-two-models-agreeing").kind == "gate"              # a question addressed to Chris
-    assert main(store, config, "FN-101-the-quiet-audit").kind == "nudge"                 # work_out starts a helper, moves nothing
+    assert main(store, config, "FN-101-the-quiet-audit").kind == "gate"                  # work_out starts a helper and moves the case into the draft
     assert main(store, config, "FN-103-what-the-pilot-taught").kind == "nudge"           # waiting for a helper is nobody's gate
 
 

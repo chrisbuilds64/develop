@@ -108,7 +108,7 @@ def test_schedule_and_published_carry_their_payload_into_meta(store, config):
 
 def test_work_out_orders_a_run_once(store, config):
     r = stepping.step(store, config, "FN-101-the-quiet-audit", req("work_out", "w1"), "chris")
-    assert r.ok and r.run and r.run.endswith("_interpret_FN-101-the-quiet-audit") and r.to is None
+    assert r.ok and r.run and r.run.endswith("_interpret_FN-101-the-quiet-audit") and r.to == "15-interpretation"   # the core moves it; it has its number
     runs = [json.loads(store.read_text(f"_runs/{n}")) for n in store.runs() if "FN-101" in n]
     assert len(runs) == 1 and runs[0]["status"] == "queued" and runs[0]["request_id"] == "w1"
     r2 = stepping.step(store, config, "FN-101-the-quiet-audit", req("work_out", "w1"), "chris")

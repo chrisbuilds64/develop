@@ -60,7 +60,9 @@
       "remind": "Send a reminder",
       "take_back": "Take it back",
       "undo": "Undo",
-      "correct": "Open a correction"
+      "correct": "Open a correction",
+      "interpreted": "Interpretation done",
+      "draft_ready": "Draft ready"
     },
     "reasons": {
       "running": "a helper is working on it",
@@ -221,7 +223,9 @@
       "remind": "Erinnern",
       "take_back": "Zurücknehmen",
       "undo": "Rückgängig",
-      "correct": "Korrektur eröffnen"
+      "correct": "Korrektur eröffnen",
+      "interpreted": "Interpretation fertig",
+      "draft_ready": "Entwurf fertig"
     },
     "reasons": {
       "running": "ein Helfer arbeitet daran",

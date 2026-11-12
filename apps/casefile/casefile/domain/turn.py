@@ -40,7 +40,8 @@ def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
                 out.append(req)
         elif req.startswith("protocol:"):                       # a gate protocol sealed with every must-item passed (ADR-029)
             from .protocol import gate_open
-            if not gate_open(case, req[9:]):
+            raised = f"protocol-{req[9:]}.json" in (case.data or {})
+            if not gate_open(case, req[9:]) and (raised or not action.protocol_on_demand):
                 out.append(req)
         elif req.startswith("failed:"):                         # a must-item of that protocol failed: the way back is offered
             from .protocol import failed
