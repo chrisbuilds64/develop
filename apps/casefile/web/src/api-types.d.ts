@@ -1425,6 +1425,13 @@ export interface components {
              */
             take_back_word: string;
             /**
+             * Take Over
+             * @default false
+             */
+            take_over: boolean;
+            /** Hand To */
+            hand_to?: string[];
+            /**
              * Undo Step
              * @default
              */

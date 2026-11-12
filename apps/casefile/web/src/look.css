@@ -941,3 +941,7 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .pc-skip { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: var(--r-s); background: var(--surface); color: var(--sub); font: inherit; font-size: var(--fs-13); cursor: pointer; }
 .pc-skip:hover { color: var(--ink); background: var(--tint-6); }
 .pc-skip:disabled { opacity: .5; }
+
+/* take a case over, or hand it to somebody (REQ-001 T-10) — beside the other moves, never the main one */
+.hand-on { display: inline-flex; gap: 2px; align-items: center; flex-wrap: wrap; }
+.hand-on select { font: inherit; font-size: var(--fs-13); padding: 6px 9px; border-radius: var(--r-s); border: 1px solid var(--tint-12); background: var(--surface); color: var(--ink); }

@@ -126,6 +126,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _remind(store, config, j, case, person, req)
         if req.action == "take_back":
             return _take_back(store, config, j, case, person, req)
+        if req.action == "take_over":
+            return _take_over(store, config, j, case, person, req)
         if req.action == "wait_for":
             return _wait_for(store, config, j, case, person, req, resolve)
         if req.action == "set_fields":
@@ -156,8 +158,8 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _refuse(store, j, f"'{req.action}' is not an action while the case stands in {case.stage}")
         if not offered(config, case, action):
             return _refuse(store, j, f"'{req.action}' is not offered for this case: nothing calls for it")
-        from .turn import actor_of
-        actor = actor_of(action.actor, case) or actor_of(stage.turn, case)
+        from .turn import actor_of, stage_actor
+        actor = actor_of(action.actor, case) or stage_actor(stage, case)
         if not config.may_act(person.id, actor) and not config.may_act(person.id, "role:operator"):
             return _refuse(store, j, f"{person.name} may not {req.action} here; it is {actor}'s move")
         missing = missing_for(config, case, action)
@@ -234,9 +236,9 @@ def _outside(store: FsStore, config: DomainConfig, j: Journal, case, person, req
     """Record work handed out of the case, or end it (REQ-001 T-08). Whoever hands work out does it: a helper, or a
     person who may act in the stage. The record is `meta.json` → `outside`; starting it is a thread entry."""
     from . import outside as away
-    from .turn import actor_of
+    from .turn import stage_actor
     stage = config.stage(case.stage)
-    mover = actor_of(stage.turn, case) if stage else None
+    mover = stage_actor(stage, case)
     if not (person.kind == "agent" or config.may_act(person.id, "role:operator") or (mover and config.may_act(person.id, mover))):
         return _refuse(store, j, f"{person.name} may not hand work out of this case")
     rel = f"{case.stage}/{j.case}/meta.json"
@@ -259,6 +261,48 @@ def _outside(store: FsStore, config: DomainConfig, j: Journal, case, person, req
     j.entry = _append_entry(store, config, j.case, case.stage, {"author": person.name, "status": "info", "step": j.step_id,
                                                                "title": away.words(config, doc, None)[:120],
                                                                "text": str(req.payload.get("text") or "").strip() or away.words(config, doc, None)})
+    j.status, j.finished = "done", _now()
+    _write_journal(store, j)
+    return _result(j)
+
+
+def take_over_refusal(config: DomainConfig, case, person, target) -> str | None:
+    """Why this person cannot give the case's move in its stage to `target` — or None when they can. For now every
+    person of the application may, for any case that stands with a person (Chris, 2026-11-12); a rule of rights comes
+    later, here and nowhere else."""
+    from .turn import stage_actor
+    stage = config.stage(case.stage)
+    if person is None or person.kind != "human":
+        return "a person takes a case over, never a helper"
+    if target is None or target.kind != "human":
+        return "a case is handed to a person of this application"
+    if stage is None or stage.group in CLOSED or not stage.turn or stage.turn == "claude":
+        return "this case stands with nobody who could hand it on"
+    if case.last_run is not None and case.last_run.status == "running":
+        return config.word("reasons", "helper_at_work", None, "a helper is at work on this case — your move comes when it is done")
+    if stage_actor(stage, case) == f"person:{target.id}":
+        return f"{target.name} holds this case already"
+    return None
+
+
+def _take_over(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """The move of the stage the case stands in goes to one person: to whoever takes it, or to the person named in
+    `to` (REQ-001 T-10). Recorded in the thread and in `meta.json` → `held`; it ends when the case leaves the stage."""
+    from .turn import HELD
+    target = config.person(str(req.payload.get("to") or person.id))
+    refusal = take_over_refusal(config, case, person, target)
+    if refusal:
+        return _refuse(store, j, refusal)
+    _write_journal(store, j)
+    store.write_json(f"{case.stage}/{j.case}/meta.json", {**case.meta, HELD: {"stage": case.stage, "person": target.id, "by": person.id, "at": _now()}})
+    own = target.id == person.id
+    title = (config.word("texts", "taken_over", None, "Taken over") if own
+             else config.word("texts", "handed_to", None, "Handed to {who}").format(who=target.name))
+    e = {"author": person.name, "status": "info", "step": j.step_id, "title": title[:120],
+         "text": str(req.payload.get("text") or "").strip() or title}
+    if not own:
+        e["for"] = target.name
+    j.entry = _append_entry(store, config, j.case, case.stage, e)
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)
@@ -330,9 +374,9 @@ def _set_fields(store: FsStore, config: DomainConfig, j: Journal, case, person, 
     """Change declared fields of a case (domain/fields.py): who may move the case may change them. The case does not
     move; the thread names every change, old → new."""
     from . import fields as declared
-    from .turn import actor_of
+    from .turn import stage_actor
     stage = config.stage(case.stage)
-    mover = actor_of(stage.turn, case) if stage else None
+    mover = stage_actor(stage, case)
     if not (config.may_act(person.id, "role:operator") or (mover and config.may_act(person.id, mover))):
         return _refuse(store, j, f"{person.name} may not change this case")
     raw = req.payload.get("fields")

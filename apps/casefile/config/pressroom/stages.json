@@ -135,6 +135,17 @@
           "actor": "role:approver",
           "entry_status": "approved",
           "seal": true
+        },
+        {
+          "id": "make_visual",
+          "label": "make_visual",
+          "$comment": "The visual brief can always be carried out (Chris, 2026-11-12): anyone in the process orders the helper; the visual role may still deliver its own images, and the gate stays the approver's.",
+          "run": "asset",
+          "actor": "anyone",
+          "entry_status": "info",
+          "when": [
+            "visual-brief.md"
+          ]
         }
       ]
     },

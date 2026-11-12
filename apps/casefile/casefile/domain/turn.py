@@ -114,6 +114,21 @@ def actor_of(actor: str | None, case: Case) -> str | None:
     return actor
 
 
+HELD = "held"                                   # meta.json: {"stage", "person", "by", "at"} — somebody took this stage's move over
+
+
+def stage_actor(stage, case: Case) -> str | None:
+    """Whose move a stage is for this case: its turn — or the one person who took the case over while it stands here
+    (REQ-001 T-10: somebody is ill, the process goes on). The take-over holds for this stage only; a helper's stage is
+    nobody's to take. An action's own actor (a gate's role) is never replaced by it."""
+    if stage is None or not stage.turn:
+        return None
+    held = case.meta.get(HELD)
+    if stage.turn != "claude" and isinstance(held, dict) and held.get("stage") == case.stage == stage.folder and held.get("person"):
+        return f"person:{held['person']}"
+    return actor_of(stage.turn, case)
+
+
 def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn]:
     out: list[Turn] = []
     run = case.last_run
@@ -159,7 +174,7 @@ def turn(case: Case, config: DomainConfig, lang: str | None = None) -> list[Turn
             if not p["done"]:
                 out.append(Turn(actor=pid, action="interview", label=_label(config, "interview" if p["answered"] == 0 else "interview_continue", lang),
                                 reason=config.word("stages", case.stage, lang, case.stage), blocked_by=[], since=case.since))
-    stage_turn = actor_of(stage.turn, case) if stage else None
+    stage_turn = stage_actor(stage, case)
     if stage and stage_turn and stage_turn != "claude":
         for action in stage.actions:
             if not offered(config, case, action):

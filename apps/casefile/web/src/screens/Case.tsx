@@ -268,6 +268,18 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
       {(needsUrl || needsNote) && <label className="c-field wide"><span>{needsUrl ? w.link : primaryTurn.label}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="…" /></label>}
     </>
   );
+  const handOn = ((v.take_over ?? false) || (v.hand_to ?? []).length > 0) ? (
+    <span className="hand-on" data-help-skip="explained by cf.held">
+      {v.take_over && <button type="button" className="ghost" disabled={busy} data-action="take_over" onClick={() => step.mutate({ action: "take_over", label: w.takeCase })}>{w.takeCase}</button>}
+      {(v.hand_to ?? []).length > 0 && (
+        <select className="ghost" disabled={busy} value="" aria-label={w.handTo} data-action="hand_to"
+                onChange={(e) => { const to = e.target.value; if (to) step.mutate({ action: "take_over", payload: { to }, label: `${w.handTo} ${config.people.find((p) => p.id === to)?.name ?? to}` }); }}>
+          <option value="">{w.handTo} …</option>
+          {(v.hand_to ?? []).map((pid) => <option key={pid} value={pid}>{config.people.find((p) => p.id === pid)?.name ?? pid}</option>)}
+        </select>
+      )}
+    </span>
+  ) : null;
   const otherActs = (
     <>
       {secondary.map((t) => (
@@ -279,6 +291,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
       {special && primaryTurn && (
         <button type="button" className="ghost" onClick={() => primaryTurn.action === "interview" ? go(`/case/${encodeURIComponent(id)}/gespraech`) : primaryTurn.action === "approve_canon" ? go(`/case/${encodeURIComponent(id)}/ergebnis`) : undefined}>{primaryTurn.label} →</button>
       )}
+      {handOn}
     </>
   );
 
@@ -338,12 +351,13 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
                   <div className="pacts" data-help="cf.held">
                     {!v.held_by_helper && <button type="button" className={primaryTurn ? "ghost" : "primary"} disabled={busy} onClick={() => step.mutate({ action: "remind" })}>{w.remind}</button>}
                     {v.take_back_to && <button type="button" className="ghost" disabled={busy} onClick={() => step.mutate({ action: "take_back", label: w.takeBack })}>{w.takeBack} · {v.take_back_word}</button>}
+                    {!(primaryTurn && (secondary.length > 0 || special)) && handOn}
                   </div>
                   {primaryTurn && (secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
               ) : primaryTurn ? (
                 <><p>{cap(headline || primaryTurn.reason || primaryTurn.label)}</p>
                   <div className="pacts">{inputs}{button}{blocked.length > 0 && <span className="p-wait">{w.waitingOn(waitWords(primaryTurn).join(", "))}</span>}{opens && <span className="p-wait">{w.thenOpens(opens.label)}</span>}</div>
-                  {(secondary.length > 0 || special) && <div className="acts2">{otherActs}</div>}</>
+                  {(secondary.length > 0 || special || handOn) && <div className="acts2">{otherActs}</div>}</>
               ) : mine && main?.action === "answer" ? (
                 <><p>{cap(main.reason)}</p>
                   <div className="pacts"><button type="button" className="primary" onClick={() => { setSide("conv"); setTimeout(() => document.querySelector<HTMLButtonElement>(".msg.oq .mbtn")?.click(), 0); }}>{w.answer}</button></div></>
