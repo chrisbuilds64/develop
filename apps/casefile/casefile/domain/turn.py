@@ -22,7 +22,7 @@ def _label(config: DomainConfig, key: str, lang: str | None) -> str:
 
 
 def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
-    """Deliverables the action needs that are not in the case. Tokens: 'primary', 'required', 'shape:<prefix>', a file name, or alternatives 'a.pdf|a.md'."""
+    """Deliverables the action needs that are not in the case. Tokens: 'primary', 'required', 'shape:<prefix>', a file name, alternatives 'a.pdf|a.md', or 'not:<token>'."""
     out: list[str] = []
     for req in action.requires:
         if req == "answered":                                  # a conversation: at least one respondent said they are done
@@ -37,6 +37,9 @@ def missing_for(config: DomainConfig, case: Case, action: Action) -> list[str]:
         elif req == "criteria" or req.startswith("criteria:"):  # Definition of Ready: the task carries readable acceptance criteria
             got = (case.data or {}).get("_criteria") or {}
             if not got.get("found") or got.get("bad"):
+                out.append(req)
+        elif req.startswith("not:"):                            # the opposite of any other token: met while that one is still missing ('not:shape:image' — no image yet)
+            if not missing_for(config, case, action.model_copy(update={"requires": [req[4:]]})):
                 out.append(req)
         elif req.startswith("protocol:"):                       # a gate protocol sealed with every must-item passed (ADR-029)
             from .protocol import gate_open

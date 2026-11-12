@@ -107,3 +107,19 @@ def test_a_question_is_settled_when_its_addressee_moves_the_case_on(tmp_path):
     case = reading.load(store, config, "FN-081-next")
     assert thread.open_for(case.entries, "Chris") == []
     assert [t.actor for t in whose(case, config) if t.action == "answer"] == []
+
+
+def test_another_visual_draft_is_offered_once_an_image_is_there_and_carries_the_note(tmp_path):
+    """The visual stage works like the text's review: the first order makes the images, every later one is a draft with
+    the person's note (`not:shape:image` hides the first, `shape:image` shows the second)."""
+    root, store, config = world(tmp_path)
+    offered = lambda: [t.action for t in main(store, config) if t.action in ("make_visual", "revise_visual")]
+    assert offered() == ["make_visual"]
+    assert not stepping.step(store, config, "FN-080-a-piece", StepRequest(action="revise_visual", step_id="r-0", payload={"note": "darker"}), "chris").ok
+    (root / "40-asset-generation" / "FN-080-a-piece" / "header-16x9.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 32)
+    assert offered() == ["revise_visual"]
+    assert not stepping.step(store, config, "FN-080-a-piece", StepRequest(action="revise_visual", step_id="r-1"), "chris").ok   # a draft says what should change
+    r = stepping.step(store, config, "FN-080-a-piece", StepRequest(action="revise_visual", step_id="r-2", payload={"note": "phone face down"}), "akhil")
+    assert r.ok and "_asset_" in r.run, r.reason
+    run = json.loads(next((root / "_runs").glob("*.json")).read_text())
+    assert run["note"] == "phone face down"
