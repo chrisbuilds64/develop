@@ -1472,6 +1472,8 @@ def create_app(settings: Settings) -> FastAPI:
                 return ""
             if actor == "claude":
                 return next((p.name for p in c.config.people if p.kind == "agent"), "KI")
+            if actor == "anyone":
+                return c.config.word("roles", "anyone", lang, "alle im Team" if (lang or c.config.lang) == "de" else "anyone in the team")
             if actor.startswith("role:"):
                 return c.config.word("roles", actor[5:], lang, actor[5:])
             return next((p.name for p in c.config.people if p.id == actor), actor)

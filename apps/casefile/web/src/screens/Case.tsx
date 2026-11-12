@@ -139,7 +139,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
   const fail = (e: unknown) => setRefused(e instanceof ApiError ? e.message : String(e));
   const stageWord = (f: string) => ((config.words as { stages?: Record<string, string> }).stages?.[f]) ?? f.replace(/^\d+-/, "");
   const actionWord = (a: string) => ((config.words as { actions?: Record<string, string> }).actions?.[a]) ?? a;
-  const roleWord = (actor: string) => actor.startsWith("role:") ? (((config.words as { roles?: Record<string, string> }).roles?.[actor.slice(5)]) ?? actor.slice(5)) : (config.people.find((p) => p.id === actor)?.name ?? actor);
+  const roleWord = (actor: string) => actor.startsWith("role:") ? (((config.words as { roles?: Record<string, string> }).roles?.[actor.slice(5)]) ?? actor.slice(5)) : actor === "anyone" ? w.anyoneWord : (config.people.find((p) => p.id === actor)?.name ?? actor);
 
   const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown>; label?: string }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r, p) => {
     setRefused(null); refresh(); setAmount(""); setDate(""); setNote("");
@@ -268,16 +268,14 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
       {(needsUrl || needsNote) && <label className="c-field wide"><span>{needsUrl ? w.link : primaryTurn.label}</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="…" /></label>}
     </>
   );
-  const handOn = ((v.take_over ?? false) || (v.hand_to ?? []).length > 0) ? (
+  const handName = (pid: string) => { const n = config.people.find((p) => p.id === pid)?.name ?? pid; return pid === me.person ? `${n} (${w.meWord})` : n; };
+  const handOn = (v.hand_to ?? []).length > 0 ? (
     <span className="hand-on" data-help-skip="explained by cf.held">
-      {v.take_over && <button type="button" className="ghost" disabled={busy} data-action="take_over" onClick={() => step.mutate({ action: "take_over", label: w.takeCase })}>{w.takeCase}</button>}
-      {(v.hand_to ?? []).length > 0 && (
-        <select className="ghost" disabled={busy} value="" aria-label={w.handTo} data-action="hand_to"
-                onChange={(e) => { const to = e.target.value; if (to) step.mutate({ action: "take_over", payload: { to }, label: `${w.handTo} ${config.people.find((p) => p.id === to)?.name ?? to}` }); }}>
-          <option value="">{w.handTo} …</option>
-          {(v.hand_to ?? []).map((pid) => <option key={pid} value={pid}>{config.people.find((p) => p.id === pid)?.name ?? pid}</option>)}
-        </select>
-      )}
+      <select disabled={busy} value="" aria-label={w.handTo} data-action="take_over"
+              onChange={(e) => { const to = e.target.value; if (to) step.mutate({ action: "take_over", payload: to === me.person ? {} : { to }, label: `${w.handTo} ${handName(to)}` }); }}>
+        <option value="">{w.handTo} …</option>
+        {(v.hand_to ?? []).map((pid) => <option key={pid} value={pid}>{handName(pid)}</option>)}
+      </select>
     </span>
   ) : null;
   const otherActs = (

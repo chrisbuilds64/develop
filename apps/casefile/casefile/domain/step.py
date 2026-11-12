@@ -280,7 +280,8 @@ def take_over_refusal(config: DomainConfig, case, person, target) -> str | None:
         return "this case stands with nobody who could hand it on"
     if case.last_run is not None and case.last_run.status == "running":
         return config.word("reasons", "helper_at_work", None, "a helper is at work on this case — your move comes when it is done")
-    if stage_actor(stage, case) == f"person:{target.id}":
+    holding = [p for p in config.persons_for(stage_actor(stage, case)) if p.kind == "human"]
+    if holding == [target]:                                   # by a take-over, or as the only person of the stage's role
         return f"{target.name} holds this case already"
     return None
 
