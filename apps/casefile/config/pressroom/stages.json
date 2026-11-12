@@ -144,8 +144,24 @@
           "actor": "anyone",
           "entry_status": "info",
           "when": [
-            "visual-brief.md"
+            "visual-brief.md",
+            "not:shape:image"
           ]
+        },
+        {
+          "id": "revise_visual",
+          "label": "revise_visual",
+          "$comment": "Another draft, like 'Rework' for the text: offered once an image is there, carries the person's note, and the helper files the new images as the next version beside the old ones — never over them.",
+          "run": "asset",
+          "actor": "anyone",
+          "payload": [
+            "note"
+          ],
+          "when": [
+            "visual-brief.md",
+            "shape:image"
+          ],
+          "entry_status": "open"
         }
       ]
     },

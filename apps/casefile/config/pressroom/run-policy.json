@@ -55,7 +55,12 @@
         "author",
         "approver",
         "visual"
-      ]
+      ],
+      "secrets": [
+        "GEMINI_API_KEY"
+      ],
+      "model": "claude-opus-5-5",
+      "timeout": 1200
     },
     "derive": {
       "$comment": "Derives the remaining deliverables from a human-written primary artifact; never rewrites it. Same rights as interpret.",

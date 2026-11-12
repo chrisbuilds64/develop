@@ -63,7 +63,8 @@
       "correct": "Open a correction",
       "interpreted": "Interpretation done",
       "draft_ready": "Draft ready",
-      "make_visual": "Have the visual made"
+      "make_visual": "Have the visual made",
+      "revise_visual": "Another visual draft"
     },
     "reasons": {
       "running": "a helper is working on it",
@@ -231,7 +232,8 @@
       "correct": "Korrektur eröffnen",
       "interpreted": "Interpretation fertig",
       "draft_ready": "Entwurf fertig",
-      "make_visual": "Bild erzeugen lassen"
+      "make_visual": "Bild erzeugen lassen",
+      "revise_visual": "Neuer Bildentwurf"
     },
     "reasons": {
       "running": "ein Helfer arbeitet daran",
