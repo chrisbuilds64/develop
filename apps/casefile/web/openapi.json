@@ -2970,6 +2970,18 @@
             "title": "Take Back Word",
             "default": ""
           },
+          "take_over": {
+            "type": "boolean",
+            "title": "Take Over",
+            "default": false
+          },
+          "hand_to": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hand To"
+          },
           "undo_step": {
             "type": "string",
             "title": "Undo Step",

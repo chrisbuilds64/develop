@@ -304,6 +304,8 @@ class CaseView(CaseCard):
     outside: OutsideView | None = None                    # work handed out of the case runs (REQ-001 T-08)
     take_back_to: str = ""                                # the viewer's own stage it came from: "Take it back" (action `take_back`) returns it there
     take_back_word: str = ""
+    take_over: bool = False                               # the viewer may take the case's move in this stage over (action `take_over`); with `to`, hand it to somebody
+    hand_to: list[str] = Field(default_factory=list)      # the persons the viewer may hand the case to: ids, the surface has their names
     undo_step: str = ""                                   # the viewer's newest move, while nothing happened since: "Undo" (action `undo`) takes it back (ADR-025)
     undo_word: str = ""                                   # that move in words
     translations: dict[str, dict[str, str]] = Field(default_factory=dict)   # an original file → {language: the translation beside it}
@@ -457,6 +459,9 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     holding = stepping.holders(config, case, viewer) if viewer else []
     held = [p.name for p in holding]
     pull = stepping.take_back_target(config, case, viewer) or ""
+    me = config.person(viewer) if viewer else None
+    may_take = bool(me) and stepping.take_over_refusal(config, case, me, me) is None
+    hand = [p.id for p in config.people if me and p.kind == "human" and p.id != me.id and stepping.take_over_refusal(config, case, me, p) is None]
     from ..domain import outside as away
     doc = away.standing(case)
     who = config.person(str(doc.get("by") or "")) if doc else None
@@ -467,6 +472,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     return CaseView(**c.model_dump(), waits=deps, released=depends.released(deps), reopen_to=back, reopen_word=stage_name(config, back, lang) if back else "",
                     held_by=held, held_by_helper=bool(holding) and all(p.kind == "agent" for p in holding), outside=out,
                     take_back_to=pull, take_back_word=stage_name(config, pull, lang) if pull else "",
+                    take_over=may_take, hand_to=hand,
                     translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
                     meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",

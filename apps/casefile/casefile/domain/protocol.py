@@ -345,7 +345,8 @@ def skip_actor(config: DomainConfig, case, tid: str, root: Path | None) -> str |
     for st in ([here] if here else []) + [s for s in config.stages if s is not here]:
         for a in st.actions:
             if f"protocol:{tid}" in a.requires:
-                return actor_of(a.actor, case) or actor_of(st.turn, case)
+                from .turn import stage_actor
+                return actor_of(a.actor, case) or stage_actor(st, case)
     return None
 
 

@@ -68,8 +68,22 @@ def resolved_ids(entries: list[Entry]) -> set[str]:
     return {e.resolves for e in entries if e.resolves}
 
 
+def moved_on(entries: list[Entry]) -> set[str]:
+    """Open entries their addressee settled by acting: a question to a person about a case in a stage is no longer open
+    once that person has moved the case on from that stage (REQ-001 T-12). The gate was the answer; the entry stays in
+    the thread as it was written."""
+    out = set()
+    for i, e in enumerate(entries):
+        who = (e.for_ or "").lower()
+        if e.status != "open" or not who or not e.stage:
+            continue
+        if any(l.from_ == e.stage and l.to and l.to != e.stage and (l.author or "").lower() == who for l in entries[i + 1:]):
+            out.add(e.id)
+    return out
+
+
 def open_for(entries: list[Entry], person_name: str | None) -> list[Entry]:
-    """Open entries addressed to a person that no later entry resolves."""
-    done = resolved_ids(entries)
+    """Open entries addressed to a person that no later entry resolves and that the person has not settled by moving on."""
+    done = resolved_ids(entries) | moved_on(entries)
     return [e for e in entries if e.status == "open" and e.id not in done
             and (person_name is None or (e.for_ or "").lower() == person_name.lower())]

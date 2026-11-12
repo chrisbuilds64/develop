@@ -163,11 +163,13 @@ class DomainConfig:
         return next((p for p in self.people if r in (p.id.lower(), p.name.lower())), None)
 
     def persons_for(self, actor: str | None) -> list[Person]:
-        """'role:approver' → everyone with that role (deputies included); 'person:x' or 'x' → that person; 'claude' → the agents."""
+        """'role:approver' → everyone with that role (deputies included); 'person:x' or 'x' → that person; 'claude' → the agents; 'anyone' → every person."""
         if not actor:
             return []
         if actor == "claude":
             return [p for p in self.people if p.kind == "agent"]
+        if actor == "anyone":                                   # every person of the application: ordering a helper is nobody's privilege (REQ-001 T-11)
+            return [p for p in self.people if p.kind == "human"]
         if actor.startswith("role:"):
             role = actor[5:]
             direct = [p for p in self.people if role in p.roles]

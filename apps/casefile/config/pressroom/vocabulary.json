@@ -62,7 +62,8 @@
       "undo": "Undo",
       "correct": "Open a correction",
       "interpreted": "Interpretation done",
-      "draft_ready": "Draft ready"
+      "draft_ready": "Draft ready",
+      "make_visual": "Have the visual made"
     },
     "reasons": {
       "running": "a helper is working on it",
@@ -84,7 +85,9 @@
       "reminder_text": "Could you take a look at this case?",
       "undone": "Undone: {action}",
       "undone_text": "Taken back before the next step started.",
-      "correction": "Correction: {title}"
+      "correction": "Correction: {title}",
+      "taken_over": "Taken over",
+      "handed_to": "Handed to {who}"
     },
     "files": {
       "source.md": "Source material",
@@ -109,7 +112,9 @@
       "thumbnail-16x9.png": "Thumbnail",
       "poster-4x5.jpg": "Poster",
       "teaser-reel.mp4": "Teaser reel",
-      "screen-segment.mp4": "Screen segment"
+      "screen-segment.mp4": "Screen segment",
+      "protocol-text.json": "Text approval protocol",
+      "protocol-text.md": "Text approval protocol (record)"
     },
     "roles": {
       "author": "author",
@@ -225,7 +230,8 @@
       "undo": "Rückgängig",
       "correct": "Korrektur eröffnen",
       "interpreted": "Interpretation fertig",
-      "draft_ready": "Entwurf fertig"
+      "draft_ready": "Entwurf fertig",
+      "make_visual": "Bild erzeugen lassen"
     },
     "reasons": {
       "running": "ein Helfer arbeitet daran",
@@ -247,7 +253,9 @@
       "reminder_text": "Kannst du dir diesen Fall ansehen?",
       "undone": "Rückgängig: {action}",
       "undone_text": "Zurückgenommen, bevor der nächste Schritt begann.",
-      "correction": "Korrektur: {title}"
+      "correction": "Korrektur: {title}",
+      "taken_over": "Übernommen",
+      "handed_to": "Übergeben an {who}"
     },
     "files": {
       "source.md": "Ausgangsmaterial",
@@ -272,7 +280,9 @@
       "thumbnail-16x9.png": "Thumbnail",
       "poster-4x5.jpg": "Poster",
       "teaser-reel.mp4": "Teaser-Reel",
-      "screen-segment.mp4": "Bildschirm-Segment"
+      "screen-segment.mp4": "Bildschirm-Segment",
+      "protocol-text.json": "Fragebogen Text",
+      "protocol-text.md": "Fragebogen Text (Protokoll)"
     },
     "roles": {
       "author": "Autor",

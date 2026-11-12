@@ -30,7 +30,9 @@
         "Bash(mkdir:*)",
         "Bash(cp:*)",
         "Bash(ls:*)",
-        "Bash(cat:*)"
+        "Bash(cat:*)",
+        "Bash(python -m casefile.cli.step:*)",
+        "Bash(python -m casefile.cli.protocol:*)"
       ],
       "web": true,
       "model": "claude-opus-5-5"
@@ -47,8 +49,13 @@
       ]
     },
     "asset": {
-      "$comment": "Dormant since 2026-09-06 — visuals are made elsewhere. Nobody may order it until that changes.",
-      "orderable_by": []
+      "$comment": "Carries out the visual brief of a piece. Dormant from 2026-09-06 to 2026-11-12 (visuals were made elsewhere only); since then anyone in the process may order it beside the visual role's own work (Chris, 2026-11-12).",
+      "orderable_by": [
+        "operator",
+        "author",
+        "approver",
+        "visual"
+      ]
     },
     "derive": {
       "$comment": "Derives the remaining deliverables from a human-written primary artifact; never rewrites it. Same rights as interpret.",
@@ -61,7 +68,9 @@
         "Bash(mkdir:*)",
         "Bash(cp:*)",
         "Bash(ls:*)",
-        "Bash(cat:*)"
+        "Bash(cat:*)",
+        "Bash(python -m casefile.cli.step:*)",
+        "Bash(python -m casefile.cli.protocol:*)"
       ],
       "web": true,
       "model": "claude-opus-5-5"

@@ -80,7 +80,7 @@ const W = {
     edBad: (n: number) => (n === 1 ? "1 Kriterienzeile kann das Tor nicht lesen" : `${n} Kriterienzeilen kann das Tor nicht lesen`), edLine: (n: number) => `Zeile ${n}`,
     heldBy: (who: string) => `Liegt bei ${who}. Du kannst erinnern oder die Akte zurückholen.`,
     heldByHelper: (who: string) => `Liegt bei ${who}. Du kannst den Helfer erneut beauftragen oder die Akte zurückholen.`, closedNote: "Abgeschlossen. Du kannst die Akte jederzeit zurückholen.",
-    remind: "Erinnern", takeBack: "Zurücknehmen", moveBack: "Zurückholen", undone: "Rückgängig gemacht.", reminded: (who: string) => `Erinnerung an ${who} geschickt.`,
+    remind: "Erinnern", takeBack: "Zurücknehmen", takeCase: "Übernehmen", handTo: "Übergeben an", moveBack: "Zurückholen", undone: "Rückgängig gemacht.", reminded: (who: string) => `Erinnerung an ${who} geschickt.`,
     correct: "Korrektur eröffnen", correctPh: "Warum? Was stimmt nicht?", correctAmount: "Neuer Betrag (optional)", correctSend: "Korrektur eintragen", corrected: "korrigiert", undoneWord: "zurückgenommen",
     youOnIt: "Für dich", aiOnIt: "Die KI ist dran", openDoc: "Öffnen", noDocs: "Noch keine Dokumente.", versionsN: (n: number) => (n === 1 ? "1 Fassung" : `${n} Fassungen`),
     // the design hand-back: the rail and Home (2026-11-05)
@@ -306,7 +306,7 @@ const W = {
     edBad: (n: number) => (n === 1 ? "1 criteria line the gate cannot read" : `${n} criteria lines the gate cannot read`), edLine: (n: number) => `Line ${n}`,
     heldBy: (who: string) => `With ${who}. You can send a reminder or take the case back.`,
     heldByHelper: (who: string) => `With ${who}. You can send the helper again or take the case back.`, closedNote: "Closed. You can bring the case back at any time.",
-    remind: "Send a reminder", takeBack: "Take it back", moveBack: "Move back", undone: "Undone.", reminded: (who: string) => `Reminder sent to ${who}.`,
+    remind: "Send a reminder", takeBack: "Take it back", takeCase: "Take it over", handTo: "Hand to", moveBack: "Move back", undone: "Undone.", reminded: (who: string) => `Reminder sent to ${who}.`,
     correct: "Open a correction", correctPh: "Why? What is wrong?", correctAmount: "New amount (optional)", correctSend: "Record the correction", corrected: "corrected", undoneWord: "taken back",
     youOnIt: "For you", aiOnIt: "The AI is on it", openDoc: "Open", noDocs: "No documents yet.", versionsN: (n: number) => (n === 1 ? "1 version" : `${n} versions`),
     // the design hand-back: the rail and Home (2026-11-05)
