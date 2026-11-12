@@ -59,6 +59,14 @@ KIND = "claude-code"
 log = logging.getLogger("pressroom-runner")
 
 
+def wall_seconds(run: dict) -> float | None:
+    """Started to finished on the clock. A run that waits for its own helpers reports only its last stretch as its duration."""
+    try:
+        return round((dt.datetime.fromisoformat(run["finished"]) - dt.datetime.fromisoformat(run["started"])).total_seconds(), 1)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -536,6 +544,7 @@ def execute(f: Path, run: dict, rules: dict, args, data: Path, workspace_id: str
     if session:
         run["session"] = session
     run.update(spent)
+    run["duration_s"] = max(wall_seconds(run) or 0, run.get("duration_s") or 0) or None   # the whole run on the clock; the session's own figure counts its last stretch only
     f.write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     # The record in the container: one review entry, info, in the runner's own words — not for a helper beside the

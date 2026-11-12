@@ -143,6 +143,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
 
   const step = useMutation({ mutationFn: (p: { action: string; payload?: Record<string, unknown>; label?: string }) => api.step(id, p.action, stepId(p.action), p.payload ?? {}), onSuccess: (r, p) => {
     setRefused(null); refresh(); setAmount(""); setDate(""); setNote("");
+    if (r.case && r.case !== id) go(`/case/${encodeURIComponent(r.case)}?g=${tab}`);   // the step gave the case its number: it stands under its new name
     if (p.action === "undo") { setToast({ text: w.undone }); return; }
     if (p.action === "remind") { setToast({ text: w.reminded((q.data?.held_by ?? []).join(", ")) }); return; }
     const t = q.data?.my_turns.find((x) => x.action === p.action);
