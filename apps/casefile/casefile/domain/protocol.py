@@ -117,7 +117,7 @@ def _write(store: FsStore, case_id: str, name: str, doc: dict) -> None:
     store.write_json(f"{store.find(case_id)}/{case_id}/{name}", doc)
 
 
-def start(store: FsStore, config: DomainConfig, case_id: str, tid: str, by: str, items: list[dict] | None = None) -> str:
+def start(store: FsStore, config: DomainConfig, case_id: str, tid: str, by: str, items: list[dict] | None = None, locked: bool = False) -> str:
     """The protocol for this gate: the template's items plus case items (a helper's, from the task). A sealed one stays as it
     is and a new version starts (GP-12); an open one is returned as it is."""
     case = reading.load(store, config, case_id)
@@ -145,6 +145,9 @@ def start(store: FsStore, config: DomainConfig, case_id: str, tid: str, by: str,
     ids = {i["id"] for i in tpl["items"]}
     doc = {"template": tid, "version": version, "title": tpl["title"], "started": {"by": by, "at": _now()},
            "items": tpl["items"] + [i for i in extra if i["id"] not in ids], "answers": {}, "observations": {}, "steps": [], "sealed": None}
+    if locked:                                                # a step that holds the case's lock starts it (going back, ADR-035)
+        _write(store, case_id, name, doc)
+        return name
     with store.lock(case_id):
         _write(store, case_id, name, doc)
     return name

@@ -65,7 +65,9 @@
       "draft_task": "Auftrag mit Akzeptanzkriterien ausarbeiten lassen",
       "entw_failed": "Zurück in die Umsetzung (ENTW nicht bestanden)",
       "test_failed": "Zurück in die Umsetzung (TEST nicht bestanden)",
-      "record_done": "Nachgetragen: außerhalb gebaut, abgeschlossen"
+      "record_done": "Nachgetragen: außerhalb gebaut, abgeschlossen",
+      "go_back": "Zurückgehen",
+      "resume": "Weiter wie zuvor"
     },
     "reasons": {
       "running": "es läuft gerade",
@@ -195,7 +197,9 @@
       "draft_task": "Have the task written with acceptance criteria",
       "entw_failed": "Back to the build (ENTW failed)",
       "test_failed": "Back to the build (TEST failed)",
-      "record_done": "Recorded afterwards: built outside, closed"
+      "record_done": "Recorded afterwards: built outside, closed",
+      "go_back": "Go back",
+      "resume": "Resume"
     },
     "reasons": {
       "running": "running",

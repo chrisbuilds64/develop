@@ -201,7 +201,8 @@
     {
       "folder": "60-published",
       "key": "out",
-      "group": "out"
+      "group": "out",
+      "final": true
     },
     {
       "folder": "61-field-observation",

@@ -1425,6 +1425,25 @@ export interface components {
              */
             take_back_word: string;
             /**
+             * Stood At
+             * @default
+             */
+            stood_at: string;
+            /**
+             * Resume To
+             * @default
+             */
+            resume_to: string;
+            /**
+             * Resume Word
+             * @default
+             */
+            resume_word: string;
+            /** Go Back To */
+            go_back_to?: {
+                [key: string]: unknown;
+            }[];
+            /**
              * Take Over
              * @default false
              */
