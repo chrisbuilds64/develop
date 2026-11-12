@@ -45,6 +45,12 @@ Suite on 2026-11-08: 164 tests, all green.
 | T-11 | An action can be anyone's (`actor: "anyone"`): every person of the application, never a helper. Ordering a helper is nobody's privilege; a gate keeps its role. (added 2026-11-12) | `config.py::persons_for`, `test_take_over.py::test_anyone_in_the_process_orders_the_visual` |
 | T-12 | An open entry addressed to a person is settled once that person has moved the case on from the stage the entry was written in; it stays in the thread and is nobody's move any more. (added 2026-11-12) | `domain/entries.py::moved_on`, `test_take_over.py::test_a_question_is_settled_when_its_addressee_moves_the_case_on` |
 | T-13 | A requirement token has an opposite: `not:<token>` is met while `<token>` is still missing, in `requires` and in `when` alike. With it an application offers one action until something is there and another from then on (PressRoom: the first visual, then every further draft with a note). (added 2026-11-12) | `domain/turn.py::missing_for`, `test_take_over.py::test_another_visual_draft_is_offered_once_an_image_is_there_and_carries_the_note` |
+| T-14 | A person takes a case back to any stage it has stood in (`go_back`, with the stage and a reason), until the case has reached a stage the application marks as final (`final`). Never a helper, never while a helper is at work. (ADR-035) | planned |
+| T-15 | A case's mark is the furthest stage it has stood in, read from the thread. (ADR-035) | planned |
+| T-16 | A passed gate records the deliverables it asked for, each with version and fingerprint; the gate holds while they are unchanged. (ADR-035) | planned |
+| T-17 | `resume` takes a case forward over stages whose gates hold, up to the first that does not, never beyond its mark and never into a stage that deploys. It is offered, never automatic. (ADR-035) | planned |
+| T-18 | In the stage a case went back to, the gate is passed again, with a new version of its protocol. (ADR-035) | planned |
+| T-19 | The surface shows where a case stood before and offers both moves at a stage whose gate holds: resume, or do the work again. (ADR-035) | planned |
 
 ## Configuration instead of code (ADR-015)
 
