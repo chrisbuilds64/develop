@@ -304,6 +304,10 @@ class CaseView(CaseCard):
     outside: OutsideView | None = None                    # work handed out of the case runs (REQ-001 T-08)
     take_back_to: str = ""                                # the viewer's own stage it came from: "Take it back" (action `take_back`) returns it there
     take_back_word: str = ""
+    stood_at: str = ""                                    # the furthest stage the case has stood in, when that is further than where it stands (ADR-035): its word
+    resume_to: str = ""                                   # where `resume` takes it: forward over gates that still hold, never beyond that stage
+    resume_word: str = ""
+    go_back_to: list[dict] = Field(default_factory=list)  # the earlier stages the viewer may take the case back to (action `go_back`, with `to` and a reason): [{"stage", "word"}]
     take_over: bool = False                               # the viewer may take the case's move in this stage over (action `take_over`); with `to`, hand it to somebody
     hand_to: list[str] = Field(default_factory=list)      # the persons the viewer may hand the case to, the viewer included and first: ids, the surface has their names
     undo_step: str = ""                                   # the viewer's newest move, while nothing happened since: "Undo" (action `undo`) takes it back (ADR-025)
@@ -460,6 +464,11 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     held = [p.name for p in holding]
     pull = stepping.take_back_target(config, case, viewer) or ""
     me = config.person(viewer) if viewer else None
+    from ..domain import back as going
+    may_move = store is not None and me is not None and stepping.move_refusal(config, case, me) is None
+    furthest = going.mark(config, case)
+    resume = (going.resume_target(store, config, case) or "") if may_move else ""
+    backs = [{"stage": f, "word": stage_name(config, f, lang)} for f in going.back_targets(config, case)] if may_move else []
     may_take = bool(me) and stepping.take_over_refusal(config, case, me, me) is None
     hand = [p.id for p in sorted(config.people, key=lambda p: p.id != viewer)       # the viewer first: "to me" is the emergency, and one list says it all
             if me and p.kind == "human" and stepping.take_over_refusal(config, case, me, p) is None]
@@ -474,6 +483,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                     held_by=held, held_by_helper=bool(holding) and all(p.kind == "agent" for p in holding), outside=out,
                     take_back_to=pull, take_back_word=stage_name(config, pull, lang) if pull else "",
                     take_over=may_take, hand_to=hand,
+                    stood_at=stage_name(config, furthest, lang) if furthest != case.stage and not going.is_final(config, case) else "",
+                    resume_to=resume, resume_word=stage_name(config, resume, lang) if resume else "", go_back_to=backs,
                     translations=translations(case.files), undo_step=undo.step_id if undo else "", undo_word=config.word("actions", undo_action.label if undo_action else undo.action, lang, undo.action) if undo else "",
                     meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",

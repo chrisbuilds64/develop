@@ -2970,6 +2970,29 @@
             "title": "Take Back Word",
             "default": ""
           },
+          "stood_at": {
+            "type": "string",
+            "title": "Stood At",
+            "default": ""
+          },
+          "resume_to": {
+            "type": "string",
+            "title": "Resume To",
+            "default": ""
+          },
+          "resume_word": {
+            "type": "string",
+            "title": "Resume Word",
+            "default": ""
+          },
+          "go_back_to": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Go Back To"
+          },
           "take_over": {
             "type": "boolean",
             "title": "Take Over",

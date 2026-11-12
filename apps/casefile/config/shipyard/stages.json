@@ -278,7 +278,8 @@
           "entry_status": "info"
         }
       ],
-      "deploys": "prod"
+      "deploys": "prod",
+      "final": true
     },
     {
       "folder": "90-closed",

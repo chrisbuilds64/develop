@@ -43,7 +43,9 @@
       "to_waiting": "Wartet",
       "to_done": "Erledigt",
       "wait_for": "Wartet auf …",
-      "set_fields": "Ändern"
+      "set_fields": "Ändern",
+      "go_back": "Zurückgehen",
+      "resume": "Weiter wie zuvor"
     },
     "fields": {
       "assignee": "Zuständig",
@@ -116,7 +118,9 @@
       "to_waiting": "Waiting",
       "to_done": "Done",
       "wait_for": "Waits for …",
-      "set_fields": "Change"
+      "set_fields": "Change",
+      "go_back": "Go back",
+      "resume": "Resume"
     },
     "fields": {
       "assignee": "Assignee",

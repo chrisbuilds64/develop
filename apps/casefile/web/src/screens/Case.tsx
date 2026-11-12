@@ -248,6 +248,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
       : main.actor === "claude" ? outside || `${w.isWorking(v.agent)}${v.since ? ` · ${w.since} ${ago(v.since, lang)}` : ""}`
       : `${v.stage_word} · ${w.waitingFor(roleWord(main.actor))}`
     : `${v.stage_word}${v.date ? ` · ${dateWords(v.date, lang)}` : ""}`;
+  const stubLine = v.stood_at ? `${stub} · ${w.stoodAt(v.stood_at)}` : stub;      // it went back: where it stood before (ADR-035)
   // the core's sentence for the move, without the case's own title, which the head already shows
   const headline = (primaryTurn?.headline ?? "").split(`${v.title}: `).join("").split(`: ${v.title}`).join("").trim();
   const secondary = actionTurns.slice(1);
@@ -269,13 +270,23 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
     </>
   );
   const handName = (pid: string) => { const n = config.people.find((p) => p.id === pid)?.name ?? pid; return pid === me.person ? `${n} (${w.meWord})` : n; };
-  const handOn = (v.hand_to ?? []).length > 0 ? (
+  const backs = (v.go_back_to ?? []) as { stage: string; word: string }[];
+  const handOn = ((v.hand_to ?? []).length > 0 || backs.length > 0 || v.resume_to) ? (
     <span className="hand-on" data-help-skip="explained by cf.held">
-      <select disabled={busy} value="" aria-label={w.handTo} data-action="take_over"
+      {v.resume_to && <button type="button" className="ghost" disabled={busy} data-action="resume" title={w.resumeHint} onClick={() => step.mutate({ action: "resume", label: w.resumeTo(v.resume_word ?? "") })}>{w.resumeTo(v.resume_word ?? "")}</button>}
+      {backs.length > 0 && (
+        <select disabled={busy} value="" aria-label={w.goBackTo} data-action="go_back"
+                onChange={(e) => { const to = e.target.value; const word = backs.find((b) => b.stage === to)?.word ?? to; if (!to) return;
+                  setPending({ actor: "", action: "go_back", label: `${w.goBackTo} ${word}`, reason: "", blocked_by: [], payload: ["note"], extra: { to } } as unknown as Turn); setSide("conv"); openNote(); }}>
+          <option value="">{w.goBackTo} …</option>
+          {backs.map((b) => <option key={b.stage} value={b.stage}>{b.word}</option>)}
+        </select>
+      )}
+      {(v.hand_to ?? []).length > 0 && <select disabled={busy} value="" aria-label={w.handTo} data-action="take_over"
               onChange={(e) => { const to = e.target.value; if (to) step.mutate({ action: "take_over", payload: to === me.person ? {} : { to }, label: `${w.handTo} ${handName(to)}` }); }}>
         <option value="">{w.handTo} …</option>
         {(v.hand_to ?? []).map((pid) => <option key={pid} value={pid}>{handName(pid)}</option>)}
-      </select>
+      </select>}
     </span>
   ) : null;
   const otherActs = (
@@ -313,7 +324,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
             </div>
           </header>
           <Stations stations={v.stations} caseId={v.id} />
-          <p className="c-stub"><i className={mine ? "you" : main?.actor === "claude" ? "ai" : ""} />{stub}</p>
+          <p className="c-stub"><i className={mine ? "you" : main?.actor === "claude" ? "ai" : ""} />{stubLine}</p>
 
           {refused && <div className="c-refused">{refused}</div>}
 
@@ -442,7 +453,7 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
         )}
         <NoteField caseId={id} chip={pending?.label} onChip={() => setPending(null)} placeholder={pending ? `${pending.label} …` : w.askAiPh} busy={busy} w={w}
                    onSend={(text) => pending
-                     ? step.mutateAsync({ action: pending.action, label: pending.label, payload: { note: text, text } }).then(() => setPending(null))
+                     ? step.mutateAsync({ action: pending.action, label: pending.label, payload: { ...((pending as unknown as { extra?: Record<string, unknown> }).extra ?? {}), note: text, text } }).then(() => setPending(null))
                      : run.mutateAsync(text)} />
       </aside>
 

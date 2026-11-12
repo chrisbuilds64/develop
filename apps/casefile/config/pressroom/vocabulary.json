@@ -64,7 +64,9 @@
       "interpreted": "Interpretation done",
       "draft_ready": "Draft ready",
       "make_visual": "Have the visual made",
-      "revise_visual": "Another visual draft"
+      "revise_visual": "Another visual draft",
+      "go_back": "Go back",
+      "resume": "Resume"
     },
     "reasons": {
       "running": "a helper is working on it",
@@ -233,7 +235,9 @@
       "interpreted": "Interpretation fertig",
       "draft_ready": "Entwurf fertig",
       "make_visual": "Bild erzeugen lassen",
-      "revise_visual": "Neuer Bildentwurf"
+      "revise_visual": "Neuer Bildentwurf",
+      "go_back": "Zurückgehen",
+      "resume": "Weiter wie zuvor"
     },
     "reasons": {
       "running": "ein Helfer arbeitet daran",

@@ -58,6 +58,8 @@ class Stage(BaseModel):
     actions: list[Action] = Field(default_factory=list)
     group: str = "other"                         # where the surface lists it: you | claude | others | date | planned | out | ideas | archive
     auto: list[AutoRun] = Field(default_factory=list)
+    final: bool = False                          # a case that has reached this stage does not go back any more (ADR-035): published, in production
+    deploys: str | None = None                   # the stage installs something when a case enters it (Shipyard: "entw"); never resumed into (ADR-035)
     interview: str | None = None                 # the conversation file this stage collects ("gespraech.json"): every respondent who is not done has a move of their own
 
 

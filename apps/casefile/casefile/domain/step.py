@@ -128,6 +128,10 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
             return _take_back(store, config, j, case, person, req)
         if req.action == "take_over":
             return _take_over(store, config, j, case, person, req)
+        if req.action == "go_back":
+            return _go_back(store, config, j, case, person, req)
+        if req.action == "resume":
+            return _resume(store, config, j, case, person)
         if req.action == "wait_for":
             return _wait_for(store, config, j, case, person, req, resolve)
         if req.action == "set_fields":
@@ -264,6 +268,64 @@ def _outside(store: FsStore, config: DomainConfig, j: Journal, case, person, req
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
     return _result(j)
+
+
+def move_refusal(config: DomainConfig, case, person) -> str | None:
+    """Why this person cannot take the case back or resume it — or None. For now every person of the application may
+    (ADR-035 decision 8); a rule of rights goes here and nowhere else."""
+    if person is None or person.kind != "human":
+        return "a person takes a case back, never a helper"
+    if case.last_run is not None and case.last_run.status == "running":
+        return config.word("reasons", "helper_at_work", None, "a helper is at work on this case — your move comes when it is done")
+    return None
+
+
+def _go_back(store: FsStore, config: DomainConfig, j: Journal, case, person, req: StepRequest) -> StepResult:
+    """Take the case back to a stage it has stood in (REQ-001 T-14). A move like any other, with its reason; the gates
+    of that stage ask again: a protocol that was sealed there starts its next version (T-18)."""
+    from . import back
+    from . import protocol as gate
+    refusal = move_refusal(config, case, person)
+    if refusal:
+        return _refuse(store, j, refusal)
+    target = str(req.payload.get("to") or "").strip()
+    if back.is_final(config, case):
+        return _refuse(store, j, "this case is final; a correction stands next to it instead")
+    if target not in back.back_targets(config, case):
+        return _refuse(store, j, f"'{target}' is not a stage this case can go back to")
+    note = str(req.payload.get("note") or req.payload.get("text") or "").strip()
+    if not note:
+        return _refuse(store, j, "going back needs its reason")
+    j.to = target
+    j.payload = {**j.payload, "note": note}
+    _write_journal(store, j)
+    out = _complete(store, config, j)
+    if out.ok:
+        st = config.stage(target)
+        for tid in {r[9:] for a in (st.actions if st else []) for r in a.requires if r.startswith("protocol:")}:
+            again = reading.load(store, config, j.case)
+            doc = (again.data or {}).get(f"protocol-{tid}.json")
+            if doc and (doc.get("sealed") or doc.get("skipped")):
+                try:
+                    gate.start(store, config, j.case, tid, person.id, locked=True)
+                except gate.ProtocolError:
+                    pass
+    return out
+
+
+def _resume(store: FsStore, config: DomainConfig, j: Journal, case, person) -> StepResult:
+    """Forward again over gates that still hold, to where the case stood (REQ-001 T-17). No gate is passed anew and no
+    helper is ordered: the earlier approvals stand because what they covered is unchanged."""
+    from . import back
+    refusal = move_refusal(config, case, person)
+    if refusal:
+        return _refuse(store, j, refusal)
+    target = back.resume_target(store, config, case)
+    if target is None:
+        return _refuse(store, j, "nothing to resume: the gate here does not hold any more, or the case never stood further")
+    j.to = target
+    _write_journal(store, j)
+    return _complete(store, config, j)
 
 
 def take_over_refusal(config: DomainConfig, case, person, target) -> str | None:
@@ -799,6 +861,20 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
         except (ComposeError, StoreError, OSError, ValueError) as exc:
             return _refuse(store, j, str(exc))
         _write_journal(store, j)
+
+    # 4g. a gate that is passed records what it covered (ADR-035): the deliverables it asked for, as they are now
+    if action and action.to and j.from_ and not j.payload.get("_gate"):
+        from . import back
+        order = [s.folder for s in config.stages]
+        gate_action = back.gate_of(config, j.from_)
+        if gate_action is not None and gate_action.id == action.id and store.exists(f"{stage_now}/{j.case}/meta.json"):
+            now_case = reading.load(store, config, j.case)
+            meta = store.case_json(j.case, "meta.json")
+            gates = dict(meta.get(back.GATES) or {})
+            gates[j.from_] = {"action": action.id, "step": j.step_id, "by": j.by, "at": _now(), "covered": back.covered(store, config, now_case, action)}
+            store.write_json(f"{stage_now}/{j.case}/meta.json", {**meta, back.GATES: gates})
+            j.payload["_gate"] = j.from_
+            _write_journal(store, j)
 
     # 5. the move, once — a case that gets its number takes its new name in the same move
     if numbered and j.case != numbered["id"]:
