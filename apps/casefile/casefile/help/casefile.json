@@ -859,6 +859,18 @@
       }
     },
     {
+      "key": "cf.choices",
+      "since": "0.23.0",
+      "title": {
+        "de": "Eine Frage mit Auswahl",
+        "en": "A question with choices"
+      },
+      "text": {
+        "de": "Jemand hat dir eine Entscheidung mit Auswahl gestellt. Jeder Knopf tut genau, was darauf steht: Ist es ein Schritt, den du hier machen kannst, wird er gemacht; sonst arbeitet der Helfer mit dieser Wahl weiter; hat kein Helfer gefragt, ist die Wahl deine Antwort. Die Frage gilt danach als beantwortet. „Etwas anderes …“ öffnet die freie Antwort im Verlauf.",
+        "en": "Somebody handed you a decision with choices. Each button does what it says: if it is a step you can take here, it is taken; otherwise the helper goes on with that choice; if no helper asked, the choice is your answer. The question counts as answered then. \"Something else …\" opens the free answer in the conversation."
+      }
+    },
+    {
       "key": "cf.protocol",
       "since": "0.23.0",
       "title": {

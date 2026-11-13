@@ -304,15 +304,23 @@ def orphans(queue: Path, me: str) -> list[str]:
     return marked
 
 
+# How every helper writes to people (REQ-001 A-06): the surface turns each numbered choice into a button — one in a move's
+# button words makes that move, any other sends the helper again with it — so a choice must read as what happens.
+HELPER_WRITING = (
+    "Write every review entry for a person reading it on a phone, in Markdown: one short sentence first that says what "
+    "happened or what you need, then a blank line; details as a short list ('- '). Name only what the person sees on the "
+    "screen — a heading, button or place — never a file name, entry number, internal id, run id or commit hash. When you "
+    "hand a decision back, give the choices as a numbered list ('1. ', '2. '), one line each, that starts with the action "
+    "in everyday words, then ' — ' and what happens. Each choice becomes a button: one that is a move the case offers "
+    "starts with the button's words (as the screen shows them); any other sends you again with that line as your order.")
+
+
 def prompt_for(run: dict, agent: str) -> str:
     head = (f"You are {agent}, in a PressRoom session started by a run order from the cockpit — no conversation, "
             f"one task. Work on the container `{run['container']}` and nothing else. Write review entries and "
             "your closing summary in English: review.md is read by people who do not read German. A review "
             "entry's For names one person from people.json, never two. When done, say in five lines what you "
-            "changed and what is open.\n\nWrite every review entry for a person reading it on a phone, in Markdown: one short "
-            "sentence first that says what happened or what you need, then a blank line; details as a short list ('- '); "
-            "choices you hand back as a numbered list ('1. ', '2. '), each saying what happens if it is chosen; files, "
-            "commands and ids in backticks. No run ids, commit hashes or job numbers unless the person needs them to act.\n\n")
+            f"changed and what is open.\n\n{HELPER_WRITING}\n\n")
     line = f"/{run['skill']} {run['container'].split('/')[-1]}"
     if run.get("note"):
         line += f"\n\n{run['note']}"

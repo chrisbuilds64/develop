@@ -1479,6 +1479,10 @@ export interface components {
             released: boolean;
             helper?: components["schemas"]["HelperView"] | null;
             again?: components["schemas"]["AgainView"] | null;
+            /** Choices */
+            choices?: {
+                [key: string]: components["schemas"]["Choice"][];
+            };
             /** Protocols */
             protocols?: {
                 [key: string]: unknown;
@@ -1492,6 +1496,30 @@ export interface components {
             block: string;
             /** Step Id */
             step_id: string;
+        };
+        /**
+         * Choice
+         * @description One numbered choice of an open question, as a button (domain/choices.py, REQ-001 A-06).
+         */
+        Choice: {
+            /** N */
+            n: number;
+            /** Label */
+            label: string;
+            /** Text */
+            text: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Action
+             * @default
+             */
+            action: string;
+            /**
+             * Skill
+             * @default
+             */
+            skill: string;
         };
         /** ConfigView */
         ConfigView: {

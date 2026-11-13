@@ -7,6 +7,7 @@ import re
 from pydantic import BaseModel, Field
 
 from ..config import DomainConfig
+from ..domain import choices as picking
 from ..domain import depends
 from ..domain import facets
 from ..domain import lists as value_lists
@@ -14,7 +15,7 @@ from ..domain.depends import Dependency
 from ..domain import seen as reads
 from ..domain import step as stepping
 from ..domain import turn as whose
-from ..models import Case, Entry, Run, Turn
+from ..models import Case, Choice, Entry, Run, Turn
 
 
 class VersionView(BaseModel):
@@ -318,6 +319,7 @@ class CaseView(CaseCard):
     released: bool = False                                # it waits, and all of it is closed: free to go on, but it does not move by itself (DP-03)
     helper: HelperView | None = None                      # a helper at work: phases, what it does now, how long it usually takes
     again: AgainView | None = None                        # a helper finished here, the case stayed: the viewer may send it again
+    choices: dict[str, list[Choice]] = Field(default_factory=dict)   # an open question's numbered choices as buttons, by entry id (REQ-001 A-06)
     protocols: list[dict] = Field(default_factory=list)   # the gate protocols of this stage and earlier ones (ADR-029)
     notes: list[NoteView] = Field(default_factory=list)   # free notes, beside the slots and never among them (REQ-001 S-17)
 
@@ -478,6 +480,7 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
     out = OutsideView(word=away.words(config, doc, lang), since=str(doc.get("since") or ""), by=who.name if who else str(doc.get("by") or "")) if doc else None
     undo = stepping.undoable(store, config, case, viewer) if store is not None else None
     undo_action = config.action(undo.from_, undo.action) if undo else None
+    offered_choices = picking.for_case(config, case, viewer)
     deps = depends.waits(case.meta, depends.resolver_for(store, config), lang) if store is not None else []
     return CaseView(**c.model_dump(), waits=deps, released=depends.released(deps), reopen_to=back, reopen_word=stage_name(config, back, lang) if back else "",
                     held_by=held, held_by_helper=bool(holding) and all(p.kind == "agent" for p in holding), outside=out,
@@ -489,7 +492,8 @@ def view(config: DomainConfig, case: Case, viewer: str | None, lang: str, file_u
                     meta={k: v for k, v in localized(case.meta, lang).items() if k != "entries"}, stations=stations, slots=slots, entries=names_in(config, with_actors(config, entries_in(case.entries, localized(case.meta, lang).get("entries"))), lang), turns=turns, my_turns=mine,
                     last_run=case.last_run, primary=config.primary(case.label), agent=agent.name if agent else "Claude",
                     helper=helper(config, case, lang, store),
-                    again=again(config, case, viewer, lang),
+                    again=None if offered_choices else again(config, case, viewer, lang),   # the choices take its place
+                    choices=offered_choices,
                     protocols=protocols(config, case, store, lang, viewer),
                     notes=[NoteView(file=n.file, word=n.word, versions=[VersionView(name=v.name, version=v.version, size=v.size, url=file_url(case, v.name)) for v in n.versions])
                            for n in case.notes],

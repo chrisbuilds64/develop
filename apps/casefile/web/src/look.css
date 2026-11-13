@@ -378,6 +378,8 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .mq { display: flex; gap: 6px; margin-top: 10px; }
 .mbtn { height: 28px; font: inherit; font-size: var(--fs-12); padding: 0 10px; border-radius: var(--r-s); border: 1px solid var(--tint-10); background: var(--surface); color: var(--ink); cursor: pointer; }
 .mbtn:hover { background: var(--hover); }
+.mq.choices { flex-wrap: wrap; }
+.mbtn.choice { height: auto; min-height: 28px; padding: 4px 10px; text-align: left; white-space: normal; }
 .m-form { display: flex; gap: 6px; margin-top: 10px; }
 .m-form.col { flex-direction: column; }
 .m-form input { flex: 1; font: inherit; font-size: var(--fs-13); height: 32px; padding: 0 10px; border-radius: var(--r-s); border: 1px solid var(--tint-12); background: var(--surface); color: var(--ink); }
@@ -909,6 +911,11 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .c-again .ghost { border: 1px solid var(--hairline); background: var(--surface); box-shadow: var(--shadow-card); }
 .c-again .ghost:hover { background: var(--hover); }
 .c-again .hint { font-size: var(--fs-12-5); color: var(--muted); max-width: 52ch; }
+.c-choices { margin: 16px 0 20px; }
+.c-choices p { margin: 0 0 10px; }
+.c-choices .pacts { margin-top: 0; }
+.c-choices .ghost { border: 1px solid var(--hairline); background: var(--surface); box-shadow: var(--shadow-card); }
+.c-choices .ghost:hover { background: var(--hover); }
 /* Two versions compared (SYS-162): added lines green, removed ones struck through, unchanged stretches folded */
 .versions-cap { margin-right: 6px; color: var(--muted); }
 .diff-toggle { margin-left: 8px; }

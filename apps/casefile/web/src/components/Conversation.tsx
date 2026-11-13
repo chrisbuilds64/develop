@@ -1,9 +1,10 @@
 // The case's conversation (design hand-back, 2026-11-05): one card per entry. The AI's are violet (actor "ai", request 5),
 // yours sit to the right, an open question for you carries Answer and Done, a sealed decision shows its seal, and an
-// undone or corrected decision says so (ADR-025). A decision you may correct offers "Open a correction".
+// undone or corrected decision says so (ADR-025). A decision you may correct offers "Open a correction". A question with
+// numbered choices offers each as a button instead of Answer, and "Something else …" for the free answer (REQ-001 A-06).
 import { Md } from "./Md";
 import { useState } from "react";
-import type { Entry } from "../api";
+import type { Choice, Entry } from "../api";
 import { ago, type words } from "../words";
 import { Send, Seal } from "./Icons";
 
@@ -11,9 +12,10 @@ type Props = {
   entries: Entry[]; meName: string; lang: string; w: ReturnType<typeof words>; busy: boolean; stageWord: (folder: string) => string;
   onAnswer: (e: Entry, text: string) => void; onDone: (e: Entry) => void; onFile: (name: string) => void; fileUrl: (name: string) => string;
   canCorrect: (e: Entry) => boolean; onCorrect: (e: Entry, text: string, amount: string) => void;
+  choices: Record<string, Choice[]>; onChoose: (e: Entry, c: Choice) => void;
 };
 
-export function Conversation({ entries, meName, lang, w, busy, stageWord, onAnswer, onDone, onFile, fileUrl, canCorrect, onCorrect }: Props) {
+export function Conversation({ entries, meName, lang, w, busy, stageWord, onAnswer, onDone, onFile, fileUrl, canCorrect, onCorrect, choices, onChoose }: Props) {
   const resolved = new Set(entries.filter((e) => e.resolves).map((e) => e.resolves));
   const [answering, setAnswering] = useState<string | null>(null);
   const [correcting, setCorrecting] = useState<string | null>(null);
@@ -41,12 +43,19 @@ export function Conversation({ entries, meName, lang, w, busy, stageWord, onAnsw
             {e.text && <Md text={e.text} img={(n) => (e.files?.includes(n) ? fileUrl(n) : undefined)} />}
             {(e.amount || e.to) && <p className="m-fact">{[e.amount, e.to ? `→ ${stageWord(e.to)}` : ""].filter(Boolean).join(" · ")}</p>}
             {e.files && e.files.length > 0 && <span className="m-files">{e.files.map((f) => <button key={f} type="button" onClick={() => onFile(f)}>{f}</button>)}</span>}
-            {open && answering !== e.id && (
+            {open && answering !== e.id && (choices[e.id]?.length ? (
+              <>
+                <span className="mq choices">
+                  {choices[e.id].map((c) => <button key={c.n} type="button" className="mbtn choice" data-choice={c.kind} title={c.text} disabled={busy} onClick={() => onChoose(e, c)}>{c.label}</button>)}
+                </span>
+                <button type="button" className="tlink m-else" onClick={() => { setAnswering(e.id); setText(""); }}><u>{w.somethingElse}</u></button>
+              </>
+            ) : (
               <span className="mq">
                 <button type="button" className="mbtn" onClick={() => { setAnswering(e.id); setText(""); }}>{w.answer}</button>
                 <button type="button" className="mbtn" disabled={busy} onClick={() => onDone(e)}>{w.done}</button>
               </span>
-            )}
+            ))}
             {answering === e.id && (
               <form className="m-form" onSubmit={(ev) => { ev.preventDefault(); if (text.trim()) { onAnswer(e, text.trim()); setAnswering(null); setText(""); } }}>
                 <input autoFocus value={text} onChange={(ev) => setText(ev.target.value)} placeholder={w.answer} />

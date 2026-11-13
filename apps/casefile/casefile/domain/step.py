@@ -115,6 +115,15 @@ def step(store: FsStore, config: DomainConfig, case_id: str, req: StepRequest, b
 
         j = Journal(step_id=req.step_id, case=case_id, action=req.action, by=person.id, created=_now(), payload=req.payload, **{"from": case.stage})
 
+        # ---- a question's choice (REQ-001 A-06): becomes the step it stands for, which then resolves the question
+        if req.action == "choose":
+            from . import choices
+            picked = choices.pick(config, case, person.id, req.payload)
+            if isinstance(picked, str):
+                return _refuse(store, j, picked)
+            req = StepRequest(action=picked[0], step_id=req.step_id, payload=picked[1])
+            j.action, j.payload = req.action, req.payload
+
         # ---- reopen: a closed case goes back into the work, logged like any move
         if req.action == "reopen":
             return _reopen(store, config, j, case, person, req)
@@ -717,7 +726,8 @@ def _order_again(store: FsStore, config: DomainConfig, j: Journal, case, person,
     _write_journal(store, j)
     j.run = ordering.order(store, config, j.case, case.stage, last.skill, person.id, note, request_id=j.step_id, lang=raw.get("lang"), extra=extra)
     title = config.word("texts", "again_title", None, "{skill} sent again").format(skill=config.word("skills", last.skill, None, last.skill))
-    e = {"author": person.name, "status": "info", "title": title[:120], "text": said[:1200], "step": j.step_id}
+    e = {"author": person.name, "status": "info", "title": title[:120], "text": said[:1200], "step": j.step_id,
+         "resolves": str(req.payload.get("resolves") or "") or None}
     j.entry = _append_entry(store, config, j.case, case.stage, e)
     j.status, j.finished = "done", _now()
     _write_journal(store, j)
@@ -802,7 +812,7 @@ def _complete(store: FsStore, config: DomainConfig, j: Journal, action: Action |
         label = config.word("actions", action.label if action else j.action, None, j.action)
         e = {"author": name, "status": action.entry_status if action else "info", "title": label[:120],
              "text": str(j.payload.get("note") or j.payload.get("text") or "").strip() or label,
-             "step": j.step_id, "from": j.from_, "to": j.to}
+             "step": j.step_id, "from": j.from_, "to": j.to, "resolves": str(j.payload.get("resolves") or "") or None}
         if j.payload.get("amount"):
             e["amount"] = str(j.payload["amount"])
         j.entry = _append_entry(store, config, j.case, stage_now, e)
