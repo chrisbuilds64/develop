@@ -315,6 +315,26 @@ body { font: var(--fs-14)/1.45 var(--font); letter-spacing: -.012em; -webkit-fon
 .doc:hover { transform: translateY(-1px); }
 .dn { font-size: var(--fs-13); font-weight: 500; color: var(--ink); }
 .dm { font-size: var(--fs-12); color: var(--muted); }
+/* a document's tile: what it is, then its word and version — the picture where there is one to see, else the kind of file.
+   Narrow desks (three panes on a laptop) stack it: a calm band on top; wide ones put it on the left. Names are never cut. */
+.docs { container-type: inline-size; }
+.doc:has(> .dt) { gap: 8px; padding: 10px; }
+.dx { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dx .dn { overflow-wrap: break-word; hyphens: auto; }
+.dt { height: 44px; border-radius: var(--r-7); display: flex; align-items: center; padding: 0 10px; position: relative; overflow: hidden;
+  background: var(--tint-6); color: var(--sub); }
+.dt b { font-size: var(--fs-11); font-weight: 600; letter-spacing: .04em; }
+.dt.img { background: var(--tint-12); padding: 0; }
+.dt.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.dt.img i { position: absolute; right: 4px; bottom: 4px; padding: 0 5px; border-radius: var(--r-7); background: var(--scrim); color: var(--on-accent); font-size: var(--fs-11); font-style: normal; font-weight: 600; }
+.dt.k-md { background: var(--doc-md-soft); color: var(--doc-md); }
+.dt.k-txt { background: var(--doc-txt-soft); color: var(--doc-txt); }
+.dt.k-pdf { background: var(--doc-pdf-soft); color: var(--doc-pdf); }
+.dt.k-money { background: var(--doc-money-soft); color: var(--doc-money); }
+@container (min-width: 620px) {
+  .doc:has(> .dt) { flex-direction: row; align-items: center; gap: 12px; padding: 12px 14px; }
+  .dt { flex: 0 0 44px; width: 44px; padding: 0; justify-content: center; }
+}
 .doc.tile { background: var(--ai-soft); border-color: var(--ai-line); }
 .doc.photo { padding: 0; overflow: hidden; position: relative; aspect-ratio: 4 / 3; justify-content: flex-end; border: none; }
 .doc.photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
