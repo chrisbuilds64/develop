@@ -20,6 +20,19 @@ import { paper, thud, tick } from "../moments";
 
 type W = ReturnType<typeof words>;
 
+/** What a document's tile shows on its left: the picture itself where there is one to see, else the kind of file in a
+ *  few letters. A preview where one is possible, a clear sign of what it is everywhere else — the grid stays as calm as before. */
+function Thumb({ shape, name, url, more = 0 }: { shape: string; name: string; url?: string; more?: number }) {
+  if (shape.startsWith("image") && url) {
+    return <span className="dt img"><img src={BASE + url} alt="" loading="lazy" decoding="async" />{more > 0 && <i>+{more}</i>}</span>;
+  }
+  const ext = (name.split(".").pop() ?? "").toLowerCase();
+  const kind = shape.startsWith("video") || ["mp4", "mov", "webm"].includes(ext) ? "video" : shape === "pdf" || ext === "pdf" ? "pdf"
+    : shape === "money" ? "money" : ["html", "htm"].includes(ext) ? "web" : ext === "json" ? "data" : ext === "md" ? "md" : "txt";
+  const label = kind === "video" ? "▶" : kind === "money" ? "€" : (ext || "txt").slice(0, 4).toUpperCase();
+  return <span className={`dt k-${kind}`} aria-hidden="true"><b>{label}</b></span>;
+}
+
 /** The documents on the desk, newest version each, the primary first — the order the reader walks. */
 export function docsOf(v: CaseView): Doc[] {
   const present = v.slots.filter((s) => s.present && !["meta.json", "review.md"].includes(s.file) && !["interview", "data"].includes(s.shape));
@@ -47,7 +60,7 @@ function Notes({ v, w, onOpen, onNew }: { v: CaseView; w: W; onOpen: (name: stri
           const last = n.versions[n.versions.length - 1];
           return (
             <button key={n.file} type="button" className="doc" data-file={n.file} onClick={() => onOpen(last.name)}>
-              <span className="dn"><PenIcon />{n.word}</span><span className="dm">{w.version(Math.max(1, last.version))}</span>
+              <Thumb shape="text" name={last.name} /><span className="dx"><span className="dn">{n.word}</span><span className="dm">{w.version(Math.max(1, last.version))}</span></span>
             </button>
           );
         })}
@@ -401,16 +414,17 @@ export function CaseScreen({ id, config, me, go, w, tab = "you" }: { id: string;
               {(() => {
                 const photos = desk.filter((s) => s.shape.startsWith("image"));
                 const rest = desk.filter((s) => !s.shape.startsWith("image"));
-                const tile = (key: string, word: string, meta: string, open: () => void, icon: ReactNode) => (
+                const tile = (key: string, word: string, meta: string, open: () => void, thumb: ReactNode) => (
                   <button key={key} type="button" className="doc" data-file={key} onClick={open}>
-                    <span className="dn">{icon}{word}</span><span className="dm">{meta}</span>
+                    {thumb}<span className="dx"><span className="dn">{word}</span><span className="dm">{meta}</span></span>
                   </button>
                 );
+                const newest = (s: CaseView["slots"][number]) => s.versions[s.versions.length - 1];
                 const metaOf = (s: CaseView["slots"][number]) => { const n = s.versions[s.versions.length - 1]; return `${w.version(Math.max(1, n.version))}${s.by_word ? ` · ${s.by_word}` : ""}`; };
                 return <>
-                  {rest.map((s) => tile(s.file, s.word, metaOf(s), () => setReading(s.versions[s.versions.length - 1].name), s.shape === "pdf" ? <DocIcon /> : s.shape === "money" ? <DocIcon /> : <PenIcon />))}
-                  {photos.length === 1 && tile(photos[0].file, photos[0].word, metaOf(photos[0]), () => setReading(photos[0].versions[photos[0].versions.length - 1].name), <PhotoIcon />)}
-                  {photos.length > 1 && tile("photos", `${w.photos} (${photos.length})`, metaOf(photos[0]), () => setReading(photos[0].versions[photos[0].versions.length - 1].name), <PhotoIcon />)}
+                  {rest.map((s) => tile(s.file, s.word, metaOf(s), () => setReading(newest(s).name), <Thumb shape={s.shape} name={newest(s).name} url={newest(s).url} />))}
+                  {photos.length === 1 && tile(photos[0].file, photos[0].word, metaOf(photos[0]), () => setReading(newest(photos[0]).name), <Thumb shape={photos[0].shape} name={newest(photos[0]).name} url={newest(photos[0]).url} />)}
+                  {photos.length > 1 && tile("photos", `${w.photos} (${photos.length})`, metaOf(photos[0]), () => setReading(newest(photos[0]).name), <Thumb shape={photos[0].shape} name={newest(photos[0]).name} url={newest(photos[0]).url} more={photos.length - 1} />)}
                 </>;
               })()}
               {missing.map((s) => <Missing key={s.file} slot={s} mine={mine && blocked.includes(s.file)} busy={busy} sample={samples.includes(s.file)} w={w}

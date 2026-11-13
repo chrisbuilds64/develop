@@ -99,6 +99,12 @@
   --sg-dup: #1E93A8; --sg-dup-soft: rgba(48, 176, 199, .13);
   --sg-rep: #D97A00; --sg-rep-soft: rgba(255, 149, 0, .14);
   --sg-dev: #5250D8; --sg-dev-soft: rgba(94, 92, 230, .12);
+  /* Kinds of document on the desk (2026-11-13): no new hue — the three quiet ones of Flagged and the green of "ok", so the
+     palette stays the design's. Blue (your move), terracotta (a seal) and violet (the AI) keep their one meaning and are not used. */
+  --doc-md: var(--sg-dev); --doc-md-soft: var(--sg-dev-soft);
+  --doc-txt: var(--sg-dup); --doc-txt-soft: var(--sg-dup-soft);
+  --doc-pdf: var(--sg-rep); --doc-pdf-soft: var(--sg-rep-soft);
+  --doc-money: var(--ok-ink); --doc-money-soft: var(--ok-soft);
 }
 
 @media (prefers-color-scheme: dark) {
