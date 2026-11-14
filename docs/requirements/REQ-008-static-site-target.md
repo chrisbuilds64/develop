@@ -39,6 +39,7 @@ scope: the Casefile application around it (stages, gates, a preview stage), dele
 | # | Requirement | Evidence |
 |---|---|---|
 | ST-10 | Verify fetches every file of the source from the public address and compares the bytes. Files the server executes or withholds are named as not compared. | `test_verify_compares_what_is_served_with_the_source` |
+| ST-14 | Verify pauses between two requests, so a hoster's flood protection does not lock the address out. | by hand: found on the first real run, 2026-11-14 |
 | ST-11 | Verify fails when a path that must not be served is served. | `test_verify_fails_when_a_file_that_must_stay_private_is_served` |
 
 ### Use
@@ -46,4 +47,4 @@ scope: the Casefile application around it (stages, gates, a preview stage), dele
 | # | Requirement | Evidence |
 |---|---|---|
 | ST-12 | Each step is one command and can write its result as a report file, to be laid into a case. | `test_the_command_line_plans_applies_and_writes_a_report` |
-| ST-13 | The FTP target works against a hoster's account over explicit TLS. | by hand, first real upload; not yet done |
+| ST-13 | The FTP target works against a hoster's account over explicit TLS. | by hand: first real upload 2026-11-14, 30 files, verified against the live site |

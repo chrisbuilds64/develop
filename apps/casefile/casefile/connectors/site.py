@@ -26,6 +26,8 @@ The rules that used to live in a deploy guide and in somebody's head:
 - **Protected paths are never written**, not even when the source carries a file of that name.
 - **What is replaced is kept**: before a file is overwritten its served version is saved beside the report.
 - **A file arrives whole**: it is uploaded under a temporary name and renamed.
+- **Verify asks slowly.** The first real run fetched 64 files three times in a few minutes and the hoster locked the
+  address out of its web ports. There is a pause between two requests.
 
 Credentials come from the environment (`SITE_USER`, `SITE_PASSWORD`: a run is handed them for its duration) or from the
 file the site description names in `target.secret` (two lines: user, password; outside every repository). Standard
@@ -43,6 +45,7 @@ import json
 import os
 import ssl
 import sys
+import time
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
@@ -51,6 +54,7 @@ from typing import Callable, Protocol
 
 AGENT = "site-verify/1"
 ALWAYS_EXCLUDED = (".DS_Store", "**/.DS_Store", ".git/**", "**/*.tmp-upload")
+PAUSE = 0.4  # seconds between two requests of a verify: a shared hoster locks out an address that asks too fast
 NOT_COMPARABLE = (".php", ".htaccess")  # executed or withheld by the server: served bytes are not the source bytes
 
 
@@ -383,10 +387,14 @@ class Verified:
     not_compared: list[str]
 
 
-def verify(site: Site, fetch: Callable[[str], tuple[int, bytes]] = http_get) -> Verified:
+def verify(site: Site, fetch: Callable[[str], tuple[int, bytes]] | None = None, pause: float = PAUSE) -> Verified:
     if not site.url:
         raise SiteError("the site description has no 'url': nothing to verify against")
     base = site.url.rstrip("/")
+    if fetch is None:
+        def fetch(url: str) -> tuple[int, bytes]:
+            time.sleep(pause)
+            return http_get(url)
     served, differs, missing, skipped = 0, [], [], []
     for path, data in local_files(site).items():
         if path.endswith(NOT_COMPARABLE) or PurePosixPath(path).name.startswith("."):
