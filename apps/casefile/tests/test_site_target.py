@@ -177,3 +177,18 @@ def test_publish_with_a_yes_uploads_the_plan_shown_and_verifies_it(tmp_path):
     assert (live / "index.html").read_text() == "<h1>new</h1>"
     # a second run finds nothing to upload, asks nothing, and still verifies
     assert s.main(["publish", desc], confirm=lambda p: pytest.fail("asked without anything to upload"), fetch=fetch) == 0
+
+
+def test_verify_stops_after_a_handful_of_files_that_are_not_served(tmp_path):
+    site, _, _, src = _site(tmp_path)
+    for i in range(20):
+        (src / f"page{i:02}.html").write_text("new")
+    asked = []
+
+    def fetch(url):
+        asked.append(url)
+        return 404, b""
+
+    v = s.verify(site, fetch, max_misses=5)
+    assert not v.ok and len(v.missing) == 5 and "not uploaded" in v.stopped
+    assert len(asked) == 5  # the rest, and the private paths, were not asked for

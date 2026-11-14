@@ -27,8 +27,9 @@ The rules that used to live in a deploy guide and in somebody's head:
 - **Protected paths are never written**, not even when the source carries a file of that name.
 - **What is replaced is kept**: before a file is overwritten its served version is saved beside the report.
 - **A file arrives whole**: it is uploaded under a temporary name and renamed.
-- **Verify asks slowly.** The first real run fetched 64 files three times in a few minutes and the hoster locked the
-  address out of its web ports. There is a pause between two requests.
+- **Verify asks slowly and gives up early.** On the first real day it ran twice before the upload, drew a row of
+  "not found" answers, and the hoster locked the address out of its web ports. There is a pause between two requests,
+  and after a handful of files that are not served it stops instead of asking for the rest.
 
 Credentials come from the environment (`SITE_USER`, `SITE_PASSWORD`: a run is handed them for its duration) or from the
 file the site description names in `target.secret` (two lines: user, password; outside every repository). Standard
@@ -56,6 +57,7 @@ from typing import Callable, Protocol
 AGENT = "site-verify/1"
 ALWAYS_EXCLUDED = (".DS_Store", "**/.DS_Store", ".git/**", "**/*.tmp-upload")
 PAUSE = 0.4  # seconds between two requests of a verify: a shared hoster locks out an address that asks too fast
+MAX_MISSES = 5  # a verify that keeps getting "not found" stops: a row of errors from one address is what gets it locked out
 NOT_COMPARABLE = (".php", ".htaccess")  # executed or withheld by the server: served bytes are not the source bytes
 
 
@@ -386,9 +388,10 @@ class Verified:
     missing: list[str]          # "path (status)"
     exposed: list[str]          # must not be served, and is
     not_compared: list[str]
+    stopped: str = ""           # why the run ended early; the rest was not asked for
 
 
-def verify(site: Site, fetch: Callable[[str], tuple[int, bytes]] | None = None, pause: float = PAUSE) -> Verified:
+def verify(site: Site, fetch: Callable[[str], tuple[int, bytes]] | None = None, pause: float = PAUSE, max_misses: int = MAX_MISSES) -> Verified:
     if not site.url:
         raise SiteError("the site description has no 'url': nothing to verify against")
     base = site.url.rstrip("/")
@@ -404,6 +407,9 @@ def verify(site: Site, fetch: Callable[[str], tuple[int, bytes]] | None = None, 
         status, body = fetch(f"{base}/{urllib.request.quote(path)}")
         if status != 200:
             missing.append(f"{path} ({status})")
+            if len(missing) >= max_misses:
+                why = f"stopped after {len(missing)} files that are not served: the site looks not uploaded"
+                return Verified(False, served, differs, missing, [], skipped, why)
         elif digest(body) != digest(data):
             differs.append(path)
         else:
@@ -448,6 +454,8 @@ def _print_verified(v: Verified) -> None:
     _show("not served", v.missing)
     _show("served, and must not be", v.exposed)
     _show("not compared (executed or withheld by the server)", v.not_compared)
+    if v.stopped:
+        print(v.stopped)
     print("VERIFIED" if v.ok else "NOT VERIFIED")
 
 

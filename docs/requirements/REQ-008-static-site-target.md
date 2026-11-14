@@ -40,6 +40,7 @@ scope: the Casefile application around it (stages, gates, a preview stage), dele
 |---|---|---|
 | ST-10 | Verify fetches every file of the source from the public address and compares the bytes. Files the server executes or withholds are named as not compared. | `test_verify_compares_what_is_served_with_the_source` |
 | ST-14 | Verify pauses between two requests, so a hoster's flood protection does not lock the address out. | by hand: found on the first real run, 2026-11-14 |
+| ST-16 | Verify stops after a handful of files that are not served and says so, instead of drawing a row of errors. | `test_verify_stops_after_a_handful_of_files_that_are_not_served` |
 | ST-11 | Verify fails when a path that must not be served is served. | `test_verify_fails_when_a_file_that_must_stay_private_is_served` |
 
 ### Use
