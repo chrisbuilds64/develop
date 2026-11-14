@@ -47,4 +47,5 @@ scope: the Casefile application around it (stages, gates, a preview stage), dele
 | # | Requirement | Evidence |
 |---|---|---|
 | ST-12 | Each step is one command and can write its result as a report file, to be laid into a case. | `test_the_command_line_plans_applies_and_writes_a_report` |
+| ST-15 | `publish` runs the three steps for a person at a terminal: it shows the plan, asks once, uploads that plan and verifies. A no uploads nothing; with nothing to upload it asks nothing. | `test_publish_asks_once_and_a_no_uploads_nothing`, `test_publish_with_a_yes_uploads_the_plan_shown_and_verifies_it` |
 | ST-13 | The FTP target works against a hoster's account over explicit TLS. | by hand: first real upload 2026-11-14, 30 files, verified against the live site |

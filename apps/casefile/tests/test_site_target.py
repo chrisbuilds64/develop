@@ -156,3 +156,24 @@ def test_the_command_line_plans_applies_and_writes_a_report(tmp_path, capsys):
     assert s.main(["apply", desc, "--plan", plan["id"], "--keep", str(tmp_path / "kept")]) == 0
     assert (tmp_path / "live" / "index.html").read_text() == "<h1>new</h1>"
     assert "uploaded: 2 files" in capsys.readouterr().out
+
+
+def test_publish_asks_once_and_a_no_uploads_nothing(tmp_path):
+    _, _, live, _ = _site(tmp_path)
+    desc = str(tmp_path / "site.json")
+    asked = []
+    assert s.main(["publish", desc, "--report", str(tmp_path / "r.json")], confirm=lambda p: asked.append(p.id) or False) == 0
+    assert len(asked) == 1 and (live / "index.html").read_text() == "<h1>old</h1>"
+    assert json.loads((tmp_path / "r.json").read_text())["approved"] is False
+
+
+def test_publish_with_a_yes_uploads_the_plan_shown_and_verifies_it(tmp_path):
+    _, _, live, _ = _site(tmp_path)
+    desc = str(tmp_path / "site.json")
+    fetch = _serving(live, {"_data/list.csv": (403, b"")})
+    code = s.main(["publish", desc, "--keep", str(tmp_path / "kept"), "--report", str(tmp_path / "r.json")], confirm=lambda p: True, fetch=fetch)
+    report = json.loads((tmp_path / "r.json").read_text())
+    assert code == 0 and report["verified"]["ok"] and report["applied"]["plan"] == report["plan"]["id"]
+    assert (live / "index.html").read_text() == "<h1>new</h1>"
+    # a second run finds nothing to upload, asks nothing, and still verifies
+    assert s.main(["publish", desc], confirm=lambda p: pytest.fail("asked without anything to upload"), fetch=fetch) == 0

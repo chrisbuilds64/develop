@@ -18,6 +18,7 @@ Three steps, each one command, each printing a report that can be laid into a ca
     python3 site.py plan   site.json                 what is new, changed, the same; what only the server has
     python3 site.py apply  site.json --plan <id>     upload the plan with that id, keep what it replaces
     python3 site.py verify site.json                 fetch every file over HTTP and compare it with the source
+    python3 site.py publish site.json                all three for a person at a terminal: plan, one question, apply, verify
 
 The rules that used to live in a deploy guide and in somebody's head:
 - **The plan is the gate.** `apply` takes the id of a plan a person has read. If the source or the server changed
@@ -424,49 +425,86 @@ def _show(title: str, paths: list[str], limit: int = 40) -> None:
         print(f"  … and {len(paths) - limit} more")
 
 
-def main(argv: list[str] | None = None) -> int:
+def _print_plan(p: Plan) -> None:
+    _show("new", p.new)
+    _show("changed", p.changed)
+    _show("only on the server, left alone", p.server_only)
+    _show("protected on the server, never written", p.protected)
+    _show("in the source under a protected name, not uploaded", p.held_back)
+    print(f"the same: {len(p.same)}   to upload: {len(p.uploads)} files, {p.bytes / 1e6:.1f} MB")
+    print(f"plan {p.id}" if p.uploads else "nothing to upload")
+
+
+def _print_applied(a: Applied) -> None:
+    print(f"uploaded: {len(a.uploaded)} files (plan {a.plan})")
+    if a.kept:
+        print(f"replaced files kept in {a.kept}")
+    _show("mode could not be set", a.modes_not_set)
+
+
+def _print_verified(v: Verified) -> None:
+    print(f"served as in the source: {v.served}")
+    _show("served, but different from the source", v.differs)
+    _show("not served", v.missing)
+    _show("served, and must not be", v.exposed)
+    _show("not compared (executed or withheld by the server)", v.not_compared)
+    print("VERIFIED" if v.ok else "NOT VERIFIED")
+
+
+def _ask(plan: Plan) -> bool:
+    return input("Upload this plan? (y/n) ").strip().lower() in ("y", "yes", "j", "ja")
+
+
+def main(argv: list[str] | None = None, confirm: Callable[[Plan], bool] = _ask, fetch=None) -> int:
     ap = argparse.ArgumentParser(description="A static site as a deploy target: plan, apply an approved plan, verify.")
-    ap.add_argument("step", choices=["plan", "apply", "verify"])
+    ap.add_argument("step", choices=["plan", "apply", "verify", "publish"])
     ap.add_argument("site", type=Path, help="the site description (JSON), kept with the site")
     ap.add_argument("--plan", help="apply: the id of the plan that was read and approved")
     ap.add_argument("--report", type=Path, help="write the result as JSON to this file")
-    ap.add_argument("--keep", type=Path, help="apply: where replaced files are saved (default: beside the description)")
+    ap.add_argument("--keep", type=Path, help="apply, publish: where replaced files are saved (default: beside the description)")
     args = ap.parse_args(argv)
-    result: object
+    result: dict = {"step": args.step}
+    code = 0
     try:
         site = Site.load(args.site)
         base = args.site.resolve().parent
+        keep = args.keep or base / ".site-kept"
         if args.step == "verify":
-            v = verify(site)
-            print(f"served as in the source: {v.served}")
-            _show("served, but different from the source", v.differs)
-            _show("not served", v.missing)
-            _show("served, and must not be", v.exposed)
-            _show("not compared (executed or withheld by the server)", v.not_compared)
-            print("VERIFIED" if v.ok else "NOT VERIFIED")
-            result, code = v, 0 if v.ok else 1
+            v = verify(site, fetch)
+            _print_verified(v)
+            result.update(asdict(v))
+            code = 0 if v.ok else 1
         else:
             target = open_target(site, base)
             try:
                 if args.step == "plan":
                     p = make_plan(site, target)
-                    _show("new", p.new)
-                    _show("changed", p.changed)
-                    _show("only on the server, left alone", p.server_only)
-                    _show("protected on the server, never written", p.protected)
-                    _show("in the source under a protected name, not uploaded", p.held_back)
-                    print(f"the same: {len(p.same)}   to upload: {len(p.uploads)} files, {p.bytes / 1e6:.1f} MB")
-                    print(f"plan {p.id}" if p.uploads else "nothing to upload")
-                    result, code = p, 0
-                else:
+                    _print_plan(p)
+                    result.update(asdict(p))
+                elif args.step == "apply":
                     if not args.plan:
                         raise SiteError("apply needs --plan <id>: the id of the plan that was read")
-                    a = apply_plan(site, target, args.plan, args.keep or base / ".site-kept", print)
-                    print(f"uploaded: {len(a.uploaded)} files (plan {a.plan})")
-                    if a.kept:
-                        print(f"replaced files kept in {a.kept}")
-                    _show("mode could not be set", a.modes_not_set)
-                    result, code = a, 0
+                    a = apply_plan(site, target, args.plan, keep, print)
+                    _print_applied(a)
+                    result.update(asdict(a))
+                else:  # publish: the three steps with one question in between, the person at the terminal is the gate
+                    p = make_plan(site, target)
+                    _print_plan(p)
+                    result["plan"] = asdict(p)
+                    if p.uploads:
+                        if not confirm(p):
+                            print("nothing uploaded")
+                            result["approved"] = False
+                        else:
+                            result["approved"] = True
+                            a = apply_plan(site, target, p.id, keep, print)
+                            _print_applied(a)
+                            result["applied"] = asdict(a)
+                    if site.url and result.get("approved", True):
+                        v = verify(site, fetch)
+                        _print_verified(v)
+                        result["verified"] = asdict(v)
+                        code = 0 if v.ok else 1
             finally:
                 if hasattr(target, "close"):
                     target.close()
@@ -475,7 +513,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(json.dumps({"step": args.step, **asdict(result)}, indent=2), encoding="utf-8")
+        args.report.write_text(json.dumps(result, indent=2), encoding="utf-8")
     return code
 
 
